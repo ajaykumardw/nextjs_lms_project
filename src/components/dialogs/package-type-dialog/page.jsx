@@ -8,7 +8,6 @@ import {
     minLength,
     pipe,
     maxLength,
-    nonEmpty,
     boolean
 } from 'valibot'
 
@@ -142,8 +141,7 @@ const PackageTypeDialog = ({ open, setOpen, data, fetchPackage }) => {
     const {
         control,
         handleSubmit,
-        formState: { errors, isValid, isSubmitting },
-        setError,
+        formState: { errors },
         reset,
     } = useForm({
         resolver: valibotResolver(schema),

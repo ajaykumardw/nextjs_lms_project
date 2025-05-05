@@ -227,7 +227,6 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage }) => {
     const {
         handleSubmit,
         control,
-        setError,
         reset,
         formState: { errors, isValid, isSubmitting }
     } = useForm({
