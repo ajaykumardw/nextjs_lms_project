@@ -9,10 +9,18 @@ import Checkbox from '@mui/material/Checkbox'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Alert from '@mui/material/Alert'
 import AlertTitle from '@mui/material/AlertTitle'
+import * as v from 'valibot';
 
 // Component Imports
 import CustomTextField from '@core/components/mui/TextField'
 import DialogCloseButton from '../DialogCloseButton'
+
+const formSchema = v.object({
+  name: v.pipe(
+    v.string(),
+    v.maxLength(255, 'Name must be at most 255 characters long')
+  )
+});
 
 const AddContent = ({ handleClose }) => {
   return (

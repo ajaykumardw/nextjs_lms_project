@@ -113,6 +113,7 @@ export const authOptions = {
         token.email = user.email;
         token.token = user.token;
         token.userId = user.userId;
+        token.expiresAt = user.expiresAt;
       }
 
       return token
@@ -124,6 +125,7 @@ export const authOptions = {
         session.user.name = token.name;
         session.user.token = token.token;
         session.user.userId = token.userId;
+        session.user.expiresAt = token.expiresAt;
       }
 
       return session

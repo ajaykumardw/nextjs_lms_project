@@ -8,8 +8,11 @@ import {
     minLength,
     maxLength,
     nonEmpty,
+    pipe,
+    minValue,
+    maxValue,
     boolean,
-    number
+    number,
 } from 'valibot'
 
 // MUI Imports
@@ -34,18 +37,28 @@ import SkeletonFormComponent from '@/components/skeleton/form/page'
 
 // Schema
 const schema = object({
-    name: string([
-        nonEmpty('Package Type Name is required'),
-        minLength(4, 'Too short'),
-        maxLength(25, 'Too long')
-    ]),
-    description: string([
-        maxLength(255, 'Description too long')
-    ]),
-    amount: string([nonEmpty('Please provide an amount')]), // ← FIXED
-    packagetype: string([nonEmpty('Please select a package type')]),
+    name: pipe(
+        string(),
+        minLength(1, 'Name is required'),
+        maxLength(255, 'Name can be maximum of 255 characters')
+    ),
+    description: pipe(
+        string(),
+        minLength(1, 'Description is required'),
+        maxLength(255, 'Description can be maximum of 255 characters')
+    ),
+    amount: pipe(
+        number('Amount must be a number'),
+        minValue(1, 'Amount must be at least 1'),
+        maxValue(1000000, 'Amount must be less than or equal to 1,000,000')
+    ),
+    packagetype: pipe(
+        string(),
+        nonEmpty('Please select a package type')
+    ),
     status: boolean()
 });
+
 
 const AddContent = ({ control, errors, createData }) => (
     <DialogContent className="overflow-visible pbs-0 sm:pli-16">
@@ -75,14 +88,15 @@ const AddContent = ({ control, errors, createData }) => (
                 <CustomTextField
                     {...field}
                     fullWidth
-                    value={field.value || ''}  // Fix: Use field.value instead of hardcoding 0
                     label="Amount"
                     variant="outlined"
                     placeholder="Enter Amount"
                     className="mbe-2"
                     error={!!errors.amount}
                     helperText={typeof errors?.amount?.message === 'string' ? errors.amount.message : ''}
-                    onChange={(e) => field.onChange(e.target.value)}  // Make sure value updates correctly
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(Number(e.target.value))}
+                    type="number"
                 />
             )}
         />
@@ -147,6 +161,9 @@ const EditContent = ({ control, errors, createData }) => (
                     className="mbe-2"
                     error={!!errors.amount}
                     helperText={typeof errors?.amount?.message === 'string' ? errors.amount.message : ''}
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(Number(e.target.value))}
+                    type="number"
                 />
             )}
         />
@@ -220,7 +237,7 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage }) => {
             name: data?.name || '',
             description: data?.description || '',
             packagetype: data?.package_type_id || '',
-            amount: `${data?.amount || '0'}`, // Make sure it's always a string
+            amount: data?.amount || 0, // Make sure it's always a string
             status: data?.status ?? false
         },
         resolver: valibotResolver(schema)
@@ -234,7 +251,7 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage }) => {
                 name: data?.name || '',
                 description: data?.description || '',
                 packagetype: data?.package_type_id || '',
-                amount: `${data?.amount || ''}` || '',
+                amount: data?.amount || 0,
                 status: data?.status ?? false
             })
         }
@@ -286,8 +303,6 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage }) => {
 
             if (response.ok) {
 
-                console.log("Result", result);
-
                 handleClose()
                 if (typeof fetchPackage === 'function') {
                     fetchPackage();
@@ -302,79 +317,9 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage }) => {
 
     const onSubmit = (formData) => {
 
-        let errorState = false;
-        if (!formData.name) {
-            setError('name', {
-                type: 'manual',
-                message: 'This name is required.'
-            })
-            errorState = true;
-        }
-        if (formData.name.length > 25 || formData.name.length < 4) {
-            setError('name', {
-                type: 'manual',
-                message: 'Name length should be within 4 and 25'
-            })
-            errorState = true;
-        }
-        if (!formData.description) {
-            setError('description', {
-                type: 'manual',
-                message: "Description is required"
-            });
-            errorState = true;
-        }
-        if (formData.description.length > 2000 || formData.description.length < 1) {
-            setError('description', {
-                type: 'manual',
-                message: 'Name length should be within 1 and 2000'
-            })
-            errorState = true;
-        }
-
-
-        if (!formData.amount) {
-            setError('amount', {
-                type: 'manual',
-                message: "Amount is required"
-            });
-            errorState = true;
-        }
-
-        if (formData.amount.length > 10 && formData.amount.length < 1 || formData.amount == 'undefined') {
-            setError('amount', {
-                type: 'manual',
-                message: "Name length should be within 1 and 10"
-            });
-            errorState = true;
-        }
-
-        console.log("form data", formData);
-
-
-        if (formData.amount > 100000000 || formData.amount < 1) {
-            setError('amount', {
-                type: 'manual',
-                message: "Amount range should be between 1 to 100 million"
-            });
-            errorState = true;
-        }
-
-        if (!formData.packagetype) {
-            setError('packagetype', {
-                type: 'manual',
-                message: "Package Type is required"
-            });
-            errorState = true;
-        }
-
-        if (errorState) return;
-
-        submitPackage(formData)
+        submitPackage(formData);
 
     }
-
-    console.log("Data", data);
 
     return (
         <Dialog

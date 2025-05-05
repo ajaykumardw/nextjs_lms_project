@@ -1,7 +1,7 @@
 'use client'
 
 // React Imports
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 
 // Next Imports
 import { useParams, useRouter } from 'next/navigation'
@@ -52,9 +52,26 @@ const UserDropdown = () => {
   const { settings } = useSettings()
   const { lang: locale } = useParams()
 
-  const handleDropdownOpen = () => {
-    !open ? setOpen(true) : setOpen(false)
-  }
+  // Auto-logout timer
+  useEffect(() => {
+    if (!session?.user?.expiresAt) return
+
+    const expirationTime = session.user.expiresAt * 1000 // convert seconds to ms
+    const timeLeft = expirationTime - Date.now()
+
+    if (timeLeft <= 0) {
+      signOut({ callbackUrl: process.env.NEXT_PUBLIC_APP_URL })
+      return
+    }
+
+    const timer = setTimeout(() => {
+      signOut({ callbackUrl: process.env.NEXT_PUBLIC_APP_URL })
+    }, timeLeft)
+
+    return () => clearTimeout(timer)
+  }, [session])
+
+  const handleDropdownOpen = () => setOpen(prev => !prev)
 
   const handleDropdownClose = (event, url) => {
     if (url) {
@@ -70,13 +87,9 @@ const UserDropdown = () => {
 
   const handleUserLogout = async () => {
     try {
-      // Sign out from the app
       await signOut({ callbackUrl: process.env.NEXT_PUBLIC_APP_URL })
     } catch (error) {
       console.error(error)
-
-      // Show above error in a toast like following
-      // toastService.error((err as Error).message)
     }
   }
 
@@ -90,7 +103,6 @@ const UserDropdown = () => {
         className='mis-2'
       >
         <Avatar
-          ref={anchorRef}
           alt={session?.user?.name || ''}
           src={session?.user?.image || ''}
           onClick={handleDropdownOpen}
@@ -108,9 +120,7 @@ const UserDropdown = () => {
         {({ TransitionProps, placement }) => (
           <Fade
             {...TransitionProps}
-            style={{
-              transformOrigin: placement === 'bottom-end' ? 'right top' : 'left top'
-            }}
+            style={{ transformOrigin: placement === 'bottom-end' ? 'right top' : 'left top' }}
           >
             <Paper className={settings.skin === 'bordered' ? 'border shadow-none' : 'shadow-lg'}>
               <ClickAwayListener onClickAway={e => handleDropdownClose(e)}>
@@ -125,19 +135,19 @@ const UserDropdown = () => {
                     </div>
                   </div>
                   <Divider className='mlb-1' />
-                  <MenuItem className='mli-2 gap-3' onClick={e => handleDropdownClose(e, '/pages/user-profile')}>
+                  <MenuItem onClick={e => handleDropdownClose(e, '/pages/user-profile')}>
                     <i className='tabler-user' />
                     <Typography color='text.primary'>My Profile</Typography>
                   </MenuItem>
-                  <MenuItem className='mli-2 gap-3' onClick={e => handleDropdownClose(e, '/pages/account-settings')}>
+                  <MenuItem onClick={e => handleDropdownClose(e, '/pages/account-settings')}>
                     <i className='tabler-settings' />
                     <Typography color='text.primary'>Settings</Typography>
                   </MenuItem>
-                  <MenuItem className='mli-2 gap-3' onClick={e => handleDropdownClose(e, '/pages/pricing')}>
+                  <MenuItem onClick={e => handleDropdownClose(e, '/pages/pricing')}>
                     <i className='tabler-currency-dollar' />
                     <Typography color='text.primary'>Pricing</Typography>
                   </MenuItem>
-                  <MenuItem className='mli-2 gap-3' onClick={e => handleDropdownClose(e, '/pages/faq')}>
+                  <MenuItem onClick={e => handleDropdownClose(e, '/pages/faq')}>
                     <i className='tabler-help-circle' />
                     <Typography color='text.primary'>FAQ</Typography>
                   </MenuItem>

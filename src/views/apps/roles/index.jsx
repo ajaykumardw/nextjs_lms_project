@@ -51,12 +51,6 @@ const Roles = ({ userData }) => {
     }
   }, [token])
 
-  useEffect(() => {
-    if (roleData) {
-      console.log("Role data", roleData);
-    }
-  }, [roleData])
-
   return (
     <Grid container spacing={6}>
       <Grid size={{ xs: 12 }}>

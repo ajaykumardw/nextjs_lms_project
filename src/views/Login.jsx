@@ -136,12 +136,8 @@ const Login = ({ mode }) => {
       router.replace(getLocalizedUrl(redirectURL, locale))
     } else {
 
-      console.log("Response", res);
-
       if (res?.error) {
         const error = JSON.parse(res.error)
-        console.log("Error", error);
-
         setErrorState(error)
       }
     }

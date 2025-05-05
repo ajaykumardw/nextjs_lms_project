@@ -6,6 +6,7 @@ import {
     object,
     string,
     minLength,
+    pipe,
     maxLength,
     nonEmpty,
     boolean
@@ -32,11 +33,11 @@ import { useSession } from 'next-auth/react'
 
 // Schema
 const schema = object({
-    name: string([
-        nonEmpty('Package Type Name is required'),
-        minLength(4, 'Too short'),
-        maxLength(25, 'Too long')
-    ]),
+    name: pipe(
+        string(),
+        minLength(1, 'This field is required'),
+        maxLength(255, "Name can be maximum of 255 length")
+    ),
     status: boolean()
 })
 
@@ -46,9 +47,11 @@ const AddContent = ({ control, errors }) => (
         <Controller
             name="name"
             control={control}
+            rules={{ required: true }}
             render={({ field }) => (
                 <CustomTextField
                     {...field}
+                    autoFocus
                     fullWidth
                     label="Package Type Name"
                     variant="outlined"
@@ -137,18 +140,18 @@ const PackageTypeDialog = ({ open, setOpen, data, fetchPackage }) => {
 
     // Form setup
     const {
-        handleSubmit,
         control,
+        handleSubmit,
+        formState: { errors, isValid, isSubmitting },
         setError,
         reset,
-        formState: { errors, isValid, isSubmitting }
     } = useForm({
+        resolver: valibotResolver(schema),
         mode: 'onChange',
         defaultValues: {
             name: data?.name || '',
             status: data?.status ?? false
         },
-        resolver: valibotResolver(schema)
     })
 
     // Reset form when dialog opens with new data
@@ -192,20 +195,6 @@ const PackageTypeDialog = ({ open, setOpen, data, fetchPackage }) => {
     }
 
     const onSubmit = (formData) => {
-        if (!formData.name) {
-            setError('name', {
-                type: 'manual',
-                message: 'This name is required.'
-            })
-            return
-        }
-        if (formData.name.length > 25 || formData.name.length < 4) {
-            setError('name', {
-                type: 'manual',
-                message: 'Name length should be within 4 and 25'
-            })
-            return
-        }
 
         submitPackageType(formData)
 
@@ -218,8 +207,12 @@ const PackageTypeDialog = ({ open, setOpen, data, fetchPackage }) => {
             closeAfterTransition={false}
             sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}
         >
-            <form onSubmit={handleSubmit(onSubmit)}>
-                <DialogCloseButton onClick={handleClose} disableRipple>
+            <form
+                onSubmit={handleSubmit(onSubmit)}
+                action={() => { }}
+            >
+                <DialogCloseButton onClick={handleClose}
+                    disableRipple>
                     <i className="tabler-x" />
                 </DialogCloseButton>
                 <DialogTitle
@@ -243,7 +236,7 @@ const PackageTypeDialog = ({ open, setOpen, data, fetchPackage }) => {
                     <Button
                         type="submit"
                         variant="contained"
-                        disabled={!isValid || isSubmitting}
+                    // disabled={!isValid || isSubmitting}
                     >
                         {data ? 'Update' : 'Create Package Type'}
                     </Button>
