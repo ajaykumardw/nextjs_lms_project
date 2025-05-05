@@ -74,6 +74,14 @@ const PackageTable = ({ packageTypeData, fetchPackage, isLoading }) => {
                 header: 'Name',
                 cell: ({ row }) => <Typography color='text.primary'>{row.original.name}</Typography>
             }),
+            columnHelper.accessor('description', {
+                header: 'Description',
+                cell: ({ row }) => <Typography color='text.primary'>{row.original.description}</Typography>
+            }),
+            columnHelper.accessor('amount', {
+                header: 'Amount',
+                cell: ({ row }) => <Typography color='text.primary'>{row.original.amount}</Typography>
+            }),
             columnHelper.accessor('status', {
                 header: 'Status',
                 cell: ({ row }) => (

@@ -50,14 +50,42 @@ const schema = object({
 const AddContent = ({ control, errors, createData }) => (
     <DialogContent className="overflow-visible pbs-0 sm:pli-16">
         {/* name */}
-        <Controller name="name" control={control} render={({ field }) => (
-            <CustomTextField {...field} fullWidth label="Package Name" variant="outlined" placeholder="Enter Package Type Name" className="mbe-2" error={!!errors.name} helperText={errors?.name?.message} />
-        )} />
+        <Controller
+            name="name"
+            control={control}
+            render={({ field }) => (
+                <CustomTextField
+                    {...field}
+                    fullWidth
+                    label="Package Name"
+                    variant="outlined"
+                    placeholder="Enter Package Type Name"
+                    className="mbe-2"
+                    error={!!errors.name}
+                    helperText={errors?.name?.message}
+                />
+            )}
+        />
 
         {/* amount */}
-        <Controller name="amount" control={control} render={({ field }) => (
-            <CustomTextField {...field} fullWidth label="Amount" variant="outlined" placeholder="Enter Amount" className="mbe-2" error={!!errors.amount} helperText={errors?.amount?.message} />
-        )} />
+        <Controller
+            name="amount"
+            control={control}
+            render={({ field }) => (
+                <CustomTextField
+                    {...field}
+                    fullWidth
+                    value={field.value || ''}  // Fix: Use field.value instead of hardcoding 0
+                    label="Amount"
+                    variant="outlined"
+                    placeholder="Enter Amount"
+                    className="mbe-2"
+                    error={!!errors.amount}
+                    helperText={typeof errors?.amount?.message === 'string' ? errors.amount.message : ''}
+                    onChange={(e) => field.onChange(e.target.value)}  // Make sure value updates correctly
+                />
+            )}
+        />
 
         {/* description */}
         <Controller name="description" control={control} render={({ field }) => (
@@ -88,7 +116,7 @@ const AddContent = ({ control, errors, createData }) => (
 );
 
 // Edit Content Component
-const EditContent = ({ control, errors }) => (
+const EditContent = ({ control, errors, createData }) => (
     <DialogContent className="overflow-visible pbs-0 sm:pli-16">
         <Controller
             name="name"
@@ -188,21 +216,25 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage }) => {
     } = useForm({
         mode: 'onChange',
         defaultValues: {
+            _id: data?._id || '',
             name: data?.name || '',
             description: data?.description || '',
-            packagetype: data?.packagetype || '',
+            packagetype: data?.package_type_id || '',
+            amount: `${data?.amount || '0'}`, // Make sure it's always a string
             status: data?.status ?? false
         },
         resolver: valibotResolver(schema)
-    })
+    });
 
     useEffect(() => {
+
         if (open) {
             reset({
+                _id: data?._id || '',
                 name: data?.name || '',
                 description: data?.description || '',
-                packagetype: data?.packagetype || '',
-                amount: data?.amount || '',
+                packagetype: data?.package_type_id || '',
+                amount: `${data?.amount || ''}` || '',
                 status: data?.status ?? false
             })
         }
@@ -239,7 +271,7 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage }) => {
     const submitPackage = async (formData) => {
         try {
             const response = await fetch(
-                data ? `${URL}/admin/package-type/${data?._id}` : `${URL}/admin/package`,
+                data ? `${URL}/admin/package/${data?.package_type_id}/${data?._id}` : `${URL}/admin/package`,
                 {
                     method: data ? "PUT" : "POST",
                     headers: {
@@ -253,9 +285,12 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage }) => {
             const result = await response.json()
 
             if (response.ok) {
-                // handleClose()
+
+                console.log("Result", result);
+
+                handleClose()
                 if (typeof fetchPackage === 'function') {
-                    // fetchPackage();
+                    fetchPackage();
                 }
             } else {
                 console.error("Failed to save data:", result?.message || result)
@@ -297,6 +332,7 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage }) => {
             errorState = true;
         }
 
+
         if (!formData.amount) {
             setError('amount', {
                 type: 'manual',
@@ -305,7 +341,7 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage }) => {
             errorState = true;
         }
 
-        if (formData.amount.length > 10 && formData.amount.length < 1) {
+        if (formData.amount.length > 10 && formData.amount.length < 1 || formData.amount == 'undefined') {
             setError('amount', {
                 type: 'manual',
                 message: "Name length should be within 1 and 10"
@@ -313,10 +349,13 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage }) => {
             errorState = true;
         }
 
-        if (formData.amount > 100000000) {
+        console.log("form data", formData);
+
+
+        if (formData.amount > 100000000 || formData.amount < 1) {
             setError('amount', {
                 type: 'manual',
-                message: "Amount cannot be more 100 million"
+                message: "Amount range should be between 1 to 100 million"
             });
             errorState = true;
         }
@@ -334,6 +373,8 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage }) => {
         submitPackage(formData)
 
     }
+
+    console.log("Data", data);
 
     return (
         <Dialog
