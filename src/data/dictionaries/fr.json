@@ -40,6 +40,7 @@
         "rolesPermissions": "Rôles et autorisations",
         "roles": "Les rôles",
         "permissions": "Autorisations",
+        "permission_module": "Module d'autorisations",
         "package-type": "type de forfait",
         "package": "colis",
         "pages": "Pages",

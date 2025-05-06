@@ -40,6 +40,7 @@
         "rolesPermissions": "Roles & Permissions",
         "roles": "Roles",
         "permissions": "Permissions",
+        "permission_module": "Permission Module",
         "package-type": "package-type",
         "package": "package",
         "pages": "Pages",

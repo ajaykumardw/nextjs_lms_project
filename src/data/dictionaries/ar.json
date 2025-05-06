@@ -40,6 +40,7 @@
         "rolesPermissions": "الأدوار والأذونات",
         "roles": "الأدوار",
         "permissions": "أذونات",
+        "permission_module": "وحدة الأذونات",
         "package-type": "نوع الحزمة",
         "package": "حزمة",
         "pages": "الصفحات",

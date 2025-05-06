@@ -174,7 +174,7 @@ const HorizontalMenu = ({ dictionary }) => {
           </SubMenu>
           <SubMenu label={dictionary['navigation'].rolesPermissions} icon={<i className='tabler-lock' />}>
             <MenuItem href={`/${locale}/apps/roles`}>{dictionary['navigation'].roles}</MenuItem>
-            <MenuItem href={`/${locale}/apps/permissions`}>{dictionary['navigation'].permissions}</MenuItem>
+            <MenuItem href={`/${locale}/apps/permission-module`}>{dictionary['navigation'].permission_module}</MenuItem>
           </SubMenu>
         </SubMenu>
         <SubMenu label={dictionary['navigation'].pages} icon={<i className='tabler-file' />}>

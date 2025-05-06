@@ -17,12 +17,13 @@ import { useForm, Controller } from 'react-hook-form'
 import { valibotResolver } from '@hookform/resolvers/valibot'
 
 // Valibot schema
-import { object, string, minLength, pipe, maxLength, boolean} from 'valibot'
+import { object, string, minLength, pipe, maxLength, boolean } from 'valibot'
 
 // Component Imports
 import CustomTextField from '@core/components/mui/TextField'
 import DialogCloseButton from '../DialogCloseButton'
 import { useSession } from 'next-auth/react'
+import { useEffect } from 'react'
 
 const schema = object({
   name: pipe(
@@ -77,10 +78,6 @@ const AddContent = ({ control, errors }) => (
 
 const EditContent = ({ control, errors }) => (
   <DialogContent className='overflow-visible pbs-0 sm:pli-16'>
-    <Alert severity='warning' className='mbe-8'>
-      <AlertTitle>Warning!</AlertTitle>
-      Editing the permission name may break system functionality. Proceed with caution.
-    </Alert>
     <div className="flex items-end gap-4 mbe-2">
       <Controller
         name="name"
@@ -91,8 +88,8 @@ const EditContent = ({ control, errors }) => (
             fullWidth
             size="small"
             variant="outlined"
-            label="Package Type Name"
-            placeholder="Enter Package Type Name"
+            label="Permission module Name"
+            placeholder="Enter Permission module Name"
             error={!!errors.name}
             helperText={errors.name?.message}
           />
@@ -121,7 +118,7 @@ const EditContent = ({ control, errors }) => (
   </DialogContent>
 )
 
-const PermissionDialog = ({ open, setOpen, data }) => {
+const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule }) => {
   const handleClose = () => setOpen(false)
 
   const URL = process.env.NEXT_PUBLIC_API_URL
@@ -131,6 +128,7 @@ const PermissionDialog = ({ open, setOpen, data }) => {
   const {
     control,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm({
     resolver: valibotResolver(schema),
@@ -141,24 +139,32 @@ const PermissionDialog = ({ open, setOpen, data }) => {
     }
   })
 
-  const submitData = async (data) => {
+  useEffect(() => {
+    if (data) {
+      reset({
+        name: data.name || '',
+        status: data.status ?? false
+      })
+    }
+  }, [data, reset])
+
+  const submitData = async (VALUE) => {
     try {
-      const response = await fetch(`${URL}/admin/permission-module`,
+      const response = await fetch(data ? `${URL}/admin/permission-module/${data?._id}` : `${URL}/admin/permission-module`,
         {
-          method: "POST",
+          method: data ? "PUT" : "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`
           },
-          body: JSON.stringify(data)
+          body: JSON.stringify(VALUE)
         }
       );
 
       const responseData = await response.json();
 
-      if (response.ok()) {
-        console.log("Data saved", responseData);
-
+      if (response.ok) {
+        fetchPermissionModule();
       }
     } catch (error) {
       console.log("Error", error);
@@ -167,8 +173,8 @@ const PermissionDialog = ({ open, setOpen, data }) => {
   }
 
   const onSubmit = (values) => {
-    setOpen(false)
     submitData(values);
+    setOpen(false)
     // handle API or logic here
   }
 
@@ -188,11 +194,11 @@ const PermissionDialog = ({ open, setOpen, data }) => {
           variant='h4'
           className='flex flex-col gap-2 text-center sm:pbs-16 sm:pbe-6 sm:pli-16'
         >
-          {data ? 'Edit Permission' : 'Add New Permission'}
+          {data ? 'Edit Permission module' : 'Add New Permission module'}
           <Typography component='span'>
             {data
-              ? 'Edit permission as per your requirements.'
-              : 'Permissions you may use and assign to your users.'}
+              ? 'Edit permission module as per your requirements.'
+              : 'Permission module you may use and assign to your users.'}
           </Typography>
         </DialogTitle>
 

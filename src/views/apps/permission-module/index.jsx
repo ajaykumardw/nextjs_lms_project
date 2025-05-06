@@ -30,7 +30,7 @@ import {
 } from '@tanstack/react-table'
 
 // Component Imports
-import PermissionDialog from '@components/dialogs/permission-dialog'
+import PermissionDialog from '@components/dialogs/permission-module-dialog/index'
 import OpenDialogOnElementClick from '@components/dialogs/OpenDialogOnElementClick'
 import CustomTextField from '@core/components/mui/TextField'
 import TablePaginationComponent from '@components/TablePaginationComponent'
@@ -82,19 +82,24 @@ const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...prop
 // Column Definitions
 const columnHelper = createColumnHelper()
 
-const Permissions = ({ permissionsData }) => {
+const Permissions = ({ permissionsData, fetchPermissionModule }) => {
   // States
   const [open, setOpen] = useState(false)
   const [rowSelection, setRowSelection] = useState({})
   const [editValue, setEditValue] = useState('')
-
-  const [data, setData] = useState(...[permissionsData])
+  const [data, setData] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
+
+  useEffect(() => {
+    if (permissionsData) {
+      setData(permissionsData);
+    }
+  }, [permissionsData])
 
   // Vars
   const buttonProps = {
     variant: 'contained',
-    children: 'Add Permission',
+    children: 'Add Permission module',
     onClick: () => handleAddPermission(),
     className: 'max-sm:is-full',
     startIcon: <i className='tabler-plus' />
@@ -107,43 +112,51 @@ const Permissions = ({ permissionsData }) => {
         header: 'Name',
         cell: ({ row }) => <Typography color='text.primary'>{row.original.name}</Typography>
       }),
-      columnHelper.accessor('assignedTo', {
-        header: 'Assigned To',
-        cell: ({ row }) =>
-          typeof row.original.assignedTo === 'string' ? (
-            <Chip
-              variant='tonal'
-              label={row.original.assignedTo}
-              color={colors[row.original.assignedTo]}
-              size='small'
-              className='capitalize'
-            />
-          ) : (
-            row.original.assignedTo.map((item, index) => (
-              <Chip
-                key={index}
-                variant='tonal'
-                label={item}
-                color={colors[item]}
-                size='small'
-                className='capitalize mie-4'
-              />
-            ))
-          )
+      columnHelper.accessor('status', {
+        header: 'Status',
+        cell: ({ row }) => (
+          <Chip
+            label={row.original.status ? 'Active' : 'Inactive'}
+            color={row.original.status ? 'success' : 'default'}
+            variant='tonal'
+            size='small'
+          />
+        )
       }),
-      columnHelper.accessor('createdDate', {
-        header: 'Created Date',
-        cell: ({ row }) => <Typography>{row.original.createdDate}</Typography>
-      }),
+      // columnHelper.accessor('assignedTo', {
+      //   header: 'Assigned To',
+      //   cell: ({ row }) =>
+      //     typeof row.original.assignedTo === 'string' ? (
+      //       <Chip
+      //         variant='tonal'
+      //         label={row.original.assignedTo}
+      //         color={colors[row.original.assignedTo]}
+      //         size='small'
+      //         className='capitalize'
+      //       />
+      //     ) : (
+      //       row.original.assignedTo.map((item, index) => (
+      //         <Chip
+      //           key={index}
+      //           variant='tonal'
+      //           label={item}
+      //           color={colors[item]}
+      //           size='small'
+      //           className='capitalize mie-4'
+      //         />
+      //       ))
+      //     )
+      // }),
+      // columnHelper.accessor('createdDate', {
+      //   header: 'Created Date',
+      //   cell: ({ row }) => <Typography>{row.original.createdDate}</Typography>
+      // }),
       columnHelper.accessor('action', {
         header: 'Actions',
         cell: ({ row }) => (
           <div className='flex items-center'>
-            <IconButton onClick={() => handleEditPermission(row.original.name)}>
+            <IconButton onClick={() => handleEditPermission(row.original)}>
               <i className='tabler-edit text-textSecondary' />
-            </IconButton>
-            <IconButton>
-              <i className='tabler-dots-vertical text-textSecondary' />
             </IconButton>
           </div>
         ),
@@ -213,14 +226,14 @@ const Permissions = ({ permissionsData }) => {
             <DebouncedInput
               value={globalFilter ?? ''}
               onChange={value => setGlobalFilter(String(value))}
-              placeholder='Search Permissions'
+              placeholder='Search Permission module'
               className='max-sm:is-full'
             />
             <OpenDialogOnElementClick
               element={Button}
               elementProps={buttonProps}
               dialog={PermissionDialog}
-              dialogProps={{ editValue }}
+              dialogProps={{ editValue, fetchPermissionModule }}
             />
           </div>
         </CardContent>
@@ -289,7 +302,7 @@ const Permissions = ({ permissionsData }) => {
           }}
         />
       </Card>
-      <PermissionDialog open={open} setOpen={setOpen} data={editValue} />
+      <PermissionDialog open={open} setOpen={setOpen} data={editValue} fetchPermissionModule={fetchPermissionModule} />
     </>
   )
 }
