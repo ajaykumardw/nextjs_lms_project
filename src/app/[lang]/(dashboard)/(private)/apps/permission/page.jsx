@@ -10,6 +10,7 @@ const PermissionsApp = () => {
     const { data: session } = useSession() || {}
     const token = session?.user?.token
     const [data, setData] = useState()
+    const [nameData, setNameData] = useState()
 
     const fetchPermissionModule = async () => {
         try {
@@ -23,7 +24,8 @@ const PermissionsApp = () => {
 
             if (response.ok) {
                 const result = await response.json()
-                setData(result?.data)
+                setData(result?.data?.allPermission)
+                setNameData(result?.data?.totalPermission)
             } else {
                 console.error('Failed to fetch data:', response.statusText)
             }
@@ -40,7 +42,15 @@ const PermissionsApp = () => {
     }, [URL, token])
 
     // Render loading or the permissions component
-    return data ? <Permissions permissionsData={data} fetchPermissionModule={fetchPermissionModule} /> : <SkeletonTableComponent />
+    return data
+        ?
+        <Permissions
+            permissionsData={data}
+            fetchPermissionModule={fetchPermissionModule}
+            nameData={nameData}
+        />
+        :
+        <SkeletonTableComponent />
 }
 
 export default PermissionsApp

@@ -62,7 +62,7 @@ const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...prop
 // Column Definitions
 const columnHelper = createColumnHelper()
 
-const PackageTable = ({ packageTypeData, fetchPackage, isLoading }) => {
+const PackageTable = ({ packageTypeData, fetchPackage, isLoading, nameData }) => {
     const [open, setOpen] = useState(false)
     const [rowSelection, setRowSelection] = useState({})
     const [editValue, setEditValue] = useState('')
@@ -172,7 +172,7 @@ const PackageTable = ({ packageTypeData, fetchPackage, isLoading }) => {
                                     startIcon: <i className='tabler-plus' />
                                 }}
                                 dialog={PackageDialog}
-                                dialogProps={{ editValue, fetchPackage }}
+                                dialogProps={{ editValue, fetchPackage, nameData }}
                             />
                         </div>
                     </CardContent>
@@ -240,6 +240,7 @@ const PackageTable = ({ packageTypeData, fetchPackage, isLoading }) => {
                 setOpen={setOpen}
                 data={editValue}
                 fetchPackage={fetchPackage}
+                nameData={nameData}
             />
         </>
     )

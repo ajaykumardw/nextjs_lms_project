@@ -216,7 +216,7 @@ const EditContent = ({ control, errors, createData }) => (
 )
 
 // Main Dialog Component
-const PackageDialog = ({ open, setOpen, data, fetchPackage }) => {
+const PackageDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
 
     const handleClose = () => setOpen(false)
     const URL = process.env.NEXT_PUBLIC_API_URL
@@ -228,6 +228,7 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage }) => {
         handleSubmit,
         control,
         reset,
+        setError,
         formState: { errors, isValid, isSubmitting }
     } = useForm({
         mode: 'onChange',
@@ -302,7 +303,7 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage }) => {
 
             if (response.ok) {
 
-                handleClose()
+                handleClose();
                 if (typeof fetchPackage === 'function') {
                     fetchPackage();
                 }
@@ -315,6 +316,28 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage }) => {
     }
 
     const onSubmit = (formData) => {
+
+        if (!data) {
+            const exist = nameData.find(item => item.name === formData.name);
+            if (exist) {
+                setError('name', {
+                    type: 'manual',
+                    message: 'This name already exists.'
+                });
+                return;
+            }
+        } else {
+            const exist = nameData.find(item =>
+                item._id.toString() !== data._id.toString() && item.name === formData.name
+            );
+            if (exist) {
+                setError('name', {
+                    type: 'manual',
+                    message: 'This name already exists.'
+                });
+                return;
+            }
+        }
 
         submitPackage(formData);
 

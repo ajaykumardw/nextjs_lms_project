@@ -128,7 +128,7 @@ const EditContent = ({ control, errors }) => (
 )
 
 // Main Dialog Component
-const PackageTypeDialog = ({ open, setOpen, data, fetchPackage }) => {
+const PackageTypeDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
     const handleClose = () => {
         setOpen(false)
         fetchPackage();
@@ -143,6 +143,7 @@ const PackageTypeDialog = ({ open, setOpen, data, fetchPackage }) => {
         handleSubmit,
         formState: { errors },
         reset,
+        setError
     } = useForm({
         resolver: valibotResolver(schema),
         mode: 'onChange',
@@ -193,6 +194,28 @@ const PackageTypeDialog = ({ open, setOpen, data, fetchPackage }) => {
     }
 
     const onSubmit = (formData) => {
+
+        if (!data) {
+            const exist = nameData.find(item => item.name === formData.name);
+            if (exist) {
+                setError('name', {
+                    type: 'manual',
+                    message: 'This name already exists.'
+                });
+                return;
+            }
+        } else {
+            const exist = nameData.find(item =>
+                item._id.toString() !== data._id.toString() && item.name === formData.name
+            );
+            if (exist) {
+                setError('name', {
+                    type: 'manual',
+                    message: 'This name already exists.'
+                });
+                return;
+            }
+        }
 
         submitPackageType(formData)
 

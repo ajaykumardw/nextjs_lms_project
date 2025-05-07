@@ -139,7 +139,7 @@ const EditContent = ({ control, errors, createData }) => (
     </DialogContent>
 )
 
-const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule }) => {
+const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule, nameData }) => {
     const handleClose = () => setOpen(false)
 
     const URL = process.env.NEXT_PUBLIC_API_URL
@@ -152,6 +152,7 @@ const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule }) => {
         control,
         handleSubmit,
         reset,
+        setError,
         formState: { errors },
     } = useForm({
         resolver: valibotResolver(schema),
@@ -218,8 +219,6 @@ const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule }) => {
 
             if (response.ok) {
 
-                console.log("Response data", responseData);
-
                 fetchPermissionModule();
 
             }
@@ -231,6 +230,29 @@ const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule }) => {
     }
 
     const onSubmit = (values) => {
+
+        if (!data) {
+            const exist = nameData.find(item => item.name === values.name);
+            if (exist) {
+                setError('name', {
+                    type: 'manual',
+                    message: 'This name already exists.'
+                });
+                return;
+            }
+        } else {
+            const exist = nameData.find(item =>
+                item._id.toString() !== data._id.toString() && item.name === values.name
+            );
+            if (exist) {
+                setError('name', {
+                    type: 'manual',
+                    message: 'This name already exists.'
+                });
+                return;
+            }
+        }
+
         submitData(values);
         setOpen(false)
         // handle API or logic here

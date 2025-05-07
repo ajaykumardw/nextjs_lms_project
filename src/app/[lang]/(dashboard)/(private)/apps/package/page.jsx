@@ -10,6 +10,7 @@ const PackageApp = () => {
     const URL = process.env.NEXT_PUBLIC_API_URL
     const [isLoading, setIsLoading] = useState(false);
     const [packageTypeData, setPackageType] = useState(null);
+    const [nameData, setNameData] = useState();
 
     const fetchPackage = async () => {
         try {
@@ -25,7 +26,8 @@ const PackageApp = () => {
 
             if (response.ok) {
                 setIsLoading(true);
-                setPackageType(data?.data)
+                setPackageType(data?.data?.allPackages)
+                setNameData(data?.data?.totalPackage)
             } else {
                 console.error('Failed to fetch package type data')
             }
@@ -46,6 +48,7 @@ const PackageApp = () => {
                 packageTypeData={packageTypeData}
                 fetchPackage={fetchPackage}
                 isLoading={isLoading}
+                nameData={nameData}
             />
         </>
     );

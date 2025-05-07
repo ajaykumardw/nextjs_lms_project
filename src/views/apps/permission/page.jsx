@@ -82,7 +82,7 @@ const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...prop
 // Column Definitions
 const columnHelper = createColumnHelper()
 
-const Permissions = ({ permissionsData, fetchPermissionModule }) => {
+const Permissions = ({ permissionsData, fetchPermissionModule, nameData }) => {
     // States
     const [open, setOpen] = useState(false)
     const [rowSelection, setRowSelection] = useState({})
@@ -233,7 +233,7 @@ const Permissions = ({ permissionsData, fetchPermissionModule }) => {
                             element={Button}
                             elementProps={buttonProps}
                             dialog={PermissionDialog}
-                            dialogProps={{ editValue, fetchPermissionModule }}
+                            dialogProps={{ editValue, fetchPermissionModule, nameData }}
                         />
                     </div>
                 </CardContent>
@@ -302,7 +302,13 @@ const Permissions = ({ permissionsData, fetchPermissionModule }) => {
                     }}
                 />
             </Card>
-            <PermissionDialog open={open} setOpen={setOpen} data={editValue} fetchPermissionModule={fetchPermissionModule} />
+            <PermissionDialog
+                open={open}
+                setOpen={setOpen}
+                data={editValue}
+                fetchPermissionModule={fetchPermissionModule}
+                nameData={nameData}
+            />
         </>
     )
 }
