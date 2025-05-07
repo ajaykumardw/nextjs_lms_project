@@ -46,8 +46,8 @@ const AddContent = ({ control, errors }) => (
             fullWidth
             size="small"
             variant="outlined"
-            label="Package Type Name"
-            placeholder="Enter Package Type Name"
+            label="Permission Name"
+            placeholder="Enter Permission Name"
             error={!!errors.name}
             helperText={errors.name?.message}
           />
@@ -88,8 +88,8 @@ const EditContent = ({ control, errors }) => (
             fullWidth
             size="small"
             variant="outlined"
-            label="Permission module Name"
-            placeholder="Enter Permission module Name"
+            label="Permission Name"
+            placeholder="Enter Permission Name"
             error={!!errors.name}
             helperText={errors.name?.message}
           />
@@ -194,11 +194,11 @@ const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule }) => {
           variant='h4'
           className='flex flex-col gap-2 text-center sm:pbs-16 sm:pbe-6 sm:pli-16'
         >
-          {data ? 'Edit Permission module' : 'Add New Permission module'}
+          {data ? 'Edit Permission' : 'Add New Permission'}
           <Typography component='span'>
             {data
-              ? 'Edit permission module as per your requirements.'
-              : 'Permission module you may use and assign to your users.'}
+              ? 'Edit permission as per your requirements.'
+              : 'Permission you may use and assign to your users.'}
           </Typography>
         </DialogTitle>
 
@@ -210,7 +210,7 @@ const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule }) => {
 
         <DialogActions className='flex max-sm:flex-col max-sm:items-center max-sm:gap-2 justify-center pbs-0 sm:pbe-16 sm:pli-16'>
           <Button type='submit' variant='contained' >
-            {data ? 'Update' : 'Create Package Type'}
+            {data ? 'Update' : 'Create Permission'}
           </Button>
           <Button onClick={handleClose} variant='tonal' color='secondary'>
             Discard

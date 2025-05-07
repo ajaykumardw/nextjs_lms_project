@@ -99,7 +99,7 @@ const Permissions = ({ permissionsData, fetchPermissionModule }) => {
   // Vars
   const buttonProps = {
     variant: 'contained',
-    children: 'Add Permission module',
+    children: 'Add Permission',
     onClick: () => handleAddPermission(),
     className: 'max-sm:is-full',
     startIcon: <i className='tabler-plus' />
@@ -226,7 +226,7 @@ const Permissions = ({ permissionsData, fetchPermissionModule }) => {
             <DebouncedInput
               value={globalFilter ?? ''}
               onChange={value => setGlobalFilter(String(value))}
-              placeholder='Search Permission module'
+              placeholder='Search Permission'
               className='max-sm:is-full'
             />
             <OpenDialogOnElementClick
