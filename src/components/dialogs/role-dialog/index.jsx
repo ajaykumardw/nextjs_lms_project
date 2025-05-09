@@ -38,6 +38,7 @@ const schema = object({
 })
 
 const RoleDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole }) => {
+  
   const { data: session } = useSession()
   const token = session?.user?.token
   const API_URL = process.env.NEXT_PUBLIC_API_URL
@@ -135,7 +136,7 @@ const RoleDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole }) 
       reset({
         name: selectedRole?.name || '',
         description: selectedRole?.description || '',
-        status: selectedRole?.status ?? true,
+        status: selectedRole?.status || false,
         permissions: flatPermissions
       })
 
@@ -157,7 +158,6 @@ const RoleDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole }) 
 
       const data = await response.json()
       if (response.ok) {
-        console.log("Response", data);
         fetchRoleData?.()
       } else {
         console.error('Server error response:', data)

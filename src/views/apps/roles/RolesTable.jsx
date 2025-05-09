@@ -218,11 +218,13 @@ const RolesTable = ({ tableData, fetchRoleData }) => {
             slotProps={{ select: { displayEmpty: true } }}
           >
             <MenuItem value=''>Select Role</MenuItem>
-            <MenuItem value='admin'>Admin</MenuItem>
-            <MenuItem value='author'>Author</MenuItem>
-            <MenuItem value='editor'>Editor</MenuItem>
-            <MenuItem value='maintainer'>Maintainer</MenuItem>
-            <MenuItem value='subscriber'>Subscriber</MenuItem>
+            {tableData.map((item, index) => {
+              return (
+                <MenuItem key={index} value={item._id}>
+                  {item.name}
+                </MenuItem>
+              );
+            })}
           </CustomTextField>
         </div>
       </CardContent>
