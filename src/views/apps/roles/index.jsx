@@ -6,8 +6,9 @@ import Grid from '@mui/material/Grid2'
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import Typography from '@mui/material/Typography'
+import SkeletonTableComponent from '@/components/skeleton/table/page'
 
-const Roles = ({ userData }) => {
+const Roles = () => {
 
   const [roleData, setRoleData] = useState();
   const [loading, setLoading] = useState(false);
@@ -63,7 +64,7 @@ const Roles = ({ userData }) => {
         </Typography>
       </Grid>
       <Grid size={{ xs: 12 }}>
-        <RoleCards />
+        <RoleCards fetchRoleData={fetchRoleData} />
       </Grid>
       <Grid size={{ xs: 12 }} className='!pbs-12'>
         <Typography variant='h4' className='mbe-1'>
@@ -72,7 +73,13 @@ const Roles = ({ userData }) => {
         <Typography>Find all of your company&#39;s administrator accounts and their associate roles.</Typography>
       </Grid>
       <Grid size={{ xs: 12 }}>
-        <RolesTable tableData={roleData} />
+        {roleData ? (
+          <RolesTable tableData={roleData} fetchRoleData={fetchRoleData} />
+        )
+          : (
+            <SkeletonTableComponent />
+          )
+        }
       </Grid>
     </Grid>
   )

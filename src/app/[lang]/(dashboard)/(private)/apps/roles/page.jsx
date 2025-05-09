@@ -21,10 +21,8 @@ import { getUserData } from '@/app/server/actions'
   return res.json()
 } */
 const RolesApp = async () => {
-  // Vars
-  const data = await getUserData()
 
-  return <Roles userData={data} />
+  return <Roles />
 }
 
 export default RolesApp

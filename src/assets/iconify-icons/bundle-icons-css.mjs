@@ -50,16 +50,16 @@ async function generateIconsCSS() {
             'twemoji-auto-rickshaw'
         ],
         svg: [
-        /* {
-          dir: 'src/assets/iconify-icons/svg',
-          monotone: false,
-          prefix: 'custom'
-        } */
-        /* {
-        dir: 'src/assets/iconify-icons/emojis',
-        monotone: false,
-        prefix: 'emoji'
-      } */
+            /* {
+              dir: 'src/assets/iconify-icons/svg',
+              monotone: false,
+              prefix: 'custom'
+            } */
+            /* {
+            dir: 'src/assets/iconify-icons/emojis',
+            monotone: false,
+            prefix: 'emoji'
+          } */
         ]
     };
 
@@ -160,8 +160,8 @@ async function generateIconsCSS() {
                 if (!svg) {
                     // Invalid icon
                     iconSet.remove(name);
-                    
-return;
+
+                    return;
                 }
 
 
@@ -189,8 +189,8 @@ return;
                     // Invalid icon
                     console.error(`Error parsing ${name} from ${source.dir}:`, err);
                     iconSet.remove(name);
-                    
-return;
+
+                    return;
                 }
 
 
@@ -238,6 +238,6 @@ function organizeIconsList(icons) {
         if (!prefixList.includes(name))
             prefixList.push(name);
     });
-    
-return sorted;
+
+    return sorted;
 }

@@ -16,7 +16,7 @@ import { useForm, Controller } from 'react-hook-form'
 import { valibotResolver } from '@hookform/resolvers/valibot'
 
 // Valibot schema
-import { object, string, minLength, pipe, maxLength, boolean, number, nonEmpty } from 'valibot'
+import { array, string, object, pipe, minLength, maxLength, boolean, nonEmpty, value } from 'valibot'
 
 // Component Imports
 import CustomTextField from '@core/components/mui/TextField'
@@ -33,8 +33,8 @@ const schema = object({
         maxLength(255, 'Name can be maximum of 255 characters')
     ),
     permissionmodule: pipe(
-        string(),
-        nonEmpty("Permission module is required")
+        array(string()),
+        nonEmpty('Select at least one permission module')
     ),
     status: boolean()
 })
@@ -60,13 +60,44 @@ const AddContent = ({ control, errors, createData }) => (
             />
         </div>
 
-        <Controller name="permissionmodule" control={control} render={({ field }) => (
+        {/* <Controller name="permissionmodule" control={control} render={({ field }) => (
             <CustomTextField {...field} select fullWidth label="Permission module" variant="outlined" placeholder="Select Package Type" className="mbe-2" error={!!errors.permissionmodule} helperText={errors?.permissionmodule?.message}>
                 {createData.map((data) => (
                     <MenuItem key={data._id} value={data._id}>{data.name}</MenuItem>
                 ))}
             </CustomTextField>
-        )} />
+        )} /> */}
+
+        <Controller
+            name="permissionmodule"
+            control={control}
+            render={({ field }) => (
+                <CustomTextField
+                    {...field}
+                    select
+                    fullWidth
+                    label="Permission module"
+                    variant="outlined"
+                    placeholder="Select Package Type"
+                    className="mbe-2"
+                    error={!!errors.permissionmodule}
+                    helperText={errors?.permissionmodule?.message}
+                    SelectProps={{
+                        multiple: true,
+                        value: field.value || [], // Ensure it's always an array
+                        onChange: (event) => {
+                            field.onChange(event.target.value); // Pass the selected array
+                        },
+                    }}
+                >
+                    {createData.map((data) => (
+                        <MenuItem key={data._id} value={data._id}>
+                            {data.name}
+                        </MenuItem>
+                    ))}
+                </CustomTextField>
+            )}
+        />
 
         <Typography variant="h6" className="mbe-2">Status</Typography>
         <FormControl component="fieldset" error={!!errors.status}>
@@ -110,13 +141,44 @@ const EditContent = ({ control, errors, createData }) => (
             />
         </div>
 
-        <Controller name="permissionmodule" control={control} render={({ field }) => (
+        {/* <Controller name="permissionmodule" control={control} render={({ field }) => (
             <CustomTextField {...field} select fullWidth label="Permission module" variant="outlined" placeholder="Select Package Type" className="mbe-2" error={!!errors.permissionmodule} helperText={errors?.permissionmodule?.message}>
                 {createData.map((data) => (
                     <MenuItem key={data._id} value={data._id}>{data.name}</MenuItem>
                 ))}
             </CustomTextField>
-        )} />
+        )} /> */}
+
+        <Controller
+            name="permissionmodule"
+            control={control}
+            render={({ field }) => (
+                <CustomTextField
+                    {...field}
+                    select
+                    fullWidth
+                    label="Permission module"
+                    variant="outlined"
+                    placeholder="Select Package Type"
+                    className="mbe-2"
+                    error={!!errors.permissionmodule}
+                    helperText={errors?.permissionmodule?.message}
+                    SelectProps={{
+                        multiple: true,
+                        value: field.value || [], // Ensure it's always an array
+                        onChange: (event) => {
+                            field.onChange(event.target.value); // Pass the selected array
+                        },
+                    }}
+                >
+                    {createData.map((data) => (
+                        <MenuItem key={data._id} value={data._id}>
+                            {data.name}
+                        </MenuItem>
+                    ))}
+                </CustomTextField>
+            )}
+        />
 
         <Typography variant="h6" className="mbe-2">Status</Typography>
         <FormControl component="fieldset" error={!!errors.status}>
@@ -145,7 +207,7 @@ const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule, nameData
     const URL = process.env.NEXT_PUBLIC_API_URL
     const { data: session } = useSession() || {}
     const token = session?.user?.token
-
+    const [editData, setEditData] = useState();
     const [createData, setCreateData] = useState();
 
     const {
@@ -160,19 +222,24 @@ const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule, nameData
         defaultValues: {
             name: data?.name || '',
             status: data?.status ?? false,
-            permissionmodule: data?.permission_module_id || ''
+            permissionmodule: Array.isArray(data?.permission_module_id)
+                ? data.permission_module_id
+                : data?.permission_module_id
+                    ? [data.permission_module_id]
+                    : []
+
         }
     })
 
     useEffect(() => {
-        if (open && data) {
+        if (open && data && editData) {
             reset({
                 name: data.name || '',
                 status: data.status ?? false,
-                permissionmodule: data?.permission_module_id || ''
+                permissionmodule: editData || []
             })
         }
-    }, [open, data, reset])
+    }, [open, data, reset, editData])
 
     const fetchFormData = async () => {
         try {
@@ -196,15 +263,36 @@ const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule, nameData
         }
     }
 
+    const editFormData = async (value) => {
+        const response = await fetch(`${URL}/admin/permission/edit/${value._id}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            setEditData(data?.data?.permission_module_id);
+        }
+
+    }
+
     useEffect(() => {
         if (URL && token) {
             fetchFormData();
+            if (data) {
+                editFormData(data);
+            }
         }
-    }, [URL, token])
+
+    }, [URL, token, data])
 
     const submitData = async (VALUE) => {
         try {
-            const response = await fetch(data ? `${URL}/admin/permission/${data?.permission_module_id}/${data?._id}` : `${URL}/admin/permission`,
+            const response = await fetch(data ? `${URL}/admin/permission/${editData}/${data?._id}` : `${URL}/admin/permission`,
                 {
                     method: data ? "PUT" : "POST",
                     headers: {
@@ -218,9 +306,7 @@ const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule, nameData
             const responseData = await response.json();
 
             if (response.ok) {
-
                 fetchPermissionModule();
-
             }
 
         } catch (error) {
