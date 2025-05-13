@@ -1,9 +1,6 @@
 // Component Imports
 import UserList from '@views/apps/user/list'
 
-// Data Imports
-import { getUserData } from '@/app/server/actions'
-
 /**
  * ! If you need data using an API call, uncomment the below API code, update the `process.env.API_URL` variable in the
  * ! `.env` file found at root of your project and also update the API endpoints like `/apps/user-list` in below example.
@@ -21,10 +18,8 @@ import { getUserData } from '@/app/server/actions'
   return res.json()
 } */
 const UserListApp = async () => {
-  // Vars
-  const data = await getUserData()
 
-  return <UserList userData={data} />
+  return <UserList />
 }
 
 export default UserListApp

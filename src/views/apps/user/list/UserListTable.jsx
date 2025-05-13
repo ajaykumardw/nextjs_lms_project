@@ -4,6 +4,7 @@
 import { useEffect, useState, useMemo } from 'react'
 
 // Next Imports
+import { useRouter } from 'next/navigation';
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 
@@ -103,13 +104,22 @@ const userStatusObj = {
 // Column Definitions
 const columnHelper = createColumnHelper()
 
-const UserListTable = ({ tableData }) => {
+const UserListTable = ({ userData }) => {
   // States
-  const [addUserOpen, setAddUserOpen] = useState(false)
   const [rowSelection, setRowSelection] = useState({})
-  const [data, setData] = useState(...[tableData])
-  const [filteredData, setFilteredData] = useState(data)
+  const [data, setData] = useState([])
+  const [filteredData, setFilteredData] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
+  const public_url = process.env.NEXT_PUBLIC_APP_URL;
+
+  const router = useRouter();
+
+  useEffect(() => {
+    if (userData) {
+      setData(userData);
+      setFilteredData(userData);
+    }
+  }, [userData])
 
   // Hooks
   const { lang: locale } = useParams()
@@ -138,45 +148,53 @@ const UserListTable = ({ tableData }) => {
           />
         )
       },
-      columnHelper.accessor('fullName', {
+      columnHelper.accessor('first_name', {
         header: 'User',
         cell: ({ row }) => (
           <div className='flex items-center gap-4'>
-            {getAvatar({ avatar: row.original.avatar, fullName: row.original.fullName })}
+            {getAvatar({ avatar: row.original.photo, fullName: row.original.first_name + " " + row.original.last_name })}
             <div className='flex flex-col'>
               <Typography color='text.primary' className='font-medium'>
-                {row.original.fullName}
+                {row.original.first_name + " " + row.original.last_name}
               </Typography>
-              <Typography variant='body2'>{row.original.username}</Typography>
+              <Typography variant='body2'>{row.original.email}</Typography>
             </div>
           </div>
         )
       }),
-      columnHelper.accessor('role', {
-        header: 'Role',
-        cell: ({ row }) => (
-          <div className='flex items-center gap-2'>
-            <Icon
-              className={userRoleObj[row.original.role].icon}
-              sx={{ color: `var(--mui-palette-${userRoleObj[row.original.role].color}-main)` }}
-            />
-            <Typography className='capitalize' color='text.primary'>
-              {row.original.role}
-            </Typography>
-          </div>
-        )
+      // columnHelper.accessor('role', {
+      //   header: 'Role',
+      //   cell: ({ row }) => (
+      //     <div className='flex items-center gap-2'>
+      //       <Icon
+      //         className={userRoleObj[row.original.role].icon}
+      //         sx={{ color: `var(--mui-palette-${userRoleObj[row.original.role].color}-main)` }}
+      //       />
+      //       <Typography className='capitalize' color='text.primary'>
+      //         {row.original.role}
+      //       </Typography>
+      //     </div>
+      //   )
+      // }),
+      // columnHelper.accessor('currentPlan', {
+      //   header: 'Plan',
+      //   cell: ({ row }) => (
+      //     <Typography className='capitalize' color='text.primary'>
+      //       {row.original.currentPlan}
+      //     </Typography>
+      //   )
+      // }),
+      columnHelper.accessor('company_name', {
+        header: 'Company Name',
+        cell: ({ row }) => <Typography>{row.original.company_name}</Typography>
       }),
-      columnHelper.accessor('currentPlan', {
-        header: 'Plan',
-        cell: ({ row }) => (
-          <Typography className='capitalize' color='text.primary'>
-            {row.original.currentPlan}
-          </Typography>
-        )
+      columnHelper.accessor('phone', {
+        header: 'Phone',
+        cell: ({ row }) => <Typography>{row.original.phone}</Typography>
       }),
-      columnHelper.accessor('billing', {
-        header: 'Billing',
-        cell: ({ row }) => <Typography>{row.original.billing}</Typography>
+      columnHelper.accessor('address', {
+        header: 'Address',
+        cell: ({ row }) => <Typography>{row.original.address}</Typography>
       }),
       columnHelper.accessor('status', {
         header: 'Status',
@@ -184,9 +202,9 @@ const UserListTable = ({ tableData }) => {
           <div className='flex items-center gap-3'>
             <Chip
               variant='tonal'
-              label={row.original.status}
+              label={row.original.status ? "Active" : "Inactive"}
               size='small'
-              color={userStatusObj[row.original.status]}
+              color={userStatusObj[row.original.status ? "active" : "inactive"]}
               className='capitalize'
             />
           </div>
@@ -262,7 +280,7 @@ const UserListTable = ({ tableData }) => {
     const { avatar, fullName } = params
 
     if (avatar) {
-      return <CustomAvatar src={avatar} size={34} />
+      return <CustomAvatar src={`${public_url}/${avatar}`} size={34} />
     } else {
       return <CustomAvatar size={34}>{getInitials(fullName)}</CustomAvatar>
     }
@@ -302,11 +320,12 @@ const UserListTable = ({ tableData }) => {
             <Button
               variant='contained'
               startIcon={<i className='tabler-plus' />}
-              onClick={() => setAddUserOpen(!addUserOpen)}
+              onClick={() => router.push(`/${locale}/apps/user/form`)}
               className='max-sm:is-full'
             >
               Add New User
             </Button>
+
           </div>
         </div>
         <div className='overflow-x-auto'>
@@ -374,12 +393,6 @@ const UserListTable = ({ tableData }) => {
           }}
         />
       </Card>
-      <AddUserDrawer
-        open={addUserOpen}
-        handleClose={() => setAddUserOpen(!addUserOpen)}
-        userData={data}
-        setData={setData}
-      />
     </>
   )
 }
