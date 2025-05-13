@@ -22,7 +22,6 @@ import { useRouter, useParams } from 'next/navigation'
 // Components Imports
 import CardActions from '@mui/material/CardActions'
 import CustomTextField from '@core/components/mui/TextField'
-import AppReactDatepicker from '@/libs/styles/AppReactDatepicker'
 
 import {
     object,
@@ -65,19 +64,6 @@ const schema = object({
         string(),
         minLength(6, 'Password min length should be 6'),
         maxLength(255, 'Password can be a maximum of 255 characters'),
-        custom(
-            (value) => {
-                // Only validate complexity if string is long enough
-                if (value.length < 6) return true; // skip complexity check, minLength will handle error
-                return (
-                    /[A-Z]/.test(value) && // at least one uppercase
-                    /[a-z]/.test(value) && // at least one lowercase
-                    /[0-9]/.test(value) && // at least one digit
-                    /[^A-Za-z0-9]/.test(value) // at least one special character
-                );
-            },
-            'Password must include uppercase, lowercase, number, and special character'
-        )
     ),
     package_id: pipe(
         string(),
@@ -492,6 +478,7 @@ const UserFormLayout = () => {
                                     <CustomTextField
                                         {...field}
                                         fullWidth
+                                        type="text"
                                         label="Last Name"
                                         placeholder="Last Name"
                                         error={!!errors.last_name}
