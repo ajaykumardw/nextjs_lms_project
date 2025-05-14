@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { valibotResolver } from '@hookform/resolvers/valibot'
+import tableStyles from '@core/styles/table.module.css'
+import { Checkbox } from '@mui/material'
 import {
     object,
     string,
@@ -9,6 +11,7 @@ import {
     maxLength,
     nonEmpty,
     pipe,
+    array,
     minValue,
     maxValue,
     boolean,
@@ -26,7 +29,7 @@ import Alert from '@mui/material/Alert'
 import FormControl from '@mui/material/FormControl'
 import MenuItem from '@mui/material/MenuItem'
 import RadioGroup from '@mui/material/RadioGroup'
-import Radio from '@mui/material/Radio'
+import { Radio, FormGroup } from '@mui/material'
 import FormControlLabel from '@mui/material/FormControlLabel'
 
 // Component Imports
@@ -56,11 +59,11 @@ const schema = object({
         string(),
         nonEmpty('Please select a package type')
     ),
-    status: boolean()
+    status: boolean(),
+    permissions: pipe(array(string()), minLength(1, 'At least one permission must be selected'))
 });
 
-
-const AddContent = ({ control, errors, createData }) => (
+const AddContent = ({ control, errors, createData, handleSelectAllCheckbox, selectedPermissions, permissionData, togglePermission }) => (
     <DialogContent className="overflow-visible pbs-0 sm:pli-16">
         {/* name */}
         <Controller
@@ -72,7 +75,7 @@ const AddContent = ({ control, errors, createData }) => (
                     fullWidth
                     label="Package Name"
                     variant="outlined"
-                    placeholder="Enter Package Type Name"
+                    placeholder="Enter Package Name"
                     className="mbe-2"
                     error={!!errors.name}
                     helperText={errors?.name?.message}
@@ -126,11 +129,80 @@ const AddContent = ({ control, errors, createData }) => (
             )} />
             {errors?.status && <Alert severity="error">{errors?.status?.message}</Alert>}
         </FormControl>
+
+        <Typography variant='h5' className='min-is-[225px]'>
+            Permissions
+        </Typography>
+        <div className='overflow-x-auto'>
+            <table className={tableStyles.table}>
+                <tbody>
+                    <tr className='border-bs-0'>
+                        <th className='pis-0'>
+                            <Typography color='text.primary' className='font-medium whitespace-nowrap flex-grow min-is-[225px]'>
+                                Administrator Access
+                            </Typography>
+                        </th>
+                        <th className='!text-end pie-0'>
+                            <FormControlLabel
+                                className='mie-0 capitalize'
+                                control={
+                                    <Checkbox
+                                        onChange={handleSelectAllCheckbox}
+                                        indeterminate={Object.keys(selectedPermissions).length > 0 &&
+                                            Object.values(selectedPermissions).flat().length !== permissionData.reduce((acc, cur) => acc + cur.permission.length, 0)}
+                                        checked={Object.values(selectedPermissions).flat().length === permissionData.reduce((acc, cur) => acc + cur.permission.length, 0)}
+                                    />
+                                }
+                                label='Select All'
+                            />
+                        </th>
+                    </tr>
+                    {permissionData.map((item, index) => (
+                        <tr key={index} className='border-be'>
+                            <td className='pis-0 w-full'>
+                                <Typography data-id={item._id} className='font-medium whitespace-nowrap flex-grow min-is-[225px]' color='text.primary'>
+                                    {item.name}
+                                </Typography>
+                            </td>
+                            <td className='!text-end pie-0'>
+                                {Array.isArray(item.permission) && (
+                                    <FormGroup className='flex-row justify-start flex-nowrap gap-6'>
+                                        {item.permission
+                                            .slice()
+                                            .sort((a, b) => a.name.localeCompare(b.name))
+                                            .map((perm, idx) => (
+                                                <FormControlLabel
+                                                    key={idx}
+                                                    data-id={perm._id}
+                                                    className='mie-0'
+                                                    control={
+                                                        <Checkbox
+                                                            checked={selectedPermissions[item._id]?.includes(perm._id) || false}
+                                                            onChange={() => togglePermission(item._id, perm._id)}
+                                                        />
+                                                    }
+                                                    label={perm.name}
+                                                />
+                                            ))}
+                                    </FormGroup>
+                                )}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+            {errors.permissions && errors.permissions.message && (
+                <Typography color="error" variant="body2" className="mt-2" style={{ color: `var(--mui-palette-error-main)` }}>
+                    {errors.permissions.message}
+                </Typography>
+            )}
+        </div>
+
     </DialogContent>
 );
 
 // Edit Content Component
-const EditContent = ({ control, errors, createData }) => (
+const EditContent = ({ control, errors, createData, handleSelectAllCheckbox, selectedPermissions, permissionData, togglePermission }) => (
     <DialogContent className="overflow-visible pbs-0 sm:pli-16">
         <Controller
             name="name"
@@ -141,7 +213,7 @@ const EditContent = ({ control, errors, createData }) => (
                     fullWidth
                     label="Package Name"
                     variant="outlined"
-                    placeholder="Enter Package Type Name"
+                    placeholder="Enter Package Name"
                     className="mbe-2"
                     error={!!errors.name}
                     helperText={errors?.name?.message}
@@ -212,6 +284,73 @@ const EditContent = ({ control, errors, createData }) => (
             />
             {errors?.status && <Alert severity="error">{errors?.status?.message}</Alert>}
         </FormControl>
+        <Typography variant='h5' className='min-is-[225px]'>
+            Permissions
+        </Typography>
+        <div className='overflow-x-auto'>
+            <table className={tableStyles.table}>
+                <tbody>
+                    <tr className='border-bs-0'>
+                        <th className='pis-0'>
+                            <Typography color='text.primary' className='font-medium whitespace-nowrap flex-grow min-is-[225px]'>
+                                Administrator Access
+                            </Typography>
+                        </th>
+                        <th className='!text-end pie-0'>
+                            <FormControlLabel
+                                className='mie-0 capitalize'
+                                control={
+                                    <Checkbox
+                                        onChange={handleSelectAllCheckbox}
+                                        indeterminate={Object.keys(selectedPermissions).length > 0 &&
+                                            Object.values(selectedPermissions).flat().length !== permissionData.reduce((acc, cur) => acc + cur.permission.length, 0)}
+                                        checked={Object.values(selectedPermissions).flat().length === permissionData.reduce((acc, cur) => acc + cur.permission.length, 0)}
+                                    />
+                                }
+                                label='Select All'
+                            />
+                        </th>
+                    </tr>
+                    {permissionData.map((item, index) => (
+                        <tr key={index} className='border-be'>
+                            <td className='pis-0 w-full'>
+                                <Typography data-id={item._id} className='font-medium whitespace-nowrap flex-grow min-is-[225px]' color='text.primary'>
+                                    {item.name}
+                                </Typography>
+                            </td>
+                            <td className='!text-end pie-0'>
+                                {Array.isArray(item.permission) && (
+                                    <FormGroup className='flex-row justify-start flex-nowrap gap-6'>
+                                        {item.permission
+                                            .slice()
+                                            .sort((a, b) => a.name.localeCompare(b.name))
+                                            .map((perm, idx) => (
+                                                <FormControlLabel
+                                                    key={idx}
+                                                    data-id={perm._id}
+                                                    className='mie-0'
+                                                    control={
+                                                        <Checkbox
+                                                            checked={selectedPermissions[item._id]?.includes(perm._id) || false}
+                                                            onChange={() => togglePermission(item._id, perm._id)}
+                                                        />
+                                                    }
+                                                    label={perm.name}
+                                                />
+                                            ))}
+                                    </FormGroup>
+                                )}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+            {errors.permissions && errors.permissions.message && (
+                <Typography color="error" variant="body2" className="mt-2" style={{ color: `var(--mui-palette-error-main)` }}>
+                    {errors.permissions.message}
+                </Typography>
+            )}
+        </div>
     </DialogContent>
 )
 
@@ -223,11 +362,14 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
     const { data: session } = useSession() || {}
     const token = session?.user?.token
     const [createData, setCreateData] = useState();
+    const [selectedPermissions, setSelectedPermissions] = useState({})
+    const [permissionData, setPermissionData] = useState();
 
     const {
         handleSubmit,
         control,
         reset,
+        setValue,
         setError,
         formState: { errors, isValid, isSubmitting }
     } = useForm({
@@ -238,22 +380,67 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
             description: data?.description || '',
             packagetype: data?.package_type_id || '',
             amount: data?.amount || 0, // Make sure it's always a string
-            status: data?.status ?? false
+            status: data?.status ?? false,
+            permissions: data?.permissions || {}
         },
         resolver: valibotResolver(schema)
     });
 
+    const handleSelectAllCheckbox = () => {
+        if (Object.keys(selectedPermissions).length > 0) {
+            setSelectedPermissions({});
+            setValue('permissions', []);
+        } else if (permissionData) {
+            const allPermissions = {};
+            let flatPermissions = [];
+
+            permissionData.forEach(module => {
+                if (Array.isArray(module.permission)) {
+                    allPermissions[module._id] = module.permission.map(p => p._id);
+                    flatPermissions.push(...module.permission.map(p => p._id));
+                }
+            });
+
+            setSelectedPermissions(allPermissions);
+            setValue('permissions', flatPermissions);
+        }
+    };
+
+
+    const togglePermission = (moduleId, permissionId) => {
+        setSelectedPermissions(prev => {
+            const modulePermissions = prev[moduleId] || []
+            const updated = modulePermissions.includes(permissionId)
+                ? {
+                    ...prev,
+                    [moduleId]: modulePermissions.filter(id => id !== permissionId)
+                }
+                : {
+                    ...prev,
+                    [moduleId]: [...modulePermissions, permissionId]
+                }
+
+            const flattened = Object.values(updated).flat()
+            setValue('permissions', flattened)
+            return updated
+        })
+    }
+
     useEffect(() => {
 
-        if (open) {
+        if (open && data) {
+            const flatPermissions = Object.values(data.permissions || {}).flat()
             reset({
                 _id: data?._id || '',
                 name: data?.name || '',
                 description: data?.description || '',
                 packagetype: data?.package_type_id || '',
                 amount: data?.amount || 0,
-                status: data?.status ?? false
+                status: data?.status ?? false,
+                permissions: flatPermissions
             })
+
+            setSelectedPermissions(data.permissions || {})
         }
     }, [open, data, reset])
 
@@ -270,7 +457,8 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
             const data = await response.json();
 
             if (response.ok) {
-                setCreateData(data.data);
+                setCreateData(data?.data?.packageType);
+                setPermissionData(data?.data?.permission)
             } else {
                 console.error("Error:", data);
             }
@@ -339,12 +527,15 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
             }
         }
 
-        submitPackage(formData);
+        submitPackage({ ...formData, permissions: selectedPermissions })
 
     }
 
     return (
         <Dialog
+            fullWidth
+            maxWidth='md'
+            scroll='body'
             open={open}
             onClose={handleClose}
             closeAfterTransition={false}
@@ -369,9 +560,9 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
                 {
                     createData ? (
                         data ? (
-                            <EditContent control={control} errors={errors} createData={createData} />
+                            <EditContent control={control} errors={errors} createData={createData} handleSelectAllCheckbox={handleSelectAllCheckbox} selectedPermissions={selectedPermissions} permissionData={permissionData} togglePermission={togglePermission} />
                         ) : (
-                            <AddContent control={control} errors={errors} createData={createData} />
+                            <AddContent control={control} errors={errors} createData={createData} handleSelectAllCheckbox={handleSelectAllCheckbox} selectedPermissions={selectedPermissions} permissionData={permissionData} togglePermission={togglePermission} />
                         )
                     ) : (
                         <SkeletonFormComponent />
