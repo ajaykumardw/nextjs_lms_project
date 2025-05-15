@@ -5,6 +5,7 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
+import CircularProgress from '@mui/material/CircularProgress'
 import FormControl from '@mui/material/FormControl'
 import RadioGroup from '@mui/material/RadioGroup'
 import Radio from '@mui/material/Radio'
@@ -22,7 +23,7 @@ import { object, string, minLength, pipe, maxLength, boolean } from 'valibot'
 import CustomTextField from '@core/components/mui/TextField'
 import DialogCloseButton from '../DialogCloseButton'
 import { useSession } from 'next-auth/react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 // Third-party Imports
 import { toast } from 'react-toastify'
@@ -126,6 +127,7 @@ const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule, nameData
   const URL = process.env.NEXT_PUBLIC_API_URL
   const { data: session } = useSession() || {}
   const token = session?.user?.token
+  const [loading, setLoading] = useState(false);
 
   const {
     control,
@@ -152,6 +154,7 @@ const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule, nameData
   }, [data, reset])
 
   const submitData = async (VALUE) => {
+    setLoading(true);
     try {
       const response = await fetch(data ? `${URL}/admin/permission-module/${data?._id}` : `${URL}/admin/permission-module`,
         {
@@ -167,13 +170,17 @@ const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule, nameData
       const responseData = await response.json();
 
       if (response.ok) {
+        setLoading(false);
         fetchPermissionModule();
         toast.success(`Permission module ${data ? "updated" : "added"} successfully!`, {
           autoClose: 700, // in milliseconds
         });
       }
     } catch (error) {
+      setLoading(false);
       console.log("Error", error);
+    } finally {
+      setLoading(false);
     }
 
   }
@@ -238,8 +245,28 @@ const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule, nameData
         )}
 
         <DialogActions className='flex max-sm:flex-col max-sm:items-center max-sm:gap-2 justify-center pbs-0 sm:pbe-16 sm:pli-16'>
-          <Button type='submit' variant='contained' >
-            {data ? 'Update' : 'Create Permission'}
+          <Button
+            type='submit'
+            variant='contained'
+            disabled={loading}
+            // fullWidth
+            sx={{ height: 40, position: 'relative' }}
+          >
+            {loading ? (
+              <CircularProgress
+                size={24}
+                sx={{
+                  color: 'white',
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  marginTop: '-12px',
+                  marginLeft: '-12px',
+                }}
+              />
+            ) : (
+              data ? 'Update' : 'Create'
+            )}
           </Button>
           <Button onClick={handleClose} variant='tonal' color='secondary'>
             Discard

@@ -6,6 +6,7 @@ import DialogActions from '@mui/material/DialogActions'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import FormControl from '@mui/material/FormControl'
+import CircularProgress from '@mui/material/CircularProgress'
 import RadioGroup from '@mui/material/RadioGroup'
 import Radio from '@mui/material/Radio'
 import FormControlLabel from '@mui/material/FormControlLabel'
@@ -212,6 +213,7 @@ const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule, nameData
     const token = session?.user?.token
     const [editData, setEditData] = useState();
     const [createData, setCreateData] = useState();
+    const [loading, setLoading] = useState(false);
 
     const {
         control,
@@ -294,6 +296,7 @@ const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule, nameData
     }, [URL, token, data])
 
     const submitData = async (VALUE) => {
+        setLoading(true);
         try {
             const response = await fetch(data ? `${URL}/admin/permission/${editData}/${data?._id}` : `${URL}/admin/permission`,
                 {
@@ -309,6 +312,7 @@ const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule, nameData
             const responseData = await response.json();
 
             if (response.ok) {
+                setLoading(false);
                 fetchPermissionModule();
                 toast.success(`Permission ${data ? "updated" : "added"} successfully!`, {
                     autoClose: 700, // in milliseconds
@@ -316,7 +320,10 @@ const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule, nameData
             }
 
         } catch (error) {
+            setLoading(false);
             console.log("Error", error);
+        } finally {
+            setLoading(false);
         }
 
     }
@@ -386,9 +393,31 @@ const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule, nameData
                 }
 
                 <DialogActions className='flex max-sm:flex-col max-sm:items-center max-sm:gap-2 justify-center pbs-0 sm:pbe-16 sm:pli-16'>
-                    <Button type='submit' variant='contained' >
-                        {data ? 'Update' : 'Create Package Type'}
+                    <Button
+                        type='submit'
+                        variant='contained'
+                        disabled={loading}
+                        // fullWidth
+                        sx={{ height: 40, position: 'relative' }}
+                    >
+                        {loading ? (
+                            <CircularProgress
+                                size={24}
+                                sx={{
+                                    color: 'white',
+                                    position: 'absolute',
+                                    top: '50%',
+                                    left: '50%',
+                                    marginTop: '-12px',
+                                    marginLeft: '-12px',
+                                }}
+                            />
+                        ) : (
+                            data ? 'Update' : 'Create'
+                        )}
                     </Button>
+
+
                     <Button onClick={handleClose} variant='tonal' color='secondary'>
                         Discard
                     </Button>
