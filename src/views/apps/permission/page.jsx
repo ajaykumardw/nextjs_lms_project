@@ -112,6 +112,10 @@ const Permissions = ({ permissionsData, fetchPermissionModule, nameData }) => {
                 header: 'Name',
                 cell: ({ row }) => <Typography color='text.primary'>{row.original.name}</Typography>
             }),
+            columnHelper.accessor('permission_module_names', {
+                header: 'Permission Module Name',
+                cell: ({ row }) => <Typography color='text.primary'>{row.original.permission_module_names}</Typography>
+            }),
             columnHelper.accessor('status', {
                 header: 'Status',
                 cell: ({ row }) => (
