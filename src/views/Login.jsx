@@ -5,6 +5,7 @@ import { useState } from 'react'
 
 // Next Imports
 import Link from 'next/link'
+import CircularProgress from '@mui/material/CircularProgress'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 
 // MUI Imports
@@ -82,6 +83,7 @@ const Login = ({ mode }) => {
   // States
   const [isPasswordShown, setIsPasswordShown] = useState(false)
   const [errorState, setErrorState] = useState(null)
+  const [loading, setLoading] = useState(false);
 
   // Vars
   const darkImg = '/images/pages/auth-mask-dark.png'
@@ -123,6 +125,9 @@ const Login = ({ mode }) => {
   const handleClickShowPassword = () => setIsPasswordShown(show => !show)
 
   const onSubmit = async data => {
+
+    setLoading(true);
+
     const res = await signIn('credentials', {
       email: data.email,
       password: data.password,
@@ -131,11 +136,12 @@ const Login = ({ mode }) => {
 
     if (res && res.ok && res.error === null) {
       // Vars
+      setLoading(false);
       const redirectURL = searchParams.get('redirectTo') ?? '/'
 
       router.replace(getLocalizedUrl(redirectURL, locale))
     } else {
-
+      setLoading(false);
       if (res?.error) {
         const error = JSON.parse(res.error)
         setErrorState(error)
@@ -248,8 +254,28 @@ const Login = ({ mode }) => {
                 Forgot password?
               </Typography>
             </div>
-            <Button fullWidth variant='contained' type='submit'>
-              Login
+            <Button
+              fullWidth
+              variant="contained"
+              type="submit"
+              disabled={loading}
+              sx={{ height: 40, position: 'relative' }}
+            >
+              {loading ? (
+                <CircularProgress
+                  size={24}
+                  sx={{
+                    color: 'white',
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    marginTop: '-12px',
+                    marginLeft: '-12px',
+                  }}
+                />
+              ) : (
+                'Login'
+              )}
             </Button>
             <div className='flex justify-center items-center flex-wrap gap-2'>
               <Typography>New on our platform?</Typography>
