@@ -234,7 +234,12 @@ const UserListTable = ({ userData }) => {
                 {
                   text: 'Edit',
                   icon: 'tabler-edit',
-                  menuItemProps: { className: 'flex items-center gap-2 text-textSecondary' }
+                  menuItemProps: {
+                    className: 'flex items-center gap-2 text-textSecondary',
+                    onClick: (() => {
+                      router.push(`/${locale}/apps/user/form/${row.original._id}`)
+                    })
+                  }
                 }
               ]}
             />

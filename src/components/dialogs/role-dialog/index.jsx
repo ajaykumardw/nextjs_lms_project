@@ -27,7 +27,9 @@ import { object, string, array, pipe, minLength, maxLength, boolean } from 'vali
 import DialogCloseButton from '../DialogCloseButton'
 import CustomTextField from '@core/components/mui/TextField'
 import { useSession } from 'next-auth/react'
-import SkeletonFormComponent from '@/components/skeleton/form/page'
+
+// Third-party Imports
+import { toast } from 'react-toastify'
 
 // Validation Schema
 const schema = object({
@@ -38,7 +40,7 @@ const schema = object({
 })
 
 const RoleDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole }) => {
-  
+
   const { data: session } = useSession()
   const token = session?.user?.token
   const API_URL = process.env.NEXT_PUBLIC_API_URL
@@ -158,7 +160,13 @@ const RoleDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole }) 
 
       const data = await response.json()
       if (response.ok) {
+        // Third-party Imports
         fetchRoleData?.()
+        
+        toast.success(`Role ${selectedRole ? "updated" : "added"} successfully!`, {
+          autoClose: 700, // in milliseconds
+        });
+
       } else {
         console.error('Server error response:', data)
       }

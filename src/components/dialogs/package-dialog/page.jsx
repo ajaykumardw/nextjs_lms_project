@@ -38,6 +38,9 @@ import DialogCloseButton from '../DialogCloseButton'
 import { useSession } from 'next-auth/react'
 import SkeletonFormComponent from '@/components/skeleton/form/page'
 
+// Third-party Imports
+import { toast } from 'react-toastify'
+
 // Schema
 const schema = object({
     name: pipe(
@@ -494,6 +497,9 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
                 handleClose();
                 if (typeof fetchPackage === 'function') {
                     fetchPackage();
+                    toast.success(`Package ${data ? "updated" : "added"} successfully!`, {
+                        autoClose: 700, // in milliseconds
+                    });
                 }
             } else {
                 console.error("Failed to save data:", result?.message || result)

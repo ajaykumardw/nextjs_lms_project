@@ -36,112 +36,14 @@ import {
     custom
 } from 'valibot';
 import SkeletonFormComponent from '../skeleton/form/page'
-import { Grid2 } from '@mui/material'
 
-const schema = object({
-    company_name: pipe(
-        string(),
-        minLength(1, "Company name is required"),
-        maxLength(255, "Company name is required")
-    ),
-    first_name: pipe(
-        string(),
-        minLength(1, 'First Name is required'),
-        maxLength(255, 'First Name can be a maximum of 255 characters')
-    ),
-    last_name: pipe(
-        string(),
-        minLength(1, 'Last Name is required'),
-        maxLength(255, 'Last Name can be a maximum of 255 characters')
-    ),
-    email: pipe(
-        string(),
-        minLength(1, 'Email is required'),
-        email('Please enter a valid email address'),
-        maxLength(255, 'Email can be a maximum of 255 characters')
-    ),
-    password: pipe(
-        string(),
-        minLength(6, 'Password min length should be 6'),
-        maxLength(255, 'Password can be a maximum of 255 characters'),
-    ),
-    package_id: pipe(
-        string(),
-        minLength(1, 'Package is required')
-    ),
-    country_id: pipe(
-        string(),
-        minLength(1, 'Country is required')
-    ),
-    state_id: pipe(
-        string(),
-        minLength(1, 'State is required')
-    ),
-    city_id: pipe(
-        string(),
-        minLength(1, 'City is required')
-    ),
-    address: pipe(
-        string(),
-        minLength(1, 'Address is required'),
-        maxLength(1000, 'Address can be a maximum of 1000 characters')
-    ),
-    pincode: pipe(
-        string(),
-        minLength(6, 'Pincode should have min length of 6'),
-        maxLength(10, 'Pincode max length is of 10 digit'),
-        custom((value) => /^\d+$/.test(value), 'Pincode must contain digits only')
-    ),
-    phone: pipe(
-        string(),
-        minLength(7, 'Phone number must be valid'),
-        maxLength(15, 'Phone number can be a maximum of 15 digits')
-    ),
-    gst_no: optional(
-        string([
-            check(
-                (value) =>
-                    value === '' ||
-                    (
-                        value.length === 15 &&
-                        /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][A-Z1-9]Z[0-9A-Z]$/.test(value)
-                    ),
-                'GST number must be 15 characters and follow the correct format (e.g., 12ABCDE3456F1Z7)'
-            ),
-        ])
-    ),
-
-    pan_no: optional(
-        string([
-            check(
-                (value) =>
-                    value === '' || /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value),
-                'Invalid PAN number format'
-            ),
-        ])
-    ),
-
-    website: optional(
-        string([
-            check(
-                (value) =>
-                    value === '' ||
-                    (
-                        value.length >= 8 &&
-                        value.length <= 50 &&
-                        /^(https?:\/\/)?([\w\-]+\.)+[\w\-]{2,}(\/[\w\-./?%&=]*)?$/.test(value)
-                    ),
-                'Please enter a valid website URL (e.g., https://example.com) between 8 and 50 characters'
-            ),
-        ])
-    ),
-    photo: optional(string()), // Optional field or could validate file type
-    status: boolean() // or optional(boolean()) if not required
-});
+// Third-party Imports
+import { toast } from 'react-toastify'
 
 const UserFormLayout = () => {
 
     const URL = process.env.NEXT_PUBLIC_API_URL
+    const public_url = process.env.NEXT_PUBLIC_APP_URL;
     const { data: session } = useSession() || {}
     const token = session?.user?.token
     const [createData, setCreateData] = useState();
@@ -149,10 +51,114 @@ const UserFormLayout = () => {
     const [stateData, setStateData] = useState();
     const [stateId, setStateId] = useState();
     const [cityData, setCityData] = useState();
+    const [editData, setEditData] = useState();
 
     const router = useRouter();
 
-    const { lang: locale } = useParams()
+    const { lang: locale, id: id } = useParams()
+
+    const schema = object({
+        company_name: pipe(
+            string(),
+            minLength(1, "Company name is required"),
+            maxLength(255, "Company name is required")
+        ),
+        first_name: pipe(
+            string(),
+            minLength(1, 'First Name is required'),
+            maxLength(255, 'First Name can be a maximum of 255 characters')
+        ),
+        last_name: pipe(
+            string(),
+            minLength(1, 'Last Name is required'),
+            maxLength(255, 'Last Name can be a maximum of 255 characters')
+        ),
+        email: pipe(
+            string(),
+            minLength(1, 'Email is required'),
+            email('Please enter a valid email address'),
+            maxLength(255, 'Email can be a maximum of 255 characters')
+        ),
+        password: id
+            ? optional(string())
+            : pipe(
+                string(),
+                minLength(6, 'Password min length should be 6'),
+                maxLength(255, 'Password can be a maximum of 255 characters')
+            ),
+        package_id: pipe(
+            string(),
+            minLength(1, 'Package is required')
+        ),
+        country_id: pipe(
+            string(),
+            minLength(1, 'Country is required')
+        ),
+        state_id: pipe(
+            string(),
+            minLength(1, 'State is required')
+        ),
+        city_id: pipe(
+            string(),
+            minLength(1, 'City is required')
+        ),
+        address: pipe(
+            string(),
+            minLength(1, 'Address is required'),
+            maxLength(1000, 'Address can be a maximum of 1000 characters')
+        ),
+        pincode: pipe(
+            string(),
+            minLength(6, 'Pincode should have min length of 6'),
+            maxLength(10, 'Pincode max length is of 10 digit'),
+            custom((value) => /^\d+$/.test(value), 'Pincode must contain digits only')
+        ),
+        phone: pipe(
+            string(),
+            minLength(7, 'Phone number must be valid'),
+            maxLength(15, 'Phone number can be a maximum of 15 digits')
+        ),
+        gst_no: optional(
+            string([
+                check(
+                    (value) =>
+                        value === '' ||
+                        (
+                            value.length === 15 &&
+                            /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][A-Z1-9]Z[0-9A-Z]$/.test(value)
+                        ),
+                    'GST number must be 15 characters and follow the correct format (e.g., 12ABCDE3456F1Z7)'
+                ),
+            ])
+        ),
+
+        pan_no: optional(
+            string([
+                check(
+                    (value) =>
+                        value === '' || /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value),
+                    'Invalid PAN number format'
+                ),
+            ])
+        ),
+
+        website: optional(
+            string([
+                check(
+                    (value) =>
+                        value === '' ||
+                        (
+                            value.length >= 8 &&
+                            value.length <= 50 &&
+                            /^(https?:\/\/)?([\w\-]+\.)+[\w\-]{2,}(\/[\w\-./?%&=]*)?$/.test(value)
+                        ),
+                    'Please enter a valid website URL (e.g., https://example.com) between 8 and 50 characters'
+                ),
+            ])
+        ),
+        photo: optional(string()), // Optional field or could validate file type
+        status: boolean() // or optional(boolean()) if not required
+    });
 
     // States
     const [formData, setFormData] = useState({
@@ -187,9 +193,10 @@ const UserFormLayout = () => {
     // Hooks
     const {
         control,
-        reset: resetForm,
+        reset,
         handleSubmit,
         setError,
+        setValue,
         formState: { errors }
     } = useForm({
         resolver: valibotResolver(schema),
@@ -215,9 +222,11 @@ const UserFormLayout = () => {
         }
     });
 
-    const checkEmailCompany = async (email) => {
+    const checkEmailCompany = async (email, id) => {
         try {
-            const response = await fetch(`${URL}/admin/company/email/check/${email}`, {
+            const safeId = id || 'null'; // fallback to 'null' when id is undefined
+
+            const response = await fetch(`${URL}/admin/company/email/check/${email}/${safeId}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -228,7 +237,7 @@ const UserFormLayout = () => {
             const data = await response.json();
 
             if (response.ok) {
-                return data.exists; // assuming your backend returns { exists: true/false }
+                return data.exists;
             } else {
                 console.error('Failed to check email:', data);
                 return false;
@@ -236,6 +245,35 @@ const UserFormLayout = () => {
         } catch (error) {
             console.error('Error occurred while checking email:', error);
             return false;
+        }
+    };
+
+    const editFormData = async () => {
+        try {
+            const response = await fetch(`${URL}/admin/company/${id}/edit`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                // If server responded with an error status, handle it explicitly
+                console.error('Failed to fetch company data:', result.message || result);
+                return;
+            }
+
+            if (result?.data) {
+                setEditData(result.data);
+            } else {
+                console.warn('No data found in response:', result);
+            }
+
+        } catch (error) {
+            console.error('Network or parsing error:', error);
         }
     };
 
@@ -266,8 +304,41 @@ const UserFormLayout = () => {
     useEffect(() => {
         if (URL && token) {
             createFormData();
+            if (id) {
+                editFormData();
+            }
         }
-    }, [URL, token])
+    }, [URL, token, id])
+
+    useEffect(() => {
+        if (id && editData) {
+
+            reset({
+                first_name: editData.first_name,
+                last_name: editData.last_name,
+                company_name: editData.company_name,
+                email: editData.email,
+                phone: editData.phone,
+                address: editData.address,
+                pincode: editData.pincode,
+                country_id: editData.country_id,
+                state_id: editData.state_id,
+                city_id: editData.city_id,
+                status: editData.status,
+                gst_no: editData.gst_no,
+                pan_no: editData.pan_no,
+                website: editData.website,
+                package_id: editData.package_id
+            });
+
+            if (editData.photo) {
+                setImgSrc(`${public_url}${editData.photo}`);
+            }
+            setCountryId(editData.country_id);
+            setStateId(editData.state_id);
+
+        }
+    }, [id, editData])
 
     useEffect(() => {
         if (countryId && createData) {
@@ -293,12 +364,8 @@ const UserFormLayout = () => {
                 }
             });
 
-            formData.forEach((value, key) => {
-                console.log(`${key}:`, value);
-            });
-
-            const response = await fetch(`${URL}/admin/company`, {
-                method: "POST",
+            const response = await fetch(id ? `${URL}/admin/company/${id}` : `${URL}/admin/company`, {
+                method: id ? "PUT" : "POST",
                 headers: {
                     Authorization: `Bearer ${token}` // ✅ No content-type here
                 },
@@ -309,6 +376,9 @@ const UserFormLayout = () => {
 
             if (response.ok) {
                 router.push(`/${locale}/apps/user/list`)
+                toast.success(`Company ${id ? "updated" : "added"} successfully!`, {
+                    autoClose: 700, // in milliseconds
+                });
             } else {
                 console.error("Error", data);
             }
@@ -340,7 +410,7 @@ const UserFormLayout = () => {
             website: data.website
         };
 
-        const exist = await checkEmailCompany(data?.email);
+        const exist = await checkEmailCompany(data?.email, id);
 
         if (exist) {
             setError('email', {
@@ -487,38 +557,40 @@ const UserFormLayout = () => {
                                 )}
                             />
                         </Grid>
-                        <Grid size={{ xs: 12, sm: 6 }}>
-                            <Controller
-                                name="password"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        fullWidth
-                                        label="Password"
-                                        placeholder="············"
-                                        id="form-layout-separator-password"
-                                        type={formData.isPasswordShown ? 'text' : 'password'}
-                                        {...field}
-                                        InputProps={{
-                                            endAdornment: (
-                                                <InputAdornment position="end">
-                                                    <IconButton
-                                                        edge="end"
-                                                        onClick={handleClickShowPassword}
-                                                        onMouseDown={(e) => e.preventDefault()}
-                                                        aria-label="toggle password visibility"
-                                                    >
-                                                        <i className={formData.isPasswordShown ? 'tabler-eye-off' : 'tabler-eye'} />
-                                                    </IconButton>
-                                                </InputAdornment>
-                                            )
-                                        }}
-                                        error={!!errors.password}
-                                        helperText={errors.password?.message}
-                                    />
-                                )}
-                            />
-                        </Grid>
+                        {!id && (
+                            <Grid size={{ xs: 12, sm: 6 }}>
+                                <Controller
+                                    name="password"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <CustomTextField
+                                            fullWidth
+                                            label="Password"
+                                            placeholder="············"
+                                            id="form-layout-separator-password"
+                                            type={formData.isPasswordShown ? 'text' : 'password'}
+                                            {...field}
+                                            InputProps={{
+                                                endAdornment: (
+                                                    <InputAdornment position="end">
+                                                        <IconButton
+                                                            edge="end"
+                                                            onClick={handleClickShowPassword}
+                                                            onMouseDown={(e) => e.preventDefault()}
+                                                            aria-label="toggle password visibility"
+                                                        >
+                                                            <i className={formData.isPasswordShown ? 'tabler-eye-off' : 'tabler-eye'} />
+                                                        </IconButton>
+                                                    </InputAdornment>
+                                                )
+                                            }}
+                                            error={!!errors.password}
+                                            helperText={errors.password?.message}
+                                        />
+                                    )}
+                                />
+                            </Grid>
+                        )}
                         <Grid size={{ xs: 12, sm: 6 }}>
                             {/* Phone */}
                             <Controller

@@ -26,6 +26,9 @@ import { useEffect, useState } from 'react'
 import SkeletonFormComponent from '@/components/skeleton/form/page'
 import { MenuItem } from '@mui/material'
 
+// Third-party Imports
+import { toast } from 'react-toastify'
+
 const schema = object({
     name: pipe(
         string(),
@@ -307,6 +310,9 @@ const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule, nameData
 
             if (response.ok) {
                 fetchPermissionModule();
+                toast.success(`Permission ${data ? "updated" : "added"} successfully!`, {
+                    autoClose: 700, // in milliseconds
+                });
             }
 
         } catch (error) {

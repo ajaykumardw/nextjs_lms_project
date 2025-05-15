@@ -30,6 +30,9 @@ import CustomTextField from '@core/components/mui/TextField'
 import DialogCloseButton from '../DialogCloseButton'
 import { useSession } from 'next-auth/react'
 
+// Third-party Imports
+import { toast } from 'react-toastify'
+
 // Schema
 const schema = object({
     name: pipe(
@@ -184,6 +187,9 @@ const PackageTypeDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
                 handleClose();
                 if (typeof fetchPackage === 'function') {
                     fetchPackage();
+                    toast.success(`Package type ${data ? "updated" : "added"} successfully!`, {
+                        autoClose: 700, // in milliseconds
+                    });
                 }
             } else {
                 console.error("Failed to save data:", result?.message || result)

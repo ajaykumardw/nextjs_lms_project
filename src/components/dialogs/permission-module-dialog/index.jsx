@@ -10,7 +10,6 @@ import RadioGroup from '@mui/material/RadioGroup'
 import Radio from '@mui/material/Radio'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Alert from '@mui/material/Alert'
-import AlertTitle from '@mui/material/AlertTitle'
 
 // React Hook Form
 import { useForm, Controller } from 'react-hook-form'
@@ -24,6 +23,9 @@ import CustomTextField from '@core/components/mui/TextField'
 import DialogCloseButton from '../DialogCloseButton'
 import { useSession } from 'next-auth/react'
 import { useEffect } from 'react'
+
+// Third-party Imports
+import { toast } from 'react-toastify'
 
 const schema = object({
   name: pipe(
@@ -166,6 +168,9 @@ const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule, nameData
 
       if (response.ok) {
         fetchPermissionModule();
+        toast.success(`Permission module ${data ? "updated" : "added"} successfully!`, {
+          autoClose: 700, // in milliseconds
+        });
       }
     } catch (error) {
       console.log("Error", error);
