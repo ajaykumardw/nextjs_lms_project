@@ -196,7 +196,7 @@ const Login = ({ mode }) => {
                   fullWidth
                   type='email'
                   label='Email'
-                  placeholder='Enter your email'
+                  placeholder='Enter your email 1'
                   onChange={e => {
                     field.onChange(e.target.value)
                     errorState !== null && setErrorState(null)
