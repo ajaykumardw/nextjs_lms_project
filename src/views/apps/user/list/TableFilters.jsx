@@ -49,7 +49,7 @@ const TableFilters = ({ setData, tableData }) => {
             <MenuItem value='subscriber'>Subscriber</MenuItem>
           </CustomTextField>
         </Grid>
-        <Grid size={{ xs: 12, sm: 4 }}>
+        {/* <Grid size={{ xs: 12, sm: 4 }}>
           <CustomTextField
             select
             fullWidth
@@ -83,7 +83,7 @@ const TableFilters = ({ setData, tableData }) => {
             <MenuItem value='active'>Active</MenuItem>
             <MenuItem value='inactive'>Inactive</MenuItem>
           </CustomTextField>
-        </Grid>
+        </Grid> */}
       </Grid>
     </CardContent>
   )

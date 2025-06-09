@@ -74,6 +74,10 @@ const PackageTable = ({ packageTypeData, fetchPackage, isLoading, nameData }) =>
                 header: 'Name',
                 cell: ({ row }) => <Typography color='text.primary'>{row.original.name}</Typography>
             }),
+            columnHelper.accessor('packageTypeName', {
+                header: 'Package Type Name',
+                cell: ({ row }) => <Typography color='text.primary'>{row.original.packageTypeName}</Typography>
+            }),
             columnHelper.accessor('description', {
                 header: 'Description',
                 cell: ({ row }) => <Typography color='text.primary'>{row.original.description}</Typography>

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { valibotResolver } from '@hookform/resolvers/valibot'
 import tableStyles from '@core/styles/table.module.css'
+import CircularProgress from '@mui/material/CircularProgress'
 import { Checkbox } from '@mui/material'
 import {
     object,
@@ -37,6 +38,9 @@ import CustomTextField from '@core/components/mui/TextField'
 import DialogCloseButton from '../DialogCloseButton'
 import { useSession } from 'next-auth/react'
 import SkeletonFormComponent from '@/components/skeleton/form/page'
+
+// Third-party Imports
+import { toast } from 'react-toastify'
 
 // Schema
 const schema = object({
@@ -364,6 +368,7 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
     const [createData, setCreateData] = useState();
     const [selectedPermissions, setSelectedPermissions] = useState({})
     const [permissionData, setPermissionData] = useState();
+    const [loading, setLoading] = useState(false);
 
     const {
         handleSubmit,
@@ -474,6 +479,7 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
     }, [URL, token]);
 
     const submitPackage = async (formData) => {
+        setLoading(true);
         try {
             const response = await fetch(
                 data ? `${URL}/admin/package/${data?.package_type_id}/${data?._id}` : `${URL}/admin/package`,
@@ -490,16 +496,23 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
             const result = await response.json()
 
             if (response.ok) {
-
+                setLoading(false);
                 handleClose();
                 if (typeof fetchPackage === 'function') {
                     fetchPackage();
+                    toast.success(`Package ${data ? "updated" : "added"} successfully!`, {
+                        autoClose: 700, // in milliseconds
+                    });
                 }
             } else {
+                setLoading(false);
                 console.error("Failed to save data:", result?.message || result)
             }
         } catch (error) {
+            setLoading(false);
             console.error("Error submitting package type:", error)
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -571,10 +584,27 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
 
                 <DialogActions className="flex max-sm:flex-col max-sm:items-center max-sm:gap-2 justify-center pbs-0 sm:pbe-16 sm:pli-16">
                     <Button
-                        type="submit"
-                        variant="contained"
+                        type='submit'
+                        variant='contained'
+                        disabled={loading}
+                        // fullWidth
+                        sx={{ height: 40, position: 'relative' }}
                     >
-                        {data ? 'Update' : 'Create Package'}
+                        {loading ? (
+                            <CircularProgress
+                                size={24}
+                                sx={{
+                                    color: 'white',
+                                    position: 'absolute',
+                                    top: '50%',
+                                    left: '50%',
+                                    marginTop: '-12px',
+                                    marginLeft: '-12px',
+                                }}
+                            />
+                        ) : (
+                            data ? 'Update' : 'Create'
+                        )}
                     </Button>
                     <Button
                         onClick={handleClose}

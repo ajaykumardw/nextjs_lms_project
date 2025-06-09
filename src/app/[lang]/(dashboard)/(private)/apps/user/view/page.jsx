@@ -5,17 +5,17 @@ import dynamic from 'next/dynamic'
 import Grid from '@mui/material/Grid2'
 
 // Component Imports
-import UserLeftOverview from '@views/apps/user/view/user-left-overview'
-import UserRight from '@views/apps/user/view/user-right'
+import UserLeftOverview from '@/views/apps/user/view/user-left-overview'
+import UserRight from '@/views/apps/user/view/user-right'
 
 // Data Imports
 import { getPricingData } from '@/app/server/actions'
 
-const OverViewTab = dynamic(() => import('@views/apps/user/view/user-right/overview'))
-const SecurityTab = dynamic(() => import('@views/apps/user/view/user-right/security'))
-const BillingPlans = dynamic(() => import('@views/apps/user/view/user-right/billing-plans'))
-const NotificationsTab = dynamic(() => import('@views/apps/user/view/user-right/notifications'))
-const ConnectionsTab = dynamic(() => import('@views/apps/user/view/user-right/connections'))
+const OverViewTab = dynamic(() => import('@/views/apps/user/view/user-right/overview'))
+const SecurityTab = dynamic(() => import('@/views/apps/user/view/user-right/security'))
+const BillingPlans = dynamic(() => import('@/views/apps/user/view/user-right/billing-plans'))
+const NotificationsTab = dynamic(() => import('@/views/apps/user/view/user-right/notifications'))
+const ConnectionsTab = dynamic(() => import('@/views/apps/user/view/user-right/connections'))
 
 // Vars
 const tabContentList = data => ({

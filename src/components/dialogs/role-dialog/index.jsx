@@ -13,6 +13,7 @@ import FormControlLabel from '@mui/material/FormControlLabel'
 import DialogActions from '@mui/material/DialogActions'
 import Button from '@mui/material/Button'
 import RadioGroup from '@mui/material/RadioGroup'
+import CircularProgress from '@mui/material/CircularProgress'
 import Radio from '@mui/material/Radio'
 import tableStyles from '@core/styles/table.module.css'
 import FormGroup from '@mui/material/FormGroup'
@@ -27,7 +28,9 @@ import { object, string, array, pipe, minLength, maxLength, boolean } from 'vali
 import DialogCloseButton from '../DialogCloseButton'
 import CustomTextField from '@core/components/mui/TextField'
 import { useSession } from 'next-auth/react'
-import SkeletonFormComponent from '@/components/skeleton/form/page'
+
+// Third-party Imports
+import { toast } from 'react-toastify'
 
 // Validation Schema
 const schema = object({
@@ -38,12 +41,13 @@ const schema = object({
 })
 
 const RoleDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole }) => {
-  
+
   const { data: session } = useSession()
   const token = session?.user?.token
   const API_URL = process.env.NEXT_PUBLIC_API_URL
 
   const [createData, setCreateData] = useState()
+  const [loading, setLoading] = useState(false);
   const [selectedPermissions, setSelectedPermissions] = useState({})
   const calledRef = useRef(false)
 
@@ -146,6 +150,8 @@ const RoleDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole }) 
   }, [open, selectedRole, reset])
 
   const submitData = async values => {
+
+    setLoading(true);
     try {
       const response = await fetch(selectedRole ? `${API_URL}/admin/role/${selectedRole._id}` : `${API_URL}/admin/role`, {
         method: selectedRole ? 'PUT' : 'POST',
@@ -158,12 +164,23 @@ const RoleDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole }) 
 
       const data = await response.json()
       if (response.ok) {
+        // Third-party Imports
         fetchRoleData?.()
+        setLoading(false);
+
+        toast.success(`Role ${selectedRole ? "updated" : "added"} successfully!`, {
+          autoClose: 700, // in milliseconds
+        });
+
       } else {
+        setLoading(false);
         console.error('Server error response:', data)
       }
     } catch (err) {
       console.error('Submit error:', err)
+    }
+    finally {
+      setLoading(false);
     }
   }
 
@@ -314,8 +331,22 @@ const RoleDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole }) 
         </DialogContent>
 
         <DialogActions className='justify-center pbs-0 sm:pbe-16 sm:pli-16'>
-          <Button variant='contained' type='submit'>
-            Submit
+          <Button variant='contained' type='submit' disabled={loading}>
+            {loading ? (
+              <CircularProgress
+                size={24}
+                sx={{
+                  color: 'white',
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  marginTop: '-12px',
+                  marginLeft: '-12px',
+                }}
+              />
+            ) : (
+              selectedRole ? "Update" : 'Submit'
+            )}
           </Button>
           <Button variant='tonal' type='reset' color='secondary' onClick={handleClose}>
             Cancel

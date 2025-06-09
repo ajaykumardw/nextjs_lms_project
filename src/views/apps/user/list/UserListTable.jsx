@@ -19,10 +19,16 @@ import IconButton from '@mui/material/IconButton'
 import { styled } from '@mui/material/styles'
 import TablePagination from '@mui/material/TablePagination'
 import MenuItem from '@mui/material/MenuItem'
+import FormControlLabel from '@mui/material/FormControlLabel'
+import Switch from '@mui/material/Switch'
 
 // Third-party Imports
 import classnames from 'classnames'
 import { rankItem } from '@tanstack/match-sorter-utils'
+import UpdatePasswordDialog from '@components/dialogs/user/update-password-dialog/page'
+import DeleteUserDialog from '@components/dialogs/user/delete-user-dialog/page'
+import ManageEmpCodeDialog from '@/components/dialogs/user/manage-emp-code-dialog/index'
+
 import {
   createColumnHelper,
   flexRender,
@@ -47,6 +53,8 @@ import CustomAvatar from '@core/components/mui/Avatar'
 // Util Imports
 import { getInitials } from '@/utils/getInitials'
 import { getLocalizedUrl } from '@/utils/i18n'
+import { useApi } from '../../../../utils/api';
+import { toast } from 'react-toastify'
 
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
@@ -95,24 +103,54 @@ const userRoleObj = {
   subscriber: { icon: 'tabler-user', color: 'primary' }
 }
 
-const userStatusObj = {
-  active: 'success',
-  pending: 'warning',
-  inactive: 'secondary'
-}
 
 // Column Definitions
 const columnHelper = createColumnHelper()
 
-const UserListTable = ({ userData }) => {
+const UserListTable = ({ userData, loadData }) => {
   // States
   const [rowSelection, setRowSelection] = useState({})
   const [data, setData] = useState([])
   const [filteredData, setFilteredData] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
+  const [open, setOpen] = useState(false)
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false)
+  const [openManageEmpCodeDialog, setManageEmpCodeDialog] = useState(false)
+  const [user, setUser] = useState()
+  const { doPostFormData } = useApi();
   const public_url = process.env.NEXT_PUBLIC_APP_URL;
 
   const router = useRouter();
+
+  const updateNewPasswordhandle = (row) => {
+    setUser(row);
+    setOpen(true);
+  }
+
+  const handleManageEmpDialog = (row) => {
+    setUser(row);
+    setManageEmpCodeDialog(true);
+  }
+
+  const openDeleteDialogHandle = (row) => {
+    setUser(row);
+    setOpenDeleteDialog(true)
+  }
+
+  const handleStatusChange = async (userId, status) => {
+    const endpoint = `admin/user/status/update/${userId}`;
+    await doPostFormData({
+      endpoint,
+      values: { status: status },
+      method: 'PUT',
+      onSuccess: (response) => {
+        toast.success(response.message, { autoClose: 2000 });
+      },
+      onError: (error) => {
+
+      }
+    });
+  };
 
   useEffect(() => {
     if (userData) {
@@ -184,9 +222,9 @@ const UserListTable = ({ userData }) => {
       //     </Typography>
       //   )
       // }),
-      columnHelper.accessor('company_name', {
-        header: 'Company Name',
-        cell: ({ row }) => <Typography>{row.original.company_name}</Typography>
+      columnHelper.accessor('email', {
+        header: 'Email',
+        cell: ({ row }) => <Typography>{row.original.email}</Typography>
       }),
       columnHelper.accessor('phone', {
         header: 'Phone',
@@ -196,17 +234,33 @@ const UserListTable = ({ userData }) => {
         header: 'Address',
         cell: ({ row }) => <Typography>{row.original.address}</Typography>
       }),
+      columnHelper.accessor('role', {
+        header: 'Role',
+        cell: ({ row }) => <Typography>{row.original.role}</Typography>
+      }),
+      columnHelper.accessor('emp_id', {
+        header: 'Employee ID',
+        cell: ({ row }) => <Typography>{row.original.emp_id}</Typography>
+      }),
       columnHelper.accessor('status', {
         header: 'Status',
         cell: ({ row }) => (
           <div className='flex items-center gap-3'>
-            <Chip
+            <FormControlLabel control={
+              <Switch
+                defaultChecked={row.original.status}
+                color="success"
+                onChange={(e) => {
+                  handleStatusChange(row.original.id, e.target.checked);
+                }}
+                size="medium" />} />
+            {/* <Chip
               variant='tonal'
               label={row.original.status ? "Active" : "Inactive"}
               size='small'
               color={userStatusObj[row.original.status ? "active" : "inactive"]}
               className='capitalize'
-            />
+            /> */}
           </div>
         )
       }),
@@ -214,28 +268,55 @@ const UserListTable = ({ userData }) => {
         header: 'Action',
         cell: ({ row }) => (
           <div className='flex items-center'>
-            <IconButton onClick={() => setData(data?.filter(product => product.id !== row.original.id))}>
-              <i className='tabler-trash text-textSecondary' />
-            </IconButton>
-            <IconButton>
+            {/* <IconButton>
               <Link href={getLocalizedUrl('/apps/user/view', locale)} className='flex'>
                 <i className='tabler-eye text-textSecondary' />
               </Link>
-            </IconButton>
+            </IconButton> */}
             <OptionMenu
               iconButtonProps={{ size: 'medium' }}
               iconClassName='text-textSecondary'
               options={[
                 {
-                  text: 'Download',
-                  icon: 'tabler-download',
-                  menuItemProps: { className: 'flex items-center gap-2 text-textSecondary' }
+                  text: 'Edit account',
+                  icon: 'tabler-edit',
+                  menuItemProps: {
+                    className: 'flex items-center gap-2 text-textSecondary',
+                    onClick: (() => {
+                      router.push(`/${locale}/apps/user/form/${row.original._id}`)
+                    })
+                  }
                 },
                 {
-                  text: 'Edit',
-                  icon: 'tabler-edit',
-                  menuItemProps: { className: 'flex items-center gap-2 text-textSecondary' }
-                }
+                  text: 'Update password',
+                  icon: 'tabler-lock',
+                  menuItemProps: {
+                    className: 'flex items-center gap-2 text-textSecondary',
+                    onClick: (() => {
+                      updateNewPasswordhandle(row.original);
+                    })
+                  }
+                },
+                {
+                  text: 'Manage employee ID',
+                  icon: 'tabler-user',
+                  menuItemProps: {
+                    className: 'flex items-center gap-2 text-textSecondary',
+                    onClick: (() => {
+                      handleManageEmpDialog(row.original);
+                    })
+                  }
+                },
+                {
+                  text: 'Delete account',
+                  icon: 'tabler-trash',
+                  menuItemProps: {
+                    className: 'flex items-center gap-2 text-textSecondary',
+                    onClick: (() => {
+                      openDeleteDialogHandle(row.original)
+                    })
+                  }
+                },
               ]}
             />
           </div>
@@ -393,6 +474,9 @@ const UserListTable = ({ userData }) => {
           }}
         />
       </Card>
+      <UpdatePasswordDialog open={open} setOpen={setOpen} data={user} />
+      <DeleteUserDialog open={openDeleteDialog} setOpen={setOpenDeleteDialog} type='delete-account' user={user} loadData={loadData} />
+      <ManageEmpCodeDialog open={openManageEmpCodeDialog} setOpen={setManageEmpCodeDialog} user={user} loadData={loadData} />
     </>
   )
 }
