@@ -1,4 +1,7 @@
 // MUI Imports
+
+import { useEffect, useState } from 'react'
+
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
@@ -13,22 +16,30 @@ import FormControlLabel from '@mui/material/FormControlLabel'
 import Alert from '@mui/material/Alert'
 
 // React Hook Form
+
 import { useForm, Controller } from 'react-hook-form'
+
 import { valibotResolver } from '@hookform/resolvers/valibot'
 
 // Valibot schema
+
 import { array, string, object, pipe, minLength, maxLength, boolean, nonEmpty, value } from 'valibot'
 
 // Component Imports
-import CustomTextField from '@core/components/mui/TextField'
-import DialogCloseButton from '../DialogCloseButton'
+
 import { useSession } from 'next-auth/react'
-import { useEffect, useState } from 'react'
-import SkeletonFormComponent from '@/components/skeleton/form/page'
+
+
 import { MenuItem } from '@mui/material'
 
 // Third-party Imports
 import { toast } from 'react-toastify'
+
+import DialogCloseButton from '../DialogCloseButton'
+
+import SkeletonFormComponent from '@/components/skeleton/form/page'
+
+import CustomTextField from '@core/components/mui/TextField'
 
 const schema = object({
     name: pipe(
@@ -288,6 +299,7 @@ const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule, nameData
     useEffect(() => {
         if (URL && token) {
             fetchFormData();
+        
             if (data) {
                 editFormData(data);
             }
@@ -297,6 +309,7 @@ const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule, nameData
 
     const submitData = async (VALUE) => {
         setLoading(true);
+
         try {
             const response = await fetch(data ? `${URL}/admin/permission/${editData}/${data?._id}` : `${URL}/admin/permission`,
                 {
@@ -332,28 +345,33 @@ const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule, nameData
 
         if (!data) {
             const exist = nameData.find(item => item.name === values.name);
+
             if (exist) {
                 setError('name', {
                     type: 'manual',
                     message: 'This name already exists.'
                 });
+
                 return;
             }
         } else {
             const exist = nameData.find(item =>
                 item._id.toString() !== data._id.toString() && item.name === values.name
             );
+
             if (exist) {
                 setError('name', {
                     type: 'manual',
                     message: 'This name already exists.'
                 });
+
                 return;
             }
         }
 
         submitData(values);
         setOpen(false)
+
         // handle API or logic here
     }
 
@@ -397,6 +415,7 @@ const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule, nameData
                         type='submit'
                         variant='contained'
                         disabled={loading}
+
                         // fullWidth
                         sx={{ height: 40, position: 'relative' }}
                     >

@@ -1,10 +1,15 @@
 // Imports
+
 import { useEffect, useState } from 'react'
+
 import { useForm, Controller } from 'react-hook-form'
+
 import { valibotResolver } from '@hookform/resolvers/valibot'
-import tableStyles from '@core/styles/table.module.css'
+
 import CircularProgress from '@mui/material/CircularProgress'
+
 import { Checkbox } from '@mui/material'
+
 import {
     object,
     string,
@@ -34,13 +39,18 @@ import { Radio, FormGroup } from '@mui/material'
 import FormControlLabel from '@mui/material/FormControlLabel'
 
 // Component Imports
-import CustomTextField from '@core/components/mui/TextField'
-import DialogCloseButton from '../DialogCloseButton'
+
+import { toast } from 'react-toastify'
+
 import { useSession } from 'next-auth/react'
+
+import CustomTextField from '@core/components/mui/TextField'
+
+import DialogCloseButton from '../DialogCloseButton'
+
 import SkeletonFormComponent from '@/components/skeleton/form/page'
 
-// Third-party Imports
-import { toast } from 'react-toastify'
+import tableStyles from '@core/styles/table.module.css'
 
 // Schema
 const schema = object({
@@ -415,6 +425,7 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
     const togglePermission = (moduleId, permissionId) => {
         setSelectedPermissions(prev => {
             const modulePermissions = prev[moduleId] || []
+            
             const updated = modulePermissions.includes(permissionId)
                 ? {
                     ...prev,
@@ -426,7 +437,9 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
                 }
 
             const flattened = Object.values(updated).flat()
+            
             setValue('permissions', flattened)
+            
             return updated
         })
     }
@@ -435,6 +448,7 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
 
         if (open && data) {
             const flatPermissions = Object.values(data.permissions || {}).flat()
+            
             reset({
                 _id: data?._id || '',
                 name: data?.name || '',
@@ -480,6 +494,7 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
 
     const submitPackage = async (formData) => {
         setLoading(true);
+        
         try {
             const response = await fetch(
                 data ? `${URL}/admin/package/${data?.package_type_id}/${data?._id}` : `${URL}/admin/package`,
@@ -498,6 +513,7 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
             if (response.ok) {
                 setLoading(false);
                 handleClose();
+                
                 if (typeof fetchPackage === 'function') {
                     fetchPackage();
                     toast.success(`Package ${data ? "updated" : "added"} successfully!`, {
@@ -519,23 +535,29 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
     const onSubmit = (formData) => {
 
         if (!data) {
+            
             const exist = nameData.find(item => item.name === formData.name);
+            
             if (exist) {
                 setError('name', {
                     type: 'manual',
                     message: 'This name already exists.'
                 });
+            
                 return;
             }
         } else {
             const exist = nameData.find(item =>
+                
                 item._id.toString() !== data._id.toString() && item.name === formData.name
             );
+            
             if (exist) {
                 setError('name', {
                     type: 'manual',
                     message: 'This name already exists.'
                 });
+
                 return;
             }
         }
@@ -580,6 +602,7 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
                     ) : (
                         <SkeletonFormComponent />
                     )
+                
                 }
 
                 <DialogActions className="flex max-sm:flex-col max-sm:items-center max-sm:gap-2 justify-center pbs-0 sm:pbe-16 sm:pli-16">
@@ -587,6 +610,7 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
                         type='submit'
                         variant='contained'
                         disabled={loading}
+                        
                         // fullWidth
                         sx={{ height: 40, position: 'relative' }}
                     >

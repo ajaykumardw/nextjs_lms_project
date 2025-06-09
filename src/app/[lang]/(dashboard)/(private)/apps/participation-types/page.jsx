@@ -1,8 +1,13 @@
 'use client'
+
 // Component Imports
+
 import { useEffect, useState } from 'react'
+
 import { useSession } from 'next-auth/react'
+
 import ParticipationTypeComponent from '@/views/apps/participation-type/index'
+
 import SkeletonTableComponent from '@/components/skeleton/table/page'
 
 const ParticipationTypeApp = () => {
@@ -27,11 +32,13 @@ const ParticipationTypeApp = () => {
       if (!response.ok) {
         throw new Error(result.message || 'Failed to fetch participation types');
       }
+      
       console.log('result.data', result.data);
       setData(result.data || []);
 
     } catch (error) {
       console.error('Error fetching participation types:', error.message);
+      
       // Optionally show toast or UI feedback
       // toast.error(error.message || 'Something went wrong');
     }

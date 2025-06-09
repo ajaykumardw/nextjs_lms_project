@@ -16,9 +16,11 @@ import Checkbox from '@mui/material/Checkbox'
 import IconButton from '@mui/material/IconButton'
 
 // Third-party Imports
+
 import classnames from 'classnames'
-import BranchDialog from '@/components/dialogs/branch-dialog/page'
+
 import { rankItem } from '@tanstack/match-sorter-utils'
+
 import {
   createColumnHelper,
   flexRender,
@@ -31,6 +33,8 @@ import {
   getPaginationRowModel,
   getSortedRowModel
 } from '@tanstack/react-table'
+
+import BranchDialog from '@/components/dialogs/branch-dialog/page'
 
 // Component Imports
 import OptionMenu from '@core/components/option-menu'
@@ -45,7 +49,9 @@ import RegionDialog from '@/components/dialogs/region-dialog/page'
 // Filter function
 const fuzzyFilter = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value)
+  
   addMeta({ itemRank })
+  
   return itemRank.passed
 }
 
@@ -61,6 +67,7 @@ const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...prop
     const timeout = setTimeout(() => {
       onChange(value)
     }, debounce)
+    
     return () => clearTimeout(timeout)
   }, [value])
 
@@ -93,8 +100,10 @@ const RegionTable = ({ tableData, fetchRegionData }) => {
   useEffect(() => {
     const filtered = data.filter(user => {
       if (role && user.role !== role) return false
+
       return true
     })
+
     setFilteredData(filtered)
   }, [role, data])
 

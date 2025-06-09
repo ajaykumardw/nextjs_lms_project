@@ -1,4 +1,7 @@
 // MUI Imports
+
+import { useEffect, useState } from 'react'
+
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
@@ -20,15 +23,23 @@ import { valibotResolver } from '@hookform/resolvers/valibot'
 import { array, string, object, pipe, minLength, maxLength, boolean, nonEmpty, value } from 'valibot'
 
 // Component Imports
-import CustomTextField from '@core/components/mui/TextField'
-import DialogCloseButton from '../DialogCloseButton'
+
 import { useSession } from 'next-auth/react'
-import { useEffect, useState } from 'react'
-import SkeletonFormComponent from '@/components/skeleton/form/page'
+
+import { toast } from 'react-toastify'
+
 import { MenuItem } from '@mui/material'
 
+import CustomTextField from '@core/components/mui/TextField'
+
+import DialogCloseButton from '../DialogCloseButton'
+
+
+import SkeletonFormComponent from '@/components/skeleton/form/page'
+
+
 // Third-party Imports
-import { toast } from 'react-toastify'
+
 
 const schema = object({
     name: pipe(
@@ -125,10 +136,12 @@ const ParticipationDialog = ({ open, setOpen, data, loadTableData }) => {
         setLoading(true)
 
         const isEdit = Boolean(data)
+        
         const endpoint = isEdit
             ? `${URL}/admin/participation_type/${data._id}`
             : `${URL}/admin/participation_type`
-        const method = isEdit ? 'PUT' : 'POST'
+        
+            const method = isEdit ? 'PUT' : 'POST'
 
         try {
             const response = await fetch(endpoint, {

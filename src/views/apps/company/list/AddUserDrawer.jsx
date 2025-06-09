@@ -14,8 +14,9 @@ import Divider from '@mui/material/Divider'
 import { useForm, Controller } from 'react-hook-form'
 
 // Component Imports
+
 import { valibotResolver } from '@hookform/resolvers/valibot';
-import CustomTextField from '@core/components/mui/TextField'
+
 import { CardContent } from '@mui/material'
 
 // Vars
@@ -37,6 +38,8 @@ import {
   optional,
   email
 } from 'valibot';
+
+import CustomTextField from '@core/components/mui/TextField'
 
 const schema = object({
   first_name: pipe(
@@ -175,11 +178,13 @@ const AddUserDrawer = props => {
 
       // Validate file type (JPG, GIF, PNG)
       const validTypes = ['image/jpeg', 'image/gif', 'image/png'];
+      
       if (!validTypes.includes(file.type)) {
         setError('photo', {
           type: 'manual',
           message: 'Invalid file type. Only JPG, GIF, or PNG are allowed.'
         });
+        
         return;
       }
 
@@ -189,6 +194,7 @@ const AddUserDrawer = props => {
           type: 'manual',
           message: 'File size exceeds 800KB.'
         });
+        
         return;
       }
 

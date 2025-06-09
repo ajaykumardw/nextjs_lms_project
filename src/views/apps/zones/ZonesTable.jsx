@@ -44,8 +44,11 @@ import RegionDialog from '@/components/dialogs/region-dialog/page'
 // Filter function
 const fuzzyFilter = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value)
+  
   addMeta({ itemRank })
+  
   return itemRank.passed
+
 }
 
 // Debounced Input
@@ -60,10 +63,13 @@ const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...prop
     const timeout = setTimeout(() => {
       onChange(value)
     }, debounce)
+  
     return () => clearTimeout(timeout)
+  
   }, [value])
 
   return <CustomTextField {...props} value={value} onChange={e => setValue(e.target.value)} />
+
 }
 
 const columnHelper = createColumnHelper()
@@ -93,8 +99,11 @@ const ZonesTable = ({ tableData, fetchZoneData }) => {
   useEffect(() => {
     const filtered = data.filter(user => {
       if (role && user.role !== role) return false
+      
       return true
+
     })
+    
     setFilteredData(filtered)
   }, [role, data])
 

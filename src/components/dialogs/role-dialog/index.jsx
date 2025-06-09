@@ -14,9 +14,11 @@ import DialogActions from '@mui/material/DialogActions'
 import Button from '@mui/material/Button'
 import RadioGroup from '@mui/material/RadioGroup'
 import CircularProgress from '@mui/material/CircularProgress'
+
 import Radio from '@mui/material/Radio'
-import tableStyles from '@core/styles/table.module.css'
+
 import FormGroup from '@mui/material/FormGroup'
+
 import { Checkbox } from '@mui/material'
 
 // Hook Form + Validation
@@ -25,12 +27,20 @@ import { valibotResolver } from '@hookform/resolvers/valibot'
 import { object, string, array, pipe, minLength, maxLength, boolean } from 'valibot'
 
 // Component Imports
-import DialogCloseButton from '../DialogCloseButton'
-import CustomTextField from '@core/components/mui/TextField'
+
+
+
 import { useSession } from 'next-auth/react'
 
 // Third-party Imports
+
 import { toast } from 'react-toastify'
+
+import DialogCloseButton from '../DialogCloseButton'
+
+import tableStyles from '@core/styles/table.module.css'
+
+import CustomTextField from '@core/components/mui/TextField'
 
 // Validation Schema
 const schema = object({
@@ -77,6 +87,7 @@ const RoleDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole }) 
     } else if (createData) {
       const allPermissions = {}
       let flatPermissions = []
+      
       createData.forEach(module => {
         if (Array.isArray(module.permission)) {
           allPermissions[module._id] = module.permission.map(p => p._id)
@@ -91,6 +102,7 @@ const RoleDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole }) 
   const togglePermission = (moduleId, permissionId) => {
     setSelectedPermissions(prev => {
       const modulePermissions = prev[moduleId] || []
+      
       const updated = modulePermissions.includes(permissionId)
         ? {
           ...prev,
@@ -102,7 +114,9 @@ const RoleDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole }) 
         }
 
       const flattened = Object.values(updated).flat()
+      
       setValue('permissions', flattened)
+      
       return updated
     })
   }
@@ -118,6 +132,7 @@ const RoleDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole }) 
       })
 
       const data = await response.json()
+      
       if (response.ok) {
         setCreateData(data?.data)
       }
@@ -152,6 +167,7 @@ const RoleDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole }) 
   const submitData = async values => {
 
     setLoading(true);
+    
     try {
       const response = await fetch(selectedRole ? `${API_URL}/admin/role/${selectedRole._id}` : `${API_URL}/admin/role`, {
         method: selectedRole ? 'PUT' : 'POST',
@@ -163,6 +179,7 @@ const RoleDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole }) 
       })
 
       const data = await response.json()
+      
       if (response.ok) {
         // Third-party Imports
         fetchRoleData?.()

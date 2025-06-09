@@ -1,11 +1,18 @@
 // MUI Imports
 'use client'
+
+
+import { useState, useEffect } from 'react'
+
+import { useSession } from 'next-auth/react'
+
+import Grid from '@mui/material/Grid2'
+
+import Typography from '@mui/material/Typography'
+
 import RegionCards from './RegionCards';
 import RegionTable from './RegionTable';
-import Grid from '@mui/material/Grid2'
-import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
-import Typography from '@mui/material/Typography'
+
 import SkeletonTableComponent from '@/components/skeleton/table/page'
 
 const Region = () => {

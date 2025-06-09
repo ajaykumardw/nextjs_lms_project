@@ -1,16 +1,16 @@
 // MUI Imports
+
+import { useEffect, useState } from 'react'
+
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
-import FormControl from '@mui/material/FormControl'
+
 import CircularProgress from '@mui/material/CircularProgress'
-import RadioGroup from '@mui/material/RadioGroup'
-import Radio from '@mui/material/Radio'
-import FormControlLabel from '@mui/material/FormControlLabel'
-import Alert from '@mui/material/Alert'
+
 import InputAdornment from '@mui/material/InputAdornment'
 import IconButton from '@mui/material/IconButton'
 
@@ -19,18 +19,21 @@ import { useForm, Controller } from 'react-hook-form'
 import { valibotResolver } from '@hookform/resolvers/valibot'
 
 // Valibot schema
-import { array, string, object, pipe, minLength, maxLength, boolean, nonEmpty, value } from 'valibot'
+import { string, object, pipe, minLength, maxLength } from 'valibot'
 
 // Component Imports
-import CustomTextField from '@core/components/mui/TextField'
-import DialogCloseButton from '../../DialogCloseButton'
+
+import { toast } from 'react-toastify'
+
 import { useSession } from 'next-auth/react'
-import { useEffect, useState } from 'react'
+
+import DialogCloseButton from '../../DialogCloseButton'
+
 import SkeletonFormComponent from '@/components/skeleton/form/page'
-import { MenuItem } from '@mui/material'
 
 // Third-party Imports
-import { toast } from 'react-toastify'
+
+import CustomTextField from '@core/components/mui/TextField'
 
 const schema = object({
     password: pipe(
@@ -120,6 +123,7 @@ const UpdatePasswordDialog = ({ open, setOpen, data }) => {
         setLoading(true)
         const endpoint = `${URL}/admin/user/update-password/${data._id}`
         const method = 'PUT'
+
         try {
             const response = await fetch(endpoint, {
                 method,

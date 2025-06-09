@@ -10,12 +10,17 @@ import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
 import Typography from '@mui/material/Typography'
 import Radio from '@mui/material/Radio'
+
 import Button from '@mui/material/Button'
+
 import { useForm, Controller } from 'react-hook-form'
+
 import { valibotResolver } from '@hookform/resolvers/valibot';
 
+import Chip from '@mui/material/Chip'
+
 // Component Imports
-import CustomTextField from '@core/components/mui/TextField'
+
 import { toast } from 'react-toastify'
 
 import {
@@ -26,12 +31,14 @@ import {
   pipe
 } from 'valibot';
 
+import CustomTextField from '@core/components/mui/TextField'
+
 // Component Imports
 import CustomAvatar from '@core/components/mui/Avatar'
 import DialogCloseButton from '../../DialogCloseButton'
 
 import { useApi } from '../../../../utils/api';
-import Chip from '@mui/material/Chip'
+
 
 const steps = [
   {
@@ -68,12 +75,15 @@ const ManageEmpCodeDialog = ({ open, setOpen, user, loadData }) => {
       user_code: ''
     }
   });
+  
   // States
+  
   const [activeStep, setActiveStep] = useState(0)
   const [value, setCodeValue] = useState('')
   const [selectedCode, setSelectedCode] = useState('');
   const [codes, setCodes] = useState([]);
   const { doPostFormData } = useApi();
+  
   const handleClose = () => {
     setOpen(false)
     setActiveStep(0)
@@ -105,10 +115,12 @@ const ManageEmpCodeDialog = ({ open, setOpen, user, loadData }) => {
   const handleRadioChange = async (code, index) => {
     console.log('index', index);
     const endpoint = `admin/user/mark/active/empcode/${user.id}`;
+    
     const data = {
       index: index,
       user_code: code,
     }
+    
     await doPostFormData({
       endpoint,
       values: data,
@@ -123,12 +135,14 @@ const ManageEmpCodeDialog = ({ open, setOpen, user, loadData }) => {
 
       }
     });
+    
     // setSelectedCode(event.target.value);
     // setCodeValue(event.target.value); // If you're using react-hook-form
   };
 
   const onSubmit = async (data) => {
     const endpoint = `admin/user/attach/empcode/${user.id}`;
+    
     await doPostFormData({
       endpoint,
       values: data,
@@ -150,10 +164,12 @@ const ManageEmpCodeDialog = ({ open, setOpen, user, loadData }) => {
 
   useEffect(() => {
     console.log(user);
+    
     if (user) {
       setCodes(user.codes);
       setSelectedCode(user.emp_id);
     }
+    
     reset({
       user_code: ''
     })
@@ -234,6 +250,7 @@ const ManageEmpCodeDialog = ({ open, setOpen, user, loadData }) => {
                     </div>
                     <Radio
                       value={item.code}
+                      
                       // onChange={(e) => handleRadioChange(e, index)}
                       checked={selectedCode === item.code}
                     />

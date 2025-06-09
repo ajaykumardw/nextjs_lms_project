@@ -28,10 +28,15 @@ import {
 } from 'valibot'
 
 // Components
+
+import { useSession } from 'next-auth/react'
+
+import { toast } from 'react-toastify'
+
 import CustomTextField from '@core/components/mui/TextField'
 import DialogCloseButton from '../DialogCloseButton'
-import { useSession } from 'next-auth/react'
-import { toast } from 'react-toastify'
+
+
 
 // Schema (status removed)
 const zoneSchema = object({
@@ -96,6 +101,7 @@ const ZoneDialog = ({ open, setOpen, title = '', fetchZoneData, selectedZone, ty
                         type: 'manual',
                         message: 'This name already exists.'
                     });
+                    
                     return;
                 }
             } else {
@@ -126,11 +132,13 @@ const ZoneDialog = ({ open, setOpen, title = '', fetchZoneData, selectedZone, ty
         }
 
         setLoading(true)
+        
         try {
             const url = selectedZone
                 ? `${API_URL}/company/zone/${selectedZone._id}`
                 : `${API_URL}/company/zone`
-            const method = selectedZone ? 'PUT' : 'POST'
+            
+                const method = selectedZone ? 'PUT' : 'POST'
 
             const response = await fetch(url, {
                 method,

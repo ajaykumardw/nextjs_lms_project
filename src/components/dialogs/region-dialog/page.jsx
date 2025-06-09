@@ -28,10 +28,13 @@ import {
 } from 'valibot'
 
 // Components
-import CustomTextField from '@core/components/mui/TextField'
-import DialogCloseButton from '../DialogCloseButton'
+
 import { useSession } from 'next-auth/react'
-import { toast } from 'react-toastify'
+
+import CustomTextField from '@core/components/mui/TextField'
+
+import DialogCloseButton from '../DialogCloseButton'
+
 
 // Schema (with zone_id validation added)
 const regionSchema = object({
@@ -82,6 +85,7 @@ const RegionDialog = ({ open, setOpen, title = '', fetchZoneData, selectedRegion
                 region: selectedRegion.region?.map(r => ({ name: r.name })) || [{ name: '' }]
             })
         }
+        
         if (typeForm && selectedRegionData) {
             console.log("select region data", selectedRegionData);
 

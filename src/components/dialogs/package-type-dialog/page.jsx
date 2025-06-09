@@ -1,5 +1,7 @@
 // Imports
+
 import { useEffect, useState } from 'react'
+
 import { useForm, Controller } from 'react-hook-form'
 import { valibotResolver } from '@hookform/resolvers/valibot'
 import {
@@ -28,12 +30,15 @@ import Radio from '@mui/material/Radio'
 import FormControlLabel from '@mui/material/FormControlLabel'
 
 // Component Imports
-import CustomTextField from '@core/components/mui/TextField'
-import DialogCloseButton from '../DialogCloseButton'
+
 import { useSession } from 'next-auth/react'
 
-// Third-party Imports
 import { toast } from 'react-toastify'
+
+import CustomTextField from '@core/components/mui/TextField'
+
+import DialogCloseButton from '../DialogCloseButton'
+
 
 // Schema
 const schema = object({
@@ -138,6 +143,7 @@ const PackageTypeDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
         setOpen(false)
         fetchPackage();
     }
+    
     const URL = process.env.NEXT_PUBLIC_API_URL
     const { data: session } = useSession() || {}
     const token = session?.user?.token
@@ -172,6 +178,7 @@ const PackageTypeDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
     // Form submit
     const submitPackageType = async (formData) => {
         setLoading(true);
+        
         try {
             const response = await fetch(
                 data ? `${URL}/admin/package-type/${data?._id}` : `${URL}/admin/package-type`,
@@ -190,6 +197,7 @@ const PackageTypeDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
             if (response.ok) {
                 setLoading(false);
                 handleClose();
+                
                 if (typeof fetchPackage === 'function') {
                     fetchPackage();
                     toast.success(`Package type ${data ? "updated" : "added"} successfully!`, {
@@ -211,22 +219,26 @@ const PackageTypeDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
 
         if (!data) {
             const exist = nameData.find(item => item.name === formData.name);
+            
             if (exist) {
                 setError('name', {
                     type: 'manual',
                     message: 'This name already exists.'
                 });
+                
                 return;
             }
         } else {
             const exist = nameData.find(item =>
                 item._id.toString() !== data._id.toString() && item.name === formData.name
             );
+            
             if (exist) {
                 setError('name', {
                     type: 'manual',
                     message: 'This name already exists.'
                 });
+                
                 return;
             }
         }
@@ -272,6 +284,7 @@ const PackageTypeDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
                         type='submit'
                         variant='contained'
                         disabled={loading}
+                        
                         // fullWidth
                         sx={{ height: 40, position: 'relative' }}
                     >

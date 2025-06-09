@@ -28,10 +28,14 @@ import {
 } from 'valibot'
 
 // Components
+
+import { toast } from 'react-toastify'
+
+import { useSession } from 'next-auth/react'
+
 import CustomTextField from '@core/components/mui/TextField'
 import DialogCloseButton from '../DialogCloseButton'
-import { useSession } from 'next-auth/react'
-import { toast } from 'react-toastify'
+
 
 // Schema (with zone_id validation added)
 const regionSchema = object({
@@ -84,12 +88,15 @@ const BranchDialog = ({ open, setOpen, title = '', fetchRegionData, selectedRegi
 
     const submitData = async (formData) => {
         setLoading(true)
+        
         try {
             const isEdit = Boolean(selectedRegion?._id)
+            
             const url = !isEdit
                 ? `${API_URL}/admin/region/${selectedRegion._id}`
                 : `${API_URL}/company/region`
-            const method = !isEdit ? 'PUT' : 'POST'
+            
+                const method = !isEdit ? 'PUT' : 'POST'
 
             const response = await fetch(url, {
                 method,

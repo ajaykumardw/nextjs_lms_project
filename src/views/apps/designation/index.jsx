@@ -29,16 +29,23 @@ import {
   getSortedRowModel
 } from '@tanstack/react-table'
 
+import { useSession } from 'next-auth/react'
+
 // Component Imports
-import DesignationDialog from '@components/dialogs/designation-dialog/page'
-import OpenDialogOnElementClick from '@components/dialogs/OpenDialogOnElementClick'
+
+import { toast } from 'react-toastify'
+
 import CustomTextField from '@core/components/mui/TextField'
-import TablePaginationComponent from '@components/TablePaginationComponent'
 
 // Style Imports
+
 import tableStyles from '@core/styles/table.module.css'
-import { toast } from 'react-toastify'
-import { useSession } from 'next-auth/react'
+
+import DesignationDialog from '@components/dialogs/designation-dialog/page'
+
+import OpenDialogOnElementClick from '@components/dialogs/OpenDialogOnElementClick'
+
+import TablePaginationComponent from '@components/TablePaginationComponent'
 
 // Vars
 const colors = {
@@ -137,6 +144,7 @@ const DesignationComponent = ({ permissionsData, fetchDesignations, nameData }) 
             <IconButton
               onClick={() => {
                 const confirmDelete = window.confirm('Are you sure you want to delete this designation?')
+                
                 if (confirmDelete) {
                   handleDeleteDesignation(row.original)
                 }

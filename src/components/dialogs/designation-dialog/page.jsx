@@ -1,34 +1,53 @@
 // MUI Imports
+
+import { useEffect, useState } from 'react'
+
+import { useSession } from 'next-auth/react'
+
 import Dialog from '@mui/material/Dialog'
+
 import DialogTitle from '@mui/material/DialogTitle'
+
 import DialogContent from '@mui/material/DialogContent'
+
 import DialogActions from '@mui/material/DialogActions'
+
 import Typography from '@mui/material/Typography'
+
 import Button from '@mui/material/Button'
+
 import FormControl from '@mui/material/FormControl'
+
 import CircularProgress from '@mui/material/CircularProgress'
+
 import RadioGroup from '@mui/material/RadioGroup'
+
 import Radio from '@mui/material/Radio'
+
 import FormControlLabel from '@mui/material/FormControlLabel'
+
 import Alert from '@mui/material/Alert'
 
 // React Hook Form
 import { useForm, Controller } from 'react-hook-form'
+
 import { valibotResolver } from '@hookform/resolvers/valibot'
 
 // Valibot schema
 import { array, string, object, pipe, minLength, maxLength, boolean, nonEmpty, value } from 'valibot'
 
 // Component Imports
+
+import { toast } from 'react-toastify'
+
 import CustomTextField from '@core/components/mui/TextField'
+
 import DialogCloseButton from '../DialogCloseButton'
-import { useSession } from 'next-auth/react'
-import { useEffect, useState } from 'react'
+
 import SkeletonFormComponent from '@/components/skeleton/form/page'
-import { MenuItem } from '@mui/material'
 
 // Third-party Imports
-import { toast } from 'react-toastify'
+
 
 const schema = object({
     name: pipe(
@@ -116,9 +135,11 @@ const DesignationDialog = ({ open, setOpen, data, fetchDesignations }) => {
         setLoading(true)
 
         const isEdit = Boolean(data)
+
         const endpoint = isEdit
             ? `${URL}/admin/designation/${data._id}`
             : `${URL}/admin/designation`
+
         const method = isEdit ? 'PUT' : 'POST'
 
         try {

@@ -4,9 +4,12 @@
 import { useState } from 'react'
 
 // Next Imports
+
 import Link from 'next/link'
-import CircularProgress from '@mui/material/CircularProgress'
+
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
+
+import CircularProgress from '@mui/material/CircularProgress'
 
 // MUI Imports
 import useMediaQuery from '@mui/material/useMediaQuery'
@@ -142,8 +145,10 @@ const Login = ({ mode }) => {
       router.replace(getLocalizedUrl(redirectURL, locale))
     } else {
       setLoading(false);
+      
       if (res?.error) {
         const error = JSON.parse(res.error)
+        
         setErrorState(error)
       }
     }

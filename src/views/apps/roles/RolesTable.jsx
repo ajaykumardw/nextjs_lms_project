@@ -43,7 +43,9 @@ import tableStyles from '@core/styles/table.module.css'
 // Filter function
 const fuzzyFilter = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value)
+  
   addMeta({ itemRank })
+
   return itemRank.passed
 }
 
@@ -59,6 +61,7 @@ const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...prop
     const timeout = setTimeout(() => {
       onChange(value)
     }, debounce)
+
     return () => clearTimeout(timeout)
   }, [value])
 
@@ -90,8 +93,10 @@ const RolesTable = ({ tableData, fetchRoleData }) => {
   useEffect(() => {
     const filtered = data.filter(user => {
       if (role && user.role !== role) return false
+    
       return true
     })
+
     setFilteredData(filtered)
   }, [role, data])
 

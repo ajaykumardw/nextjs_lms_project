@@ -4,6 +4,9 @@
 import { useState, useEffect } from 'react'
 
 // MUI Imports
+
+import { useRouter, useParams } from 'next/navigation'
+
 import Card from '@mui/material/Card'
 import Button from '@mui/material/Button'
 import Grid from '@mui/material/Grid2'
@@ -13,18 +16,26 @@ import MenuItem from '@mui/material/MenuItem'
 import Checkbox from '@mui/material/Checkbox'
 import ListItemText from '@mui/material/ListItemText'
 import CardHeader from '@mui/material/CardHeader'
+
 import Typography from '@mui/material/Typography'
+
 import { useForm, Controller } from 'react-hook-form'
+
 import CardContent from '@mui/material/CardContent'
+
 import InputAdornment from '@mui/material/InputAdornment'
+
 import IconButton from '@mui/material/IconButton'
+
 import { valibotResolver } from '@hookform/resolvers/valibot';
-import { useRouter, useParams } from 'next/navigation'
+
+
+import { toast } from 'react-toastify'
 
 // Components Imports
+
 import CardActions from '@mui/material/CardActions'
-import CustomTextField from '@core/components/mui/TextField'
-import { useApi } from '../../utils/api';
+
 import {
     object,
     string,
@@ -38,10 +49,15 @@ import {
     custom,
     array
 } from 'valibot';
+
+import { useApi } from '../../utils/api';
+
 import SkeletonFormComponent from '../skeleton/form/page'
 
+import CustomTextField from '@core/components/mui/TextField'
+
 // Third-party Imports
-import { toast } from 'react-toastify'
+
 
 const UserFormLayout = () => {
 
@@ -245,10 +261,12 @@ const UserFormLayout = () => {
                 return data.exists;
             } else {
                 console.error('Failed to check email:', data);
+                
                 return false;
             }
         } catch (error) {
             console.error('Error occurred while checking email:', error);
+            
             return false;
         }
     };
@@ -268,6 +286,7 @@ const UserFormLayout = () => {
             if (!response.ok) {
                 // If server responded with an error status, handle it explicitly
                 console.error('Failed to fetch user data:', result.message || result);
+                
                 return;
             }
 
@@ -289,6 +308,7 @@ const UserFormLayout = () => {
             const zoneData = await doGet(`${URL}/company/zone`);
             const participationTypesData = await doGet(`${URL}/admin/participation_types?status=true`);
             const roleData = await doGet(`${URL}/admin/role`);
+            
             console.log('roleData', roleData);
             setCreateData(prevData => ({
                 ...prevData,
@@ -309,6 +329,7 @@ const UserFormLayout = () => {
     useEffect(() => {
         if (URL && token) {
             loadData();
+            
             if (id) {
                 editFormData();
             }
@@ -348,11 +369,13 @@ const UserFormLayout = () => {
             if (editData.photo) {
                 setImgSrc(`${public_url}${editData.photo}`);
             }
+            
             setCountryId(editData.country_id);
             setStateId(editData.state_id);
 
             if (editData?.roles.length > 0) {
                 const rolesIds = editData.roles.map(role => role.role_id);
+                
                 setUserRoles(rolesIds);
             }
         }
@@ -362,6 +385,7 @@ const UserFormLayout = () => {
         if (countryId && createData?.country.length > 0) {
             const data = createData && createData['country'].find(item => item.country_id == countryId);
             const states = data['states'];
+
             setStateData(states);
         }
     }, [countryId, createData])
@@ -403,6 +427,7 @@ const UserFormLayout = () => {
                         autoClose: 1200, // in milliseconds
                     });
                 }
+         
                 console.error("Error", data);
             }
         } catch (error) {
@@ -411,6 +436,7 @@ const UserFormLayout = () => {
                     autoClose: 1200, // in milliseconds
                 });
             }
+
             console.error("Error occurred", error);
         }
     };
@@ -420,14 +446,18 @@ const UserFormLayout = () => {
             ...data,
             photo: file
         };
+        
         const exist = await checkEmailCompany(data?.email, id);
+
         if (exist) {
             setError('email', {
                 type: 'manual',
                 message: 'This email is already in use.'
             });
+
             return;
         }
+
         submitFormData(newUser);
     };
 
@@ -444,11 +474,13 @@ const UserFormLayout = () => {
         if (!selectedFile) return;
 
         const validTypes = ['image/jpeg', 'image/gif', 'image/png'];
+        
         if (!validTypes.includes(selectedFile.type)) {
             setError('photo', {
                 type: 'manual',
                 message: 'Invalid file type. Only JPG, GIF, or PNG are allowed.'
             });
+          
             return;
         }
 
@@ -457,12 +489,14 @@ const UserFormLayout = () => {
                 type: 'manual',
                 message: 'File size exceeds 800KB.'
             });
+       
             return;
         }
 
         setFile(selectedFile); // Save the actual File object
 
         const reader = new FileReader();
+       
         reader.onload = () => setImgSrc(reader.result);
         reader.readAsDataURL(selectedFile);
     };
@@ -480,6 +514,7 @@ const UserFormLayout = () => {
         if (stateId && stateData) {
             const data = stateData && stateData.find(item => item.state_id == stateId);
             const city = data['cities'];
+         
             setCityData(city);
         }
     }, [stateId, stateData])
@@ -717,6 +752,7 @@ const UserFormLayout = () => {
                                         label="Country*"
                                         onChange={(e) => {
                                             const selectedCountryId = e.target.value;
+                                           
                                             field.onChange(selectedCountryId); // update form value
                                             setCountryId(selectedCountryId);   // update local state or trigger other actions
                                         }}
@@ -746,6 +782,7 @@ const UserFormLayout = () => {
                                         label="State*"
                                         onChange={(e) => {
                                             const selectStateId = e.target.value;
+
                                             field.onChange(selectStateId);
                                             setStateId(selectStateId);
                                         }}
@@ -1059,6 +1096,7 @@ const UserFormLayout = () => {
                                                 multiple: true,
                                                 onChange: (event) => {
                                                     const value = event.target.value;
+
                                                     setUserRoles(value);
                                                     field.onChange(value); // update react-hook-form state
                                                 },
@@ -1067,6 +1105,7 @@ const UserFormLayout = () => {
                                                     const selectedNames = createData.roles
                                                         .filter(role => selectedIds.includes(role._id))
                                                         .map(role => role.name);
+
                                                     return selectedNames.join(', ');
                                                 }
                                             }

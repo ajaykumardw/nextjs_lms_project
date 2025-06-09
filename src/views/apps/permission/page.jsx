@@ -127,6 +127,7 @@ const Permissions = ({ permissionsData, fetchPermissionModule, nameData }) => {
                     />
                 )
             }),
+            
             // columnHelper.accessor('assignedTo', {
             //   header: 'Assigned To',
             //   cell: ({ row }) =>

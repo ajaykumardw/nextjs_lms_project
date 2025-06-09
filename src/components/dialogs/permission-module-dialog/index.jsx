@@ -1,4 +1,9 @@
 // MUI Imports
+
+import { useEffect, useState } from 'react'
+
+import { useSession } from 'next-auth/react'
+
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
@@ -20,13 +25,14 @@ import { valibotResolver } from '@hookform/resolvers/valibot'
 import { object, string, minLength, pipe, maxLength, boolean } from 'valibot'
 
 // Component Imports
-import CustomTextField from '@core/components/mui/TextField'
-import DialogCloseButton from '../DialogCloseButton'
-import { useSession } from 'next-auth/react'
-import { useEffect, useState } from 'react'
 
-// Third-party Imports
 import { toast } from 'react-toastify'
+
+import DialogCloseButton from '../DialogCloseButton'
+
+import CustomTextField from '@core/components/mui/TextField'
+
+
 
 const schema = object({
   name: pipe(
@@ -155,6 +161,7 @@ const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule, nameData
 
   const submitData = async (VALUE) => {
     setLoading(true);
+    
     try {
       const response = await fetch(data ? `${URL}/admin/permission-module/${data?._id}` : `${URL}/admin/permission-module`,
         {
@@ -189,28 +196,33 @@ const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule, nameData
 
     if (!data) {
       const exist = nameData.find(item => item.name === values.name);
+      
       if (exist) {
         setError('name', {
           type: 'manual',
           message: 'This name already exists.'
         });
+        
         return;
       }
     } else {
       const exist = nameData.find(item =>
         item._id.toString() !== data._id.toString() && item.name === values.name
       );
+      
       if (exist) {
         setError('name', {
           type: 'manual',
           message: 'This name already exists.'
         });
+        
         return;
       }
     }
 
     submitData(values);
     setOpen(false)
+    
     // handle API or logic here
   }
 
@@ -249,6 +261,7 @@ const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule, nameData
             type='submit'
             variant='contained'
             disabled={loading}
+            
             // fullWidth
             sx={{ height: 40, position: 'relative' }}
           >

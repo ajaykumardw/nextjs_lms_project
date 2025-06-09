@@ -22,12 +22,13 @@ import MenuItem from '@mui/material/MenuItem'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Switch from '@mui/material/Switch'
 
+import { toast } from 'react-toastify'
+
 // Third-party Imports
+
 import classnames from 'classnames'
+
 import { rankItem } from '@tanstack/match-sorter-utils'
-import UpdatePasswordDialog from '@components/dialogs/user/update-password-dialog/page'
-import DeleteUserDialog from '@components/dialogs/user/delete-user-dialog/page'
-import ManageEmpCodeDialog from '@/components/dialogs/user/manage-emp-code-dialog/index'
 
 import {
   createColumnHelper,
@@ -42,25 +43,25 @@ import {
   getSortedRowModel
 } from '@tanstack/react-table'
 
+import UpdatePasswordDialog from '@components/dialogs/user/update-password-dialog/page'
+import DeleteUserDialog from '@components/dialogs/user/delete-user-dialog/page'
+import ManageEmpCodeDialog from '@/components/dialogs/user/manage-emp-code-dialog/index'
+
 // Component Imports
 import TableFilters from './TableFilters'
-import AddUserDrawer from './AddUserDrawer'
 import OptionMenu from '@core/components/option-menu'
 import TablePaginationComponent from '@components/TablePaginationComponent'
 import CustomTextField from '@core/components/mui/TextField'
 import CustomAvatar from '@core/components/mui/Avatar'
 
 // Util Imports
+
 import { getInitials } from '@/utils/getInitials'
-import { getLocalizedUrl } from '@/utils/i18n'
+
 import { useApi } from '../../../../utils/api';
-import { toast } from 'react-toastify'
 
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
-
-// Styled Components
-const Icon = styled('i')({})
 
 const fuzzyFilter = (row, columnId, value, addMeta) => {
   // Rank the item
@@ -139,6 +140,7 @@ const UserListTable = ({ userData, loadData }) => {
 
   const handleStatusChange = async (userId, status) => {
     const endpoint = `admin/user/status/update/${userId}`;
+
     await doPostFormData({
       endpoint,
       values: { status: status },
@@ -200,6 +202,7 @@ const UserListTable = ({ userData, loadData }) => {
           </div>
         )
       }),
+
       // columnHelper.accessor('role', {
       //   header: 'Role',
       //   cell: ({ row }) => (

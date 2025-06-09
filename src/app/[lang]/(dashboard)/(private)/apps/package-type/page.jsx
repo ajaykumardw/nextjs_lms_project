@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+
 import { useSession } from 'next-auth/react'
+
 import PackageType from '@views/apps/package-type'
 
 const PackageTypeApp = () => {

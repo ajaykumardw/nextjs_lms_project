@@ -61,6 +61,7 @@ const UserDropdown = () => {
 
     if (timeLeft <= 0) {
       signOut({ callbackUrl: process.env.NEXT_PUBLIC_APP_URL })
+      
       return
     }
 

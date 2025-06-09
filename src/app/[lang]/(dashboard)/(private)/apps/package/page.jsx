@@ -1,8 +1,10 @@
 'use client'
 
-import Package from '@views/apps/package'
 import { useEffect, useState } from 'react'
+
 import { useSession } from 'next-auth/react'
+
+import Package from '@views/apps/package'
 
 const PackageApp = () => {
     const { data: session } = useSession()

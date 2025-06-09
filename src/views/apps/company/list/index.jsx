@@ -1,13 +1,19 @@
 'use client'
 
 // MUI Imports
-import Grid from '@mui/material/Grid2'
 
 // Component Imports
-import UserListTable from './UserListTable'
-import UserListCards from './UserListCards'
-import { useSession } from 'next-auth/react'
+
 import { useEffect, useState } from 'react'
+
+import { useSession } from 'next-auth/react'
+
+import Grid from '@mui/material/Grid2'
+
+import UserListTable from './UserListTable'
+
+import UserListCards from './UserListCards'
+
 import SkeletonTableComponent from '@/components/skeleton/table/page'
 
 const UserList = () => {

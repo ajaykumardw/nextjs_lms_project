@@ -1,8 +1,13 @@
 'use client'
+
 // Component Imports
+
 import { useEffect, useState } from 'react'
+
 import { useSession } from 'next-auth/react'
+
 import Permissions from '@views/apps/permission/page'
+
 import SkeletonTableComponent from '@/components/skeleton/table/page'
 
 const PermissionsApp = () => {
@@ -24,6 +29,7 @@ const PermissionsApp = () => {
 
             if (response.ok) {
                 const result = await response.json()
+                
                 setData(result?.data?.allPermission)
                 setNameData(result?.data?.totalPermission)
             } else {

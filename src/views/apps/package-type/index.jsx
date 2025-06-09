@@ -10,10 +10,14 @@ import Button from '@mui/material/Button'
 import Typography from '@mui/material/Typography'
 import IconButton from '@mui/material/IconButton'
 import MenuItem from '@mui/material/MenuItem'
+import { Chip, TablePagination } from '@mui/material'
 
 // Third-party Imports
+
 import classnames from 'classnames'
+
 import { rankItem } from '@tanstack/match-sorter-utils'
+
 import {
     createColumnHelper,
     flexRender,
@@ -23,21 +27,29 @@ import {
     getPaginationRowModel,
     getSortedRowModel
 } from '@tanstack/react-table'
+
 // Component Imports
+
 import PackageTypeDialog from '@components/dialogs/package-type-dialog/page'
+
 import OpenDialogOnElementClick from '@components/dialogs/OpenDialogOnElementClick'
+
 import CustomTextField from '@core/components/mui/TextField'
+
 import TablePaginationComponent from '@components/TablePaginationComponent'
 
 // Style Imports
+
 import tableStyles from '@core/styles/table.module.css'
-import { Chip, TablePagination } from '@mui/material'
+
 import SkeletonTableComponent from '@/components/skeleton/table/page'
 
 // Vars
 const fuzzyFilter = (row, columnId, value, addMeta) => {
     const itemRank = rankItem(row.getValue(columnId), value)
+    
     addMeta({ itemRank })
+    
     return itemRank.passed
 }
 

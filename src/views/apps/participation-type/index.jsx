@@ -1,21 +1,33 @@
 'use client'
 
 // React Imports
+
 import { useEffect, useState, useMemo } from 'react'
 
 // MUI Imports
+
 import Card from '@mui/material/Card'
+
 import CardContent from '@mui/material/CardContent'
+
 import Button from '@mui/material/Button'
+
 import Typography from '@mui/material/Typography'
+
 import Chip from '@mui/material/Chip'
+
 import TablePagination from '@mui/material/TablePagination'
+
 import IconButton from '@mui/material/IconButton'
+
 import MenuItem from '@mui/material/MenuItem'
 
 // Third-party Imports
+
 import classnames from 'classnames'
+
 import { rankItem } from '@tanstack/match-sorter-utils'
+
 import {
   createColumnHelper,
   flexRender,
@@ -29,16 +41,22 @@ import {
   getSortedRowModel
 } from '@tanstack/react-table'
 
+import { toast } from 'react-toastify'
+
+import { useSession } from 'next-auth/react'
+
 // Component Imports
+
 import ParticipationDialog from '@components/dialogs/participation-type/page'
+
 import OpenDialogOnElementClick from '@components/dialogs/OpenDialogOnElementClick'
+
 import CustomTextField from '@core/components/mui/TextField'
+
 import TablePaginationComponent from '@components/TablePaginationComponent'
 
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
-import { toast } from 'react-toastify'
-import { useSession } from 'next-auth/react'
 
 // Vars
 const colors = {
@@ -95,6 +113,7 @@ const ParticipationTypeComponent = ({ tableRows, loadTableData }) => {
 
   useEffect(() => {
     console.log('result.data2', tableRows);
+    
     if (tableRows) {
       setData(tableRows);
     }
@@ -142,6 +161,7 @@ const ParticipationTypeComponent = ({ tableRows, loadTableData }) => {
             <IconButton
               onClick={() => {
                 const confirmDelete = window.confirm('Are you sure you want to delete?')
+                
                 if (confirmDelete) {
                   handleDeleteRow(row.original)
                 }
