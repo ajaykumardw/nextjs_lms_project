@@ -10,8 +10,6 @@ import Grid from '@mui/material/Grid2'
 import Divider from '@mui/material/Divider'
 import { useSession } from 'next-auth/react'
 import MenuItem from '@mui/material/MenuItem'
-import Checkbox from '@mui/material/Checkbox'
-import ListItemText from '@mui/material/ListItemText'
 import CardHeader from '@mui/material/CardHeader'
 import Typography from '@mui/material/Typography'
 import { useForm, Controller } from 'react-hook-form'
@@ -24,7 +22,7 @@ import { useRouter, useParams } from 'next/navigation'
 // Components Imports
 import CardActions from '@mui/material/CardActions'
 import CustomTextField from '@core/components/mui/TextField'
-import { useApi } from '../../utils/api';
+
 import {
     object,
     string,
@@ -35,8 +33,7 @@ import {
     check,
     optional,
     email,
-    custom,
-    array
+    custom
 } from 'valibot';
 import SkeletonFormComponent from '../skeleton/form/page'
 
@@ -49,22 +46,23 @@ const UserFormLayout = () => {
     const public_url = process.env.NEXT_PUBLIC_APP_URL;
     const { data: session } = useSession() || {}
     const token = session?.user?.token
-    const [createData, setCreateData] = useState({ 'country': [] }, { designations: [] });
+    const [createData, setCreateData] = useState();
     const [countryId, setCountryId] = useState();
     const [stateData, setStateData] = useState();
     const [stateId, setStateId] = useState();
     const [cityData, setCityData] = useState();
     const [editData, setEditData] = useState();
-    const [selectedRoles, setSelectedRoles] = useState([]);
-    const [userRoles, setUserRoles] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const { doGet, doPost } = useApi();
 
     const router = useRouter();
 
     const { lang: locale, id: id } = useParams()
 
     const schema = object({
+        company_name: pipe(
+            string(),
+            minLength(1, "Company name is required"),
+            maxLength(255, "Company name is required")
+        ),
         first_name: pipe(
             string(),
             minLength(1, 'First Name is required'),
@@ -81,7 +79,6 @@ const UserFormLayout = () => {
             email('Please enter a valid email address'),
             maxLength(255, 'Email can be a maximum of 255 characters')
         ),
-        alternative_email: optional(string()),
         password: id
             ? optional(string())
             : pipe(
@@ -89,6 +86,10 @@ const UserFormLayout = () => {
                 minLength(6, 'Password min length should be 6'),
                 maxLength(255, 'Password can be a maximum of 255 characters')
             ),
+        package_id: pipe(
+            string(),
+            minLength(1, 'Package is required')
+        ),
         country_id: pipe(
             string(),
             minLength(1, 'Country is required')
@@ -117,6 +118,29 @@ const UserFormLayout = () => {
             minLength(7, 'Phone number must be valid'),
             maxLength(15, 'Phone number can be a maximum of 15 digits')
         ),
+        gst_no: optional(
+            string([
+                check(
+                    (value) =>
+                        value === '' ||
+                        (
+                            value.length === 15 &&
+                            /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][A-Z1-9]Z[0-9A-Z]$/.test(value)
+                        ),
+                    'GST number must be 15 characters and follow the correct format (e.g., 12ABCDE3456F1Z7)'
+                ),
+            ])
+        ),
+
+        pan_no: optional(
+            string([
+                check(
+                    (value) =>
+                        value === '' || /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value),
+                    'Invalid PAN number format'
+                ),
+            ])
+        ),
 
         website: optional(
             string([
@@ -133,34 +157,7 @@ const UserFormLayout = () => {
             ])
         ),
         photo: optional(string()), // Optional field or could validate file type
-        status: boolean(), // or optional(boolean()) if not required
-        designation_id: optional(string()), // or optional(boolean()) if not required
-        urn_no: optional(string()),
-        idfa_code: optional(string()),
-        application_no: optional(string()),
-        licence_no: optional(string()),
-        zone_id: optional(string()),
-        participation_type_id: optional(string()),
-        employee_type: optional(string()),
-        dob: optional(
-            pipe(
-                string(),
-                custom(
-                    (value) => !value || !isNaN(Date.parse(value)),
-                    'Invalid Date of Birth'
-                )
-            )
-        ),
-        roles: array(
-            string([minLength(1, 'Each role must be at least 1 character')]),
-            [minLength(1, 'At least one role must be selected')]
-        ),
-        user_code: pipe(
-            string(),
-            minLength(1, 'User code is required'),
-            maxLength(10, 'User code can be a maximum of 10 characters')
-        ),
-
+        status: boolean() // or optional(boolean()) if not required
     });
 
     // States
@@ -170,6 +167,7 @@ const UserFormLayout = () => {
         last_name: '',
         email: '',
         password: '',
+        package_id: '',
         country_id: '',
         state_id: '',
         city_id: '',
@@ -178,10 +176,10 @@ const UserFormLayout = () => {
         dob: '',
         phone: '',
         photo: '',
+        gst_no: '',
+        pan_no: '',
         website: '',
-        status: false,
-        roles: [],
-        user_code: ''
+        status: false
     })
 
     const handleClickShowPassword = () => setFormData(show => ({ ...show, isPasswordShown: !show.isPasswordShown }))
@@ -203,10 +201,12 @@ const UserFormLayout = () => {
     } = useForm({
         resolver: valibotResolver(schema),
         defaultValues: {
+            company_name: '',
             first_name: '',
             last_name: '',
             email: '',
             password: '',
+            package_id: '',
             country_id: '',
             state_id: '',
             city_id: '',
@@ -215,15 +215,10 @@ const UserFormLayout = () => {
             dob: '',
             phone: '',
             photo: '',
+            gst_no: '',
+            pan_no: '',
             website: '',
-            status: false,
-            designation_id: '',
-            urn_no: '',
-            idfa_code: '',
-            application_no: '',
-            licence_no: '',
-            roles: [],
-            user_code: ''
+            status: false
         }
     });
 
@@ -255,7 +250,7 @@ const UserFormLayout = () => {
 
     const editFormData = async () => {
         try {
-            const response = await fetch(`${URL}/admin/user/${id}/edit`, {
+            const response = await fetch(`${URL}/admin/company/${id}/edit`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -267,7 +262,7 @@ const UserFormLayout = () => {
 
             if (!response.ok) {
                 // If server responded with an error status, handle it explicitly
-                console.error('Failed to fetch user data:', result.message || result);
+                console.error('Failed to fetch company data:', result.message || result);
                 return;
             }
 
@@ -282,48 +277,47 @@ const UserFormLayout = () => {
         }
     };
 
-    const loadData = async () => {
+    const createFormData = async () => {
         try {
-            const countryData = await doGet(`${URL}/admin/countries`);
-            const designationData = await doGet(`${URL}/admin/designations?status=true`);
-            const zoneData = await doGet(`${URL}/company/zone`);
-            const participationTypesData = await doGet(`${URL}/admin/participation_types?status=true`);
-            const roleData = await doGet(`${URL}/admin/role`);
-            console.log('roleData', roleData);
-            setCreateData(prevData => ({
-                ...prevData,
-                country: countryData.country,         // assuming your API returns data inside `.data`
-                designations: designationData, // same here
-                zones: zoneData, // same here
-                participation_types: participationTypesData, // same here
-                roles: roleData, // same here
-            }));
 
-            setIsLoading(false);
+            const response = await fetch(`${URL}/admin/company/create`, {
+                method: "GET",
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                setCreateData(data?.data)
+            }
+
         } catch (error) {
-            console.error('Error loading data:', error.message);
-        }
-    };
+            console.log("Error", error);
 
+        }
+
+    }
 
     useEffect(() => {
         if (URL && token) {
-            loadData();
+            createFormData();
             if (id) {
                 editFormData();
             }
         }
-
     }, [URL, token, id])
 
     useEffect(() => {
         if (id && editData) {
-            console.log('editData', editData);
+
             reset({
                 first_name: editData.first_name,
                 last_name: editData.last_name,
+                company_name: editData.company_name,
                 email: editData.email,
-                alternative_email: editData.alternative_email,
                 phone: editData.phone,
                 address: editData.address,
                 pincode: editData.pincode,
@@ -331,18 +325,10 @@ const UserFormLayout = () => {
                 state_id: editData.state_id,
                 city_id: editData.city_id,
                 status: editData.status,
+                gst_no: editData.gst_no,
+                pan_no: editData.pan_no,
                 website: editData.website,
-                package_id: editData.package_id,
-                designation_id: editData.designation_id,
-                urn_no: editData.urn_no,
-                idfa_code: editData.idfa_code,
-                application_no: editData.application_no,
-                licence_no: editData.licence_no,
-                zone_id: editData.zone_id,
-                participation_type_id: editData.participation_type_id,
-                employee_type: editData.employee_type,
-                user_code: editData.emp_id,
-                dob: editData.dob ? new Date(editData.dob).toISOString().split('T')[0] : '',
+                package_id: editData.package_id
             });
 
             if (editData.photo) {
@@ -351,15 +337,11 @@ const UserFormLayout = () => {
             setCountryId(editData.country_id);
             setStateId(editData.state_id);
 
-            if (editData?.roles.length > 0) {
-                const rolesIds = editData.roles.map(role => role.role_id);
-                setUserRoles(rolesIds);
-            }
         }
     }, [id, editData])
 
     useEffect(() => {
-        if (countryId && createData?.country.length > 0) {
+        if (countryId && createData) {
             const data = createData && createData['country'].find(item => item.country_id == countryId);
             const states = data['states'];
             setStateData(states);
@@ -382,7 +364,7 @@ const UserFormLayout = () => {
                 }
             });
 
-            const response = await fetch(id ? `${URL}/admin/user/${id}` : `${URL}/admin/user`, {
+            const response = await fetch(id ? `${URL}/admin/company/${id}` : `${URL}/admin/company`, {
                 method: id ? "PUT" : "POST",
                 headers: {
                     Authorization: `Bearer ${token}` // ✅ No content-type here
@@ -393,34 +375,43 @@ const UserFormLayout = () => {
             const data = await response.json();
 
             if (response.ok) {
-                router.push(`/${locale}/apps/user/list`)
-                toast.success(`User ${id ? "updated" : "added"} successfully!`, {
+                router.push(`/${locale}/apps/company/list`)
+                toast.success(`Company ${id ? "updated" : "added"} successfully!`, {
                     autoClose: 700, // in milliseconds
                 });
             } else {
-                if (data?.message) {
-                    toast.error(data?.message, {
-                        autoClose: 1200, // in milliseconds
-                    });
-                }
                 console.error("Error", data);
             }
         } catch (error) {
-            if (data?.message) {
-                toast.error(data?.message, {
-                    autoClose: 1200, // in milliseconds
-                });
-            }
             console.error("Error occurred", error);
         }
     };
 
     const onSubmit = async (data) => {
+
         const newUser = {
-            ...data,
-            photo: file
+            photo: file,
+            company_name: data.company_name,
+            first_name: data.first_name,
+            last_name: data.last_name,
+            email: data.email,
+            password: data.password,
+            phone: data.phone,
+            dob: data.dob,
+            address: data.address,
+            pincode: data.pincode,
+            status: data.status,
+            package_id: data.package_id,
+            country_id: data.country_id,
+            state_id: data.state_id,
+            city_id: data.city_id,
+            gst_no: data.gst_no,
+            pan_no: data.pan_no,
+            website: data.website
         };
+
         const exist = await checkEmailCompany(data?.email, id);
+
         if (exist) {
             setError('email', {
                 type: 'manual',
@@ -428,6 +419,8 @@ const UserFormLayout = () => {
             });
             return;
         }
+
+
         submitFormData(newUser);
     };
 
@@ -472,10 +465,6 @@ const UserFormLayout = () => {
         setImgSrc('/images/avatars/11.png')
     }
 
-    const handleChange = event => {
-        setUserRoles(event.target.value)
-    }
-
     useEffect(() => {
         if (stateId && stateData) {
             const data = stateData && stateData.find(item => item.state_id == stateId);
@@ -484,57 +473,39 @@ const UserFormLayout = () => {
         }
     }, [stateId, stateData])
 
-    if (!createData || isLoading) {
+    if (!createData) {
         return <SkeletonFormComponent />
     }
 
     return (
         <Card>
-            <CardHeader title={id ? `Edit ${editData?.first_name}` : 'Add New User'} />
+            <CardHeader title='Company Form' />
             <Divider />
             <form onSubmit={handleSubmit(onSubmit)} noValidate encType="multipart/form-data">
                 <CardContent>
-                    <Grid container spacing={5}>
+                    <Grid container spacing={6}>
                         <Grid size={{ xs: 12 }}>
                             <Typography variant='body2' className='font-medium'>
                                 1. Account Details
                             </Typography>
                         </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <Controller
-                                name="first_name"
+                                name="company_name"
                                 control={control}
                                 render={({ field }) => (
                                     <CustomTextField
                                         {...field}
                                         fullWidth
-                                        label="First Name*"
-                                        placeholder="First Name"
-                                        error={!!errors.first_name}
-                                        helperText={errors.first_name?.message}
+                                        label="Company Name"
+                                        placeholder="Company Name"
+                                        error={!!errors.company_name}
+                                        helperText={errors.company_name?.message}
                                     />
                                 )}
                             />
                         </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            {/* Last Name */}
-                            <Controller
-                                name="last_name"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        fullWidth
-                                        type="text"
-                                        label="Last Name*"
-                                        placeholder="Last Name"
-                                        error={!!errors.last_name}
-                                        helperText={errors.last_name?.message}
-                                    />
-                                )}
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             {/* Email */}
                             <Controller
                                 name="email"
@@ -544,7 +515,7 @@ const UserFormLayout = () => {
                                         {...field}
                                         fullWidth
                                         type="email"
-                                        label="Email*"
+                                        label="Email"
                                         placeholder="Email"
                                         error={!!errors.email}
                                         helperText={errors.email?.message}
@@ -552,51 +523,49 @@ const UserFormLayout = () => {
                                 )}
                             />
                         </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            {/* Email */}
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <Controller
-                                name="alternative_email"
+                                name="first_name"
                                 control={control}
                                 render={({ field }) => (
                                     <CustomTextField
                                         {...field}
                                         fullWidth
-                                        type="email"
-                                        label="Alternate Email Address"
-                                        placeholder="Alternate Email Address"
-                                        error={!!errors.alternative_email}
-                                        helperText={errors.alternative_email?.message}
+                                        label="First Name"
+                                        placeholder="First Name"
+                                        error={!!errors.first_name}
+                                        helperText={errors.first_name?.message}
                                     />
                                 )}
                             />
                         </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            {/* Phone */}
+                        <Grid size={{ xs: 12, sm: 6 }}>
+                            {/* Last Name */}
                             <Controller
-                                name="phone"
+                                name="last_name"
                                 control={control}
                                 render={({ field }) => (
                                     <CustomTextField
                                         {...field}
                                         fullWidth
-                                        type="tel"
-                                        label="Phone*"
-                                        placeholder="Phone"
-                                        error={!!errors.phone}
-                                        helperText={errors.phone?.message}
+                                        type="text"
+                                        label="Last Name"
+                                        placeholder="Last Name"
+                                        error={!!errors.last_name}
+                                        helperText={errors.last_name?.message}
                                     />
                                 )}
                             />
                         </Grid>
                         {!id && (
-                            <Grid size={{ xs: 12, sm: 4 }}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <Controller
                                     name="password"
                                     control={control}
                                     render={({ field }) => (
                                         <CustomTextField
                                             fullWidth
-                                            label="Password*"
+                                            label="Password"
                                             placeholder="············"
                                             id="form-layout-separator-password"
                                             type={formData.isPasswordShown ? 'text' : 'password'}
@@ -622,7 +591,25 @@ const UserFormLayout = () => {
                                 />
                             </Grid>
                         )}
-                        <Grid size={{ xs: 12, sm: 4 }}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
+                            {/* Phone */}
+                            <Controller
+                                name="phone"
+                                control={control}
+                                render={({ field }) => (
+                                    <CustomTextField
+                                        {...field}
+                                        fullWidth
+                                        type="tel"
+                                        label="Phone"
+                                        placeholder="Phone"
+                                        error={!!errors.phone}
+                                        helperText={errors.phone?.message}
+                                    />
+                                )}
+                            />
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             {/* <Card className="p-4"> */}
                             <Typography variant="h6" className="mb-4">Profile Photo</Typography>
                             <CardContent className="flex flex-col sm:flex-row items-start gap-6 p-0">
@@ -662,6 +649,30 @@ const UserFormLayout = () => {
                             </CardContent>
                             {/* </Card> */}
                         </Grid>
+                        <Grid size={{ xs: 12, sm: 6 }}>
+                            <Controller
+                                name="package_id"
+                                control={control}
+                                render={({ field }) => (
+                                    <CustomTextField
+                                        {...field}
+                                        select
+                                        fullWidth
+                                        label="Select Package"
+                                        error={!!errors.package_id}
+                                        helperText={errors.package_id?.message}
+                                    >
+                                        {createData?.allPackages?.length > 0 &&
+                                            createData.allPackages.map((item, index) => (
+                                                <MenuItem key={index} value={item._id}>
+                                                    {item.name}
+                                                </MenuItem>
+                                            ))}
+                                    </CustomTextField>
+                                )}
+                            />
+                        </Grid>
+
                         <Grid size={{ xs: 12 }}>
                             <Divider />
                         </Grid>
@@ -670,24 +681,24 @@ const UserFormLayout = () => {
                                 2. Personal Info
                             </Typography>
                         </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <Controller
-                                name="dob"
+                                name="pincode"
                                 control={control}
                                 render={({ field }) => (
                                     <CustomTextField
                                         {...field}
                                         fullWidth
-                                        type="date"
-                                        label="Date of birth"
-                                        placeholder="Date of birth"
-                                        error={!!errors.dob}
-                                        helperText={errors.dob?.message}
+                                        type="number"
+                                        label="Pincode"
+                                        placeholder="Pincode"
+                                        error={!!errors.pincode}
+                                        helperText={errors.pincode?.message}
                                     />
                                 )}
                             />
                         </Grid>
-                        <Grid size={{ xs: 12, sm: 8 }}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <Controller
                                 name="address"
                                 control={control}
@@ -695,17 +706,17 @@ const UserFormLayout = () => {
                                     <CustomTextField
                                         {...field}
                                         fullWidth
-                                        label="Address*"
+                                        label="Address"
                                         placeholder="Address"
                                         multiline
-                                        rows={1}
+                                        rows={4}
                                         error={!!errors.address}
                                         helperText={errors.address?.message}
                                     />
                                 )}
                             />
                         </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <Controller
                                 name="country_id"
                                 control={control}
@@ -714,7 +725,7 @@ const UserFormLayout = () => {
                                         {...field}
                                         select
                                         fullWidth
-                                        label="Country*"
+                                        label="Select Country"
                                         onChange={(e) => {
                                             const selectedCountryId = e.target.value;
                                             field.onChange(selectedCountryId); // update form value
@@ -733,7 +744,7 @@ const UserFormLayout = () => {
                                 )}
                             />
                         </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             {/* State */}
                             <Controller
                                 name="state_id"
@@ -743,7 +754,7 @@ const UserFormLayout = () => {
                                         {...field}
                                         select
                                         fullWidth
-                                        label="State*"
+                                        label="Select State"
                                         onChange={(e) => {
                                             const selectStateId = e.target.value;
                                             field.onChange(selectStateId);
@@ -760,7 +771,7 @@ const UserFormLayout = () => {
                                 )}
                             />
                         </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             {/* City */}
                             <Controller
                                 name="city_id"
@@ -770,7 +781,7 @@ const UserFormLayout = () => {
                                         {...field}
                                         select
                                         fullWidth
-                                        label="City*"
+                                        label="Select City"
                                         error={!!errors.city_id}
                                         helperText={errors.city_id?.message}
                                     >
@@ -782,221 +793,41 @@ const UserFormLayout = () => {
                                 )}
                             />
                         </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <Controller
-                                name="pincode"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        fullWidth
-                                        type="number"
-                                        label="Pincode*"
-                                        placeholder="Pincode"
-                                        error={!!errors.pincode}
-                                        helperText={errors.pincode?.message}
-                                    />
-                                )}
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12 }}>
-                            <Divider />
-                        </Grid>
-                        <Grid size={{ xs: 12 }}>
-                            <Typography variant='body2' className='font-medium'>
-                                3. Other Details
-                            </Typography>
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <Controller
-                                name="urn_no"
+                                name="gst_no"
                                 control={control}
                                 render={({ field }) => (
                                     <CustomTextField
                                         {...field}
                                         fullWidth
                                         type="text"
-                                        label="URN Number"
-                                        placeholder="URN Number"
+                                        label="GST NO"
+                                        placeholder="GST NO"
                                         error={!!errors.gst_no}
                                         helperText={errors.gst_no?.message}
                                     />
                                 )}
                             />
                         </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <Controller
-                                name="idfa_code"
+                                name="pan_no"
                                 control={control}
                                 render={({ field }) => (
                                     <CustomTextField
                                         {...field}
                                         fullWidth
                                         type="text"
-                                        label="Employee ID/FA Code"
-                                        placeholder="Employee ID/FA Code"
-                                        error={!!errors.gst_no}
-                                        helperText={errors.gst_no?.message}
+                                        label="PAN NO"
+                                        placeholder="PAN NO"
+                                        error={!!errors.pan_no}
+                                        helperText={errors.pan_no?.message}
                                     />
                                 )}
                             />
                         </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <Controller
-                                name="application_no"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        fullWidth
-                                        type="text"
-                                        label="Application Number"
-                                        placeholder="Application Number"
-                                        error={!!errors.gst_no}
-                                        helperText={errors.gst_no?.message}
-                                    />
-                                )}
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <Controller
-                                name="licence_no"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        fullWidth
-                                        type="text"
-                                        label="Licence Number"
-                                        placeholder="Licence Number"
-                                        error={!!errors.gst_no}
-                                        helperText={errors.gst_no?.message}
-                                    />
-                                )}
-                            />
-                        </Grid>
-
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <Controller
-                                name="designation_id"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        select
-                                        fullWidth
-                                        label="Designation"
-                                        value={field.value ?? ''} // ✅ ensure controlled
-                                        onChange={(e) => {
-                                            field.onChange(e.target.value); // ✅ update RHF state
-                                        }}
-                                        error={!!errors.designation_id}
-                                        helperText={errors.designation_id?.message}
-                                    >
-                                        {createData?.designations?.length > 0 ? (
-                                            createData.designations.map((item) => (
-                                                <MenuItem key={item._id} value={item._id}>
-                                                    {item.name}
-                                                </MenuItem>
-                                            ))
-                                        ) : (
-                                            <MenuItem disabled>No Designations</MenuItem>
-                                        )}
-                                    </CustomTextField>
-                                )}
-                            />
-
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <Controller
-                                name="participation_type_id"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        select
-                                        fullWidth
-                                        label="Participation Type"
-                                        value={field.value ?? ''} // ✅ ensure controlled
-                                        onChange={(e) => {
-                                            field.onChange(e.target.value); // ✅ update RHF state
-                                        }}
-                                        error={!!errors.participation_type_id}
-                                        helperText={errors.participation_type_id?.message}
-                                    >
-                                        {createData?.participation_types?.length > 0 ? (
-                                            createData.participation_types.map((item) => (
-                                                <MenuItem key={item._id} value={item._id}>
-                                                    {item.name}
-                                                </MenuItem>
-                                            ))
-                                        ) : (
-                                            <MenuItem disabled>No data</MenuItem>
-                                        )}
-                                    </CustomTextField>
-                                )}
-                            />
-
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <Controller
-                                name="employee_type"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        select
-                                        fullWidth
-                                        label="Employee type"
-                                        value={field.value ?? ''} // ✅ ensure controlled
-                                        onChange={(e) => {
-                                            field.onChange(e.target.value); // ✅ update RHF state
-                                        }}
-                                        error={!!errors.employee_type}
-                                        helperText={errors.employee_type?.message}
-                                    >
-
-                                        <MenuItem value="Part time">Part time</MenuItem>
-                                        <MenuItem value="Full time">Full time</MenuItem>
-                                        <MenuItem value="Hybrid">Hybrid</MenuItem>
-
-                                    </CustomTextField>
-                                )}
-                            />
-
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <Controller
-                                name="zone_id"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        select
-                                        fullWidth
-                                        label="Zone"
-                                        value={field.value ?? ''} // ✅ ensure controlled
-                                        onChange={(e) => {
-                                            field.onChange(e.target.value); // ✅ update RHF state
-                                        }}
-                                        error={!!errors.zone_id}
-                                        helperText={errors.zone_id?.message}
-                                    >
-                                        {createData?.zones?.length > 0 ? (
-                                            createData.zones.map((item) => (
-                                                <MenuItem key={item._id} value={item._id}>
-                                                    {item.name}
-                                                </MenuItem>
-                                            ))
-                                        ) : (
-                                            <MenuItem disabled>No Zones</MenuItem>
-                                        )}
-                                    </CustomTextField>
-                                )}
-                            />
-
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                             <Controller
                                 name="website"
                                 control={control}
@@ -1013,7 +844,7 @@ const UserFormLayout = () => {
                                 )}
                             />
                         </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
 
 
                             {/* Status */}
@@ -1025,88 +856,13 @@ const UserFormLayout = () => {
                                         {...field}
                                         select
                                         fullWidth
-                                        label="Status*"
+                                        label="Select Status"
                                         error={!!errors.status}
                                         helperText={errors.status?.message}
                                     >
                                         <MenuItem value={true}>Active</MenuItem>
                                         <MenuItem value={false}>Inactive</MenuItem>
                                     </CustomTextField>
-                                )}
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12 }}>
-                            <Typography variant='body2' className='font-medium'>
-                                4. Roles
-                            </Typography>
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <Controller
-                                name="roles"
-                                control={control}
-                                defaultValue={[]} // ensure it's initialized as an array
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        select
-                                        fullWidth
-                                        label="Assign role*"
-                                        value={userRoles}  // array of role IDs
-                                        error={!!errors.roles}
-                                        helperText={errors.roles?.message}
-                                        slotProps={{
-                                            select: {
-                                                multiple: true,
-                                                onChange: (event) => {
-                                                    const value = event.target.value;
-                                                    setUserRoles(value);
-                                                    field.onChange(value); // update react-hook-form state
-                                                },
-                                                renderValue: (selectedIds) => {
-                                                    // Map IDs to role names for display
-                                                    const selectedNames = createData.roles
-                                                        .filter(role => selectedIds.includes(role._id))
-                                                        .map(role => role.name);
-                                                    return selectedNames.join(', ');
-                                                }
-                                            }
-                                        }}
-                                    >
-                                        {createData?.roles?.length > 0 ? (
-                                            createData.roles.map((role) => (
-                                                <MenuItem key={role._id} value={role._id}>
-                                                    <Checkbox checked={userRoles.includes(role._id)} />
-                                                    <ListItemText primary={role.name} />
-                                                </MenuItem>
-                                            ))
-                                        ) : (
-                                            <MenuItem disabled>No roles</MenuItem>
-                                        )}
-                                    </CustomTextField>
-
-                                )}
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <Controller
-                                name="user_code"
-                                control={control}
-                                readonly
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        fullWidth
-                                        type="text"
-                                        label="Employee ID*"
-                                        placeholder="Employee ID"
-                                        error={!!errors.user_code}
-                                        helperText={errors.user_code?.message}
-                                        slotProps={{
-                                            input: {
-                                                // readOnly: !!this.value,
-                                            }
-                                        }}
-                                    />
                                 )}
                             />
                         </Grid>

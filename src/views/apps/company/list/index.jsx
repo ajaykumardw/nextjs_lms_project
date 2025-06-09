@@ -17,8 +17,7 @@ const UserList = () => {
   const token = session?.user?.token
   const [userData, setUserData] = useState();
 
-
-  const loadData = async () => {
+  const fetchData = async () => {
     try {
       const response = await fetch(`${URL}/admin/company`, {
         method: 'GET',
@@ -42,7 +41,7 @@ const UserList = () => {
 
   useEffect(() => {
     if (URL && token) {
-      loadData();
+      fetchData();
     }
   }, [URL, token])
 
@@ -65,7 +64,7 @@ const UserList = () => {
         <UserListCards />
       </Grid>
       <Grid size={{ xs: 12 }}>
-        <UserListTable userData={userData} loadData={loadData} />
+        <UserListTable userData={userData} />
       </Grid>
     </Grid>
   )

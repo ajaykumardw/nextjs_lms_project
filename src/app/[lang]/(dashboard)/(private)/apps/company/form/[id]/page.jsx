@@ -1,8 +1,6 @@
 // MUI Imports
 import Grid from '@mui/material/Grid2'
-
-// Component Imports
-import UserFormLayout from '@/components/user-form/page';
+import UserFormLayout from '@/components/company-form/page';
 
 const UserFormLayouts = () => {
     return (

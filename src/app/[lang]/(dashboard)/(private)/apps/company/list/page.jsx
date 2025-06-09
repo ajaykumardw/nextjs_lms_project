@@ -1,5 +1,5 @@
 // Component Imports
-import UserList from '@/views/apps/user/list'
+import UserList from '@/views/apps/company/list'
 
 /**
  * ! If you need data using an API call, uncomment the below API code, update the `process.env.API_URL` variable in the

@@ -173,10 +173,10 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
           <SubMenu label={dictionary['navigation']["Manage organization"]} icon={<i className='tabler-user' />}>
             <MenuItem href={`/${locale}/apps/zones`}>{dictionary['navigation']['Zones']}</MenuItem>
             <MenuItem href={`/${locale}/apps/region`}>{dictionary['navigation'].Regions}</MenuItem>
-            <MenuItem href={`/${locale}/apps/user/list`}>{dictionary['navigation'].Branches}</MenuItem>
-            <MenuItem href={`/${locale}/apps/user/list`}>{dictionary['navigation'].Channels}</MenuItem>
-            <MenuItem href={`/${locale}/apps/user/list`}>{dictionary['navigation'].Departments}</MenuItem>
-            <MenuItem href={`/${locale}/apps/user/list`}>{dictionary['navigation'].Designations}</MenuItem>
+            <MenuItem href={`/${locale}/apps/branches`}>{dictionary['navigation'].Branches}</MenuItem>
+            <MenuItem href={`/${locale}/apps/channels`}>{dictionary['navigation'].Channels}</MenuItem>
+            <MenuItem href={`/${locale}/apps/departments`}>{dictionary['navigation'].Departments}</MenuItem>
+            <MenuItem href={`/${locale}/apps/designations`}>{dictionary['navigation'].Designations}</MenuItem>
           </SubMenu>
           <SubMenu label={dictionary['navigation'].user} icon={<i className='tabler-user' />}>
             <MenuItem href={`/${locale}/apps/user/list`}>{dictionary['navigation'].list}</MenuItem>
