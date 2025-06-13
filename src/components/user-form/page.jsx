@@ -284,11 +284,11 @@ const UserFormLayout = () => {
 
     const loadData = async () => {
         try {
-            const countryData = await doGet(`${URL}/admin/countries`);
-            const designationData = await doGet(`${URL}/admin/designations?status=true`);
-            const zoneData = await doGet(`${URL}/company/zone`);
-            const participationTypesData = await doGet(`${URL}/admin/participation_types?status=true`);
-            const roleData = await doGet(`${URL}/admin/role`);
+            const countryData = await doGet(`admin/countries`);
+            const designationData = await doGet(`admin/designations?status=true`);
+            const zoneData = await doGet(`company/zone`);
+            const participationTypesData = await doGet(`admin/participation_types?status=true`);
+            const roleData = await doGet(`admin/role`);
             console.log('roleData', roleData);
             setCreateData(prevData => ({
                 ...prevData,
