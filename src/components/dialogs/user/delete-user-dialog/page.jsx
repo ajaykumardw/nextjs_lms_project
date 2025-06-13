@@ -30,22 +30,6 @@ const DeleteUserDialog = ({ open, setOpen, type, user, loadData }) => {
     setOpen(false)
   }
 
-  const handleConfirmation1 = async (value) => {
-
-    try {
-      if (value == true) {
-        const result = await doDelete(`admin/user/${user._id}`);
-        loadData();
-        setSecondDialog(true)
-      }
-      setUserInput(value)
-      setOpen(false)
-    } catch (error) {
-      console.log(error);
-    }
-
-  }
-
   const handleConfirmation = async (value) => {
     const endpoint = `admin/user/${user._id}`;
     if (value == true) {
