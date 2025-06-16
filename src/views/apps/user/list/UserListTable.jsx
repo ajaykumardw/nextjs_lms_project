@@ -47,10 +47,6 @@ import {
   getSortedRowModel
 } from '@tanstack/react-table'
 
-import UpdatePasswordDialog from '@components/dialogs/user/update-password-dialog/page'
-import DeleteUserDialog from '@components/dialogs/user/delete-user-dialog/page'
-import ManageEmpCodeDialog from '@/components/dialogs/user/manage-emp-code-dialog/index'
-
 // Component Imports
 import TableFilters from './TableFilters'
 import OptionMenu from '@core/components/option-menu'
