@@ -44,6 +44,8 @@ export const authOptions = {
 
           const data = await res.json()
 
+console.log("Data", data);
+
           if (res.status === 401) {
             throw new Error(JSON.stringify(data?.message))
           }
