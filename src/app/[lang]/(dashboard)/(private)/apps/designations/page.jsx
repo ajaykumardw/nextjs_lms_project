@@ -1,5 +1,5 @@
 'use client'
-// Component Imports
+
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import DesignationComponent from '@/views/apps/designation/index'
