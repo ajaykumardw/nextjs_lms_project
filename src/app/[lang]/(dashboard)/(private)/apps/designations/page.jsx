@@ -1,7 +1,5 @@
 'use client'
 
-// Component Imports
-
 import { useEffect, useState } from 'react'
 
 import { useSession } from 'next-auth/react'
@@ -37,7 +35,7 @@ const DesignationApp = () => {
 
     } catch (error) {
       console.error('Error fetching designations:', error.message);
-      
+
       // Optionally show toast or UI feedback
       // toast.error(error.message || 'Something went wrong');
     }
