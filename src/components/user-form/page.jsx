@@ -19,7 +19,7 @@ import CardHeader from '@mui/material/CardHeader'
 
 import Typography from '@mui/material/Typography'
 
-import { useForm, Controller } from 'react-hook-form'
+import { useForm, Controller, useFormContext } from 'react-hook-form'
 
 import CardContent from '@mui/material/CardContent'
 
@@ -233,13 +233,18 @@ const UserFormLayout = () => {
             photo: '',
             website: '',
             status: false,
-            designation_id: '',
             urn_no: '',
             idfa_code: '',
             application_no: '',
             licence_no: '',
             roles: [],
-            user_code: ''
+            user_code: '',
+            employee_type: '',
+            participation_type_id: '',
+            zone_id: '',
+            designation_id: '',
+            alternative_email: ''
+
         }
     });
 
@@ -344,7 +349,7 @@ const UserFormLayout = () => {
                 first_name: editData.first_name,
                 last_name: editData.last_name,
                 email: editData.email,
-                alternative_email: editData.alternative_email,
+                alternative_email: editData?.alternative_email || '',
                 phone: editData.phone,
                 address: editData.address,
                 pincode: editData.pincode,
@@ -352,18 +357,17 @@ const UserFormLayout = () => {
                 state_id: editData.state_id,
                 city_id: editData.city_id,
                 status: editData.status,
-                website: editData.website,
-                package_id: editData.package_id,
-                designation_id: editData.designation_id,
-                urn_no: editData.urn_no,
-                idfa_code: editData.idfa_code,
-                application_no: editData.application_no,
-                licence_no: editData.licence_no,
-                zone_id: editData.zone_id,
-                participation_type_id: editData.participation_type_id,
-                employee_type: editData.employee_type,
-                user_code: editData.emp_id,
+                website: editData?.website || '',
+                urn_no: editData?.urn_no || '',
+                idfa_code: editData?.idfa_code || '',
+                application_no: editData?.application_no || '',
+                licence_no: editData?.licence_no || '',
+                zone_id: editData?.zone_id || '',
+                participation_type_id: editData?.participation_type_id || '',
+                employee_type: editData?.employee_type || '',
+                user_code: editData?.emp_id || '',
                 dob: editData.dob ? new Date(editData.dob).toISOString().split('T')[0] : '',
+                designation_id: editData?.designation_id || '',
             });
 
             if (editData.photo) {
@@ -373,13 +377,15 @@ const UserFormLayout = () => {
             setCountryId(editData.country_id);
             setStateId(editData.state_id);
 
+
             if (editData?.roles.length > 0) {
                 const rolesIds = editData.roles.map(role => role.role_id);
 
                 setUserRoles(rolesIds);
+                setValue('roles', rolesIds);
             }
         }
-    }, [id, editData])
+    }, [id, editData, setValue])
 
     useEffect(() => {
         if (countryId && createData?.country.length > 0) {
@@ -392,6 +398,9 @@ const UserFormLayout = () => {
 
     const submitFormData = async (values) => {
         try {
+
+            console.log('values', values);
+
             const formData = new FormData();
 
             // Append file first — must match multer field name
@@ -504,10 +513,6 @@ const UserFormLayout = () => {
     const handleFileInputReset = () => {
         setFile('')
         setImgSrc('/images/avatars/11.png')
-    }
-
-    const handleChange = event => {
-        setUserRoles(event.target.value)
     }
 
     useEffect(() => {
@@ -1012,9 +1017,12 @@ const UserFormLayout = () => {
                                         select
                                         fullWidth
                                         label="Zone"
-                                        value={field.value ?? ''} // ✅ ensure controlled
+                                        value={field.value ?? ''} // ✅ fallback to empty string
                                         onChange={(e) => {
-                                            field.onChange(e.target.value); // ✅ update RHF state
+                                            const rawValue = e.target.value;
+                                            const value = rawValue === 'undefined' || !rawValue ? '' : rawValue;
+
+                                            field.onChange(value);
                                         }}
                                         error={!!errors.zone_id}
                                         helperText={errors.zone_id?.message}
@@ -1088,7 +1096,7 @@ const UserFormLayout = () => {
                                         select
                                         fullWidth
                                         label="Assign role*"
-                                        value={userRoles}  // array of role IDs
+                                        value={field.value}  // array of role IDs
                                         error={!!errors.roles}
                                         helperText={errors.roles?.message}
                                         slotProps={{
@@ -1098,6 +1106,7 @@ const UserFormLayout = () => {
                                                     const value = event.target.value;
 
                                                     setUserRoles(value);
+
                                                     field.onChange(value); // update react-hook-form state
                                                 },
                                                 renderValue: (selectedIds) => {
