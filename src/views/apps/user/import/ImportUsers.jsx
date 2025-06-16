@@ -1,27 +1,63 @@
+// -------------------- React & Core --------------------
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Typography, Card, CardHeader, CardContent, Alert, Avatar, List, ListItem, IconButton, LinearProgress, TablePagination, AlertTitle } from '@mui/material';
+
+// -------------------- MUI Components --------------------
+import {
+  Button,
+  Typography,
+  Card,
+  CardHeader,
+  CardContent,
+  Alert,
+  AlertTitle,
+  Avatar,
+  List,
+  ListItem,
+  IconButton,
+  LinearProgress,
+  TablePagination,
+  MenuItem,
+  Checkbox,
+  ListItemText
+} from '@mui/material';
+
+
+// -------------------- External Libraries --------------------
 import * as XLSX from 'xlsx';
 import { useDropzone } from 'react-dropzone';
 import { toast } from 'react-toastify';
-import * as v from "valibot"
-import { createColumnHelper, flexRender, getCoreRowModel, getFacetedMinMaxValues, getFacetedRowModel, getFacetedUniqueValues, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table';
-import { ColumnDef, FilterFn } from '@tanstack/react-table';
+import { object, string, minLength, array } from 'valibot';
+import { useForm, Controller } from 'react-hook-form';
+import { valibotResolver } from '@hookform/resolvers/valibot';
+import classnames from 'classnames';
+import { useSession } from 'next-auth/react';
+
+// -------------------- React Table --------------------
+import {
+  createColumnHelper,
+  flexRender,
+  getCoreRowModel,
+  getFacetedMinMaxValues,
+  getFacetedRowModel,
+  getFacetedUniqueValues,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
 import { rankItem } from '@tanstack/match-sorter-utils';
-import classnames from 'classnames'
+
+// -------------------- MUI Custom Components --------------------
+import CustomTextField from '@core/components/mui/TextField';
+import CustomAvatar from '@core/components/mui/Avatar';
+
+// -------------------- Internal Imports --------------------
+import { useApi } from '../../../../utils/api';
 import tableStyles from '@core/styles/table.module.css';
 import AppReactDropzone from '@/libs/styles/AppReactDropzone';
 import TablePaginationComponent from '@/components/TablePaginationComponent';
-import { useApi } from '../../../../utils/api';
-import { useSession } from 'next-auth/react';
-import { useForm, Controller } from 'react-hook-form'
-import { valibotResolver } from '@hookform/resolvers/valibot';
-import { object, string, minLength, array } from 'valibot';
-import CustomTextField from '@core/components/mui/TextField'
-import MenuItem from '@mui/material/MenuItem'
-import Checkbox from '@mui/material/Checkbox'
-import ListItemText from '@mui/material/ListItemText'
-import ImportSuccessDialog from '@/components/dialogs/user/import-success-dialog/page'
-import CustomAvatar from '@core/components/mui/Avatar'
+import ImportSuccessDialog from '@/components/dialogs/user/import-success-dialog/page';
+
 
 //import { ExpectedStudentExcelHeaders, ExpectedStudentExcelHeadersWithoutBatchId } from '@/configs/customDataConfig';
 const CHUNK_SIZE = 1;
@@ -127,10 +163,14 @@ const ImportUsers = ({ batch, onBack }) => {
             const headers = XLSX.utils.sheet_to_json(worksheet, { header: 1 })[0];
             const requiredHeaders = ['SRNO', 'Email', 'FirstName', 'LastName', 'PhoneNo', 'Password', 'EmpID', 'Address', 'Country', 'State', 'City', 'PinCode', 'URNNumber', 'ApplicationNo', 'LicenseNo', 'Status', 'Designation', 'EmployeeType', 'ParticipationType', 'Zone']; // customize
             const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+
             if (missingHeaders.length > 0) {
+
               setMissingHeaders(missingHeaders);
+
               //toast.error(`Missing headers: ${missingHeaders.join(', ')}`);
               setLoading(false);
+
               return;
             }
 
@@ -139,8 +179,11 @@ const ImportUsers = ({ batch, onBack }) => {
             const duplicates = new Set();
 
             for (const row of jsonData) {
+
               const email = (row.Email || '').toLowerCase().trim();
+
               if (!email) continue;
+
               if (seen.has(email)) {
                 duplicates.add(email);
               } else {
@@ -149,8 +192,10 @@ const ImportUsers = ({ batch, onBack }) => {
             }
 
             if (duplicates.size > 0) {
+
               toast.error(`Duplicate emails found in Excel: ${Array.from(duplicates).join(', ')}`);
               setLoading(false);
+
               return;
             }
 
@@ -224,6 +269,7 @@ const ImportUsers = ({ batch, onBack }) => {
 
   const getRoles = async () => {
     const roleData = await doGet(`admin/role`);
+
     setRoles(roleData);
   }
 
@@ -236,22 +282,25 @@ const ImportUsers = ({ batch, onBack }) => {
 
   useEffect(() => {
     getRoles();
-  }, []);
+  }, [getRoles]);
 
   const handleUploadData = async () => {
     try {
 
-
       if (userRoles.length == 0) {
+
         toast.error(`Please choose the role first`);
         setLoading(false);
+
         return;
       }
 
       const jsonData = uploadData;
+
       const totalChunks = Math.ceil(jsonData.length / CHUNK_SIZE);
-      console.log('totalChunks', totalChunks);
+
       const final_url = `${process.env.NEXT_PUBLIC_API_URL}/admin/users/import`;
+
       for (let i = 0; i < totalChunks; i++) {
         const chunk = jsonData.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
 
@@ -262,11 +311,13 @@ const ImportUsers = ({ batch, onBack }) => {
         });
 
         const result = await res.json();
+
         if (!res.ok) throw new Error(result.message || 'Import failed');
 
         const percent = Math.round(((i + 1) / totalChunks) * 100);
-        console.log('percent', percent);
+
         setData(prev => [...prev, ...result.data.data]);
+
         setProgress(percent);
 
         if (percent == 100) {
@@ -307,15 +358,15 @@ const ImportUsers = ({ batch, onBack }) => {
       columnHelper.accessor('Import Status', {
         header: 'Imported',
         cell: ({ row }) => (
-          <div className="flex flex-col">
-            <Typography color='text.primary' >
 
-              <CustomAvatar skin='light' color={row.original?.errors.length == 0 ? 'success' : 'error'}>
-                <i className={row.original?.errors.length == 0 ? 'tabler-circle-check' : 'tabler-circle-x'} />
-              </CustomAvatar>
+          <Typography color='text.primary' >
 
-            </Typography>
-          </div>
+            <CustomAvatar skin='light' color={row.original?.errors.length == 0 ? 'success' : 'error'}>
+              <i className={row.original?.errors.length == 0 ? 'tabler-circle-check' : 'tabler-circle-x'} />
+            </CustomAvatar>
+
+          </Typography>
+
         )
       }),
       columnHelper.accessor('FirstName', {
@@ -592,6 +643,7 @@ const ImportUsers = ({ batch, onBack }) => {
             <Alert severity='info'>
               Note: It will accept only Excel files with *.xls or *.xlsx extension only.
             </Alert>
+
             {missingHeadersData.length > 0 &&
               <Alert severity='error'
                 action={
@@ -623,11 +675,13 @@ const ImportUsers = ({ batch, onBack }) => {
                       multiple: true,
                       onChange: (event) => {
                         const value = event.target.value;
+
                         setUserRoles(value);
                         field.onChange(value); // update react-hook-form state
                       },
                       renderValue: (selectedIds) => {
                         const selectedNames = roles.filter(role => selectedIds.includes(role._id)).map(role => role.name);
+
                         return selectedNames.join(', ');
                       }
                     }

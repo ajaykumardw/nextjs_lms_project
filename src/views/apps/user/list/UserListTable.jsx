@@ -1,39 +1,32 @@
 'use client'
 
-// React Imports
-import { useEffect, useState, useMemo } from 'react'
+// -------------------- React Imports --------------------
+import { useEffect, useState, useMemo } from 'react';
 
-// Next Imports
-import { useRouter } from 'next/navigation';
-import Link from 'next/link'
-import { useParams } from 'next/navigation'
+// -------------------- Next.js Imports --------------------
+import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 
-// MUI Imports
-import Card from '@mui/material/Card'
-import CardHeader from '@mui/material/CardHeader'
-import Button from '@mui/material/Button'
-import Typography from '@mui/material/Typography'
-import Chip from '@mui/material/Chip'
-import Checkbox from '@mui/material/Checkbox'
-import IconButton from '@mui/material/IconButton'
-import { styled } from '@mui/material/styles'
-import TablePagination from '@mui/material/TablePagination'
-import MenuItem from '@mui/material/MenuItem'
-import FormControlLabel from '@mui/material/FormControlLabel'
-import Switch from '@mui/material/Switch'
+// -------------------- MUI Imports --------------------
+import Card from '@mui/material/Card';
+import CardHeader from '@mui/material/CardHeader';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
+import Chip from '@mui/material/Chip';
+import Checkbox from '@mui/material/Checkbox';
+import IconButton from '@mui/material/IconButton';
+import { styled } from '@mui/material/styles';
+import TablePagination from '@mui/material/TablePagination';
+import MenuItem from '@mui/material/MenuItem';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
 
-import { toast } from 'react-toastify'
+// -------------------- External Libraries --------------------
+import { toast } from 'react-toastify';
+import classnames from 'classnames';
+import { rankItem } from '@tanstack/match-sorter-utils';
 
-// Third-party Imports
-
-import classnames from 'classnames'
-
-import { rankItem } from '@tanstack/match-sorter-utils'
-import UpdatePasswordDialog from '@components/dialogs/user/update-password-dialog/page'
-import DeleteUserDialog from '@components/dialogs/user/delete-user-dialog/page'
-import ManageEmpCodeDialog from '@/components/dialogs/user/manage-emp-code-dialog/index'
-import ImportUsers from '../../../../views/apps/user/import/ImportUsers';
-
+// -------------------- React Table Imports --------------------
 import {
   createColumnHelper,
   flexRender,
@@ -45,23 +38,27 @@ import {
   getFacetedMinMaxValues,
   getPaginationRowModel,
   getSortedRowModel
-} from '@tanstack/react-table'
+} from '@tanstack/react-table';
 
-// Component Imports
-import TableFilters from './TableFilters'
-import OptionMenu from '@core/components/option-menu'
-import TablePaginationComponent from '@components/TablePaginationComponent'
-import CustomTextField from '@core/components/mui/TextField'
-import CustomAvatar from '@core/components/mui/Avatar'
+// -------------------- Dialog & View Components --------------------
+import UpdatePasswordDialog from '@components/dialogs/user/update-password-dialog/page';
+import DeleteUserDialog from '@components/dialogs/user/delete-user-dialog/page';
+import ManageEmpCodeDialog from '@/components/dialogs/user/manage-emp-code-dialog/index';
+import ImportUsers from '../../../../views/apps/user/import/ImportUsers';
 
-// Util Imports
+// -------------------- Local/Custom Components --------------------
+import TableFilters from './TableFilters';
+import OptionMenu from '@core/components/option-menu';
+import TablePaginationComponent from '@components/TablePaginationComponent';
+import CustomTextField from '@core/components/mui/TextField';
+import CustomAvatar from '@core/components/mui/Avatar';
 
-import { getInitials } from '@/utils/getInitials'
-
+// -------------------- Utilities --------------------
+import { getInitials } from '@/utils/getInitials';
 import { useApi } from '../../../../utils/api';
 
-// Style Imports
-import tableStyles from '@core/styles/table.module.css'
+// -------------------- Styles --------------------
+import tableStyles from '@core/styles/table.module.css';
 
 const fuzzyFilter = (row, columnId, value, addMeta) => {
   // Rank the item

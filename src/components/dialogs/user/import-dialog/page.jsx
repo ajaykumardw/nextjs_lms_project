@@ -3,20 +3,33 @@
 // React Imports
 import { Fragment, useState } from 'react'
 
-// MUI Imports
-import Dialog from '@mui/material/Dialog'
-import DialogContent from '@mui/material/DialogContent'
-import DialogActions from '@mui/material/DialogActions'
-import { useApi } from '../../../../utils/api';
-import { toast } from 'react-toastify'
-import { Button, Typography, Card, CardHeader, CardContent, Alert, Avatar, List, ListItem, IconButton, LinearProgress, TablePagination, AlertTitle } from '@mui/material';
-import AppReactDropzone from '@/libs/styles/AppReactDropzone';
+// -------------------- MUI Imports --------------------
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import {
+  Button,
+  Typography,
+  Card,
+  CardHeader,
+  CardContent,
+  Alert,
+  AlertTitle,
+  Avatar,
+  List,
+  ListItem,
+  IconButton,
+  LinearProgress,
+  TablePagination
+} from '@mui/material';
+
+// -------------------- External Library Imports --------------------
+import { toast } from 'react-toastify';
 import { useDropzone } from 'react-dropzone';
 
-
-
-// Third-party Imports
-import classnames from 'classnames'
+// -------------------- Internal/Custom Imports --------------------
+import { useApi } from '../../../../utils/api';
+import AppReactDropzone from '@/libs/styles/AppReactDropzone';
 
 const ImportDialog = ({ open, setOpen }) => {
 
@@ -28,6 +41,7 @@ const ImportDialog = ({ open, setOpen }) => {
   const [loading, setLoading] = useState(false); // Loading state
   const [fileInput, setFileInput] = useState(null);
   const [data, setData] = useState([]);
+
   const { getRootProps, getInputProps } = useDropzone({
     // maxFiles: 1,
     multiple: false,

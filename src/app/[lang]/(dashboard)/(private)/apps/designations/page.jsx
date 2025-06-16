@@ -46,7 +46,7 @@ const DesignationApp = () => {
     if (URL && token) {
       fetchDesignations()
     }
-  }, [URL, token])
+  }, [URL, token, fetchDesignations])
 
   // Render loading or the permissions component
   return data ?
