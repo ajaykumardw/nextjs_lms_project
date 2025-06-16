@@ -29,6 +29,10 @@ import { toast } from 'react-toastify'
 import classnames from 'classnames'
 
 import { rankItem } from '@tanstack/match-sorter-utils'
+import UpdatePasswordDialog from '@components/dialogs/user/update-password-dialog/page'
+import DeleteUserDialog from '@components/dialogs/user/delete-user-dialog/page'
+import ManageEmpCodeDialog from '@/components/dialogs/user/manage-emp-code-dialog/index'
+import ImportUsers from '../../../../views/apps/user/import/ImportUsers';
 
 import {
   createColumnHelper,
@@ -108,7 +112,7 @@ const userRoleObj = {
 // Column Definitions
 const columnHelper = createColumnHelper()
 
-const UserListTable = ({ userData, loadData }) => {
+const UserListTable = ({ userData, loadData, setIsUserCardShow }) => {
   // States
   const [rowSelection, setRowSelection] = useState({})
   const [data, setData] = useState([])
@@ -117,6 +121,7 @@ const UserListTable = ({ userData, loadData }) => {
   const [open, setOpen] = useState(false)
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false)
   const [openManageEmpCodeDialog, setManageEmpCodeDialog] = useState(false)
+  const [openImportWindow, setOpenImportWindow] = useState(false)
   const [user, setUser] = useState()
   const { doPostFormData } = useApi();
   const public_url = process.env.NEXT_PUBLIC_APP_URL;
@@ -136,6 +141,17 @@ const UserListTable = ({ userData, loadData }) => {
   const openDeleteDialogHandle = (row) => {
     setUser(row);
     setOpenDeleteDialog(true)
+  }
+
+  const handleImportDialog = (row) => {
+    setOpenImportWindow(true)
+    setIsUserCardShow(false)
+  }
+
+  const onBack = () => {
+    setOpenImportWindow(false);
+    setIsUserCardShow(true)
+    loadData();
   }
 
   const handleStatusChange = async (userId, status) => {
@@ -370,116 +386,122 @@ const UserListTable = ({ userData, loadData }) => {
     }
   }
 
+
   return (
     <>
-      <Card>
-        <CardHeader title='Filters' className='pbe-4' />
-        <TableFilters setData={setFilteredData} tableData={data} />
-        <div className='flex justify-between flex-col items-start md:flex-row md:items-center p-6 border-bs gap-4'>
-          <CustomTextField
-            select
-            value={table.getState().pagination.pageSize}
-            onChange={e => table.setPageSize(Number(e.target.value))}
-            className='max-sm:is-full sm:is-[70px]'
-          >
-            <MenuItem value='10'>10</MenuItem>
-            <MenuItem value='25'>25</MenuItem>
-            <MenuItem value='50'>50</MenuItem>
-          </CustomTextField>
-          <div className='flex flex-col sm:flex-row max-sm:is-full items-start sm:items-center gap-4'>
-            <DebouncedInput
-              value={globalFilter ?? ''}
-              onChange={value => setGlobalFilter(String(value))}
-              placeholder='Search User'
-              className='max-sm:is-full'
-            />
-            <Button
-              color='secondary'
-              variant='tonal'
-              startIcon={<i className='tabler-upload' />}
-              className='max-sm:is-full'
+      {openImportWindow ? (
+        <ImportUsers batch={[]} onBack={onBack} />
+      ) : (
+        <Card >
+          <CardHeader title='Filters' className='pbe-4' />
+          <TableFilters setData={setFilteredData} tableData={data} />
+          <div className='flex justify-between flex-col items-start md:flex-row md:items-center p-6 border-bs gap-4'>
+            <CustomTextField
+              select
+              value={table.getState().pagination.pageSize}
+              onChange={e => table.setPageSize(Number(e.target.value))}
+              className='max-sm:is-full sm:is-[70px]'
             >
-              Export
-            </Button>
-            <Button
-              variant='contained'
-              startIcon={<i className='tabler-plus' />}
-              onClick={() => router.push(`/${locale}/apps/user/form`)}
-              className='max-sm:is-full'
-            >
-              Add New User
-            </Button>
+              <MenuItem value='10'>10</MenuItem>
+              <MenuItem value='25'>25</MenuItem>
+              <MenuItem value='50'>50</MenuItem>
+            </CustomTextField>
+            <div className='flex flex-col sm:flex-row max-sm:is-full items-start sm:items-center gap-4'>
+              <DebouncedInput
+                value={globalFilter ?? ''}
+                onChange={value => setGlobalFilter(String(value))}
+                placeholder='Search User'
+                className='max-sm:is-full'
+              />
+              <Button
 
+                variant='tonal'
+                startIcon={<i className='tabler-upload' />}
+                className='max-sm:is-full'
+                onClick={() => handleImportDialog()}
+              >
+                Import
+              </Button>
+              <Button
+                variant='contained'
+                startIcon={<i className='tabler-plus' />}
+                onClick={() => router.push(`/${locale}/apps/user/form`)}
+                className='max-sm:is-full'
+              >
+                Add New User
+              </Button>
+
+            </div>
           </div>
-        </div>
-        <div className='overflow-x-auto'>
-          <table className={tableStyles.table}>
-            <thead>
-              {table.getHeaderGroups().map(headerGroup => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map(header => (
-                    <th key={header.id}>
-                      {header.isPlaceholder ? null : (
-                        <>
-                          <div
-                            className={classnames({
-                              'flex items-center': header.column.getIsSorted(),
-                              'cursor-pointer select-none': header.column.getCanSort()
-                            })}
-                            onClick={header.column.getToggleSortingHandler()}
-                          >
-                            {flexRender(header.column.columnDef.header, header.getContext())}
-                            {{
-                              asc: <i className='tabler-chevron-up text-xl' />,
-                              desc: <i className='tabler-chevron-down text-xl' />
-                            }[header.column.getIsSorted()] ?? null}
-                          </div>
-                        </>
-                      )}
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            {table.getFilteredRowModel().rows.length === 0 ? (
-              <tbody>
-                <tr>
-                  <td colSpan={table.getVisibleFlatColumns().length} className='text-center'>
-                    No data available
-                  </td>
-                </tr>
-              </tbody>
-            ) : (
-              <tbody>
-                {table
-                  .getRowModel()
-                  .rows.slice(0, table.getState().pagination.pageSize)
-                  .map(row => {
-                    return (
-                      <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
-                        {row.getVisibleCells().map(cell => (
-                          <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-                        ))}
-                      </tr>
-                    )
-                  })}
-              </tbody>
-            )}
-          </table>
-        </div>
-        <TablePagination
-          component={() => <TablePaginationComponent table={table} />}
-          count={table.getFilteredRowModel().rows.length}
-          rowsPerPage={table.getState().pagination.pageSize}
-          page={table.getState().pagination.pageIndex}
-          onPageChange={(_, page) => {
-            table.setPageIndex(page)
-          }}
-        />
-      </Card>
-      <UpdatePasswordDialog open={open} setOpen={setOpen} data={user} />
-      <DeleteUserDialog open={openDeleteDialog} setOpen={setOpenDeleteDialog} type='delete-account' user={user} loadData={loadData} />
-      <ManageEmpCodeDialog open={openManageEmpCodeDialog} setOpen={setManageEmpCodeDialog} user={user} loadData={loadData} />
+          <div className='overflow-x-auto'>
+            <table className={tableStyles.table}>
+              <thead>
+                {table.getHeaderGroups().map(headerGroup => (
+                  <tr key={headerGroup.id}>
+                    {headerGroup.headers.map(header => (
+                      <th key={header.id}>
+                        {header.isPlaceholder ? null : (
+                          <>
+                            <div
+                              className={classnames({
+                                'flex items-center': header.column.getIsSorted(),
+                                'cursor-pointer select-none': header.column.getCanSort()
+                              })}
+                              onClick={header.column.getToggleSortingHandler()}
+                            >
+                              {flexRender(header.column.columnDef.header, header.getContext())}
+                              {{
+                                asc: <i className='tabler-chevron-up text-xl' />,
+                                desc: <i className='tabler-chevron-down text-xl' />
+                              }[header.column.getIsSorted()] ?? null}
+                            </div>
+                          </>
+                        )}
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+              </thead>
+              {table.getFilteredRowModel().rows.length === 0 ? (
+                <tbody>
+                  <tr>
+                    <td colSpan={table.getVisibleFlatColumns().length} className='text-center'>
+                      No data available
+                    </td>
+                  </tr>
+                </tbody>
+              ) : (
+                <tbody>
+                  {table
+                    .getRowModel()
+                    .rows.slice(0, table.getState().pagination.pageSize)
+                    .map(row => {
+                      return (
+                        <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
+                          {row.getVisibleCells().map(cell => (
+                            <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                          ))}
+                        </tr>
+                      )
+                    })}
+                </tbody>
+              )}
+            </table>
+          </div>
+          <TablePagination
+            component={() => <TablePaginationComponent table={table} />}
+            count={table.getFilteredRowModel().rows.length}
+            rowsPerPage={table.getState().pagination.pageSize}
+            page={table.getState().pagination.pageIndex}
+            onPageChange={(_, page) => {
+              table.setPageIndex(page)
+            }}
+          />
+          <UpdatePasswordDialog open={open} setOpen={setOpen} data={user} />
+          <DeleteUserDialog open={openDeleteDialog} setOpen={setOpenDeleteDialog} type='delete-account' user={user} loadData={loadData} />
+          <ManageEmpCodeDialog open={openManageEmpCodeDialog} setOpen={setManageEmpCodeDialog} user={user} loadData={loadData} />
+        </Card>
+      )}
     </>
   )
 }

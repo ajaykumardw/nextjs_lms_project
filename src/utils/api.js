@@ -5,7 +5,8 @@ export const useApi = () => {
     const { data: session } = useSession();
     const token = session?.user?.token;
 
-    const doGet = async (url, params = {}) => {
+    const doGet = async (endpoint, params = {}) => {
+        const url = `${process.env.NEXT_PUBLIC_API_URL}/${endpoint}`;
         const query = new URLSearchParams(params).toString();
         const finalUrl = query ? `${url}?${query}` : url;
 
@@ -33,6 +34,7 @@ export const useApi = () => {
 
     const doPost = async (url, body = {}) => {
         try {
+            const finalUrl = `${process.env.NEXT_PUBLIC_API_URL}/${endpoint}`;
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {

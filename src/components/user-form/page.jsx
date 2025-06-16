@@ -261,12 +261,12 @@ const UserFormLayout = () => {
                 return data.exists;
             } else {
                 console.error('Failed to check email:', data);
-                
+
                 return false;
             }
         } catch (error) {
             console.error('Error occurred while checking email:', error);
-            
+
             return false;
         }
     };
@@ -286,7 +286,7 @@ const UserFormLayout = () => {
             if (!response.ok) {
                 // If server responded with an error status, handle it explicitly
                 console.error('Failed to fetch user data:', result.message || result);
-                
+
                 return;
             }
 
@@ -303,12 +303,12 @@ const UserFormLayout = () => {
 
     const loadData = async () => {
         try {
-            const countryData = await doGet(`${URL}/admin/countries`);
-            const designationData = await doGet(`${URL}/admin/designations?status=true`);
-            const zoneData = await doGet(`${URL}/company/zone`);
-            const participationTypesData = await doGet(`${URL}/admin/participation_types?status=true`);
-            const roleData = await doGet(`${URL}/admin/role`);
-            
+            const countryData = await doGet(`admin/countries`);
+            const designationData = await doGet(`admin/designations?status=true`);
+            const zoneData = await doGet(`company/zone`);
+            const participationTypesData = await doGet(`admin/participation_types?status=true`);
+            const roleData = await doGet(`admin/role`);
+
             console.log('roleData', roleData);
             setCreateData(prevData => ({
                 ...prevData,
@@ -329,7 +329,7 @@ const UserFormLayout = () => {
     useEffect(() => {
         if (URL && token) {
             loadData();
-            
+
             if (id) {
                 editFormData();
             }
@@ -369,13 +369,13 @@ const UserFormLayout = () => {
             if (editData.photo) {
                 setImgSrc(`${public_url}${editData.photo}`);
             }
-            
+
             setCountryId(editData.country_id);
             setStateId(editData.state_id);
 
             if (editData?.roles.length > 0) {
                 const rolesIds = editData.roles.map(role => role.role_id);
-                
+
                 setUserRoles(rolesIds);
             }
         }
@@ -427,7 +427,7 @@ const UserFormLayout = () => {
                         autoClose: 1200, // in milliseconds
                     });
                 }
-         
+
                 console.error("Error", data);
             }
         } catch (error) {
@@ -446,7 +446,7 @@ const UserFormLayout = () => {
             ...data,
             photo: file
         };
-        
+
         const exist = await checkEmailCompany(data?.email, id);
 
         if (exist) {
@@ -474,13 +474,13 @@ const UserFormLayout = () => {
         if (!selectedFile) return;
 
         const validTypes = ['image/jpeg', 'image/gif', 'image/png'];
-        
+
         if (!validTypes.includes(selectedFile.type)) {
             setError('photo', {
                 type: 'manual',
                 message: 'Invalid file type. Only JPG, GIF, or PNG are allowed.'
             });
-          
+
             return;
         }
 
@@ -489,14 +489,14 @@ const UserFormLayout = () => {
                 type: 'manual',
                 message: 'File size exceeds 800KB.'
             });
-       
+
             return;
         }
 
         setFile(selectedFile); // Save the actual File object
 
         const reader = new FileReader();
-       
+
         reader.onload = () => setImgSrc(reader.result);
         reader.readAsDataURL(selectedFile);
     };
@@ -514,7 +514,7 @@ const UserFormLayout = () => {
         if (stateId && stateData) {
             const data = stateData && stateData.find(item => item.state_id == stateId);
             const city = data['cities'];
-         
+
             setCityData(city);
         }
     }, [stateId, stateData])
@@ -752,7 +752,7 @@ const UserFormLayout = () => {
                                         label="Country*"
                                         onChange={(e) => {
                                             const selectedCountryId = e.target.value;
-                                           
+
                                             field.onChange(selectedCountryId); // update form value
                                             setCountryId(selectedCountryId);   // update local state or trigger other actions
                                         }}

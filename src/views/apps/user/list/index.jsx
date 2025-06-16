@@ -22,6 +22,7 @@ const UserList = () => {
   const { data: session } = useSession() || {}
   const token = session?.user?.token
   const [userData, setUserData] = useState();
+  const [isUserCardShow, setIsUserCardShow] = useState(true);
 
 
   const loadData = async () => {
@@ -68,10 +69,14 @@ const UserList = () => {
   return (
     <Grid container spacing={6}>
       <Grid size={{ xs: 12 }}>
-        <UserListCards />
+        {isUserCardShow ? (
+          <UserListCards />
+        ) : (
+          <></>
+        )}
       </Grid>
       <Grid size={{ xs: 12 }}>
-        <UserListTable userData={userData} loadData={loadData} />
+        <UserListTable userData={userData} loadData={loadData} setIsUserCardShow={setIsUserCardShow} />
       </Grid>
     </Grid>
   )

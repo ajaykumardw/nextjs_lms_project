@@ -39,11 +39,11 @@ const DeleteUserDialog = ({ open, setOpen, type, user, loadData }) => {
     try {
       if (value == true) {
         const result = await doDelete(`admin/user/${user._id}`);
-        
+
         loadData();
         setSecondDialog(true)
       }
-      
+
       setUserInput(value)
       setOpen(false)
     } catch (error) {
@@ -54,7 +54,7 @@ const DeleteUserDialog = ({ open, setOpen, type, user, loadData }) => {
 
   const handleConfirmation = async (value) => {
     const endpoint = `admin/user/${user._id}`;
-    
+
     if (value == true) {
       await doDelete({
         endpoint,
@@ -62,7 +62,7 @@ const DeleteUserDialog = ({ open, setOpen, type, user, loadData }) => {
         onSuccess: (response) => {
           //toast.success(response.message, { autoClose: 2000 });
           loadData();
-          
+
           //setSecondDialog(true)
         },
         onError: (error) => {
