@@ -21,6 +21,8 @@ import MenuItem from '@mui/material/MenuItem'
 import Checkbox from '@mui/material/Checkbox'
 import ListItemText from '@mui/material/ListItemText'
 import ImportSuccessDialog from '@/components/dialogs/user/import-success-dialog/page'
+import CustomAvatar from '@core/components/mui/Avatar'
+
 //import { ExpectedStudentExcelHeaders, ExpectedStudentExcelHeadersWithoutBatchId } from '@/configs/customDataConfig';
 const CHUNK_SIZE = 1;
 
@@ -123,7 +125,7 @@ const ImportUsers = ({ batch, onBack }) => {
 
             // Validate header
             const headers = XLSX.utils.sheet_to_json(worksheet, { header: 1 })[0];
-            const requiredHeaders = ['Email', 'FirstName', 'LastName', 'PhoneNo', 'Password', 'EmpID', 'Address', 'Country', 'State', 'City', 'PinCode', 'URNNumber', 'ApplicationNo', 'LicenseNo', 'Status', 'Website']; // customize
+            const requiredHeaders = ['SRNO', 'Email', 'FirstName', 'LastName', 'PhoneNo', 'Password', 'EmpID', 'Address', 'Country', 'State', 'City', 'PinCode', 'URNNumber', 'ApplicationNo', 'LicenseNo', 'Status', 'Designation', 'EmployeeType', 'ParticipationType', 'Zone']; // customize
             const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
             if (missingHeaders.length > 0) {
               setMissingHeaders(missingHeaders);
@@ -300,8 +302,22 @@ const ImportUsers = ({ batch, onBack }) => {
       {
         id: 'serialNumber', // Serial number column
         header: 'S.No.',
-        cell: ({ row }) => <Typography>{row.index + 1}</Typography>
+        cell: ({ row }) => <Typography>{row.original.SRNO}</Typography>
       },
+      columnHelper.accessor('Import Status', {
+        header: 'Imported',
+        cell: ({ row }) => (
+          <div className="flex flex-col">
+            <Typography color='text.primary' >
+
+              <CustomAvatar skin='light' color={row.original?.errors.length == 0 ? 'success' : 'error'}>
+                <i className={row.original?.errors.length == 0 ? 'tabler-circle-check' : 'tabler-circle-x'} />
+              </CustomAvatar>
+
+            </Typography>
+          </div>
+        )
+      }),
       columnHelper.accessor('FirstName', {
         header: 'First Name',
         cell: ({ row }) => (
@@ -364,6 +380,90 @@ const ImportUsers = ({ batch, onBack }) => {
         )
       }),
 
+      columnHelper.accessor('Country', {
+        header: 'Country',
+        cell: ({ row }) => (
+          <div className="flex flex-col">
+            <Typography color='text.primary' >
+              {row.original.Country}
+            </Typography>
+            <Typography variant='body2' color="#FF0000">{row.original?.errors?.country}</Typography>
+          </div>
+        )
+      }),
+
+      columnHelper.accessor('State', {
+        header: 'State',
+        cell: ({ row }) => (
+          <div className="flex flex-col">
+            <Typography color='text.primary' >
+              {row.original.State}
+            </Typography>
+            <Typography variant='body2' color="#FF0000">{row.original?.errors?.state}</Typography>
+          </div>
+        )
+      }),
+
+      columnHelper.accessor('City', {
+        header: 'City',
+        cell: ({ row }) => (
+          <div className="flex flex-col">
+            <Typography color='text.primary' >
+              {row.original.City}
+            </Typography>
+            <Typography variant='body2' color="#FF0000">{row.original?.errors?.city}</Typography>
+          </div>
+        )
+      }),
+
+      columnHelper.accessor('Designation', {
+        header: 'Designation',
+        cell: ({ row }) => (
+          <div className="flex flex-col">
+            <Typography color='text.primary' >
+              {row.original.Designation}
+            </Typography>
+            <Typography variant='body2' color="#FF0000">{row.original?.errors?.designation}</Typography>
+          </div>
+        )
+      }),
+
+      columnHelper.accessor('ParticipationType', {
+        header: 'ParticipationType',
+        cell: ({ row }) => (
+          <div className="flex flex-col">
+            <Typography color='text.primary' >
+              {row.original.ParticipationType}
+            </Typography>
+            <Typography variant='body2' color="#FF0000">{row.original?.errors?.participationType}</Typography>
+          </div>
+        )
+      }),
+
+      columnHelper.accessor('EmployeeType', {
+        header: 'EmployeeType',
+        cell: ({ row }) => (
+          <div className="flex flex-col">
+            <Typography color='text.primary' >
+              {row.original.EmployeeType}
+            </Typography>
+            <Typography variant='body2' color="#FF0000">{row.original?.errors?.employeeType}</Typography>
+          </div>
+        )
+      }),
+
+      columnHelper.accessor('Zone', {
+        header: 'Zone',
+        cell: ({ row }) => (
+          <div className="flex flex-col">
+            <Typography color='text.primary' >
+              {row.original.Zone}
+            </Typography>
+            <Typography variant='body2' color="#FF0000">{row.original?.errors?.zone}</Typography>
+          </div>
+        )
+      }),
+
       columnHelper.accessor('Status', {
         header: 'Status',
         cell: ({ row }) => (
@@ -374,7 +474,6 @@ const ImportUsers = ({ batch, onBack }) => {
           </div>
         )
       }),
-
     ],
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
