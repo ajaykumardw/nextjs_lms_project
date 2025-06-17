@@ -105,7 +105,7 @@ const userRoleObj = {
 // Column Definitions
 const columnHelper = createColumnHelper()
 
-const UserListTable = ({ userData, loadData, setIsUserCardShow }) => {
+const UserListTable = ({ userData, loadData, setIsUserCardShow, getStatsCount }) => {
   // States
   const [rowSelection, setRowSelection] = useState({})
   const [data, setData] = useState([])
@@ -145,6 +145,7 @@ const UserListTable = ({ userData, loadData, setIsUserCardShow }) => {
     setOpenImportWindow(false);
     setIsUserCardShow(true)
     loadData();
+    getStatsCount();
   }
 
   const handleStatusChange = async (userId, status) => {
@@ -156,6 +157,7 @@ const UserListTable = ({ userData, loadData, setIsUserCardShow }) => {
       method: 'PUT',
       onSuccess: (response) => {
         toast.success(response.message, { autoClose: 2000 });
+        getStatsCount();
       },
       onError: (error) => {
 
@@ -386,8 +388,8 @@ const UserListTable = ({ userData, loadData, setIsUserCardShow }) => {
         <ImportUsers batch={[]} onBack={onBack} />
       ) : (
         <Card >
-          <CardHeader title='Filters' className='pbe-4' />
-          <TableFilters setData={setFilteredData} tableData={data} />
+          {/* <CardHeader title='Filters' className='pbe-4' /> */}
+          {/* <TableFilters setData={setFilteredData} tableData={data} /> */}
           <div className='flex justify-between flex-col items-start md:flex-row md:items-center p-6 border-bs gap-4'>
             <CustomTextField
               select

@@ -30,7 +30,7 @@ const TableFilters = ({ setData, tableData }) => {
   return (
     <CardContent>
       <Grid container spacing={6}>
-        <Grid size={{ xs: 12, sm: 4 }}>
+        {/* <Grid size={{ xs: 12, sm: 4 }}>
           <CustomTextField
             select
             fullWidth
@@ -48,7 +48,7 @@ const TableFilters = ({ setData, tableData }) => {
             <MenuItem value='maintainer'>Maintainer</MenuItem>
             <MenuItem value='subscriber'>Subscriber</MenuItem>
           </CustomTextField>
-        </Grid>
+        </Grid> */}
         {/* <Grid size={{ xs: 12, sm: 4 }}>
           <CustomTextField
             select

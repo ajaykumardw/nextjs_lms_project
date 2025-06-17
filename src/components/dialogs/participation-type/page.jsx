@@ -71,14 +71,14 @@ const PTFormContent = ({ control, errors }) => (
             />
         </div>
 
-        {/* employeetype */}
+        {/* employeetype
         <Controller name="package_type" control={control} render={({ field }) => (
             <CustomTextField {...field} select fullWidth label="Employee Type" variant="outlined" placeholder="Select Employee Type" className="mbe-2">
                 <MenuItem key="Full time" value="Full time">Full Time</MenuItem>
                 <MenuItem key="Part time" value="Part time">Part Time</MenuItem>
                 <MenuItem key="Hybrid" value="Hybrid">Hybrid</MenuItem>
             </CustomTextField>
-        )} />
+        )} /> */}
 
         <Typography variant="h6" className="mbe-2">Status</Typography>
         <FormControl component="fieldset" error={!!errors.status}>
@@ -136,12 +136,12 @@ const ParticipationDialog = ({ open, setOpen, data, loadTableData }) => {
         setLoading(true)
 
         const isEdit = Boolean(data)
-        
+
         const endpoint = isEdit
             ? `${URL}/admin/participation_type/${data._id}`
             : `${URL}/admin/participation_type`
-        
-            const method = isEdit ? 'PUT' : 'POST'
+
+        const method = isEdit ? 'PUT' : 'POST'
 
         try {
             const response = await fetch(endpoint, {
