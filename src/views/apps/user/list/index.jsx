@@ -14,6 +14,8 @@ import UserListTable from './UserListTable'
 
 import UserListCards from './UserListCards'
 
+import { useApi } from '../../../../utils/api';
+
 // MUI Imports
 
 const UserList = () => {
@@ -22,6 +24,8 @@ const UserList = () => {
   const { data: session } = useSession() || {}
   const token = session?.user?.token
   const [userData, setUserData] = useState();
+  const [statsData, setStatsData] = useState();
+  const { doGet, doPost } = useApi();
   const [isUserCardShow, setIsUserCardShow] = useState(true);
 
 
@@ -44,12 +48,20 @@ const UserList = () => {
       console.log('Error occured', error);
 
     }
+  }
 
+  const getStatsCount = async () => {
+    const statsData = await doGet(`admin/users/stats`);
+
+    if (statsData) {
+      setStatsData(statsData);
+    }
   }
 
   useEffect(() => {
     if (URL && token) {
       loadData();
+      getStatsCount();
     }
   }, [URL, token])
 
@@ -70,13 +82,13 @@ const UserList = () => {
     <Grid container spacing={6}>
       <Grid size={{ xs: 12 }}>
         {isUserCardShow ? (
-          <UserListCards />
+          <UserListCards {...statsData} />
         ) : (
           <></>
         )}
       </Grid>
       <Grid size={{ xs: 12 }}>
-        <UserListTable userData={userData} loadData={loadData} setIsUserCardShow={setIsUserCardShow} />
+        <UserListTable userData={userData} loadData={loadData} setIsUserCardShow={setIsUserCardShow} getStatsCount={getStatsCount} />
       </Grid>
     </Grid>
   )

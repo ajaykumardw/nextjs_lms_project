@@ -16,6 +16,7 @@ import MenuItem from '@mui/material/MenuItem'
 import Checkbox from '@mui/material/Checkbox'
 import ListItemText from '@mui/material/ListItemText'
 import CardHeader from '@mui/material/CardHeader'
+import CircularProgress from '@mui/material/CircularProgress'
 
 import Typography from '@mui/material/Typography'
 
@@ -75,6 +76,7 @@ const UserFormLayout = () => {
     const [userRoles, setUserRoles] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const { doGet, doPost } = useApi();
+    const [loading, setLoading] = useState(false)
 
     const router = useRouter();
 
@@ -399,7 +401,14 @@ const UserFormLayout = () => {
     const submitFormData = async (values) => {
         try {
 
-            console.log('values', values);
+            if (values.roles.length == 0) {
+                setError('roles', {
+                    type: 'manual',
+                    message: 'Please select at least one role.'
+                });
+
+                return;
+            }
 
             const formData = new FormData();
 
@@ -414,6 +423,7 @@ const UserFormLayout = () => {
                     formData.append(key, value);
                 }
             });
+            setLoading(true);
 
             const response = await fetch(id ? `${URL}/admin/user/${id}` : `${URL}/admin/user`, {
                 method: id ? "PUT" : "POST",
@@ -435,18 +445,21 @@ const UserFormLayout = () => {
                     toast.error(data?.message, {
                         autoClose: 1200, // in milliseconds
                     });
+
                 }
 
-                console.error("Error", data);
             }
         } catch (error) {
             if (data?.message) {
+
                 toast.error(data?.message, {
                     autoClose: 1200, // in milliseconds
+
                 });
             }
 
-            console.error("Error occurred", error);
+        } finally {
+            setLoading(false)
         }
     };
 
@@ -1162,7 +1175,28 @@ const UserFormLayout = () => {
                 </CardContent>
                 <Divider />
                 <CardActions>
-                    <Button variant="contained" type="submit">Submit</Button>
+                    <Button
+                        type='submit'
+                        variant='contained'
+                        disabled={loading}
+                        sx={{ height: 40, position: 'relative' }}
+                    >
+                        {loading ? (
+                            <CircularProgress
+                                size={24}
+                                sx={{
+                                    color: 'white',
+                                    position: 'absolute',
+                                    top: '50%',
+                                    left: '50%',
+                                    marginTop: '-12px',
+                                    marginLeft: '-12px',
+                                }}
+                            />
+                        ) : (
+                            'Submit'
+                        )}
+                    </Button>
                     <Button variant="tonal" color="error" type="reset" onClick={() => router.push(`/${locale}/apps/user/list`)}>
                         Cancel
                     </Button>
