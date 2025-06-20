@@ -5,17 +5,12 @@ import { useEffect, useState, useMemo } from 'react';
 
 // -------------------- Next.js Imports --------------------
 import { useRouter, useParams } from 'next/navigation';
-import Link from 'next/link';
 
 // -------------------- MUI Imports --------------------
 import Card from '@mui/material/Card';
-import CardHeader from '@mui/material/CardHeader';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
-import Chip from '@mui/material/Chip';
 import Checkbox from '@mui/material/Checkbox';
-import IconButton from '@mui/material/IconButton';
-import { styled } from '@mui/material/styles';
 import TablePagination from '@mui/material/TablePagination';
 import MenuItem from '@mui/material/MenuItem';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -47,7 +42,6 @@ import ManageEmpCodeDialog from '@/components/dialogs/user/manage-emp-code-dialo
 import ImportUsers from '../../../../views/apps/user/import/ImportUsers';
 
 // -------------------- Local/Custom Components --------------------
-import TableFilters from './TableFilters';
 import OptionMenu from '@core/components/option-menu';
 import TablePaginationComponent from '@components/TablePaginationComponent';
 import CustomTextField from '@core/components/mui/TextField';
@@ -59,6 +53,8 @@ import { useApi } from '../../../../utils/api';
 
 // -------------------- Styles --------------------
 import tableStyles from '@core/styles/table.module.css';
+
+import { usePermissionList } from '@/utils/getPermission';
 
 const fuzzyFilter = (row, columnId, value, addMeta) => {
   // Rank the item
@@ -92,16 +88,6 @@ const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...prop
   return <CustomTextField {...props} value={value} onChange={e => setValue(e.target.value)} />
 }
 
-// Vars
-const userRoleObj = {
-  admin: { icon: 'tabler-crown', color: 'error' },
-  author: { icon: 'tabler-device-desktop', color: 'warning' },
-  editor: { icon: 'tabler-edit', color: 'info' },
-  maintainer: { icon: 'tabler-chart-pie', color: 'success' },
-  subscriber: { icon: 'tabler-user', color: 'primary' }
-}
-
-
 // Column Definitions
 const columnHelper = createColumnHelper()
 
@@ -120,6 +106,20 @@ const UserListTable = ({ userData, loadData, setIsUserCardShow, getStatsCount })
   const public_url = process.env.NEXT_PUBLIC_APP_URL;
 
   const router = useRouter();
+
+  const getPermissions = usePermissionList();
+  const [permissions, setPermissions] = useState({});
+
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      const result = await getPermissions();
+      
+      setPermissions(result);
+    };
+
+    // Call only if token is available (check is inside getPermissions)
+    fetchPermissions();
+  }, []); // Empty dependency array – runs once on mount
 
   const updateNewPasswordhandle = (row) => {
     setUser(row);
@@ -381,7 +381,6 @@ const UserListTable = ({ userData, loadData, setIsUserCardShow, getStatsCount })
     }
   }
 
-
   return (
     <>
       {openImportWindow ? (
@@ -408,23 +407,27 @@ const UserListTable = ({ userData, loadData, setIsUserCardShow, getStatsCount })
                 placeholder='Search User'
                 className='max-sm:is-full'
               />
-              <Button
+              {permissions && permissions?.['hasUserImportPermission'] && (
+                <Button
+                  variant='tonal'
+                  startIcon={<i className='tabler-upload' />}
+                  className='max-sm:is-full'
+                  onClick={() => handleImportDialog()}
+                >
+                  Import
+                </Button>
+              )}
 
-                variant='tonal'
-                startIcon={<i className='tabler-upload' />}
-                className='max-sm:is-full'
-                onClick={() => handleImportDialog()}
-              >
-                Import
-              </Button>
-              <Button
-                variant='contained'
-                startIcon={<i className='tabler-plus' />}
-                onClick={() => router.push(`/${locale}/apps/user/form`)}
-                className='max-sm:is-full'
-              >
-                Add New User
-              </Button>
+              {permissions && permissions['hasUserAddPermission'] && (
+                <Button
+                  variant='contained'
+                  startIcon={<i className='tabler-plus' />}
+                  onClick={() => router.push(`/${locale}/apps/user/form`)}
+                  className='max-sm:is-full'
+                >
+                  Add New User
+                </Button>
+              )}
 
             </div>
           </div>

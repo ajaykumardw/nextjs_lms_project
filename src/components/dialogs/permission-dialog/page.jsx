@@ -22,8 +22,7 @@ import { useForm, Controller } from 'react-hook-form'
 import { valibotResolver } from '@hookform/resolvers/valibot'
 
 // Valibot schema
-
-import { array, string, object, pipe, minLength, maxLength, boolean, nonEmpty, value } from 'valibot'
+import { array, string, object, pipe, minLength, maxLength, boolean, nonEmpty, value, regex } from 'valibot'
 
 // Component Imports
 
@@ -45,7 +44,8 @@ const schema = object({
     name: pipe(
         string(),
         minLength(1, 'Name is required'),
-        maxLength(255, 'Name can be maximum of 255 characters')
+        maxLength(255, 'Name can be maximum of 255 characters'),
+        regex(/^[A-Za-z\s]+$/, 'Only alphabets and spaces are allowed')
     ),
     permissionmodule: pipe(
         array(string()),
@@ -344,7 +344,7 @@ const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule, nameData
     const onSubmit = (values) => {
 
         if (!data) {
-            const exist = nameData.find(item => item.name === values.name);
+            const exist = nameData.find(item => item.name.trim().toLowerCase() === values.name.trim().toLowerCase());
 
             if (exist) {
                 setError('name', {
@@ -356,7 +356,7 @@ const PermissionDialog = ({ open, setOpen, data, fetchPermissionModule, nameData
             }
         } else {
             const exist = nameData.find(item =>
-                item._id.toString() !== data._id.toString() && item.name === values.name
+                item._id.toString() !== data._id.toString() && item.name.trim().toLowerCase() === values.name.trim().toLowerCase()
             );
 
             if (exist) {

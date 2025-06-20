@@ -24,7 +24,7 @@ const cardData = [
   { totalUsers: 10, title: 'Restricted User', avatars: ['4.png', '5.png', '6.png'] }
 ]
 
-const RoleCards = ({ fetchRoleData }) => {
+const RoleCards = ({ fetchRoleData, tableData }) => {
   return (
     <Grid container spacing={6}>
       {cardData.map((item, index) => (
@@ -53,7 +53,13 @@ const RoleCards = ({ fetchRoleData }) => {
                       onClick: e => e.preventDefault()
                     }}
                     dialog={({ open, setOpen }) => (
-                      <RoleDialog open={open} setOpen={setOpen} title={item.title} fetchRoleData={fetchRoleData} />
+                      <RoleDialog
+                        tableData={tableData}
+                        open={open}
+                        setOpen={setOpen}
+                        title={item.title}
+                        fetchRoleData={fetchRoleData}
+                      />
                     )}
                   />
                 </div>
@@ -97,7 +103,12 @@ const RoleCards = ({ fetchRoleData }) => {
             )
           }}
           dialog={({ open, setOpen }) => (
-            <RoleDialog open={open} setOpen={setOpen} fetchRoleData={fetchRoleData} />
+            <RoleDialog
+              open={open}
+              setOpen={setOpen}
+              fetchRoleData={fetchRoleData}
+              tableData={tableData}
+            />
           )}
         />
       </Grid>

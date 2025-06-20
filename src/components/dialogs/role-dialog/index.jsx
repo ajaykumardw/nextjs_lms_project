@@ -24,7 +24,7 @@ import { Checkbox } from '@mui/material'
 // Hook Form + Validation
 import { useForm, Controller } from 'react-hook-form'
 import { valibotResolver } from '@hookform/resolvers/valibot'
-import { object, string, array, pipe, minLength, maxLength, boolean } from 'valibot'
+import { object, string, array, pipe, minLength, maxLength, boolean, regex } from 'valibot'
 
 // Component Imports
 
@@ -44,13 +44,25 @@ import CustomTextField from '@core/components/mui/TextField'
 
 // Validation Schema
 const schema = object({
-  name: pipe(string(), minLength(1, 'Name is required'), maxLength(255, 'Name can be a maximum of 255 characters')),
-  description: pipe(string(), minLength(1, 'Description is required'), maxLength(5000, 'Description can be a maximum of 5000 characters')),
+  name: pipe(
+    string(),
+    minLength(1, 'Name is required'),
+    maxLength(100, 'Name can be a maximum of 100 characters'),
+    regex(/^[A-Za-z\s]+$/, 'Only alphabets and spaces are allowed')
+  ),
+  description: pipe(
+    string(),
+    minLength(1, 'Description is required'),
+    maxLength(5000, 'Description can be a maximum of 5000 characters')
+  ),
   status: boolean(),
-  permissions: pipe(array(string()), minLength(1, 'At least one permission must be selected'))
+  permissions: pipe(
+    array(string()),
+    minLength(1, 'At least one permission must be selected')
+  )
 })
 
-const RoleDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole }) => {
+const RoleDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole, tableData }) => {
 
   const { data: session } = useSession()
   const token = session?.user?.token
@@ -66,6 +78,7 @@ const RoleDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole }) 
     handleSubmit,
     reset,
     setValue,
+    setError,
     formState: { errors }
   } = useForm({
     resolver: valibotResolver(schema),
@@ -166,6 +179,41 @@ const RoleDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole }) 
 
   const submitData = async values => {
 
+    const name = values.name;
+
+    let hasError = false;
+
+    if (selectedRole) {
+
+      const nameExist = tableData.some(item => {
+        return (item.name.trim().toLowerCase() === name.trim().toLowerCase() && (item._id.toString().trim().toLowerCase() !== selectedRole._id.toString().trim().toLowerCase()))
+      })
+
+
+      if (nameExist) {
+        hasError = true;
+      }
+
+    } else {
+      const nameExist = tableData.some(item => {
+        return item.name.trim().toLowerCase() === name.trim().toLowerCase()
+      })
+
+      if (nameExist) {
+        hasError = true;
+      }
+
+    }
+
+    if (hasError) {
+      setError(`name`, {
+        type: 'manual',
+        message: 'Label name must be unique.'
+      });
+      
+      return;
+    }
+
     setLoading(true);
     
     try {
@@ -195,15 +243,13 @@ const RoleDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole }) 
       }
     } catch (err) {
       console.error('Submit error:', err)
-    }
-    finally {
-      setLoading(false);
+    } finally {
+      handleClose()
     }
   }
 
   const onSubmit = data => {
     submitData({ ...data, permissions: selectedPermissions })
-    handleClose()
   }
 
   if (!createData) return;

@@ -51,6 +51,8 @@
         "Branches": "Branches",
         "Channels": "Channels",
         "Departments": "Departments",
+        "language": "Language",
+        "terminology": "Terminology",
         "Designations": "Designations",
         "accountSettings": "Account Settings",
         "faq": "FAQ",

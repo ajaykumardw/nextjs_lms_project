@@ -4,14 +4,10 @@
 import { useEffect, useState, useMemo } from 'react'
 
 // MUI Imports
-import Card from '@mui/material/Card'
-import CardContent from '@mui/material/CardContent'
-import Button from '@mui/material/Button'
-import Typography from '@mui/material/Typography'
-import Chip from '@mui/material/Chip'
-import TablePagination from '@mui/material/TablePagination'
-import IconButton from '@mui/material/IconButton'
-import MenuItem from '@mui/material/MenuItem'
+import {
+    Card, CardContent, Button, Typography, Chip,
+    TablePagination, IconButton, MenuItem
+} from '@mui/material'
 
 // Third-party Imports
 import classnames from 'classnames'
@@ -29,170 +25,141 @@ import {
     getSortedRowModel
 } from '@tanstack/react-table'
 
+import { useSession } from 'next-auth/react'
+
 // Component Imports
 import PermissionDialog from '@components/dialogs/permission-dialog/page'
-import OpenDialogOnElementClick from '@components/dialogs/OpenDialogOnElementClick'
 import CustomTextField from '@core/components/mui/TextField'
 import TablePaginationComponent from '@components/TablePaginationComponent'
 
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
 
-// Vars
-const colors = {
-    support: 'info',
-    users: 'success',
-    manager: 'warning',
-    administrator: 'primary',
-    'restricted-user': 'error'
-}
-
 const fuzzyFilter = (row, columnId, value, addMeta) => {
-    // Rank the item
     const itemRank = rankItem(row.getValue(columnId), value)
-
-    // Store the itemRank info
-    addMeta({
-        itemRank
-    })
-
-    // Return if the item should be filtered in/out
+    
+    addMeta({ itemRank })
+    
     return itemRank.passed
 }
 
 const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...props }) => {
-    // States
     const [value, setValue] = useState(initialValue)
 
     useEffect(() => {
         setValue(initialValue)
     }, [initialValue])
+
     useEffect(() => {
         const timeout = setTimeout(() => {
             onChange(value)
         }, debounce)
 
         return () => clearTimeout(timeout)
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [value])
 
     return <CustomTextField {...props} value={value} onChange={e => setValue(e.target.value)} />
 }
 
-// Column Definitions
 const columnHelper = createColumnHelper()
 
-const Permissions = ({ permissionsData, fetchPermissionModule, nameData }) => {
-    // States
+const Permissions = () => {
+    const URL = process.env.NEXT_PUBLIC_API_URL
+    const { data: session } = useSession()
+    const token = session?.user?.token
+
     const [open, setOpen] = useState(false)
     const [rowSelection, setRowSelection] = useState({})
     const [editValue, setEditValue] = useState('')
-    const [data, setData] = useState([])
     const [globalFilter, setGlobalFilter] = useState('')
+    const [data, setData] = useState([])
+    const [nameData, setNameData] = useState([])
 
-    useEffect(() => {
-        if (permissionsData) {
-            setData(permissionsData);
+    const fetchPermissionModule = async () => {
+        try {
+            const response = await fetch(`${URL}/admin/permission`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                }
+            })
+
+            if (response.ok) {
+                const result = await response.json()
+
+                setData(result?.data?.allPermission ?? [])
+                setNameData(result?.data?.totalPermission ?? [])
+            } else {
+                console.error('Failed to fetch data:', response.statusText)
+            }
+        } catch (error) {
+            console.log('Error', error)
         }
-    }, [permissionsData])
-
-    // Vars
-    const buttonProps = {
-        variant: 'contained',
-        children: 'Add Permission module',
-        onClick: () => handleAddPermission(),
-        className: 'max-sm:is-full',
-        startIcon: <i className='tabler-plus' />
     }
 
-    // Hooks
-    const columns = useMemo(
-        () => [
-            columnHelper.accessor('name', {
-                header: 'Name',
-                cell: ({ row }) => <Typography color='text.primary'>{row.original.name}</Typography>
-            }),
-            columnHelper.accessor('permission_module_names', {
-                header: 'Permission Module Name',
-                cell: ({ row }) => <Typography color='text.primary'>{row.original.permission_module_names}</Typography>
-            }),
-            columnHelper.accessor('status', {
-                header: 'Status',
-                cell: ({ row }) => (
-                    <Chip
-                        label={row.original.status ? 'Active' : 'Inactive'}
-                        color={row.original.status ? 'success' : 'default'}
-                        variant='tonal'
-                        size='small'
-                    />
-                )
-            }),
-            
-            // columnHelper.accessor('assignedTo', {
-            //   header: 'Assigned To',
-            //   cell: ({ row }) =>
-            //     typeof row.original.assignedTo === 'string' ? (
-            //       <Chip
-            //         variant='tonal'
-            //         label={row.original.assignedTo}
-            //         color={colors[row.original.assignedTo]}
-            //         size='small'
-            //         className='capitalize'
-            //       />
-            //     ) : (
-            //       row.original.assignedTo.map((item, index) => (
-            //         <Chip
-            //           key={index}
-            //           variant='tonal'
-            //           label={item}
-            //           color={colors[item]}
-            //           size='small'
-            //           className='capitalize mie-4'
-            //         />
-            //       ))
-            //     )
-            // }),
-            // columnHelper.accessor('createdDate', {
-            //   header: 'Created Date',
-            //   cell: ({ row }) => <Typography>{row.original.createdDate}</Typography>
-            // }),
-            columnHelper.accessor('action', {
-                header: 'Actions',
-                cell: ({ row }) => (
-                    <div className='flex items-center'>
-                        <IconButton onClick={() => handleEditPermission(row.original)}>
-                            <i className='tabler-edit text-textSecondary' />
-                        </IconButton>
-                    </div>
-                ),
-                enableSorting: false
-            })
-        ],
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        []
-    )
+    useEffect(() => {
+        if (URL && token) {
+            fetchPermissionModule()
+        }
+    }, [URL, token])
+
+    const handleEditPermission = rowData => {
+        setEditValue(rowData)
+        setOpen(true)
+    }
+
+    const handleAddPermission = () => {
+        setEditValue('')
+        setOpen(true)
+    }
+
+    const columns = useMemo(() => [
+        columnHelper.accessor('name', {
+            header: 'Name',
+            cell: ({ row }) => <Typography color='text.primary'>{row.original.name}</Typography>
+        }),
+        columnHelper.accessor('permission_module_names', {
+            header: 'Permission Module Name',
+            cell: ({ row }) => <Typography color='text.primary'>{row.original.permission_module_names}</Typography>
+        }),
+        columnHelper.accessor('status', {
+            header: 'Status',
+            cell: ({ row }) => (
+                <Chip
+                    label={row.original.status ? 'Active' : 'Inactive'}
+                    color={row.original.status ? 'success' : 'default'}
+                    variant='tonal'
+                    size='small'
+                />
+            )
+        }),
+        columnHelper.accessor('action', {
+            header: 'Actions',
+            cell: ({ row }) => (
+                <IconButton onClick={() => handleEditPermission(row.original)}>
+                    <i className='tabler-edit text-textSecondary' />
+                </IconButton>
+            ),
+            enableSorting: false
+        })
+    ], [])
 
     const table = useReactTable({
-        data: data,
+        data,
         columns,
-        filterFns: {
-            fuzzy: fuzzyFilter
-        },
-        state: {
-            rowSelection,
-            globalFilter
-        },
+        filterFns: { fuzzy: fuzzyFilter },
+        state: { rowSelection, globalFilter },
         initialState: {
             pagination: {
                 pageSize: 9
             }
         },
-        enableRowSelection: true, //enable row selection for all rows
-        // enableRowSelection: row => row.original.age > 18, // or enable row selection conditionally per row
+        enableRowSelection: true,
         globalFilterFn: fuzzyFilter,
         onRowSelectionChange: setRowSelection,
-        getCoreRowModel: getCoreRowModel(),
         onGlobalFilterChange: setGlobalFilter,
+        getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         getSortedRowModel: getSortedRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
@@ -200,15 +167,6 @@ const Permissions = ({ permissionsData, fetchPermissionModule, nameData }) => {
         getFacetedUniqueValues: getFacetedUniqueValues(),
         getFacetedMinMaxValues: getFacetedMinMaxValues()
     })
-
-    const handleEditPermission = name => {
-        setOpen(true)
-        setEditValue(name)
-    }
-
-    const handleAddPermission = () => {
-        setEditValue('')
-    }
 
     return (
         <>
@@ -222,9 +180,9 @@ const Permissions = ({ permissionsData, fetchPermissionModule, nameData }) => {
                             onChange={e => table.setPageSize(Number(e.target.value))}
                             className='is-[70px]'
                         >
-                            <MenuItem value='5'>5</MenuItem>
-                            <MenuItem value='7'>7</MenuItem>
-                            <MenuItem value='9'>9</MenuItem>
+                            {[5, 7, 9].map(val => (
+                                <MenuItem key={val} value={val}>{val}</MenuItem>
+                            ))}
                         </CustomTextField>
                     </div>
                     <div className='flex flex-wrap gap-4'>
@@ -234,14 +192,17 @@ const Permissions = ({ permissionsData, fetchPermissionModule, nameData }) => {
                             placeholder='Search Permission module'
                             className='max-sm:is-full'
                         />
-                        <OpenDialogOnElementClick
-                            element={Button}
-                            elementProps={buttonProps}
-                            dialog={PermissionDialog}
-                            dialogProps={{ editValue, fetchPermissionModule, nameData }}
-                        />
+                        <Button
+                            variant='contained'
+                            onClick={handleAddPermission}
+                            className='max-sm:is-full'
+                            startIcon={<i className='tabler-plus' />}
+                        >
+                            Add Permission module
+                        </Button>
                     </div>
                 </CardContent>
+
                 <div className='overflow-x-auto'>
                     <table className={tableStyles.table}>
                         <thead>
@@ -250,63 +211,57 @@ const Permissions = ({ permissionsData, fetchPermissionModule, nameData }) => {
                                     {headerGroup.headers.map(header => (
                                         <th key={header.id}>
                                             {header.isPlaceholder ? null : (
-                                                <>
-                                                    <div
-                                                        className={classnames({
-                                                            'flex items-center': header.column.getIsSorted(),
-                                                            'cursor-pointer select-none': header.column.getCanSort()
-                                                        })}
-                                                        onClick={header.column.getToggleSortingHandler()}
-                                                    >
-                                                        {flexRender(header.column.columnDef.header, header.getContext())}
-                                                        {{
-                                                            asc: <i className='tabler-chevron-up text-xl' />,
-                                                            desc: <i className='tabler-chevron-down text-xl' />
-                                                        }[header.column.getIsSorted()] ?? null}
-                                                    </div>
-                                                </>
+                                                <div
+                                                    className={classnames({
+                                                        'flex items-center': header.column.getIsSorted(),
+                                                        'cursor-pointer select-none': header.column.getCanSort()
+                                                    })}
+                                                    onClick={header.column.getToggleSortingHandler()}
+                                                >
+                                                    {flexRender(header.column.columnDef.header, header.getContext())}
+                                                    {{
+                                                        asc: <i className='tabler-chevron-up text-xl' />,
+                                                        desc: <i className='tabler-chevron-down text-xl' />
+                                                    }[header.column.getIsSorted()] ?? null}
+                                                </div>
                                             )}
                                         </th>
                                     ))}
                                 </tr>
                             ))}
                         </thead>
-                        {table.getFilteredRowModel().rows.length === 0 ? (
-                            <tbody>
+                        <tbody>
+                            {table.getFilteredRowModel().rows.length === 0 ? (
                                 <tr>
-                                    <td colSpan={table.getVisibleFlatColumns().length} className='text-center'>
+                                    <td colSpan={columns.length} className='text-center'>
                                         No data available
                                     </td>
                                 </tr>
-                            </tbody>
-                        ) : (
-                            <tbody>
-                                {table
-                                    .getRowModel()
-                                    .rows.slice(0, table.getState().pagination.pageSize)
-                                    .map(row => {
-                                        return (
-                                            <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
-                                                {row.getVisibleCells().map(cell => (
-                                                    <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-                                                ))}
-                                            </tr>
-                                        )
-                                    })}
-                            </tbody>
-                        )}
+                            ) : (
+                                table.getRowModel().rows.map(row => (
+                                    <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
+                                        {row.getVisibleCells().map(cell => (
+                                            <td key={cell.id}>
+                                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
                     </table>
                 </div>
+
                 <TablePagination
                     component={() => <TablePaginationComponent table={table} />}
                     count={table.getFilteredRowModel().rows.length}
                     rowsPerPage={table.getState().pagination.pageSize}
                     page={table.getState().pagination.pageIndex}
-                    onPageChange={(_, page) => {
-                        table.setPageIndex(page)
-                    }}
+                    onPageChange={(_, page) => table.setPageIndex(page)}
                 />
             </Card>
+
+            {/* Single use of dialog */}
             <PermissionDialog
                 open={open}
                 setOpen={setOpen}

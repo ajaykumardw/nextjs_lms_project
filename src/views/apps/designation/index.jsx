@@ -36,53 +36,37 @@ import { useSession } from 'next-auth/react'
 import { toast } from 'react-toastify'
 
 import CustomTextField from '@core/components/mui/TextField'
-
-// Style Imports
-
-import tableStyles from '@core/styles/table.module.css'
-
 import DesignationDialog from '@components/dialogs/designation-dialog/page'
-
 import OpenDialogOnElementClick from '@components/dialogs/OpenDialogOnElementClick'
-
 import TablePaginationComponent from '@components/TablePaginationComponent'
 
-// Vars
-const colors = {
-  support: 'info',
-  users: 'success',
-  manager: 'warning',
-  administrator: 'primary',
-  'restricted-user': 'error'
-}
+// Style Imports
+import tableStyles from '@core/styles/table.module.css'
+import { usePermissionList } from '@/utils/getPermission'
 
+// Helpers
 const fuzzyFilter = (row, columnId, value, addMeta) => {
-  // Rank the item
   const itemRank = rankItem(row.getValue(columnId), value)
 
-  // Store the itemRank info
-  addMeta({
-    itemRank
-  })
+  addMeta({ itemRank })
 
-  // Return if the item should be filtered in/out
   return itemRank.passed
 }
 
+// Debounced Input
 const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...props }) => {
-  // States
   const [value, setValue] = useState(initialValue)
 
   useEffect(() => {
     setValue(initialValue)
   }, [initialValue])
+
   useEffect(() => {
     const timeout = setTimeout(() => {
       onChange(value)
     }, debounce)
 
     return () => clearTimeout(timeout)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value])
 
   return <CustomTextField {...props} value={value} onChange={e => setValue(e.target.value)} />
@@ -91,31 +75,91 @@ const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...prop
 // Column Definitions
 const columnHelper = createColumnHelper()
 
-const DesignationComponent = ({ permissionsData, fetchDesignations, nameData }) => {
-  // States
+const DesignationComponent = () => {
   const [open, setOpen] = useState(false)
   const [rowSelection, setRowSelection] = useState({})
   const [editValue, setEditValue] = useState('')
   const [data, setData] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
-  const { data: session } = useSession()
+  const [nameData, setNameData] = useState()
+
+  const URL = process.env.NEXT_PUBLIC_API_URL
+  const { data: session } = useSession() || {}
+  const token = session?.user?.token
+
+  const getPermissions = usePermissionList();
+  const [permissions, setPermissions] = useState({});
 
   useEffect(() => {
-    if (permissionsData) {
-      setData(permissionsData);
-    }
-  }, [permissionsData])
+    const fetchPermissions = async () => {
+      const result = await getPermissions();
 
-  // Vars
-  const buttonProps = {
-    variant: 'contained',
-    children: 'Add Designation',
-    onClick: () => handleAddPermission(),
-    className: 'max-sm:is-full',
-    startIcon: <i className='tabler-plus' />
+      setPermissions(result);
+    };
+
+    fetchPermissions();
+  }, []);
+
+  const fetchDesignations = async () => {
+    try {
+      const response = await fetch(`${URL}/admin/designations`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) throw new Error(result.message || 'Failed to fetch designations')
+      setData(result.data || [])
+    } catch (error) {
+      console.error('Error fetching designations:', error.message)
+      toast.error(error.message || 'Something went wrong')
+    }
   }
 
-  // Hooks
+  useEffect(() => {
+    if (URL && token) fetchDesignations()
+  }, [URL, token]) // ✅ fixed dependency
+
+  const handleEditDesignation = name => {
+    setOpen(true)
+    setEditValue(name)
+  }
+
+  const handleAddPermission = () => {
+    setEditValue('')
+    setOpen(true) // ✅ open dialog
+  }
+
+  const handleDeleteDesignation = async designation => {
+    if (!designation?._id) return
+
+    const endpoint = `${URL}/admin/designation/${designation._id}`
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) throw new Error(result.message || 'Failed to delete designation')
+
+      toast.success(result.message || 'Designation deleted successfully', { autoClose: 700 })
+      fetchDesignations()
+    } catch (error) {
+      console.error('Delete error:', error)
+      toast.error(error.message || 'Failed to delete designation')
+    }
+  }
+
   const columns = useMemo(
     () => [
       columnHelper.accessor('name', {
@@ -137,19 +181,19 @@ const DesignationComponent = ({ permissionsData, fetchDesignations, nameData }) 
         header: 'Actions',
         cell: ({ row }) => (
           <div className='flex items-center'>
-            <IconButton onClick={() => handleEditDesignation(row.original)}>
-              <i className='tabler-edit text-textSecondary' />
-            </IconButton>
+            {permissions && permissions?.['hasDesignationEditPermission'] && (
 
-            <IconButton
-              onClick={() => {
-                const confirmDelete = window.confirm('Are you sure you want to delete this designation?')
-                
-                if (confirmDelete) {
-                  handleDeleteDesignation(row.original)
-                }
-              }}
-            >
+              <IconButton onClick={() => handleEditDesignation(row.original)}>
+                <i className='tabler-edit text-textSecondary' />
+              </IconButton>
+            )}
+
+
+            <IconButton onClick={() => {
+              const confirmDelete = window.confirm('Are you sure you want to delete this designation?')
+             
+              if (confirmDelete) handleDeleteDesignation(row.original)
+            }}>
               <i className='tabler-trash text-textdanger' />
             </IconButton>
           </div>
@@ -161,72 +205,30 @@ const DesignationComponent = ({ permissionsData, fetchDesignations, nameData }) 
   )
 
   const table = useReactTable({
-    data: data,
+    data,
     columns,
-    filterFns: {
-      fuzzy: fuzzyFilter
-    },
     state: {
       rowSelection,
       globalFilter
     },
-    initialState: {
-      pagination: {
-        pageSize: 9
-      }
-    },
-    enableRowSelection: true, //enable row selection for all rows
-    // enableRowSelection: row => row.original.age > 18, // or enable row selection conditionally per row
+    filterFns: { fuzzy: fuzzyFilter },
     globalFilterFn: fuzzyFilter,
     onRowSelectionChange: setRowSelection,
-    getCoreRowModel: getCoreRowModel(),
     onGlobalFilterChange: setGlobalFilter,
+    getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
-    getFacetedMinMaxValues: getFacetedMinMaxValues()
-  })
-
-  const handleEditDesignation = name => {
-    setOpen(true)
-    setEditValue(name)
-  }
-
-  const handleAddPermission = () => {
-    setEditValue('')
-  }
-
-  const handleDeleteDesignation = async (designation) => {
-    if (!designation || !designation._id) return
-
-    const URL = process.env.NEXT_PUBLIC_API_URL
-    const endpoint = `${URL}/admin/designation/${designation._id}`
-
-    try {
-      const response = await fetch(endpoint, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.user?.token}`
-        }
-      })
-
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.message || 'Failed to delete designation')
+    getFacetedMinMaxValues: getFacetedMinMaxValues(),
+    initialState: {
+      pagination: {
+        pageSize: 9
       }
-
-      toast.success(result.message || 'Designation deleted successfully', { autoClose: 700 })
-      fetchDesignations() // Refresh the list after deletion
-    } catch (error) {
-      console.error('Delete error:', error)
-      toast.error(error.message || 'Failed to delete designation')
-    }
-  }
-
+    },
+    enableRowSelection: true
+  })
 
   return (
     <>
@@ -245,6 +247,7 @@ const DesignationComponent = ({ permissionsData, fetchDesignations, nameData }) 
               <MenuItem value='9'>9</MenuItem>
             </CustomTextField>
           </div>
+
           <div className='flex flex-wrap gap-4'>
             <DebouncedInput
               value={globalFilter ?? ''}
@@ -252,14 +255,23 @@ const DesignationComponent = ({ permissionsData, fetchDesignations, nameData }) 
               placeholder='Search Designation'
               className='max-sm:is-full'
             />
-            <OpenDialogOnElementClick
-              element={Button}
-              elementProps={buttonProps}
-              dialog={DesignationDialog}
-              dialogProps={{ editValue, fetchDesignations, nameData }}
-            />
+            {permissions && permissions?.['hasDesignationAddPermission'] && (
+              <OpenDialogOnElementClick
+                element={Button}
+                elementProps={{
+                  variant: 'contained',
+                  children: 'Add Designation',
+                  onClick: handleAddPermission,
+                  className: 'max-sm:is-full',
+                  startIcon: <i className='tabler-plus' />
+                }}
+                dialog={DesignationDialog}
+                dialogProps={{ editValue, fetchDesignations, nameData }}
+              />
+            )}
           </div>
         </CardContent>
+
         <div className='overflow-x-auto'>
           <table className={tableStyles.table}>
             <thead>
@@ -268,27 +280,26 @@ const DesignationComponent = ({ permissionsData, fetchDesignations, nameData }) 
                   {headerGroup.headers.map(header => (
                     <th key={header.id}>
                       {header.isPlaceholder ? null : (
-                        <>
-                          <div
-                            className={classnames({
-                              'flex items-center': header.column.getIsSorted(),
-                              'cursor-pointer select-none': header.column.getCanSort()
-                            })}
-                            onClick={header.column.getToggleSortingHandler()}
-                          >
-                            {flexRender(header.column.columnDef.header, header.getContext())}
-                            {{
-                              asc: <i className='tabler-chevron-up text-xl' />,
-                              desc: <i className='tabler-chevron-down text-xl' />
-                            }[header.column.getIsSorted()] ?? null}
-                          </div>
-                        </>
+                        <div
+                          className={classnames({
+                            'flex items-center': header.column.getIsSorted(),
+                            'cursor-pointer select-none': header.column.getCanSort()
+                          })}
+                          onClick={header.column.getToggleSortingHandler()}
+                        >
+                          {flexRender(header.column.columnDef.header, header.getContext())}
+                          {{
+                            asc: <i className='tabler-chevron-up text-xl' />,
+                            desc: <i className='tabler-chevron-down text-xl' />
+                          }[header.column.getIsSorted()] ?? null}
+                        </div>
                       )}
                     </th>
                   ))}
                 </tr>
               ))}
             </thead>
+
             {table.getFilteredRowModel().rows.length === 0 ? (
               <tbody>
                 <tr>
@@ -299,33 +310,28 @@ const DesignationComponent = ({ permissionsData, fetchDesignations, nameData }) 
               </tbody>
             ) : (
               <tbody>
-                {table
-                  .getRowModel()
-                  .rows.slice(0, table.getState().pagination.pageSize)
-                  .map(row => {
-                    return (
-                      <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
-                        {row.getVisibleCells().map(cell => (
-                          <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-                        ))}
-                      </tr>
-                    )
-                  })}
+                {table.getRowModel().rows.map(row => (
+                  <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
+                    {row.getVisibleCells().map(cell => (
+                      <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                    ))}
+                  </tr>
+                ))}
               </tbody>
             )}
           </table>
         </div>
-        <TablePagination
-          component={() => <TablePaginationComponent table={table} />}
-          count={table.getFilteredRowModel().rows.length}
-          rowsPerPage={table.getState().pagination.pageSize}
-          page={table.getState().pagination.pageIndex}
-          onPageChange={(_, page) => {
-            table.setPageIndex(page)
-          }}
-        />
+
+        <TablePaginationComponent table={table} />
       </Card>
-      <DesignationDialog open={open} setOpen={setOpen} data={editValue} fetchDesignations={fetchDesignations} nameData={nameData} />
+
+      <DesignationDialog
+        open={open}
+        setOpen={setOpen}
+        data={editValue}
+        fetchDesignations={fetchDesignations}
+        nameData={nameData}
+      />
     </>
   )
 }

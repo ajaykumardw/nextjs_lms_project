@@ -28,6 +28,8 @@ import {
     getSortedRowModel
 } from '@tanstack/react-table'
 
+import { useSession } from 'next-auth/react'
+
 // Component Imports
 
 import PackageTypeDialog from '@components/dialogs/package-type-dialog/page'
@@ -47,9 +49,9 @@ import SkeletonTableComponent from '@/components/skeleton/table/page'
 // Vars
 const fuzzyFilter = (row, columnId, value, addMeta) => {
     const itemRank = rankItem(row.getValue(columnId), value)
-    
+
     addMeta({ itemRank })
-    
+
     return itemRank.passed
 }
 
@@ -74,12 +76,50 @@ const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...prop
 // Column Definitions
 const columnHelper = createColumnHelper()
 
-const PackageTypeTable = ({ packageTypeData, fetchPackage, isLoading, nameData }) => {
+const PackageTypeTable = () => {
 
     const [open, setOpen] = useState(false)
     const [rowSelection, setRowSelection] = useState({})
     const [editValue, setEditValue] = useState('')
     const [globalFilter, setGlobalFilter] = useState('')
+
+    const { data: session } = useSession()
+    const token = session?.user?.token
+    const URL = process.env.NEXT_PUBLIC_API_URL
+    const [isLoading, setIsLoading] = useState(false);
+    const [packageTypeData, setPackageType] = useState(null);
+    const [nameData, setNameData] = useState();
+
+    const fetchPackage = async () => {
+        try {
+            const response = await fetch(`${URL}/admin/package-type`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+            })
+
+            const data = await response.json()
+
+            if (response.ok) {
+                setIsLoading(true);
+                setPackageType(data?.data?.packageTypes)
+                setNameData(data?.data?.nameData)
+            } else {
+                console.error('Failed to fetch package type data')
+            }
+        } catch (error) {
+            console.error('Error fetching data:', error)
+        }
+    }
+
+    useEffect(() => {
+        if (URL && token) {
+            fetchPackage()
+        }
+    }, [URL, token])
+
 
     const columns = useMemo(
         () => [

@@ -4,6 +4,8 @@
 
 import { useState, useEffect } from 'react'
 
+import { useParams } from 'next/navigation'
+
 import { useSession } from 'next-auth/react'
 
 import Typography from '@mui/material/Typography'
@@ -16,6 +18,8 @@ import ZoneCards from './ZoneCards'
 
 import SkeletonTableComponent from '@/components/skeleton/table/page'
 
+import PermissionGuard from '@/hocs/PermissionGuard'
+
 const Zones = () => {
 
   const [zoneData, setZoneData] = useState();
@@ -25,9 +29,12 @@ const Zones = () => {
 
   const { data: session } = useSession() || {};
 
+  const { lang: locale } = useParams()
+
   const token = session && session.user && session?.user?.token;
 
   async function fetchZoneData() {
+
     try {
       const response = await fetch(`${URL}/company/zone`,
         {

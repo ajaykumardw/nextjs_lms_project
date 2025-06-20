@@ -33,7 +33,6 @@ const ParticipationTypeApp = () => {
         throw new Error(result.message || 'Failed to fetch participation types');
       }
       
-      console.log('result.data', result.data);
       setData(result.data || []);
 
     } catch (error) {

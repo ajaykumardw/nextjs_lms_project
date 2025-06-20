@@ -128,31 +128,38 @@ const Login = ({ mode }) => {
   const handleClickShowPassword = () => setIsPasswordShown(show => !show)
 
   const onSubmit = async data => {
+    setLoading(true)
+    setErrorState(null)
 
-    setLoading(true);
-
-    const res = await signIn('credentials', {
-      email: data.email,
-      password: data.password,
-      redirect: false
-    })
-
-    if (res && res.ok && res.error === null) {
-      // Vars
-      setLoading(false);
-      const redirectURL = searchParams.get('redirectTo') ?? '/'
-
-      router.replace(getLocalizedUrl(redirectURL, locale))
-    } else {
-      setLoading(false);
+    try {
+      const res = await signIn('credentials', {
+        email: data.email,
+        password: data.password,
+        redirect: false
+      })
       
-      if (res?.error) {
-        const error = JSON.parse(res.error)
+
+      setLoading(false)
+
+      if (res && res?.ok && !res.error ) {
+        const redirectURL = searchParams.get('redirectTo') ?? '/'
         
-        setErrorState(error)
+        router.replace(getLocalizedUrl(redirectURL, locale))
+      } else {
+
+        // Do not edit this code
+        const message = JSON.parse(res?.error) || 'Login failed. Please try again.'
+        
+        setErrorState( message )
+        console.log('Login error:', message)
       }
+    } catch (err) {
+      setLoading(false)
+      setErrorState({ message: 'Something went wrong. Please try again.' })
+      console.error('Unexpected error:', err)
     }
   }
+
 
   return (
     <div className='flex bs-full justify-center'>
