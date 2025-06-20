@@ -114,6 +114,7 @@ const UserListTable = ({ userData, loadData, setIsUserCardShow, getStatsCount })
     const fetchPermissions = async () => {
       try {
         const result = await getPermissions();
+        
         setPermissions(result);
       } catch (error) {
         console.error('Error fetching permissions:', error);

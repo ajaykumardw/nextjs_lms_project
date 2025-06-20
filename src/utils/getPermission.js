@@ -1,6 +1,7 @@
 // utils/getPermission.ts
-import { useSession } from 'next-auth/react';
 import { useCallback } from 'react';
+
+import { useSession } from 'next-auth/react';
 
 const URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -20,14 +21,18 @@ export const usePermissionList = () => {
             });
 
             if (response.ok) {
+                
                 const data = await response.json();
+                
                 return data.data;
             } else {
                 console.error('Failed to fetch permissions:', response.status);
+                
                 return {};
             }
         } catch (error) {
             console.error('Error fetching permission list:', error);
+            
             return {};
         }
     }, [token]); // ✅ Only changes when token changes
