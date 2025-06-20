@@ -32,19 +32,29 @@ const cardData = [
 
 const RegionCards = ({ fetchRegionData, tableData }) => {
 
-  const getPermissions = usePermissionList();
+  const getPermissions = usePermissionList(); // returns an async function
   const [permissions, setPermissions] = useState({});
 
   useEffect(() => {
     const fetchPermissions = async () => {
-      const result = await getPermissions();
-      
-      setPermissions(result);
+      try {
+        const result = await getPermissions();
+        setPermissions(result);
+      } catch (error) {
+        console.error('Error fetching permissions:', error);
+      }
     };
 
-    // Call only if token is available (check is inside getPermissions)
-    fetchPermissions();
-  }, []); // Empty dependency array – runs once on mount
+    if (getPermissions) {
+      fetchPermissions();
+    }
+  }, [getPermissions]); // Include in dependency array
+
+  useEffect(() => {
+    if (permissions) {
+      console.log("Permission", permissions);
+    }
+  }, [permissions])
 
   return (
     <Grid container spacing={6}>

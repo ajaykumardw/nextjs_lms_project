@@ -60,6 +60,7 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
       const data = await response.json()
 
       if (response.ok) {
+
         setPermissArray(data?.data || [])
       } else {
         console.error('Failed to fetch permissions:', data?.message)

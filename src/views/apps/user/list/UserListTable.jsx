@@ -112,14 +112,18 @@ const UserListTable = ({ userData, loadData, setIsUserCardShow, getStatsCount })
 
   useEffect(() => {
     const fetchPermissions = async () => {
-      const result = await getPermissions();
-      
-      setPermissions(result);
+      try {
+        const result = await getPermissions();
+        setPermissions(result);
+      } catch (error) {
+        console.error('Error fetching permissions:', error);
+      }
     };
 
-    // Call only if token is available (check is inside getPermissions)
-    fetchPermissions();
-  }, []); // Empty dependency array – runs once on mount
+    if (getPermissions) {
+      fetchPermissions();
+    }
+  }, [getPermissions]); // Include in dependency array
 
   const updateNewPasswordhandle = (row) => {
     setUser(row);

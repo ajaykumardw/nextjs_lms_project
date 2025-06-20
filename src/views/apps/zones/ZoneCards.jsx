@@ -18,7 +18,7 @@ import OpenDialogOnElementClick from '@components/dialogs/OpenDialogOnElementCli
 
 import Link from '@components/Link'
 
-import { usePermissionList } from '@/utils/getPermission';
+import { usePermissionList } from '@/utils/getPermission'
 
 // Dummy Role Data
 const cardData = [
@@ -31,19 +31,23 @@ const cardData = [
 
 const ZoneCards = ({ fetchZoneData, tableData }) => {
 
-  const getPermissions = usePermissionList();
+  const getPermissions = usePermissionList(); // returns an async function
   const [permissions, setPermissions] = useState({});
 
   useEffect(() => {
     const fetchPermissions = async () => {
-      const result = await getPermissions();
-      
-      setPermissions(result);
+      try {
+        const result = await getPermissions();
+        setPermissions(result);
+      } catch (error) {
+        console.error('Error fetching permissions:', error);
+      }
     };
 
-    // Call only if token is available (check is inside getPermissions)
-    fetchPermissions();
-  }, []); // Empty dependency array – runs once on mount
+    if (getPermissions) {
+      fetchPermissions();
+    }
+  }, [getPermissions]); // Include in dependency array
 
   return (
     <Grid container spacing={6}>
@@ -105,7 +109,7 @@ const ZoneCards = ({ fetchZoneData, tableData }) => {
                     <CardContent>
                       <div className='flex flex-col items-end gap-4 text-right'>
                         <Button variant='contained' size='small'>
-                          Add Zone
+                          Add Zones
                         </Button>
                         <Typography>
                           Add new zones, <br />

@@ -1,5 +1,6 @@
 // utils/getPermission.ts
 import { useSession } from 'next-auth/react';
+import { useCallback } from 'react';
 
 const URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -7,7 +8,7 @@ export const usePermissionList = () => {
     const { data: session } = useSession();
     const token = session?.user?.token;
 
-    const getPermissions = async () => {
+    const getPermissions = useCallback(async () => {
         if (!token) return {};
 
         try {
@@ -20,19 +21,16 @@ export const usePermissionList = () => {
 
             if (response.ok) {
                 const data = await response.json();
-                
                 return data.data;
             } else {
                 console.error('Failed to fetch permissions:', response.status);
-                
                 return {};
             }
         } catch (error) {
             console.error('Error fetching permission list:', error);
-            
             return {};
         }
-    };
+    }, [token]); // ✅ Only changes when token changes
 
     return getPermissions;
 };

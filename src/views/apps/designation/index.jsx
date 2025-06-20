@@ -92,13 +92,18 @@ const DesignationComponent = () => {
 
   useEffect(() => {
     const fetchPermissions = async () => {
-      const result = await getPermissions();
-
-      setPermissions(result);
+      try {
+        const result = await getPermissions();
+        setPermissions(result);
+      } catch (error) {
+        console.error('Error fetching permissions:', error);
+      }
     };
 
-    fetchPermissions();
-  }, []);
+    if (getPermissions) {
+      fetchPermissions();
+    }
+  }, [getPermissions]); // Include in dependency array
 
   const fetchDesignations = async () => {
     try {
@@ -191,7 +196,7 @@ const DesignationComponent = () => {
 
             <IconButton onClick={() => {
               const confirmDelete = window.confirm('Are you sure you want to delete this designation?')
-             
+
               if (confirmDelete) handleDeleteDesignation(row.original)
             }}>
               <i className='tabler-trash text-textdanger' />
