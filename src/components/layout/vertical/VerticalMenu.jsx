@@ -233,7 +233,7 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
                 </MenuItem>
               )}
               {permissArray?.hasBranchPermission && (
-                <MenuItem href={`/${locale}/apps/branches`}>
+                <MenuItem href={`/${locale}/apps/branch`}>
                   {dictionary['navigation'].branch_plural}
                 </MenuItem>
               )}
