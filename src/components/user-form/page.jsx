@@ -437,8 +437,8 @@ const UserFormLayout = () => {
 
             if (response.ok) {
                 router.push(`/${locale}/apps/user/list`)
-                toast.success(`User ${id ? "updated" : "added"} successfully!`, {
-                    autoClose: 700, // in milliseconds
+                toast.success(data.message, {
+                    autoClose: 1000, // in milliseconds
                 });
             } else {
                 if (data?.message) {
@@ -636,6 +636,7 @@ const UserFormLayout = () => {
                                         label="Phone*"
                                         placeholder="Phone"
                                         error={!!errors.phone}
+                                        inputProps={{ maxLength: 10 }}
                                         helperText={errors.phone?.message}
                                     />
                                 )}
@@ -1162,6 +1163,7 @@ const UserFormLayout = () => {
                                         placeholder="Employee ID"
                                         error={!!errors.user_code}
                                         helperText={errors.user_code?.message}
+                                        inputProps={{ maxLength: 10 }}
                                         slotProps={{
                                             input: {
                                                 // readOnly: !!this.value,

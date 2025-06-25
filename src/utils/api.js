@@ -35,6 +35,7 @@ export const useApi = () => {
     const doPost = async (url, body = {}) => {
         try {
             const finalUrl = `${process.env.NEXT_PUBLIC_API_URL}/${endpoint}`;
+
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -77,6 +78,7 @@ export const useApi = () => {
             });
 
             const data = await response.json();
+
             if (response.ok) {
                 onSuccess(data);
             } else {
@@ -97,13 +99,17 @@ export const useApi = () => {
         onSuccess = () => { },
         onError = () => { },
     }) => {
+
         try {
+
             const formData = new FormData();
+
             Object.entries(values).forEach(([key, value]) => {
                 formData.append(key, value);
             });
 
             const finalUrl = `${process.env.NEXT_PUBLIC_API_URL}/${endpoint}`;
+
             //console.log('finalUrl', finalUrl);
             // const query = new URLSearchParams(params).toString();
             // const finalUrl = query ? `${url}?${query}` : url;

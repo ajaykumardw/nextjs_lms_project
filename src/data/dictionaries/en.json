@@ -41,6 +41,7 @@
         "roles": "Roles",
         "permissions": "Permissions",
         "permission_module": "Permission Module",
+        "participation_types": "Participation Types",
         "package-type": "package-type",
         "package": "package",
         "pages": "Pages",
@@ -110,6 +111,10 @@
         "menuLevels": "Menu Levels",
         "menuLevel2": "Menu Level 2",
         "menuLevel3": "Menu Level 3",
-        "disabledMenu": "Disabled Menu"
+        "disabledMenu": "Disabled Menu",
+        "contents": "Contents",
+        "modules": "My Modules",
+        "addModule": "Add New Module",
+        "categories": "Categories"
     }
 }

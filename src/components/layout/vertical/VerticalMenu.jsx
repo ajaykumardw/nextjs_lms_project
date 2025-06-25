@@ -177,6 +177,12 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
             <MenuItem href={`/${locale}/apps/channels`}>{dictionary['navigation'].Channels}</MenuItem>
             <MenuItem href={`/${locale}/apps/departments`}>{dictionary['navigation'].Departments}</MenuItem>
             <MenuItem href={`/${locale}/apps/designations`}>{dictionary['navigation'].Designations}</MenuItem>
+            <MenuItem href={`/${locale}/apps/participation-types`}>{dictionary['navigation'].participation_types}</MenuItem>
+          </SubMenu>
+          <SubMenu label={dictionary['navigation']["contents"]} icon={<i className='tabler-user' />}>
+            <MenuItem href={`/${locale}/apps/modules`}>{dictionary['navigation'].modules}</MenuItem>
+            <MenuItem href={`/${locale}/apps/modules/form`}>{dictionary['navigation'].addModule}</MenuItem>
+            <MenuItem href={`/${locale}/apps/modules/categories`}>{dictionary['navigation'].categories}</MenuItem>
           </SubMenu>
           <SubMenu label={dictionary['navigation'].user} icon={<i className='tabler-user' />}>
             <MenuItem href={`/${locale}/apps/user/list`}>{dictionary['navigation'].list}</MenuItem>
