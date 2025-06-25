@@ -1209,6 +1209,7 @@ const UserFormLayout = () => {
             </form>
 
         </Card>
+        </PermissionGuard >
     )
 }
 
