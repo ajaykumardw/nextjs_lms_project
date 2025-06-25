@@ -80,10 +80,9 @@ const RolesTable = ({ tableData, fetchRoleData }) => {
   const [openDialog, setOpenDialog] = useState(false)
   const [selectedRole, setSelectedRole] = useState(null)
 
-  const { lang: locale } = useParams()
-
   useEffect(() => {
     if (tableData) {
+      
       setData(tableData)
       setFilteredData(tableData)
     }
@@ -288,6 +287,7 @@ const RolesTable = ({ tableData, fetchRoleData }) => {
       {/* Role Dialog */}
       {openDialog && (
         <RoleDialog
+          tableData={tableData}
           open={openDialog}
           setOpen={setOpenDialog}
           selectedRole={selectedRole}

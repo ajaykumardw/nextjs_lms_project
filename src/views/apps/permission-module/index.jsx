@@ -29,10 +29,16 @@ import {
   getSortedRowModel
 } from '@tanstack/react-table'
 
+import { useSession } from 'next-auth/react'
+
 // Component Imports
+
 import PermissionDialog from '@components/dialogs/permission-module-dialog/index'
+
 import OpenDialogOnElementClick from '@components/dialogs/OpenDialogOnElementClick'
+
 import CustomTextField from '@core/components/mui/TextField'
+
 import TablePaginationComponent from '@components/TablePaginationComponent'
 
 // Style Imports
@@ -82,19 +88,49 @@ const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...prop
 // Column Definitions
 const columnHelper = createColumnHelper()
 
-const Permissions = ({ permissionsData, fetchPermissionModule, nameData }) => {
+const Permissions = () => {
   // States
   const [open, setOpen] = useState(false)
   const [rowSelection, setRowSelection] = useState({})
   const [editValue, setEditValue] = useState('')
-  const [data, setData] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
 
-  useEffect(() => {
-    if (permissionsData) {
-      setData(permissionsData);
+  const URL = process.env.NEXT_PUBLIC_API_URL
+  const { data: session } = useSession() || {}
+  const token = session?.user?.token
+  const [data, setData] = useState([])
+  const [nameData, setNameData] = useState();
+
+  const fetchPermissionModule = async () => {
+    try {
+      const response = await fetch(`${URL}/admin/permission-module`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        }
+      })
+
+      if (response.ok) {
+
+        const result = await response.json()
+
+        setData(result?.data?.allPermission)
+        setNameData(result?.data?.nameData)
+      } else {
+        console.error('Failed to fetch data:', response.statusText)
+      }
+
+    } catch (error) {
+      console.log("Error", error)
     }
-  }, [permissionsData])
+  }
+
+  useEffect(() => {
+    if (URL && token) {
+      fetchPermissionModule()
+    }
+  }, [URL, token])
 
   // Vars
   const buttonProps = {
@@ -123,7 +159,7 @@ const Permissions = ({ permissionsData, fetchPermissionModule, nameData }) => {
           />
         )
       }),
-      
+
       // columnHelper.accessor('assignedTo', {
       //   header: 'Assigned To',
       //   cell: ({ row }) =>

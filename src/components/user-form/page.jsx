@@ -56,9 +56,7 @@ import { useApi } from '../../utils/api';
 import SkeletonFormComponent from '../skeleton/form/page'
 
 import CustomTextField from '@core/components/mui/TextField'
-
-// Third-party Imports
-
+import PermissionGuard from '@/hocs/PermissionClientGuard'
 
 const UserFormLayout = () => {
 
@@ -316,7 +314,6 @@ const UserFormLayout = () => {
             const participationTypesData = await doGet(`admin/participation_types?status=true`);
             const roleData = await doGet(`admin/role`);
 
-            console.log('roleData', roleData);
             setCreateData(prevData => ({
                 ...prevData,
                 country: countryData.country,         // assuming your API returns data inside `.data`
@@ -346,7 +343,6 @@ const UserFormLayout = () => {
 
     useEffect(() => {
         if (id && editData) {
-            console.log('editData', editData);
             reset({
                 first_name: editData.first_name,
                 last_name: editData.last_name,
@@ -437,8 +433,8 @@ const UserFormLayout = () => {
 
             if (response.ok) {
                 router.push(`/${locale}/apps/user/list`)
-                toast.success(data.message, {
-                    autoClose: 1000, // in milliseconds
+                toast.success(`User ${id ? "updated" : "added"} successfully!`, {
+                    autoClose: 700, // in milliseconds
                 });
             } else {
                 if (data?.message) {
@@ -538,7 +534,16 @@ const UserFormLayout = () => {
     }, [stateId, stateData])
 
     if (!createData || isLoading) {
-        return <SkeletonFormComponent />
+        return (
+            <>
+                <PermissionGuard
+                    element={id ? 'hasUserEditPermission' : 'hasUserAddPermission'}
+                    locale={locale}
+                >
+                    <SkeletonFormComponent />
+                </PermissionGuard>
+            </>
+        )
     }
 
     return (
@@ -636,7 +641,6 @@ const UserFormLayout = () => {
                                         label="Phone*"
                                         placeholder="Phone"
                                         error={!!errors.phone}
-                                        inputProps={{ maxLength: 10 }}
                                         helperText={errors.phone?.message}
                                     />
                                 )}
@@ -1163,7 +1167,6 @@ const UserFormLayout = () => {
                                         placeholder="Employee ID"
                                         error={!!errors.user_code}
                                         helperText={errors.user_code?.message}
-                                        inputProps={{ maxLength: 10 }}
                                         slotProps={{
                                             input: {
                                                 // readOnly: !!this.value,

@@ -71,7 +71,7 @@ const Roles = () => {
         </Typography>
       </Grid>
       <Grid size={{ xs: 12 }}>
-        <RoleCards fetchRoleData={fetchRoleData} />
+        <RoleCards fetchRoleData={fetchRoleData} tableData={roleData} />
       </Grid>
       <Grid size={{ xs: 12 }} className='!pbs-12'>
         <Typography variant='h4' className='mbe-1'>

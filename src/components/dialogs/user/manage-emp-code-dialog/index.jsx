@@ -113,7 +113,6 @@ const ManageEmpCodeDialog = ({ open, setOpen, user, loadData }) => {
   }
 
   const handleRadioChange = async (code, index) => {
-    console.log('index', index);
     const endpoint = `admin/user/mark/active/empcode/${user.id}`;
     
     const data = {
@@ -163,7 +162,6 @@ const ManageEmpCodeDialog = ({ open, setOpen, user, loadData }) => {
   };
 
   useEffect(() => {
-    console.log(user);
     
     if (user) {
       setCodes(user.codes);

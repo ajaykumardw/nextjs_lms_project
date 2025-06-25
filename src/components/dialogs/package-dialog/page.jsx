@@ -18,10 +18,12 @@ import {
     nonEmpty,
     pipe,
     array,
+    integer,
     minValue,
     maxValue,
     boolean,
     number,
+    regex
 } from 'valibot'
 
 // MUI Imports
@@ -57,15 +59,17 @@ const schema = object({
     name: pipe(
         string(),
         minLength(1, 'Name is required'),
-        maxLength(255, 'Name can be maximum of 255 characters')
+        maxLength(100, 'Name can be maximum of 100 characters'),
+        regex(/^[A-Za-z\s]+$/, 'Only alphabets and spaces are allowed') // ✅ Alphabet & space only
     ),
     description: pipe(
         string(),
         minLength(1, 'Description is required'),
-        maxLength(255, 'Description can be maximum of 255 characters')
+        maxLength(5000, 'Description can be maximum of 5000 characters')
     ),
     amount: pipe(
         number('Amount must be a number'),
+        integer('Amount must be a whole number'), // ✅ No decimal/symbols
         minValue(1, 'Amount must be at least 1'),
         maxValue(1000000, 'Amount must be less than or equal to 1,000,000')
     ),
@@ -74,8 +78,11 @@ const schema = object({
         nonEmpty('Please select a package type')
     ),
     status: boolean(),
-    permissions: pipe(array(string()), minLength(1, 'At least one permission must be selected'))
-});
+    permissions: pipe(
+        array(string()),
+        minLength(1, 'At least one permission must be selected')
+    )
+})
 
 const AddContent = ({ control, errors, createData, handleSelectAllCheckbox, selectedPermissions, permissionData, togglePermission }) => (
     <DialogContent className="overflow-visible pbs-0 sm:pli-16">
@@ -535,8 +542,7 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
     const onSubmit = (formData) => {
 
         if (!data) {
-            
-            const exist = nameData.find(item => item.name === formData.name);
+            const exist = nameData.find(item => item.name.trim().toLowerCase() === formData.name.trim().toLowerCase());
             
             if (exist) {
                 setError('name', {
@@ -548,8 +554,7 @@ const PackageDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
             }
         } else {
             const exist = nameData.find(item =>
-                
-                item._id.toString() !== data._id.toString() && item.name === formData.name
+                item._id.toString() !== data._id.toString() && item.name.trim().toLowerCase() === formData.name.trim().toLowerCase()
             );
             
             if (exist) {

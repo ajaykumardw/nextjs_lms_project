@@ -1,5 +1,7 @@
 'use client'
 
+import { useState, useEffect } from 'react'
+
 // MUI Imports
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
@@ -12,8 +14,12 @@ import Button from '@mui/material/Button'
 
 // Component Imports
 import RegionDialog from '@components/dialogs/region-dialog/page';
+
 import OpenDialogOnElementClick from '@components/dialogs/OpenDialogOnElementClick'
+
 import Link from '@components/Link'
+
+import { usePermissionList } from '@/utils/getPermission'
 
 // Dummy Role Data
 const cardData = [
@@ -25,6 +31,32 @@ const cardData = [
 ]
 
 const RegionCards = ({ fetchRegionData, tableData }) => {
+
+  const getPermissions = usePermissionList(); // returns an async function
+  const [permissions, setPermissions] = useState({});
+
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      try {
+        const result = await getPermissions();
+        
+        setPermissions(result);
+      } catch (error) {
+        console.error('Error fetching permissions:', error);
+      }
+    };
+
+    if (getPermissions) {
+      fetchPermissions();
+    }
+  }, [getPermissions]); // Include in dependency array
+
+  useEffect(() => {
+    if (permissions) {
+      console.log("Permission", permissions);
+    }
+  }, [permissions])
+
   return (
     <Grid container spacing={6}>
       {cardData.map((item, index) => (
@@ -68,39 +100,42 @@ const RegionCards = ({ fetchRegionData, tableData }) => {
       ))}
 
       {/* Add Role Card */}
-      <Grid xs={12} sm={6} lg={4}>
-        <OpenDialogOnElementClick
-          element={Card}
-          elementProps={{
-            className: 'cursor-pointer bs-full',
-            children: (
-              <Grid container className='bs-full'>
-                <Grid xs={5}>
-                  <div className='flex items-end justify-center bs-full'>
-                    <img alt='add-role' src='/images/illustrations/characters/5.png' height={130} />
-                  </div>
-                </Grid>
-                <Grid xs={7}>
-                  <CardContent>
-                    <div className='flex flex-col items-end gap-4 text-right'>
-                      <Button variant='contained' size='small'>
-                        Add Zone
-                      </Button>
-                      <Typography>
-                        Add new zones, <br />
-                        if it doesn&apos;t exist.
-                      </Typography>
+      {permissions && permissions?.['hasRegionAddPermission'] && (
+
+        <Grid xs={12} sm={6} lg={4}>
+          <OpenDialogOnElementClick
+            element={Card}
+            elementProps={{
+              className: 'cursor-pointer bs-full',
+              children: (
+                <Grid container className='bs-full'>
+                  <Grid xs={5}>
+                    <div className='flex items-end justify-center bs-full'>
+                      <img alt='add-role' src='/images/illustrations/characters/5.png' height={130} />
                     </div>
-                  </CardContent>
+                  </Grid>
+                  <Grid xs={7}>
+                    <CardContent>
+                      <div className='flex flex-col items-end gap-4 text-right'>
+                        <Button variant='contained' size='small'>
+                          Add Region
+                        </Button>
+                        <Typography>
+                          Add new region, <br />
+                          if it doesn&apos;t exist.
+                        </Typography>
+                      </div>
+                    </CardContent>
+                  </Grid>
                 </Grid>
-              </Grid>
-            )
-          }}
-          dialog={({ open, setOpen }) => (
-            <RegionDialog open={open} setOpen={setOpen} fetchRegionData={fetchRegionData} tableData={tableData} />
-          )}
-        />
-      </Grid>
+              )
+            }}
+            dialog={({ open, setOpen }) => (
+              <RegionDialog open={open} setOpen={setOpen} fetchRegionData={fetchRegionData} selectedRegionData={null} selectedRegion={null} tableData={tableData} />
+            )}
+          />
+        </Grid>
+      )}
     </Grid>
   )
 }

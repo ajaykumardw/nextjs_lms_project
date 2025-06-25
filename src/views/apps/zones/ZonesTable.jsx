@@ -40,13 +40,14 @@ import TablePaginationComponent from '@components/TablePaginationComponent'
 import tableStyles from '@core/styles/table.module.css'
 import ZoneDialog from '@/components/dialogs/zone-dialog/page'
 import RegionDialog from '@/components/dialogs/region-dialog/page'
+import { usePermissionList } from '@/utils/getPermission'
 
 // Filter function
 const fuzzyFilter = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value)
-  
+
   addMeta({ itemRank })
-  
+
   return itemRank.passed
 
 }
@@ -63,9 +64,9 @@ const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...prop
     const timeout = setTimeout(() => {
       onChange(value)
     }, debounce)
-  
+
     return () => clearTimeout(timeout)
-  
+
   }, [value])
 
   return <CustomTextField {...props} value={value} onChange={e => setValue(e.target.value)} />
@@ -88,6 +89,25 @@ const ZonesTable = ({ tableData, fetchZoneData }) => {
 
   const { lang: locale } = useParams()
 
+  const getPermissions = usePermissionList();
+  const [permissions, setPermissions] = useState({});
+
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      try {
+        const result = await getPermissions();
+        
+        setPermissions(result);
+      } catch (error) {
+        console.error('Error fetching permissions:', error);
+      }
+    };
+
+    if (getPermissions) {
+      fetchPermissions();
+    }
+  }, [getPermissions]); // Include in dependency array
+
   useEffect(() => {
     if (tableData) {
       setData(tableData)
@@ -99,11 +119,10 @@ const ZonesTable = ({ tableData, fetchZoneData }) => {
   useEffect(() => {
     const filtered = data.filter(user => {
       if (role && user.role !== role) return false
-      
-      return true
 
+      return true
     })
-    
+
     setFilteredData(filtered)
   }, [role, data])
 
@@ -149,22 +168,26 @@ const ZonesTable = ({ tableData, fetchZoneData }) => {
       header: 'Actions',
       cell: ({ row }) => (
         <div className='flex items-center'>
-          <IconButton
-            onClick={() => {
-              setSelectedRegion(row.original) // or {}
-              setOpenZoneDialog(true)
-            }}
-          >
-            <i className='tabler-plus text-primary' />
-          </IconButton>
-          <IconButton
-            onClick={() => {
-              setSelectedZone(row.original)
-              setOpenDialog(true)
-            }}
-          >
-            <i className='tabler-edit text-textSecondary' />
-          </IconButton>
+          {permissions && permissions?.['hasRegionAddPermission'] && (
+            <IconButton
+              onClick={() => {
+                setSelectedRegion(row.original) // or {}
+                setOpenZoneDialog(true)
+              }}
+            >
+              <i className='tabler-plus text-primary' />
+            </IconButton>
+          )}
+          {permissions && permissions?.['hasZoneEditPermission'] && (
+            <IconButton
+              onClick={() => {
+                setSelectedZone(row.original)
+                setOpenDialog(true)
+              }}
+            >
+              <i className='tabler-edit text-textSecondary' />
+            </IconButton>
+          )}
         </div>
       ),
       enableSorting: false
@@ -302,7 +325,7 @@ const ZonesTable = ({ tableData, fetchZoneData }) => {
           setOpen={setOpenZoneDialog}
           selectZone={selectedZone}
           selectedRegion={selectedRegion}
-          fetchZoneData={fetchZoneData}
+          fetchRegionData={fetchZoneData}
         />
       )}
     </Card>

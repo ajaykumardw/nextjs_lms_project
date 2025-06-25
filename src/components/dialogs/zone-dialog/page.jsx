@@ -24,7 +24,8 @@ import {
     array,
     pipe,
     minLength,
-    maxLength
+    maxLength,
+    regex
 } from 'valibot'
 
 // Components
@@ -93,7 +94,7 @@ const ZoneDialog = ({ open, setOpen, title = '', fetchZoneData, selectedZone, ty
             if (selectedZone) {
                 const exist = tableData.find(item =>
                     item.name.trim().toLowerCase() === formData.name.trim().toLowerCase() &&
-                    item._id !== selectedZone._id
+                    item._id.toString().trim() !== selectedZone._id.toString().trim()
                 );
 
                 if (exist) {
@@ -111,11 +112,11 @@ const ZoneDialog = ({ open, setOpen, title = '', fetchZoneData, selectedZone, ty
                     if (!name) return; // Skip empty names (optional)
 
                     const existsInTable = tableData.some(zoneInTable =>
-                        zoneInTable.name.trim().toLowerCase() === name.toLowerCase()
+                        zoneInTable.name.trim().toLowerCase() === name.trim().toLowerCase()
                     );
 
                     const duplicateInForm = formData.zones.filter(z =>
-                        z.name?.trim().toLowerCase() === name.toLowerCase()
+                        z.name?.trim().toLowerCase() === name.trim().toLowerCase()
                     );
 
                     if (existsInTable || duplicateInForm.length > 1) {

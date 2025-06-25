@@ -306,13 +306,6 @@ const ImportUsers = ({ batch, onBack }) => {
         }
       }
 
-      //console.log('progressprogress', progress);
-      //clear after upload
-      //if (100 === progress) {
-
-      //}
-      //setFileInput()
-
     } catch (error) {
       console.error('Error processing the Excel file:', error);
       toast.error('Error in processing the Excel file.', {

@@ -1,7 +1,7 @@
 'use client'
 
 // React Imports
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 // Next Imports
 import Link from 'next/link'
@@ -17,7 +17,11 @@ import MenuList from '@mui/material/MenuList'
 import MenuItem from '@mui/material/MenuItem'
 
 // Hook Imports
+
+import { useSession } from 'next-auth/react'
+
 import { useSettings } from '@core/hooks/useSettings'
+
 
 const getLocalePath = (pathName, locale) => {
   if (!pathName) return '/'
@@ -28,25 +32,47 @@ const getLocalePath = (pathName, locale) => {
   return segments.join('/')
 }
 
-// Vars
-const languageData = [
-  {
-    langCode: 'en',
-    langName: 'English'
-  },
-  {
-    langCode: 'fr',
-    langName: 'French'
-  },
-  {
-    langCode: 'ar',
-    langName: 'Arabic'
-  }
-]
-
 const LanguageDropdown = () => {
   // States
   const [open, setOpen] = useState(false)
+  const [data, setData] = useState();
+
+  const { data: session } = useSession()
+  const token = session?.user?.token
+  const API_URL = process.env.NEXT_PUBLIC_API_URL
+
+  const fetchLanguage = async () => {
+
+    try {
+      const response = await fetch(`${API_URL}/company/language/menu`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setData(data?.data);
+      }
+    } catch (error) {
+      throw new Error(error);
+    }
+
+  }
+
+  useEffect(() => {
+    if (API_URL && token) {
+      fetchLanguage();
+    }
+  }, [API_URL, token])
+
+  // Vars
+  const languageData = !data ? [] : data.map(item => ({
+    langCode: item.short_name,
+    langName: item.language_name
+  }));
 
   // Refs
   const anchorRef = useRef(null)

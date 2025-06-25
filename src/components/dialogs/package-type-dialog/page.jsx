@@ -10,7 +10,8 @@ import {
     minLength,
     pipe,
     maxLength,
-    boolean
+    boolean,
+    regex
 } from 'valibot'
 
 import CircularProgress from '@mui/material/CircularProgress'
@@ -41,11 +42,13 @@ import DialogCloseButton from '../DialogCloseButton'
 
 
 // Schema
+
 const schema = object({
     name: pipe(
         string(),
         minLength(1, 'This field is required'),
-        maxLength(255, "Name can be maximum of 255 length")
+        maxLength(255, 'Name can be maximum of 255 characters'),
+        regex(/^[A-Za-z\s]+$/, 'Only alphabets and spaces are allowed')
     ),
     status: boolean()
 })
@@ -218,7 +221,7 @@ const PackageTypeDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
     const onSubmit = (formData) => {
 
         if (!data) {
-            const exist = nameData.find(item => item.name === formData.name);
+            const exist = nameData.find(item => item.name.trim().toLowerCase() === formData.name.trim().toLowerCase());
             
             if (exist) {
                 setError('name', {
@@ -230,7 +233,7 @@ const PackageTypeDialog = ({ open, setOpen, data, fetchPackage, nameData }) => {
             }
         } else {
             const exist = nameData.find(item =>
-                item._id.toString() !== data._id.toString() && item.name === formData.name
+                item._id.toString() !== data._id.toString() && item.name.trim().toLowerCase() === formData.name.trim().toLowerCase()
             );
             
             if (exist) {

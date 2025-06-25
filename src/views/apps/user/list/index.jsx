@@ -28,7 +28,6 @@ const UserList = () => {
   const { doGet, doPost } = useApi();
   const [isUserCardShow, setIsUserCardShow] = useState(true);
 
-
   const loadData = async () => {
     try {
       const response = await fetch(`${URL}/admin/company`, {

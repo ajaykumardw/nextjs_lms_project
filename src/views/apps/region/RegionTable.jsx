@@ -3,9 +3,6 @@
 // React Imports
 import { useState, useMemo, useEffect } from 'react'
 
-// Next Imports
-import { useParams } from 'next/navigation'
-
 // MUI Imports
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
@@ -37,21 +34,20 @@ import {
 import BranchDialog from '@/components/dialogs/branch-dialog/page'
 
 // Component Imports
-import OptionMenu from '@core/components/option-menu'
 import CustomTextField from '@core/components/mui/TextField'
 import TablePaginationComponent from '@components/TablePaginationComponent'
 
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
-import ZoneDialog from '@/components/dialogs/zone-dialog/page'
 import RegionDialog from '@/components/dialogs/region-dialog/page'
+import { usePermissionList } from '@/utils/getPermission'
 
 // Filter function
 const fuzzyFilter = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value)
-  
+
   addMeta({ itemRank })
-  
+
   return itemRank.passed
 }
 
@@ -67,7 +63,7 @@ const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...prop
     const timeout = setTimeout(() => {
       onChange(value)
     }, debounce)
-    
+
     return () => clearTimeout(timeout)
   }, [value])
 
@@ -87,7 +83,24 @@ const RegionTable = ({ tableData, fetchRegionData }) => {
   const [openZoneDialog, setOpenZoneDialog] = useState(false)
   const [selectedRegionData, setSelectedRegionData] = useState(null)
 
-  const { lang: locale } = useParams()
+  const getPermissions = usePermissionList();
+  const [permissions, setPermissions] = useState({});
+
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      try {
+        const result = await getPermissions();
+        
+        setPermissions(result);
+      } catch (error) {
+        console.error('Error fetching permissions:', error);
+      }
+    };
+
+    if (getPermissions) {
+      fetchPermissions();
+    }
+  }, [getPermissions]); // Include in dependency array
 
   useEffect(() => {
     if (tableData) {
@@ -127,10 +140,10 @@ const RegionTable = ({ tableData, fetchRegionData }) => {
       )
     },
     columnHelper.accessor('name', {
-      header: 'Zone Name',
+      header: 'Region Name',
       cell: ({ row }) => (
         <Typography className='capitalize' color='text.primary'>
-          {row.original.name}
+          {row.original.data.name}
         </Typography>
       )
     }),
@@ -138,8 +151,8 @@ const RegionTable = ({ tableData, fetchRegionData }) => {
       header: 'Status',
       cell: ({ row }) => (
         <Chip
-          label={row.original.status ? 'Active' : 'Inactive'}
-          color={row.original.status ? 'success' : 'default'}
+          label={row.original.data.status ? 'Active' : 'Inactive'}
+          color={row.original.data.status ? 'success' : 'default'}
           variant='tonal'
           size='small'
         />
@@ -149,22 +162,26 @@ const RegionTable = ({ tableData, fetchRegionData }) => {
       header: 'Actions',
       cell: ({ row }) => (
         <div className='flex items-center'>
-          <IconButton
-            onClick={() => {
-              setSelectedRegionData(row.original) // or {}
-              setOpenBranchDialog(true)
-            }}
-          >
-            <i className='tabler-plus text-primary' />
-          </IconButton>
-          <IconButton
-            onClick={() => {
-              setSelectedRegionData(row.original)
-              setOpenZoneDialog(true)
-            }}
-          >
-            <i className='tabler-edit text-textSecondary' />
-          </IconButton>
+          {permissions && permissions?.['hasBranchAddPermission'] && (
+            <IconButton
+              onClick={() => {
+                setSelectedRegionData(row.original) // or {}
+                setOpenBranchDialog(true)
+              }}
+            >
+              <i className='tabler-plus text-primary' />
+            </IconButton>
+          )}
+          {permissions && permissions?.['hasRegionEditPermission'] && (
+            <IconButton
+              onClick={() => {
+                setSelectedRegionData(row.original)
+                setOpenZoneDialog(true)
+              }}
+            >
+              <i className='tabler-edit text-textSecondary' />
+            </IconButton>
+          )}
         </div>
       ),
       enableSorting: false
@@ -211,7 +228,7 @@ const RegionTable = ({ tableData, fetchRegionData }) => {
             value={globalFilter ?? ''}
             className='max-sm:is-full min-is-[250px]'
             onChange={value => setGlobalFilter(String(value))}
-            placeholder='Search Role'
+            placeholder='Search Region'
           />
           <CustomTextField
             select
@@ -221,11 +238,11 @@ const RegionTable = ({ tableData, fetchRegionData }) => {
             className='max-sm:is-full sm:is-[160px]'
             slotProps={{ select: { displayEmpty: true } }}
           >
-            <MenuItem value=''>Select Role</MenuItem>
+            <MenuItem value=''>Select Region</MenuItem>
             {tableData.map((item, index) => {
               return (
-                <MenuItem key={index} value={item._id}>
-                  {item.name}
+                <MenuItem key={index} value={item.data._id}>
+                  {item.data.name}
                 </MenuItem>
               );
             })}
@@ -303,6 +320,7 @@ const RegionTable = ({ tableData, fetchRegionData }) => {
           selectedRegion={null}
           selectedRegionData={selectedRegionData}
           fetchRegionData={fetchRegionData}
+          tableData={tableData}
         />
       )}
     </Card>

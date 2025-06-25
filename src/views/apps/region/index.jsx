@@ -38,8 +38,10 @@ const Region = () => {
         })
 
       const datas = await response.json();
+      
 
       if (response.ok) {
+
         setLoading(true);
         setRegionData(datas?.data);
       } else {
