@@ -207,7 +207,7 @@ const DesignationComponent = () => {
         enableSorting: false
       })
     ],
-    []
+    [permissions]
   )
 
   const table = useReactTable({

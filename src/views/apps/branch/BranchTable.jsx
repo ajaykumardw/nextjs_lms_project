@@ -3,9 +3,6 @@
 // React Imports
 import { useState, useMemo, useEffect } from 'react'
 
-// Next Imports
-import { useParams } from 'next/navigation'
-
 // MUI Imports
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
@@ -16,8 +13,11 @@ import Checkbox from '@mui/material/Checkbox'
 import IconButton from '@mui/material/IconButton'
 
 // Third-party Imports
+
 import classnames from 'classnames'
+
 import { rankItem } from '@tanstack/match-sorter-utils'
+
 import {
   createColumnHelper,
   flexRender,
@@ -31,15 +31,14 @@ import {
   getSortedRowModel
 } from '@tanstack/react-table'
 
+import BranchDialog from '@/components/dialogs/branch-dialog/page'
+
 // Component Imports
-import OptionMenu from '@core/components/option-menu'
 import CustomTextField from '@core/components/mui/TextField'
 import TablePaginationComponent from '@components/TablePaginationComponent'
 
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
-import ZoneDialog from '@/components/dialogs/zone-dialog/page'
-import RegionDialog from '@/components/dialogs/region-dialog/page'
 import { usePermissionList } from '@/utils/getPermission'
 
 // Filter function
@@ -49,7 +48,6 @@ const fuzzyFilter = (row, columnId, value, addMeta) => {
   addMeta({ itemRank })
 
   return itemRank.passed
-
 }
 
 // Debounced Input
@@ -66,28 +64,23 @@ const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...prop
     }, debounce)
 
     return () => clearTimeout(timeout)
-
   }, [value])
 
   return <CustomTextField {...props} value={value} onChange={e => setValue(e.target.value)} />
-
 }
 
 const columnHelper = createColumnHelper()
 
 // States
-const ZonesTable = ({ tableData, fetchZoneData }) => {
+const BranchTable = ({ tableData, fetchBranchData }) => {
   const [role, setRole] = useState('')
   const [rowSelection, setRowSelection] = useState({})
   const [data, setData] = useState([])
   const [filteredData, setFilteredData] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
-  const [openDialog, setOpenDialog] = useState(false)
+  const [openBrachDialog, setOpenBranchDialog] = useState(false)
   const [openZoneDialog, setOpenZoneDialog] = useState(false)
-  const [selectedZone, setSelectedZone] = useState(null)
-  const [selectedRegion, setSelectedRegion] = useState(null)
-
-  const { lang: locale } = useParams()
+  const [selectedRegionData, setSelectedRegionData] = useState(null)
 
   const getPermissions = usePermissionList();
   const [permissions, setPermissions] = useState({});
@@ -96,7 +89,7 @@ const ZonesTable = ({ tableData, fetchZoneData }) => {
     const fetchPermissions = async () => {
       try {
         const result = await getPermissions();
-        
+
         setPermissions(result);
       } catch (error) {
         console.error('Error fetching permissions:', error);
@@ -146,10 +139,10 @@ const ZonesTable = ({ tableData, fetchZoneData }) => {
       )
     },
     columnHelper.accessor('name', {
-      header: 'Zone Name',
+      header: 'Branch Name',
       cell: ({ row }) => (
         <Typography className='capitalize' color='text.primary'>
-          {row.original.name}
+          {row.original.data.name}
         </Typography>
       )
     }),
@@ -157,8 +150,8 @@ const ZonesTable = ({ tableData, fetchZoneData }) => {
       header: 'Status',
       cell: ({ row }) => (
         <Chip
-          label={row.original.status ? 'Active' : 'Inactive'}
-          color={row.original.status ? 'success' : 'default'}
+          label={row.original.data.status ? 'Active' : 'Inactive'}
+          color={row.original.data.status ? 'success' : 'default'}
           variant='tonal'
           size='small'
         />
@@ -168,21 +161,11 @@ const ZonesTable = ({ tableData, fetchZoneData }) => {
       header: 'Actions',
       cell: ({ row }) => (
         <div className='flex items-center'>
-          {permissions && permissions?.['hasRegionAddPermission'] && (
+          {permissions && permissions?.['hasBranchEditPermission'] && (
             <IconButton
               onClick={() => {
-                setSelectedRegion(row.original) // or {}
+                setSelectedRegionData(row.original)
                 setOpenZoneDialog(true)
-              }}
-            >
-              <i className='tabler-plus text-primary' />
-            </IconButton>
-          )}
-          {permissions && permissions?.['hasZoneEditPermission'] && (
-            <IconButton
-              onClick={() => {
-                setSelectedZone(row.original)
-                setOpenDialog(true)
               }}
             >
               <i className='tabler-edit text-textSecondary' />
@@ -234,7 +217,7 @@ const ZonesTable = ({ tableData, fetchZoneData }) => {
             value={globalFilter ?? ''}
             className='max-sm:is-full min-is-[250px]'
             onChange={value => setGlobalFilter(String(value))}
-            placeholder='Search Role'
+            placeholder='Search Region'
           />
           <CustomTextField
             select
@@ -244,11 +227,11 @@ const ZonesTable = ({ tableData, fetchZoneData }) => {
             className='max-sm:is-full sm:is-[160px]'
             slotProps={{ select: { displayEmpty: true } }}
           >
-            <MenuItem value=''>Select Role</MenuItem>
+            <MenuItem value=''>Select Region</MenuItem>
             {tableData.map((item, index) => {
               return (
-                <MenuItem key={index} value={item._id}>
-                  {item.name}
+                <MenuItem key={index} value={item.data._id}>
+                  {item.data.name}
                 </MenuItem>
               );
             })}
@@ -308,28 +291,29 @@ const ZonesTable = ({ tableData, fetchZoneData }) => {
       <TablePaginationComponent table={table} />
 
       {/* Role Dialog */}
-      {openDialog && (
-        <ZoneDialog
-          open={openDialog}
-          setOpen={setOpenDialog}
-          selectedZone={selectedZone}
-          fetchZoneData={fetchZoneData}
+      {openBrachDialog && (
+        <BranchDialog
+          open={openBrachDialog}
+          setOpen={setOpenBranchDialog}
+          selectedRegion={selectedRegion}
+          fetchBranchData={fetchBranchData}
           tableData={tableData}
         />
       )}
 
       {openZoneDialog && (
-        <RegionDialog
+        <BranchDialog
           typeForm={true}
           open={openZoneDialog}
           setOpen={setOpenZoneDialog}
-          selectZone={selectedZone}
-          selectedRegion={selectedRegion}
-          fetchRegionData={fetchZoneData}
+          selectedRegion={null}
+          selectedRegionData={selectedRegionData}
+          fetchBranchData={fetchBranchData}
+          tableData={tableData}
         />
       )}
     </Card>
   )
 }
 
-export default ZonesTable
+export default BranchTable

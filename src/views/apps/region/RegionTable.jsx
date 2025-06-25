@@ -81,6 +81,7 @@ const RegionTable = ({ tableData, fetchRegionData }) => {
   const [globalFilter, setGlobalFilter] = useState('')
   const [openBrachDialog, setOpenBranchDialog] = useState(false)
   const [openZoneDialog, setOpenZoneDialog] = useState(false)
+  const [selectedRegion, setSelectedRegion] = useState();
   const [selectedRegionData, setSelectedRegionData] = useState(null)
 
   const getPermissions = usePermissionList();
@@ -90,7 +91,7 @@ const RegionTable = ({ tableData, fetchRegionData }) => {
     const fetchPermissions = async () => {
       try {
         const result = await getPermissions();
-        
+
         setPermissions(result);
       } catch (error) {
         console.error('Error fetching permissions:', error);
@@ -165,7 +166,7 @@ const RegionTable = ({ tableData, fetchRegionData }) => {
           {permissions && permissions?.['hasBranchAddPermission'] && (
             <IconButton
               onClick={() => {
-                setSelectedRegionData(row.original) // or {}
+                setSelectedRegion(row.original)
                 setOpenBranchDialog(true)
               }}
             >
@@ -186,7 +187,7 @@ const RegionTable = ({ tableData, fetchRegionData }) => {
       ),
       enableSorting: false
     })
-  ], [])
+  ], [permissions])
 
   const table = useReactTable({
     data: filteredData,
@@ -305,7 +306,9 @@ const RegionTable = ({ tableData, fetchRegionData }) => {
       {openBrachDialog && (
         <BranchDialog
           open={openBrachDialog}
+          typeForm={true}
           setOpen={setOpenBranchDialog}
+          selectedRegionData={null}
           selectedRegion={selectedRegion}
           fetchRegionData={fetchRegionData}
           tableData={tableData}

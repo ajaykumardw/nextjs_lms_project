@@ -13,7 +13,7 @@ import IconButton from '@mui/material/IconButton'
 import Button from '@mui/material/Button'
 
 // Component Imports
-import RegionDialog from '@components/dialogs/region-dialog/page';
+import BranchDialog from '@components/dialogs/branch-dialog/page';
 
 import OpenDialogOnElementClick from '@components/dialogs/OpenDialogOnElementClick'
 
@@ -30,7 +30,7 @@ const cardData = [
   { totalUsers: 10, title: 'Restricted User', avatars: ['4.png', '5.png', '6.png'] }
 ]
 
-const RegionCards = ({ fetchRegionData, tableData }) => {
+const RegionCards = ({ fetchBranchData, tableData }) => {
 
   const getPermissions = usePermissionList(); // returns an async function
   const [permissions, setPermissions] = useState({});
@@ -39,7 +39,7 @@ const RegionCards = ({ fetchRegionData, tableData }) => {
     const fetchPermissions = async () => {
       try {
         const result = await getPermissions();
-        
+
         setPermissions(result);
       } catch (error) {
         console.error('Error fetching permissions:', error);
@@ -79,7 +79,12 @@ const RegionCards = ({ fetchRegionData, tableData }) => {
                       onClick: e => e.preventDefault()
                     }}
                     dialog={({ open, setOpen, tableData }) => (
-                      <RegionDialog open={open} setOpen={setOpen} title={item.title} fetchRegionData={fetchRegionData} tableData={tableData} />
+                      <BranchDialog
+                        open={open}
+                        setOpen={setOpen}
+                        title={item.title}
+                        fetchBranchData={fetchBranchData}
+                        tableData={tableData} />
                     )}
                   />
                 </div>
@@ -94,7 +99,7 @@ const RegionCards = ({ fetchRegionData, tableData }) => {
       ))}
 
       {/* Add Role Card */}
-      {permissions && permissions?.['hasRegionAddPermission'] && (
+      {permissions && permissions?.['hasBranchAddPermission'] && (
 
         <Grid xs={12} sm={6} lg={4}>
           <OpenDialogOnElementClick
@@ -112,10 +117,10 @@ const RegionCards = ({ fetchRegionData, tableData }) => {
                     <CardContent>
                       <div className='flex flex-col items-end gap-4 text-right'>
                         <Button variant='contained' size='small'>
-                          Add Region
+                          Add Branch
                         </Button>
                         <Typography>
-                          Add new region, <br />
+                          Add new Branch, <br />
                           if it doesn&apos;t exist.
                         </Typography>
                       </div>
@@ -125,7 +130,13 @@ const RegionCards = ({ fetchRegionData, tableData }) => {
               )
             }}
             dialog={({ open, setOpen }) => (
-              <RegionDialog open={open} setOpen={setOpen} fetchRegionData={fetchRegionData} selectedRegionData={null} selectedRegion={null} tableData={tableData} />
+              <BranchDialog
+                open={open}
+                setOpen={setOpen}
+                fetchBranchData={fetchBranchData}
+                selectedRegionData={null}
+                selectedRegion={null}
+                tableData={tableData} />
             )}
           />
         </Grid>

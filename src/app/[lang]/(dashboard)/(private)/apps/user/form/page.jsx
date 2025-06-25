@@ -4,7 +4,7 @@ import Grid from '@mui/material/Grid2'
 // Component Imports
 import UserFormLayout from '@/components/user-form/page';
 
-const UserFormLayouts = () => {
+export default function UserFormLayouts() {
     return (
         <Grid container spacing={6}>
             <Grid size={{ xs: 12 }}>
@@ -13,5 +13,3 @@ const UserFormLayouts = () => {
         </Grid>
     )
 }
-
-export default UserFormLayouts

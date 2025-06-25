@@ -149,7 +149,6 @@ const ManageEmpCodeDialog = ({ open, setOpen, user, loadData }) => {
       successMessage: '',
       errorMessage: '',
       onSuccess: (response) => {
-        console.log('response', response);
         setCodes(response.data.codes);
         setSelectedCode(response.data.emp_id);
         toast.success(response.message, { autoClose: 700 });

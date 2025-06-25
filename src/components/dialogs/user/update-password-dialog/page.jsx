@@ -112,7 +112,6 @@ const UpdatePasswordDialog = ({ open, setOpen, data }) => {
 
     useEffect(() => {
         if (open) {
-            console.log(data);
             reset({
                 password: ''
             })
