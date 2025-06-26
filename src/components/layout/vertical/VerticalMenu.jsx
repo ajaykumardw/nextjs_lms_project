@@ -220,6 +220,13 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
               <MenuItem key="Package" href={`/${locale}/apps/package`}>Package</MenuItem>
             </SubMenu>
           )}
+          {permissArray?.isCompany && (
+            <SubMenu label="Module & Category" icon={<i className="tabler-adjustments" />}>
+              <MenuItem key="Role" href={`/${locale}/apps/modules`}>modules</MenuItem>
+              <MenuItem key="Permission" href={`/${locale}/apps/modules/form`}>Module form</MenuItem>
+              <MenuItem key="PermissionModule" href={`/${locale}/apps/modules/categories`}>Catgory</MenuItem>
+            </SubMenu>
+          )}
           {permissArray?.isCompany && permissArray?.hasRolePermission && (
             <SubMenu label="Role & Permission" icon={<i className="tabler-lock" />}>
               <MenuItem key="Role" href={`/${locale}/apps/role`}>Roles</MenuItem>
