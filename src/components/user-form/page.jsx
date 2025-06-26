@@ -312,7 +312,7 @@ const UserFormLayout = () => {
             const designationData = await doGet(`admin/designations?status=true`);
             const zoneData = await doGet(`company/zone`);
             const participationTypesData = await doGet(`admin/participation_types?status=true`);
-            const roleData = await doGet(`admin/role`);
+            const roleData = await doGet(`company/role`);
 
             setCreateData(prevData => ({
                 ...prevData,
