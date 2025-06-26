@@ -137,20 +137,21 @@ const Login = ({ mode }) => {
         password: data.password,
         redirect: false
       })
-      
+
 
       setLoading(false)
 
-      if (res && res?.ok && !res.error ) {
+      if (res && res?.ok && !res.error) {
+
         const redirectURL = searchParams.get('redirectTo') ?? '/'
-        
         router.replace(getLocalizedUrl(redirectURL, locale))
+
       } else {
 
         // Do not edit this code
         const message = JSON.parse(res?.error) || 'Login failed. Please try again.'
-        
-        setErrorState( message )
+
+        setErrorState(message)
         console.log('Login error:', message)
       }
     } catch (err) {

@@ -143,6 +143,9 @@ const RoleDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole, ta
       const data = await response.json()
 
       if (response.ok) {
+        
+        console.log("Data", data?.data);
+
         setCreateData(data?.data)
       }
     } catch (error) {

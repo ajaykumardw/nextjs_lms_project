@@ -15,7 +15,7 @@ import RoleCards from './RoleCards'
 
 import RolesTable from './RolesTable'
 
-const Role = () => {
+const Roles = () => {
 
   const [roleData, setRoleData] = useState();
   const [loading, setLoading] = useState(false);
@@ -92,4 +92,4 @@ const Role = () => {
   )
 }
 
-export default Role
+export default Roles
