@@ -1,12 +1,14 @@
 'use client'
 
+import { useParams } from 'next/navigation'
+
 // MUI Imports
 import Grid from '@mui/material/Grid2'
 
 // Component Imports
 import CreateNewModuleLayout from '@/views/apps/modules/form/index';
 
-import { useParams } from 'next/navigation'
+
 
 import PermissionGuard from '@/hocs/PermissionClientGuard'
 

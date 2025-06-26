@@ -23,8 +23,3 @@ export default async function MyCoursePage({ params }) {
     </PermissionGuard>
   )
 }
-// const MyCoursePage = async () => {
-//   // Vars
-// }
-
-// export default MyCoursePage
