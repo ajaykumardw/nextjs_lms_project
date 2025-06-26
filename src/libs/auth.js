@@ -44,7 +44,7 @@ export const authOptions = {
 
           const data = await res.json()
 
-          console.log("Data", data);
+
           
 
           if (!res.ok) {

@@ -3,9 +3,6 @@
 // React Imports
 import { useState, useMemo, useEffect } from 'react'
 
-// Next Imports
-import { useParams } from 'next/navigation'
-
 // MUI Imports
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
@@ -83,7 +80,6 @@ const RolesTable = ({ tableData, fetchRoleData }) => {
   useEffect(() => {
     if (tableData) {
 
-      console.log("Table data", tableData);
 
       setData(tableData)
       setFilteredData(tableData)

@@ -1,6 +1,9 @@
 'use client'
 
 // MUI Imports
+
+import { useState, useEffect } from 'react'
+
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Grid from '@mui/material/Grid2'
@@ -11,9 +14,11 @@ import IconButton from '@mui/material/IconButton'
 import Button from '@mui/material/Button'
 
 // Component Imports
-import RoleDialog from '@components/dialogs/role-dialog'
+import RoleDialog from '@components/dialogs/company-user-dialog'
 import OpenDialogOnElementClick from '@components/dialogs/OpenDialogOnElementClick'
 import Link from '@components/Link'
+
+import { usePermissionList } from '@/utils/getPermission'
 
 // Dummy Role Data
 const cardData = [
@@ -25,6 +30,26 @@ const cardData = [
 ]
 
 const RoleCards = ({ fetchRoleData, tableData }) => {
+
+  const getPermissions = usePermissionList(); // returns an async function
+  const [permissions, setPermissions] = useState({});
+
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      try {
+        const result = await getPermissions();
+
+        setPermissions(result);
+      } catch (error) {
+        console.error('Error fetching permissions:', error);
+      }
+    };
+
+    if (getPermissions) {
+      fetchPermissions();
+    }
+  }, [getPermissions]);
+
   return (
     <Grid container spacing={6}>
       {cardData.map((item, index) => (
@@ -74,44 +99,46 @@ const RoleCards = ({ fetchRoleData, tableData }) => {
       ))}
 
       {/* Add Role Card */}
-      <Grid xs={12} sm={6} lg={4}>
-        <OpenDialogOnElementClick
-          element={Card}
-          elementProps={{
-            className: 'cursor-pointer bs-full',
-            children: (
-              <Grid container className='bs-full'>
-                <Grid xs={5}>
-                  <div className='flex items-end justify-center bs-full'>
-                    <img alt='add-role' src='/images/illustrations/characters/5.png' height={130} />
-                  </div>
-                </Grid>
-                <Grid xs={7}>
-                  <CardContent>
-                    <div className='flex flex-col items-end gap-4 text-right'>
-                      <Button variant='contained' size='small'>
-                        Add Role
-                      </Button>
-                      <Typography>
-                        Add new role, <br />
-                        if it doesn&apos;t exist.
-                      </Typography>
+      {permissions && permissions?.['hasRoleAddPermission'] && (
+        <Grid xs={12} sm={6} lg={4}>
+          <OpenDialogOnElementClick
+            element={Card}
+            elementProps={{
+              className: 'cursor-pointer bs-full',
+              children: (
+                <Grid container className='bs-full'>
+                  <Grid xs={5}>
+                    <div className='flex items-end justify-center bs-full'>
+                      <img alt='add-role' src='/images/illustrations/characters/5.png' height={130} />
                     </div>
-                  </CardContent>
+                  </Grid>
+                  <Grid xs={7}>
+                    <CardContent>
+                      <div className='flex flex-col items-end gap-4 text-right'>
+                        <Button variant='contained' size='small'>
+                          Add Role
+                        </Button>
+                        <Typography>
+                          Add new role, <br />
+                          if it doesn&apos;t exist.
+                        </Typography>
+                      </div>
+                    </CardContent>
+                  </Grid>
                 </Grid>
-              </Grid>
-            )
-          }}
-          dialog={({ open, setOpen }) => (
-            <RoleDialog
-              open={open}
-              setOpen={setOpen}
-              fetchRoleData={fetchRoleData}
-              tableData={tableData}
-            />
-          )}
-        />
-      </Grid>
+              )
+            }}
+            dialog={({ open, setOpen }) => (
+              <RoleDialog
+                open={open}
+                setOpen={setOpen}
+                fetchRoleData={fetchRoleData}
+                tableData={tableData}
+              />
+            )}
+          />
+        </Grid>
+      )}
     </Grid>
   )
 }

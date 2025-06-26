@@ -144,6 +144,7 @@ const Login = ({ mode }) => {
       if (res && res?.ok && !res.error) {
 
         const redirectURL = searchParams.get('redirectTo') ?? '/'
+        
         router.replace(getLocalizedUrl(redirectURL, locale))
 
       } else {

@@ -67,7 +67,6 @@ const RoleDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole, ta
   const [createData, setCreateData] = useState()
   const [loading, setLoading] = useState(false);
   const [selectedPermissions, setSelectedPermissions] = useState({})
-  const calledRef = useRef(false)
 
   const {
     control,
@@ -130,21 +129,24 @@ const RoleDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole, ta
     })
   }
 
+  const calledRef = useRef(false)
+
   const formData = async () => {
     try {
-      const response = await fetch(`${API_URL}/admin/role/create`, {
+      const response = await fetch(`${API_URL}/company/role/create`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       })
 
       const data = await response.json()
 
       if (response.ok) {
-
         setCreateData(data?.data)
+      } else {
+        console.error('Fetch failed:', data?.message || response.statusText)
       }
     } catch (error) {
       console.error('Error occurred:', error)
@@ -156,7 +158,7 @@ const RoleDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole, ta
       calledRef.current = true
       formData()
     }
-  }, [token])
+  }, [token]) // depend on `token` in case it's async-loaded
 
   useEffect(() => {
     if (open && selectedRole) {
@@ -205,7 +207,7 @@ const RoleDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole, ta
     if (hasError) {
       setError(`name`, {
         type: 'manual',
-        message: 'Label name must be unique.'
+        message: 'Role name must be unique.'
       });
 
       return;
@@ -214,7 +216,7 @@ const RoleDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole, ta
     setLoading(true);
 
     try {
-      const response = await fetch(selectedRole ? `${API_URL}/admin/role/${selectedRole._id}` : `${API_URL}/admin/role`, {
+      const response = await fetch(selectedRole ? `${API_URL}/company/role/${selectedRole._id}` : `${API_URL}/company/role`, {
         method: selectedRole ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',

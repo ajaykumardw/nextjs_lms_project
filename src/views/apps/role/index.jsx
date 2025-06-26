@@ -28,7 +28,7 @@ const Roles = () => {
 
   async function fetchRoleData() {
     try {
-      const response = await fetch(`${URL}/admin/role`,
+      const response = await fetch(`${URL}/company/role`,
         {
           method: "GET",
           headers: {
@@ -39,7 +39,8 @@ const Roles = () => {
 
       const datas = await response.json();
 
-      if (response.ok) {
+      if (response.ok) {       
+
         setLoading(true);
         setRoleData(datas?.data);
       } else {

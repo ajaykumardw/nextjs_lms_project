@@ -3,9 +3,6 @@
 // React Imports
 import { useState, useMemo, useEffect } from 'react'
 
-// Next Imports
-import { useParams } from 'next/navigation'
-
 // MUI Imports
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
@@ -32,13 +29,14 @@ import {
 } from '@tanstack/react-table'
 
 // Component Imports
-import OptionMenu from '@core/components/option-menu'
 import CustomTextField from '@core/components/mui/TextField'
 import TablePaginationComponent from '@components/TablePaginationComponent'
-import RoleDialog from '@components/dialogs/role-dialog/index' // 👈 Update the path if needed
+import RoleDialog from '@components/dialogs/company-user-dialog' // 👈 Update the path if needed
 
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
+
+import { usePermissionList } from '@/utils/getPermission'
 
 // Filter function
 const fuzzyFilter = (row, columnId, value, addMeta) => {
@@ -80,15 +78,33 @@ const RolesTable = ({ tableData, fetchRoleData }) => {
   const [openDialog, setOpenDialog] = useState(false)
   const [selectedRole, setSelectedRole] = useState(null)
 
+  const getPermissions = usePermissionList();
+  const [permissions, setPermissions] = useState({});
+
   useEffect(() => {
     if (tableData) {
 
-      console.log("Table data", tableData);
 
       setData(tableData)
       setFilteredData(tableData)
     }
   }, [tableData])
+
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      try {
+        const result = await getPermissions();
+
+        setPermissions(result);
+      } catch (error) {
+        console.error('Error fetching permissions:', error);
+      }
+    };
+
+    if (getPermissions) {
+      fetchPermissions();
+    }
+  }, [getPermissions]); // Include in dependency array
 
   // Role filter effect
   useEffect(() => {
@@ -159,19 +175,21 @@ const RolesTable = ({ tableData, fetchRoleData }) => {
       header: 'Actions',
       cell: ({ row }) => (
         <div className='flex items-center'>
-          <IconButton
-            onClick={() => {
-              setSelectedRole(row.original)
-              setOpenDialog(true)
-            }}
-          >
-            <i className='tabler-edit text-textSecondary' />
-          </IconButton>
+          {row.original.created_by != '6811ae35704460d978b84eaa' && permissions['hasRoleEditPermission'] && (
+            <IconButton
+              onClick={() => {
+                setSelectedRole(row.original)
+                setOpenDialog(true)
+              }}
+            >
+              <i className='tabler-edit text-textSecondary' />
+            </IconButton>
+          )}
         </div>
       ),
       enableSorting: false
     })
-  ], [])
+  ], [permissions])
 
   const table = useReactTable({
     data: filteredData,
