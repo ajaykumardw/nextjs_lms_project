@@ -7,8 +7,8 @@ import { useState } from 'react'
 import Grid from '@mui/material/Grid2'
 
 // Component Imports
-import MyCourseHeader from './MyCourseHeader'
-import Courses from './Courses'
+import MyModulesHeader from './MyModulesHeader'
+import Modules from './Modules'
 import ColoredCards from './ColoredCards'
 import FreeCourses from './FreeCourses'
 
@@ -19,16 +19,16 @@ const AcademyMyCourse = ({ courseData, mode }) => {
   return (
     <Grid container spacing={6}>
       <Grid size={{ xs: 12 }}>
-        <MyCourseHeader mode={mode} searchValue={searchValue} setSearchValue={setSearchValue} />
+        <MyModulesHeader mode={mode} searchValue={searchValue} setSearchValue={setSearchValue} />
       </Grid>
       <Grid size={{ xs: 12 }}>
-        <Courses courseData={courseData} searchValue={searchValue} />
+        <Modules courseData={courseData} searchValue={searchValue} />
       </Grid>
       <Grid size={{ xs: 12 }}>
-        <ColoredCards />
+        {/* <ColoredCards /> */}
       </Grid>
       <Grid size={{ xs: 12 }}>
-        <FreeCourses />
+        {/* <FreeCourses /> */}
       </Grid>
     </Grid>
   )

@@ -135,9 +135,14 @@ const ModuleFormLayout = ({ setLayoutType, setShowCards, setModuleData }) => {
         multiple: false,
         maxSize: 2000000,
         accept: {
-            'image/*': ['.png', '.jpg', '.jpeg', '.gif']
+            'image/jpeg': ['.jpeg', '.jpg'],
+            'image/png': ['.png'],
         },
-        onDrop: acceptedFiles => {
+        onDrop: (acceptedFiles) => {
+            if (!acceptedFiles.length) return;
+
+            setFiles(acceptedFiles.map(file => Object.assign(file)))
+
             const file = acceptedFiles[0];
             const reader = new FileReader();
 
@@ -149,6 +154,36 @@ const ModuleFormLayout = ({ setLayoutType, setShowCards, setModuleData }) => {
             };
 
             reader.readAsDataURL(file);
+        },
+        onDropRejected: (rejectedFiles) => {
+
+            const errorMessage = rejectedFiles.map(file => {
+
+                if (file.errors.length > 0) {
+
+                    return file.errors.map(error => {
+                        switch (error.code) {
+                            case 'file-invalid-type':
+                                return `Invalid file type for ${file.file.name}.`;
+                            case 'file-too-large':
+                                return `File ${file.file.name} is too large.`;
+                            case 'too-many-files':
+                                return `Too many files selected.`;
+                            default:
+                                return `Error with file ${file.file.name}.`;
+                        }
+                    }).join(' ');
+                }
+
+                return `Error with file ${file.file.name}.`;
+            });
+
+            errorMessage.map(error => {
+                toast.error(error, {
+                    hideProgressBar: false
+                });
+            })
+
         }
     })
 
@@ -229,9 +264,14 @@ const ModuleFormLayout = ({ setLayoutType, setShowCards, setModuleData }) => {
     const onSubmit = async (data) => {
         const endpoint = id ? `admin/module/${id}` : `admin/module`;
 
+        const newData = {
+            ...data,
+            file: files[0]
+        };
+
         await doPostFormData({
             endpoint,
-            values: data,
+            values: newData,
             method: id ? 'PUT' : 'POST',
             successMessage: '',
             errorMessage: '',
@@ -365,25 +405,31 @@ const ModuleFormLayout = ({ setLayoutType, setShowCards, setModuleData }) => {
                             <AppReactDropzone>
                                 <div {...getRootProps({ className: 'dropzone' })}>
                                     <input {...getInputProps()} />
-                                    {files.length ? (
-                                        img
-                                    ) : (
-                                        <div className='flex items-center flex-col'>
-                                            <Avatar variant='rounded' className='bs-12 is-12 mbe-9'>
-                                                <i className='tabler-upload' />
-                                            </Avatar>
-                                            <Typography variant='h5' className='mbe-2.5'>
-                                                Drop files here or click to upload.
-                                            </Typography>
-                                            <Typography>Allowed *.png. *.jpg *.jpeg, *.gif</Typography>
-                                            <Typography>Max 1 file and max size of 2 MB</Typography>
-                                        </div>
-                                    )}
+
+                                    <div className='flex items-center flex-col'>
+                                        <Avatar variant='rounded' className='bs-12 is-12 mbe-9'>
+                                            <i className='tabler-upload' />
+                                        </Avatar>
+                                        <Typography variant='h5' className='mbe-2.5'>
+                                            Drop files here or click to upload.
+                                        </Typography>
+                                        <Typography>Allowed *.png. *.jpg *.jpeg, *.gif</Typography>
+                                        <Typography>Max 1 file and max size of 2 MB</Typography>
+                                    </div>
+
                                     {preview && (
                                         <div className='mt-4'>
                                             <img src={preview} alt='Preview' style={{ maxWidth: '200px' }} />
                                         </div>
                                     )}
+
+                                    {module?.image && !preview && (
+                                        <div className='mt-4'>
+                                            <img src={`${public_url}/${module.image}`} alt='Preview' style={{ maxWidth: '200px', 'borderRadius': '10%' }} />
+                                        </div>
+                                    )}
+
+
                                 </div>
                             </AppReactDropzone>
                         </Grid>
