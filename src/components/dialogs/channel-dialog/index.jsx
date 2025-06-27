@@ -62,18 +62,18 @@ const FormContent = ({ control, errors, createData, isEdit }) => (
                         placeholder="Enter Channel Name"
                         onKeyDown={(e) => {
                             const key = e.key;
-                            
+
                             const allowedKeys = [
                                 'Backspace', 'Tab', 'ArrowLeft', 'ArrowRight', 'Delete', 'Enter',
                                 'Home', 'End', 'Escape'
                             ];
-                            
+
                             if (key.length === 1 || allowedKeys.includes(key)) return;
                             e.preventDefault();
                         }}
                         onPaste={(e) => {
                             const paste = e.clipboardData.getData('text');
-                            
+
                             if (!/^[\x20-\x7E\r\n\t]*$/.test(paste)) e.preventDefault();
                         }}
                         error={!!errors.name}
@@ -131,6 +131,7 @@ const FormContent = ({ control, errors, createData, isEdit }) => (
 );
 
 const ChannelDialog = ({ open, setOpen, data, fetchPermissionModule, nameData }) => {
+
     const handleClose = () => setOpen(false);
     const URL = process.env.NEXT_PUBLIC_API_URL;
     const { data: session } = useSession() || {};
@@ -156,7 +157,7 @@ const ChannelDialog = ({ open, setOpen, data, fetchPermissionModule, nameData })
 
     useEffect(() => {
         if (!open) return;
-        
+
         if (data) {
 
             reset({
@@ -176,16 +177,17 @@ const ChannelDialog = ({ open, setOpen, data, fetchPermissionModule, nameData })
     }, [open, data, reset]);
 
     const submitData = async (values) => {
-
         setLoading(true);
-        
-        try {
 
-            const endpoint = data
-                ? `${URL}/company/channel/${data.channelId}`
+        try {
+            const isEdit = Boolean(data);
+            const channelId = data?.channelId;
+
+            const endpoint = isEdit
+                ? `${URL}/company/channel/${channelId ? channelId : null}`
                 : `${URL}/company/channel`;
 
-            const method = data ? 'PUT' : 'POST';
+            const method = isEdit ? 'PUT' : 'POST';
 
             const res = await fetch(endpoint, {
                 method,
@@ -200,9 +202,9 @@ const ChannelDialog = ({ open, setOpen, data, fetchPermissionModule, nameData })
 
             if (res.ok) {
                 fetchPermissionModule?.();
-                toast.success(`Channel ${data ? "updated" : "created"} successfully!`, { autoClose: 700 });
+                toast.success(`Channel ${isEdit ? "updated" : "created"} successfully!`, { autoClose: 700 });
                 setOpen(false);
-                window.location.reload();
+                window.location.reload(); // optional: can be replaced with SWR refetch or router refresh
             } else {
                 toast.error(json?.message || 'Something went wrong');
             }
@@ -240,7 +242,7 @@ const ChannelDialog = ({ open, setOpen, data, fetchPermissionModule, nameData })
 
         if (duplicate) {
             setError('name', { type: 'manual', message: 'This name already exists.' });
-            
+
             return;
         }
 

@@ -9,6 +9,8 @@ import { useSession } from 'next-auth/react'
 import ParticipationTypeComponent from '@/views/apps/participation-type/index'
 
 import SkeletonTableComponent from '@/components/skeleton/table/page'
+import PermissionGuard from '@/hocs/PermissionClientGuard'
+import { useParams } from 'next/navigation'
 
 const ParticipationTypeApp = () => {
   const URL = process.env.NEXT_PUBLIC_API_URL
@@ -16,6 +18,8 @@ const ParticipationTypeApp = () => {
   const token = session?.user?.token
   const [data, setData] = useState()
   const [nameData, setNameData] = useState();
+
+  const { lang: locale } = useParams();
 
   const loadTableData = async () => {
     try {
@@ -32,12 +36,12 @@ const ParticipationTypeApp = () => {
       if (!response.ok) {
         throw new Error(result.message || 'Failed to fetch participation types');
       }
-      
+
       setData(result.data || []);
 
     } catch (error) {
       console.error('Error fetching participation types:', error.message);
-      
+
       // Optionally show toast or UI feedback
       // toast.error(error.message || 'Something went wrong');
     }
@@ -51,13 +55,22 @@ const ParticipationTypeApp = () => {
   }, [URL, token])
 
   // Render loading or the permissions component
-  return data ?
-    <ParticipationTypeComponent
-      tableRows={data}
-      loadTableData={loadTableData}
-    />
-    :
-    <SkeletonTableComponent />
+  return (
+    <>
+      <PermissionGuard locale={locale} element={'isCompany'}>
+
+        {
+          data ?
+            <ParticipationTypeComponent
+              tableRows={data}
+              loadTableData={loadTableData}
+            />
+            :
+            <SkeletonTableComponent />
+        }
+      </PermissionGuard>
+    </>
+  )
 }
 
 export default ParticipationTypeApp

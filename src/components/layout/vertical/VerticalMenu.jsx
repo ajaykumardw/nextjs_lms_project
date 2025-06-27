@@ -264,6 +264,9 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
                   {dictionary['navigation'].designation_plural}
                 </MenuItem>
               )}
+              <MenuItem href={`/${locale}/apps/participation-types`}>
+                Participation type
+              </MenuItem>
             </SubMenu>
           )}
           {permissArray?.isSuperAdmin && (
