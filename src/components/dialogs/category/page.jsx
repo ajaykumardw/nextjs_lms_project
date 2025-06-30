@@ -162,7 +162,9 @@ const CategoryDialog = ({ open, setOpen, data, loadTableData, type, location, on
             const result = await response.json()
 
             if (!response.ok) {
-                throw new Error(result.message || 'Something went wrong!')
+                toast.error(result.message || 'Something went wrong!', { autoClose: 700 })
+
+                return
             }
 
             if (location == 'addmoduleform') {

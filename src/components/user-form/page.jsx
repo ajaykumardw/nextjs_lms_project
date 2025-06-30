@@ -547,668 +547,672 @@ const UserFormLayout = () => {
     }
 
     return (
-        <Card>
-            <CardHeader title={id ? `Edit ${editData?.first_name}` : 'Add New User'} />
-            <Divider />
-            <form onSubmit={handleSubmit(onSubmit)} noValidate encType="multipart/form-data">
-                <CardContent>
-                    <Grid container spacing={5}>
-                        <Grid size={{ xs: 12 }}>
-                            <Typography variant='body2' className='font-medium'>
-                                1. Account Details
-                            </Typography>
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <Controller
-                                name="first_name"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        fullWidth
-                                        label="First Name*"
-                                        placeholder="First Name"
-                                        error={!!errors.first_name}
-                                        helperText={errors.first_name?.message}
-                                    />
-                                )}
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            {/* Last Name */}
-                            <Controller
-                                name="last_name"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        fullWidth
-                                        type="text"
-                                        label="Last Name*"
-                                        placeholder="Last Name"
-                                        error={!!errors.last_name}
-                                        helperText={errors.last_name?.message}
-                                    />
-                                )}
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            {/* Email */}
-                            <Controller
-                                name="email"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        fullWidth
-                                        type="email"
-                                        label="Email*"
-                                        placeholder="Email"
-                                        error={!!errors.email}
-                                        helperText={errors.email?.message}
-                                    />
-                                )}
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            {/* Email */}
-                            <Controller
-                                name="alternative_email"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        fullWidth
-                                        type="email"
-                                        label="Alternate Email Address"
-                                        placeholder="Alternate Email Address"
-                                        error={!!errors.alternative_email}
-                                        helperText={errors.alternative_email?.message}
-                                    />
-                                )}
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            {/* Phone */}
-                            <Controller
-                                name="phone"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        fullWidth
-                                        type="tel"
-                                        label="Phone*"
-                                        placeholder="Phone"
-                                        error={!!errors.phone}
-                                        helperText={errors.phone?.message}
-                                    />
-                                )}
-                            />
-                        </Grid>
-                        {!id && (
+        <PermissionGuard
+            element={id ? 'hasUserEditPermission' : 'hasUserAddPermission'}
+            locale={locale}
+        >
+            <Card>
+                <CardHeader title={id ? `Edit ${editData?.first_name}` : 'Add New User'} />
+                <Divider />
+                <form onSubmit={handleSubmit(onSubmit)} noValidate encType="multipart/form-data">
+                    <CardContent>
+                        <Grid container spacing={5}>
+                            <Grid size={{ xs: 12 }}>
+                                <Typography variant='body2' className='font-medium'>
+                                    1. Account Details
+                                </Typography>
+                            </Grid>
                             <Grid size={{ xs: 12, sm: 4 }}>
                                 <Controller
-                                    name="password"
+                                    name="first_name"
                                     control={control}
                                     render={({ field }) => (
                                         <CustomTextField
-                                            fullWidth
-                                            label="Password*"
-                                            placeholder="············"
-                                            id="form-layout-separator-password"
-                                            type={formData.isPasswordShown ? 'text' : 'password'}
                                             {...field}
-                                            InputProps={{
-                                                endAdornment: (
-                                                    <InputAdornment position="end">
-                                                        <IconButton
-                                                            edge="end"
-                                                            onClick={handleClickShowPassword}
-                                                            onMouseDown={(e) => e.preventDefault()}
-                                                            aria-label="toggle password visibility"
-                                                        >
-                                                            <i className={formData.isPasswordShown ? 'tabler-eye-off' : 'tabler-eye'} />
-                                                        </IconButton>
-                                                    </InputAdornment>
-                                                )
-                                            }}
-                                            error={!!errors.password}
-                                            helperText={errors.password?.message}
+                                            fullWidth
+                                            label="First Name*"
+                                            placeholder="First Name"
+                                            error={!!errors.first_name}
+                                            helperText={errors.first_name?.message}
                                         />
                                     )}
                                 />
                             </Grid>
-                        )}
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            {/* <Card className="p-4"> */}
-                            <Typography variant="h6" className="mb-4">Profile Photo</Typography>
-                            <CardContent className="flex flex-col sm:flex-row items-start gap-6 p-0">
-                                <img
-                                    src={imgSrc}
-                                    alt="Profile"
-                                    className="rounded-full object-cover border"
-                                    style={{ width: 100, height: 100 }}
-                                />
-                                <div className="flex flex-col gap-2">
-                                    <div className="flex flex-col gap-2 w-48">
-                                        <Button component="label" variant="contained" fullWidth htmlFor="upload-image">
-                                            Upload New Photo
-                                            <input
-                                                hidden
-                                                type="file"
-                                                accept="image/png, image/jpeg"
-                                                id="upload-image"
-                                                onChange={handleFileInputChange}
-                                            />
-                                        </Button>
-                                        <Button variant="outlined" color="secondary" fullWidth onClick={handleFileInputReset}>
-                                            Reset
-                                        </Button>
-                                    </div>
-                                    {errors?.photo && (
-                                        <Typography
-                                            variant="body2"
-                                            color="error"
-                                            className="mt-2"
-                                            style={{ color: 'var(--mui-palette-error-main)' }}
-                                        >
-                                            {errors.photo.message}
-                                        </Typography>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                                {/* Last Name */}
+                                <Controller
+                                    name="last_name"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <CustomTextField
+                                            {...field}
+                                            fullWidth
+                                            type="text"
+                                            label="Last Name*"
+                                            placeholder="Last Name"
+                                            error={!!errors.last_name}
+                                            helperText={errors.last_name?.message}
+                                        />
                                     )}
-                                </div>
-                            </CardContent>
-                            {/* </Card> */}
-                        </Grid>
-                        <Grid size={{ xs: 12 }}>
-                            <Divider />
-                        </Grid>
-                        <Grid size={{ xs: 12 }}>
-                            <Typography variant='body2' className='font-medium'>
-                                2. Personal Info
-                            </Typography>
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <Controller
-                                name="dob"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        fullWidth
-                                        type="date"
-                                        label="Date of birth"
-                                        placeholder="Date of birth"
-                                        error={!!errors.dob}
-                                        helperText={errors.dob?.message}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                                {/* Email */}
+                                <Controller
+                                    name="email"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <CustomTextField
+                                            {...field}
+                                            fullWidth
+                                            type="email"
+                                            label="Email*"
+                                            placeholder="Email"
+                                            error={!!errors.email}
+                                            helperText={errors.email?.message}
+                                        />
+                                    )}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                                {/* Email */}
+                                <Controller
+                                    name="alternative_email"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <CustomTextField
+                                            {...field}
+                                            fullWidth
+                                            type="email"
+                                            label="Alternate Email Address"
+                                            placeholder="Alternate Email Address"
+                                            error={!!errors.alternative_email}
+                                            helperText={errors.alternative_email?.message}
+                                        />
+                                    )}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                                {/* Phone */}
+                                <Controller
+                                    name="phone"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <CustomTextField
+                                            {...field}
+                                            fullWidth
+                                            type="tel"
+                                            label="Phone*"
+                                            placeholder="Phone"
+                                            error={!!errors.phone}
+                                            helperText={errors.phone?.message}
+                                        />
+                                    )}
+                                />
+                            </Grid>
+                            {!id && (
+                                <Grid size={{ xs: 12, sm: 4 }}>
+                                    <Controller
+                                        name="password"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <CustomTextField
+                                                fullWidth
+                                                label="Password*"
+                                                placeholder="············"
+                                                id="form-layout-separator-password"
+                                                type={formData.isPasswordShown ? 'text' : 'password'}
+                                                {...field}
+                                                InputProps={{
+                                                    endAdornment: (
+                                                        <InputAdornment position="end">
+                                                            <IconButton
+                                                                edge="end"
+                                                                onClick={handleClickShowPassword}
+                                                                onMouseDown={(e) => e.preventDefault()}
+                                                                aria-label="toggle password visibility"
+                                                            >
+                                                                <i className={formData.isPasswordShown ? 'tabler-eye-off' : 'tabler-eye'} />
+                                                            </IconButton>
+                                                        </InputAdornment>
+                                                    )
+                                                }}
+                                                error={!!errors.password}
+                                                helperText={errors.password?.message}
+                                            />
+                                        )}
                                     />
-                                )}
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 8 }}>
-                            <Controller
-                                name="address"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        fullWidth
-                                        label="Address*"
-                                        placeholder="Address"
-                                        multiline
-                                        rows={1}
-                                        error={!!errors.address}
-                                        helperText={errors.address?.message}
+                                </Grid>
+                            )}
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                                {/* <Card className="p-4"> */}
+                                <Typography variant="h6" className="mb-4">Profile Photo</Typography>
+                                <CardContent className="flex flex-col sm:flex-row items-start gap-6 p-0">
+                                    <img
+                                        src={imgSrc}
+                                        alt="Profile"
+                                        className="rounded-full object-cover border"
+                                        style={{ width: 100, height: 100 }}
                                     />
-                                )}
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <Controller
-                                name="country_id"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        select
-                                        fullWidth
-                                        label="Country*"
-                                        onChange={(e) => {
-                                            const selectedCountryId = e.target.value;
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex flex-col gap-2 w-48">
+                                            <Button component="label" variant="contained" fullWidth htmlFor="upload-image">
+                                                Upload New Photo
+                                                <input
+                                                    hidden
+                                                    type="file"
+                                                    accept="image/png, image/jpeg"
+                                                    id="upload-image"
+                                                    onChange={handleFileInputChange}
+                                                />
+                                            </Button>
+                                            <Button variant="outlined" color="secondary" fullWidth onClick={handleFileInputReset}>
+                                                Reset
+                                            </Button>
+                                        </div>
+                                        {errors?.photo && (
+                                            <Typography
+                                                variant="body2"
+                                                color="error"
+                                                className="mt-2"
+                                                style={{ color: 'var(--mui-palette-error-main)' }}
+                                            >
+                                                {errors.photo.message}
+                                            </Typography>
+                                        )}
+                                    </div>
+                                </CardContent>
+                                {/* </Card> */}
+                            </Grid>
+                            <Grid size={{ xs: 12 }}>
+                                <Divider />
+                            </Grid>
+                            <Grid size={{ xs: 12 }}>
+                                <Typography variant='body2' className='font-medium'>
+                                    2. Personal Info
+                                </Typography>
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                                <Controller
+                                    name="dob"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <CustomTextField
+                                            {...field}
+                                            fullWidth
+                                            type="date"
+                                            label="Date of birth"
+                                            placeholder="Date of birth"
+                                            error={!!errors.dob}
+                                            helperText={errors.dob?.message}
+                                        />
+                                    )}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 8 }}>
+                                <Controller
+                                    name="address"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <CustomTextField
+                                            {...field}
+                                            fullWidth
+                                            label="Address*"
+                                            placeholder="Address"
+                                            multiline
+                                            rows={1}
+                                            error={!!errors.address}
+                                            helperText={errors.address?.message}
+                                        />
+                                    )}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                                <Controller
+                                    name="country_id"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <CustomTextField
+                                            {...field}
+                                            select
+                                            fullWidth
+                                            label="Country*"
+                                            onChange={(e) => {
+                                                const selectedCountryId = e.target.value;
 
-                                            field.onChange(selectedCountryId); // update form value
-                                            setCountryId(selectedCountryId);   // update local state or trigger other actions
-                                        }}
-                                        error={!!errors.country_id}
-                                        helperText={errors.country_id?.message}
-                                    >
-                                        {createData?.country?.length > 0 &&
-                                            createData.country.map((item, index) => (
-                                                <MenuItem key={index} value={`${item.country_id}`}>
-                                                    {item.country_name}
-                                                </MenuItem>
+                                                field.onChange(selectedCountryId); // update form value
+                                                setCountryId(selectedCountryId);   // update local state or trigger other actions
+                                            }}
+                                            error={!!errors.country_id}
+                                            helperText={errors.country_id?.message}
+                                        >
+                                            {createData?.country?.length > 0 &&
+                                                createData.country.map((item, index) => (
+                                                    <MenuItem key={index} value={`${item.country_id}`}>
+                                                        {item.country_name}
+                                                    </MenuItem>
+                                                ))}
+                                        </CustomTextField>
+                                    )}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                                {/* State */}
+                                <Controller
+                                    name="state_id"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <CustomTextField
+                                            {...field}
+                                            select
+                                            fullWidth
+                                            label="State*"
+                                            onChange={(e) => {
+                                                const selectStateId = e.target.value;
+
+                                                field.onChange(selectStateId);
+                                                setStateId(selectStateId);
+                                            }}
+                                            error={!!errors.state_id}
+                                            helperText={errors.state_id?.message}
+                                        >
+                                            <MenuItem disabled value="1">Select state</MenuItem>
+                                            {stateData && stateData.length > 0 && stateData.map((item, index) => (
+                                                <MenuItem key={index} value={`${item.state_id}`}>{item.state_name}</MenuItem>
                                             ))}
-                                    </CustomTextField>
-                                )}
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            {/* State */}
-                            <Controller
-                                name="state_id"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        select
-                                        fullWidth
-                                        label="State*"
-                                        onChange={(e) => {
-                                            const selectStateId = e.target.value;
+                                        </CustomTextField>
+                                    )}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                                {/* City */}
+                                <Controller
+                                    name="city_id"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <CustomTextField
+                                            {...field}
+                                            select
+                                            fullWidth
+                                            label="City*"
+                                            error={!!errors.city_id}
+                                            helperText={errors.city_id?.message}
+                                        >
+                                            <MenuItem disabled value="1">Select city</MenuItem>
+                                            {cityData && cityData.length > 0 && cityData.map((item, index) => (
+                                                <MenuItem key={index} value={`${item.city_id}`}>{item.city_name}</MenuItem>
+                                            ))}
+                                        </CustomTextField>
+                                    )}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                                <Controller
+                                    name="pincode"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <CustomTextField
+                                            {...field}
+                                            fullWidth
+                                            type="number"
+                                            label="Pincode*"
+                                            placeholder="Pincode"
+                                            error={!!errors.pincode}
+                                            helperText={errors.pincode?.message}
+                                        />
+                                    )}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 12 }}>
+                                <Divider />
+                            </Grid>
+                            <Grid size={{ xs: 12 }}>
+                                <Typography variant='body2' className='font-medium'>
+                                    3. Other Details
+                                </Typography>
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                                <Controller
+                                    name="urn_no"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <CustomTextField
+                                            {...field}
+                                            fullWidth
+                                            type="text"
+                                            label="URN Number"
+                                            placeholder="URN Number"
+                                            error={!!errors.gst_no}
+                                            helperText={errors.gst_no?.message}
+                                        />
+                                    )}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                                <Controller
+                                    name="idfa_code"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <CustomTextField
+                                            {...field}
+                                            fullWidth
+                                            type="text"
+                                            label="Employee ID/FA Code"
+                                            placeholder="Employee ID/FA Code"
+                                            error={!!errors.gst_no}
+                                            helperText={errors.gst_no?.message}
+                                        />
+                                    )}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                                <Controller
+                                    name="application_no"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <CustomTextField
+                                            {...field}
+                                            fullWidth
+                                            type="text"
+                                            label="Application Number"
+                                            placeholder="Application Number"
+                                            error={!!errors.gst_no}
+                                            helperText={errors.gst_no?.message}
+                                        />
+                                    )}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                                <Controller
+                                    name="licence_no"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <CustomTextField
+                                            {...field}
+                                            fullWidth
+                                            type="text"
+                                            label="Licence Number"
+                                            placeholder="Licence Number"
+                                            error={!!errors.gst_no}
+                                            helperText={errors.gst_no?.message}
+                                        />
+                                    )}
+                                />
+                            </Grid>
 
-                                            field.onChange(selectStateId);
-                                            setStateId(selectStateId);
-                                        }}
-                                        error={!!errors.state_id}
-                                        helperText={errors.state_id?.message}
-                                    >
-                                        <MenuItem disabled value="1">Select state</MenuItem>
-                                        {stateData && stateData.length > 0 && stateData.map((item, index) => (
-                                            <MenuItem key={index} value={`${item.state_id}`}>{item.state_name}</MenuItem>
-                                        ))}
-                                    </CustomTextField>
-                                )}
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            {/* City */}
-                            <Controller
-                                name="city_id"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        select
-                                        fullWidth
-                                        label="City*"
-                                        error={!!errors.city_id}
-                                        helperText={errors.city_id?.message}
-                                    >
-                                        <MenuItem disabled value="1">Select city</MenuItem>
-                                        {cityData && cityData.length > 0 && cityData.map((item, index) => (
-                                            <MenuItem key={index} value={`${item.city_id}`}>{item.city_name}</MenuItem>
-                                        ))}
-                                    </CustomTextField>
-                                )}
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <Controller
-                                name="pincode"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        fullWidth
-                                        type="number"
-                                        label="Pincode*"
-                                        placeholder="Pincode"
-                                        error={!!errors.pincode}
-                                        helperText={errors.pincode?.message}
-                                    />
-                                )}
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12 }}>
-                            <Divider />
-                        </Grid>
-                        <Grid size={{ xs: 12 }}>
-                            <Typography variant='body2' className='font-medium'>
-                                3. Other Details
-                            </Typography>
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <Controller
-                                name="urn_no"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        fullWidth
-                                        type="text"
-                                        label="URN Number"
-                                        placeholder="URN Number"
-                                        error={!!errors.gst_no}
-                                        helperText={errors.gst_no?.message}
-                                    />
-                                )}
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <Controller
-                                name="idfa_code"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        fullWidth
-                                        type="text"
-                                        label="Employee ID/FA Code"
-                                        placeholder="Employee ID/FA Code"
-                                        error={!!errors.gst_no}
-                                        helperText={errors.gst_no?.message}
-                                    />
-                                )}
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <Controller
-                                name="application_no"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        fullWidth
-                                        type="text"
-                                        label="Application Number"
-                                        placeholder="Application Number"
-                                        error={!!errors.gst_no}
-                                        helperText={errors.gst_no?.message}
-                                    />
-                                )}
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <Controller
-                                name="licence_no"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        fullWidth
-                                        type="text"
-                                        label="Licence Number"
-                                        placeholder="Licence Number"
-                                        error={!!errors.gst_no}
-                                        helperText={errors.gst_no?.message}
-                                    />
-                                )}
-                            />
-                        </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                                <Controller
+                                    name="designation_id"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <CustomTextField
+                                            {...field}
+                                            select
+                                            fullWidth
+                                            label="Designation"
+                                            value={field.value ?? ''} // ✅ ensure controlled
+                                            onChange={(e) => {
+                                                field.onChange(e.target.value); // ✅ update RHF state
+                                            }}
+                                            error={!!errors.designation_id}
+                                            helperText={errors.designation_id?.message}
+                                        >
+                                            {createData?.designations?.length > 0 ? (
+                                                createData.designations.map((item) => (
+                                                    <MenuItem key={item._id} value={item._id}>
+                                                        {item.name}
+                                                    </MenuItem>
+                                                ))
+                                            ) : (
+                                                <MenuItem disabled>No Designations</MenuItem>
+                                            )}
+                                        </CustomTextField>
+                                    )}
+                                />
 
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <Controller
-                                name="designation_id"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        select
-                                        fullWidth
-                                        label="Designation"
-                                        value={field.value ?? ''} // ✅ ensure controlled
-                                        onChange={(e) => {
-                                            field.onChange(e.target.value); // ✅ update RHF state
-                                        }}
-                                        error={!!errors.designation_id}
-                                        helperText={errors.designation_id?.message}
-                                    >
-                                        {createData?.designations?.length > 0 ? (
-                                            createData.designations.map((item) => (
-                                                <MenuItem key={item._id} value={item._id}>
-                                                    {item.name}
-                                                </MenuItem>
-                                            ))
-                                        ) : (
-                                            <MenuItem disabled>No Designations</MenuItem>
-                                        )}
-                                    </CustomTextField>
-                                )}
-                            />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                                <Controller
+                                    name="participation_type_id"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <CustomTextField
+                                            {...field}
+                                            select
+                                            fullWidth
+                                            label="Participation Type"
+                                            value={field.value ?? ''} // ✅ ensure controlled
+                                            onChange={(e) => {
+                                                field.onChange(e.target.value); // ✅ update RHF state
+                                            }}
+                                            error={!!errors.participation_type_id}
+                                            helperText={errors.participation_type_id?.message}
+                                        >
+                                            {createData?.participation_types?.length > 0 ? (
+                                                createData.participation_types.map((item) => (
+                                                    <MenuItem key={item._id} value={item._id}>
+                                                        {item.name}
+                                                    </MenuItem>
+                                                ))
+                                            ) : (
+                                                <MenuItem disabled>No data</MenuItem>
+                                            )}
+                                        </CustomTextField>
+                                    )}
+                                />
 
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <Controller
-                                name="participation_type_id"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        select
-                                        fullWidth
-                                        label="Participation Type"
-                                        value={field.value ?? ''} // ✅ ensure controlled
-                                        onChange={(e) => {
-                                            field.onChange(e.target.value); // ✅ update RHF state
-                                        }}
-                                        error={!!errors.participation_type_id}
-                                        helperText={errors.participation_type_id?.message}
-                                    >
-                                        {createData?.participation_types?.length > 0 ? (
-                                            createData.participation_types.map((item) => (
-                                                <MenuItem key={item._id} value={item._id}>
-                                                    {item.name}
-                                                </MenuItem>
-                                            ))
-                                        ) : (
-                                            <MenuItem disabled>No data</MenuItem>
-                                        )}
-                                    </CustomTextField>
-                                )}
-                            />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                                <Controller
+                                    name="employee_type"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <CustomTextField
+                                            {...field}
+                                            select
+                                            fullWidth
+                                            label="Employee type"
+                                            value={field.value ?? ''} // ✅ ensure controlled
+                                            onChange={(e) => {
+                                                field.onChange(e.target.value); // ✅ update RHF state
+                                            }}
+                                            error={!!errors.employee_type}
+                                            helperText={errors.employee_type?.message}
+                                        >
 
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <Controller
-                                name="employee_type"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        select
-                                        fullWidth
-                                        label="Employee type"
-                                        value={field.value ?? ''} // ✅ ensure controlled
-                                        onChange={(e) => {
-                                            field.onChange(e.target.value); // ✅ update RHF state
-                                        }}
-                                        error={!!errors.employee_type}
-                                        helperText={errors.employee_type?.message}
-                                    >
+                                            <MenuItem value="Part time">Part time</MenuItem>
+                                            <MenuItem value="Full time">Full time</MenuItem>
+                                            <MenuItem value="Hybrid">Hybrid</MenuItem>
 
-                                        <MenuItem value="Part time">Part time</MenuItem>
-                                        <MenuItem value="Full time">Full time</MenuItem>
-                                        <MenuItem value="Hybrid">Hybrid</MenuItem>
+                                        </CustomTextField>
+                                    )}
+                                />
 
-                                    </CustomTextField>
-                                )}
-                            />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                                <Controller
+                                    name="zone_id"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <CustomTextField
+                                            {...field}
+                                            select
+                                            fullWidth
+                                            label="Zone"
+                                            value={field.value ?? ''} // ✅ fallback to empty string
+                                            onChange={(e) => {
+                                                const rawValue = e.target.value;
+                                                const value = rawValue === 'undefined' || !rawValue ? '' : rawValue;
 
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <Controller
-                                name="zone_id"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        select
-                                        fullWidth
-                                        label="Zone"
-                                        value={field.value ?? ''} // ✅ fallback to empty string
-                                        onChange={(e) => {
-                                            const rawValue = e.target.value;
-                                            const value = rawValue === 'undefined' || !rawValue ? '' : rawValue;
+                                                field.onChange(value);
+                                            }}
+                                            error={!!errors.zone_id}
+                                            helperText={errors.zone_id?.message}
+                                        >
+                                            {createData?.zones?.length > 0 ? (
+                                                createData.zones.map((item) => (
+                                                    <MenuItem key={item._id} value={item._id}>
+                                                        {item.name}
+                                                    </MenuItem>
+                                                ))
+                                            ) : (
+                                                <MenuItem disabled>No Zones</MenuItem>
+                                            )}
+                                        </CustomTextField>
+                                    )}
+                                />
 
-                                            field.onChange(value);
-                                        }}
-                                        error={!!errors.zone_id}
-                                        helperText={errors.zone_id?.message}
-                                    >
-                                        {createData?.zones?.length > 0 ? (
-                                            createData.zones.map((item) => (
-                                                <MenuItem key={item._id} value={item._id}>
-                                                    {item.name}
-                                                </MenuItem>
-                                            ))
-                                        ) : (
-                                            <MenuItem disabled>No Zones</MenuItem>
-                                        )}
-                                    </CustomTextField>
-                                )}
-                            />
-
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <Controller
-                                name="website"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        fullWidth
-                                        type="text"
-                                        label="Website"
-                                        placeholder="Website"
-                                        error={!!errors.website}
-                                        helperText={errors.website?.message}
-                                    />
-                                )}
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                                <Controller
+                                    name="website"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <CustomTextField
+                                            {...field}
+                                            fullWidth
+                                            type="text"
+                                            label="Website"
+                                            placeholder="Website"
+                                            error={!!errors.website}
+                                            helperText={errors.website?.message}
+                                        />
+                                    )}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
 
 
-                            {/* Status */}
-                            <Controller
-                                name="status"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        select
-                                        fullWidth
-                                        label="Status*"
-                                        error={!!errors.status}
-                                        helperText={errors.status?.message}
-                                    >
-                                        <MenuItem value={true}>Active</MenuItem>
-                                        <MenuItem value={false}>Inactive</MenuItem>
-                                    </CustomTextField>
-                                )}
-                            />
-                        </Grid>
-                        <Grid size={{ xs: 12 }}>
-                            <Typography variant='body2' className='font-medium'>
-                                4. Roles
-                            </Typography>
-                        </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <Controller
-                                name="roles"
-                                control={control}
-                                defaultValue={[]} // ensure it's initialized as an array
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        select
-                                        fullWidth
-                                        label="Assign role*"
-                                        value={field.value}  // array of role IDs
-                                        error={!!errors.roles}
-                                        helperText={errors.roles?.message}
-                                        slotProps={{
-                                            select: {
-                                                multiple: true,
-                                                onChange: (event) => {
-                                                    const value = event.target.value;
+                                {/* Status */}
+                                <Controller
+                                    name="status"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <CustomTextField
+                                            {...field}
+                                            select
+                                            fullWidth
+                                            label="Status*"
+                                            error={!!errors.status}
+                                            helperText={errors.status?.message}
+                                        >
+                                            <MenuItem value={true}>Active</MenuItem>
+                                            <MenuItem value={false}>Inactive</MenuItem>
+                                        </CustomTextField>
+                                    )}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 12 }}>
+                                <Typography variant='body2' className='font-medium'>
+                                    4. Roles
+                                </Typography>
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                                <Controller
+                                    name="roles"
+                                    control={control}
+                                    defaultValue={[]} // ensure it's initialized as an array
+                                    render={({ field }) => (
+                                        <CustomTextField
+                                            {...field}
+                                            select
+                                            fullWidth
+                                            label="Assign role*"
+                                            value={field.value}  // array of role IDs
+                                            error={!!errors.roles}
+                                            helperText={errors.roles?.message}
+                                            slotProps={{
+                                                select: {
+                                                    multiple: true,
+                                                    onChange: (event) => {
+                                                        const value = event.target.value;
 
-                                                    setUserRoles(value);
+                                                        setUserRoles(value);
 
-                                                    field.onChange(value); // update react-hook-form state
-                                                },
-                                                renderValue: (selectedIds) => {
-                                                    // Map IDs to role names for display
-                                                    const selectedNames = createData.roles
-                                                        .filter(role => selectedIds.includes(role._id))
-                                                        .map(role => role.name);
+                                                        field.onChange(value); // update react-hook-form state
+                                                    },
+                                                    renderValue: (selectedIds) => {
+                                                        // Map IDs to role names for display
+                                                        const selectedNames = createData.roles
+                                                            .filter(role => selectedIds.includes(role._id))
+                                                            .map(role => role.name);
 
-                                                    return selectedNames.join(', ');
+                                                        return selectedNames.join(', ');
+                                                    }
                                                 }
-                                            }
-                                        }}
-                                    >
-                                        {createData?.roles?.length > 0 ? (
-                                            createData.roles.map((role) => (
-                                                <MenuItem key={role._id} value={role._id}>
-                                                    <Checkbox checked={userRoles.includes(role._id)} />
-                                                    <ListItemText primary={role.name} />
-                                                </MenuItem>
-                                            ))
-                                        ) : (
-                                            <MenuItem disabled>No roles</MenuItem>
-                                        )}
-                                    </CustomTextField>
+                                            }}
+                                        >
+                                            {createData?.roles?.length > 0 ? (
+                                                createData.roles.map((role) => (
+                                                    <MenuItem key={role._id} value={role._id}>
+                                                        <Checkbox checked={userRoles.includes(role._id)} />
+                                                        <ListItemText primary={role.name} />
+                                                    </MenuItem>
+                                                ))
+                                            ) : (
+                                                <MenuItem disabled>No roles</MenuItem>
+                                            )}
+                                        </CustomTextField>
 
-                                )}
-                            />
+                                    )}
+                                />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                                <Controller
+                                    name="user_code"
+                                    control={control}
+                                    readonly
+                                    render={({ field }) => (
+                                        <CustomTextField
+                                            {...field}
+                                            fullWidth
+                                            type="text"
+                                            label="Employee ID*"
+                                            placeholder="Employee ID"
+                                            error={!!errors.user_code}
+                                            helperText={errors.user_code?.message}
+                                            slotProps={{
+                                                input: {
+                                                    // readOnly: !!this.value,
+                                                }
+                                            }}
+                                        />
+                                    )}
+                                />
+                            </Grid>
                         </Grid>
-                        <Grid size={{ xs: 12, sm: 4 }}>
-                            <Controller
-                                name="user_code"
-                                control={control}
-                                readonly
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        fullWidth
-                                        type="text"
-                                        label="Employee ID*"
-                                        placeholder="Employee ID"
-                                        error={!!errors.user_code}
-                                        helperText={errors.user_code?.message}
-                                        slotProps={{
-                                            input: {
-                                                // readOnly: !!this.value,
-                                            }
-                                        }}
-                                    />
-                                )}
-                            />
-                        </Grid>
-                    </Grid>
-                </CardContent>
-                <Divider />
-                <CardActions>
-                    <Button
-                        type='submit'
-                        variant='contained'
-                        disabled={loading}
-                        sx={{ height: 40, position: 'relative' }}
-                    >
-                        {loading ? (
-                            <CircularProgress
-                                size={24}
-                                sx={{
-                                    color: 'white',
-                                    position: 'absolute',
-                                    top: '50%',
-                                    left: '50%',
-                                    marginTop: '-12px',
-                                    marginLeft: '-12px',
-                                }}
-                            />
-                        ) : (
-                            'Submit'
-                        )}
-                    </Button>
-                    <Button variant="tonal" color="error" type="reset" onClick={() => router.push(`/${locale}/apps/user/list`)}>
-                        Cancel
-                    </Button>
-                </CardActions>
-            </form>
+                    </CardContent>
+                    <Divider />
+                    <CardActions>
+                        <Button
+                            type='submit'
+                            variant='contained'
+                            disabled={loading}
+                            sx={{ height: 40, position: 'relative' }}
+                        >
+                            {loading ? (
+                                <CircularProgress
+                                    size={24}
+                                    sx={{
+                                        color: 'white',
+                                        position: 'absolute',
+                                        top: '50%',
+                                        left: '50%',
+                                        marginTop: '-12px',
+                                        marginLeft: '-12px',
+                                    }}
+                                />
+                            ) : (
+                                'Submit'
+                            )}
+                        </Button>
+                        <Button variant="tonal" color="error" type="reset" onClick={() => router.push(`/${locale}/apps/user/list`)}>
+                            Cancel
+                        </Button>
+                    </CardActions>
+                </form>
 
-        </Card>
+            </Card>
         </PermissionGuard >
     )
 }

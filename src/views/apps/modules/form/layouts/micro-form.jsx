@@ -192,7 +192,7 @@ const ModuleFormLayout = ({ setLayoutType, setShowCards, setModuleData }) => {
     // ))
 
     const loadData = async () => {
-        const result = await doGet(`admin/categories?type=module`);
+        const result = await doGet(`admin/categories?type=module&status=true`);
 
         setCreateData(prevData => ({
             ...prevData,
@@ -210,12 +210,7 @@ const ModuleFormLayout = ({ setLayoutType, setShowCards, setModuleData }) => {
     };
 
     const onLoadCategories = async (items) => {
-        const result = await doGet(`admin/categories?type=module`);
-
-        setCreateData(prevData => ({
-            ...prevData,
-            categories: result
-        }));
+        loadData();
     };
 
     const handleNextToCard = async () => {
@@ -269,6 +264,8 @@ const ModuleFormLayout = ({ setLayoutType, setShowCards, setModuleData }) => {
             file: files[0]
         };
 
+        setLoading(true);
+
         await doPostFormData({
             endpoint,
             values: newData,
@@ -287,6 +284,8 @@ const ModuleFormLayout = ({ setLayoutType, setShowCards, setModuleData }) => {
                 }
             },
         });
+
+        setLoading(false);
     };
 
     if (isLoading) {

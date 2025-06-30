@@ -28,7 +28,6 @@ export const useApi = () => {
             return data?.data;
         } catch (error) {
             console.log('GET Request Error:', error.message);
-            // throw error;
         }
     };
 

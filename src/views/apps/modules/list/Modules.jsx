@@ -21,17 +21,16 @@ import Switch from '@mui/material/Switch'
 import Typography from '@mui/material/Typography'
 
 // Component Imports
-import DirectionalIcon from '@components/DirectionalIcon'
-
-import SkeletonModulesComponent from './SkeletonModulesComponent'
+import { useSession } from 'next-auth/react';
 
 import { toast } from 'react-toastify'
 
-import { useSession } from 'next-auth/react';
 import { useApi } from '../../../../utils/api';
 
 // Util Imports
 import { getLocalizedUrl } from '@/utils/i18n'
+
+import SkeletonModulesComponent from './SkeletonModulesComponent'
 
 const iconStyle = {
   minWidth: '40px',
@@ -54,7 +53,7 @@ const Courses = props => {
   const URL = process.env.NEXT_PUBLIC_API_URL
   const APP_URL = process.env.NEXT_PUBLIC_APP_URL
   const { data: session, status } = useSession();
-  console.log('status', status)
+
   const token = session?.user?.token;
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [hideCompleted, setHideCompleted] = useState(true)
@@ -115,6 +114,7 @@ const Courses = props => {
 
   const handleDelete = async (id) => {
     const endpoint = `admin/module/${id}`;
+
     if (confirm('Are you sure?')) {
       await doDelete({
         endpoint,
@@ -132,15 +132,20 @@ const Courses = props => {
 
   useEffect(() => {
     if (token && URL) {
+
       loadData();
       getModuleList(0);
-    };
+
+    }
+
   }, [token, URL]);
 
   useEffect(() => {
     if (token && URL) {
+
       getModuleList(0, searchValue);
-    };
+
+    }
   }, [token, URL, searchValue]);
 
 
@@ -156,11 +161,14 @@ const Courses = props => {
   }, [token, selectedCategory]);
 
   const handleChange = e => {
+
     setHideCompleted(e.target.checked)
+
     setActivePage(0)
   }
 
   if (loading) return <SkeletonModulesComponent />
+
   return (
     <Card>
       <CardContent className='flex flex-col gap-6'>
@@ -177,6 +185,7 @@ const Courses = props => {
                 value={selectedCategory} // <-- the selected category
                 onChange={e => {
                   const selected = e.target.value;
+
                   setSelectedCategory(selected);
 
                 }}

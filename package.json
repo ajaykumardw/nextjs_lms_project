@@ -50,6 +50,7 @@
     "@tiptap/react": "^2.10.4",
     "@tiptap/starter-kit": "^2.10.4",
     "apexcharts": "3.49.0",
+    "axios": "^1.10.0",
     "bootstrap-icons": "1.11.3",
     "classnames": "2.5.1",
     "cmdk": "1.0.4",
@@ -76,6 +77,7 @@
     "react-toastify": "10.0.6",
     "react-use": "17.6.0",
     "recharts": "2.15.0",
+    "scorm-again": "^2.6.5",
     "server-only": "0.0.1",
     "valibot": "0.42.1",
     "xlsx": "^0.18.5"
