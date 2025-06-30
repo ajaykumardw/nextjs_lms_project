@@ -22,6 +22,9 @@ import { useApi } from '../../../../utils/api';
 import DocumentCardLayout from './types/documentCardLayout';
 import VideosCardLayout from './types/videosCardLayout';
 import YoutubeCardLayout from './types/youtubeCardLayout';
+import ScromCardLayout from './types/scromCardLayout.jsx';
+import ScormPlayer from './types/scormPlayer';
+import ScormPlayerPipeworks from './types/scormPlayerPipeworks';
 
 const CardContentDialog = ({ open, setOpen, cardContent, moduleData, onSetCardItems }) => {
     // Hooks
@@ -58,6 +61,7 @@ const CardContentDialog = ({ open, setOpen, cardContent, moduleData, onSetCardIt
             {cardContent.value === 'documents' && <DocumentCardLayout data={cardContent} moduleData={moduleData} onClose={onClose} />}
             {cardContent.value === 'videos' && <VideosCardLayout data={cardContent} moduleData={moduleData} onClose={onClose} />}
             {cardContent.value === 'youtube_videos' && <YoutubeCardLayout data={cardContent} moduleData={moduleData} onClose={onClose} />}
+            {cardContent.value === 'scorm' && <ScromCardLayout data={cardContent} moduleData={moduleData} onClose={onClose} />}
 
         </Dialog>
     )
