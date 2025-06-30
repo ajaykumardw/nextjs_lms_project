@@ -61,11 +61,11 @@ export default async function PermissionGuardServer({ children, locale, element 
         !permissions[element] ||
         (Array.isArray(allowedPermissions) && !allowedPermissions.includes(listingId))
     ) {
-        if (permissions?.isUser) {
-            redirect(`/${locale}/dashboards/user/${'learner'}`);
-        } else {
-            redirect(`/${locale}/dashboards/crm`);
-        }
+        // if (permissions?.isUser) {
+        //     redirect(`/${locale}/dashboards/user/${'learner'}`);
+        // } else {
+        //     redirect(`/${locale}/dashboards/crm`);
+        // }
     }
 
     return <PermissionGuardClient>{children}</PermissionGuardClient>;

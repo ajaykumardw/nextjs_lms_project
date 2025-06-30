@@ -24,6 +24,7 @@ const FormLayoutsWithTabs = () => {
     useEffect(() => {
         const fetchData = async () => {
             const data = await getAcademyData()
+
             setAcademyData(data)
         }
 

@@ -13,8 +13,9 @@ import Chip from '@mui/material/Chip'
 import Typography from '@mui/material/Typography'
 
 // Utils
-import { getLocalizedUrl } from '@/utils/i18n'
 import Grid from '@mui/material/Grid2'
+
+import { getLocalizedUrl } from '@/utils/i18n'
 
 // Sample data (keep your full list here)
 const courseList = [

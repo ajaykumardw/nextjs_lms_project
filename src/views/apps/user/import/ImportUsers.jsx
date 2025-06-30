@@ -18,7 +18,8 @@ import {
   TablePagination,
   MenuItem,
   Checkbox,
-  ListItemText
+  ListItemText,
+  CircularProgress
 } from '@mui/material';
 
 
@@ -82,27 +83,6 @@ const fuzzyFilter = (row, columnId, value, addMeta) => {
   return itemRank.passed
 }
 
-
-// Map your keys to the schema
-const mapKeys = (data) => data.map((item) => ({
-  BatchName: item['Batch ID'],
-  CandidateId: item['Candidate ID'],
-  Password: item['Password'],
-
-  // NameOfTrainingAgency: item['Name of Training Agency'],
-
-  CandidateName: item['Candidate Name'],
-  Gender: item['Gender(M/F/T)'],
-  Category: item['Category(Gen/SC/ST/BC/OBC/OC)'],
-  DOB: item['DOB'],
-  FatherName: item['Father\'s name'],
-  MotherName: item['Mother\'s name'],
-  Address: item['Address'],
-  City: item['City'],
-  State: item['State'],
-  MobileNo: item['Mobile No']
-}));
-
 const columnHelper = createColumnHelper()
 
 const ImportUsers = ({ batch, onBack }) => {
@@ -112,6 +92,7 @@ const ImportUsers = ({ batch, onBack }) => {
   const [missingHeadersData, setMissingHeaders] = useState([]);
   const [fileInput, setFileInput] = useState(null);
   const [loading, setLoading] = useState(false); // Loading state
+  const [isProgress, setIsProgress] = useState(false); // Loading state
   const [openSuccessDialog, setOpenSuccessDialog] = useState(false); // Loading state
   const [progress, setProgress] = useState(0); // Progress state
   const [roles, setRoles] = useState([]); // Progress state
@@ -295,6 +276,8 @@ const ImportUsers = ({ batch, onBack }) => {
         return;
       }
 
+      setIsProgress(true);
+
       const jsonData = uploadData;
 
       const totalChunks = Math.ceil(jsonData.length / CHUNK_SIZE);
@@ -324,6 +307,7 @@ const ImportUsers = ({ batch, onBack }) => {
           setOpenSuccessDialog(true);
           setUploadData([]);
           setUserRoles([]);
+          setIsProgress(false);
         }
       }
 
@@ -337,6 +321,7 @@ const ImportUsers = ({ batch, onBack }) => {
       setProgress(0); // Reset progress on error
       setUploadData([]);
       setData([]);
+      setIsProgress(false);
     }
 
   }
@@ -634,7 +619,7 @@ const ImportUsers = ({ batch, onBack }) => {
         <CardContent>
           <div className="flex gap-2 flex-col">
             <Alert severity='info'>
-              Note: It will accept only Excel files with *.xls or *.xlsx extension only.
+              Note: Allowed only Excel files with *.xls or *.xlsx extension.
             </Alert>
 
             {missingHeadersData.length > 0 &&
@@ -765,8 +750,22 @@ const ImportUsers = ({ batch, onBack }) => {
                   <Button variant='contained' color='warning' onClick={handleRemoveFile} endIcon={<i className='tabler-trash' />}>
                     Remove
                   </Button>
-                  <Button variant='contained' onClick={handleUploadData} disabled={uploadData.length === 0} startIcon={<i className='tabler-send' />}>
-                    Import
+                  <Button variant='contained' onClick={handleUploadData} disabled={uploadData.length === 0 || isProgress} startIcon={<i className='tabler-send' />}>
+                    {isProgress ? (
+                      <CircularProgress
+                        size={24}
+                        sx={{
+                          color: 'white',
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          marginTop: '-12px',
+                          marginLeft: '-12px',
+                        }}
+                      />
+                    ) : (
+                      'Start Import'
+                    )}
                   </Button>
                   {/* <Button color='error' variant='outlined'  onClick={handleRemoveFile}>
                     Remove All

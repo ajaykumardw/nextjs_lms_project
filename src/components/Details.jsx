@@ -1,5 +1,7 @@
 'use client'
 
+import { useParams } from 'next/navigation'
+
 // MUI Imports
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
@@ -16,8 +18,8 @@ import ReactPlayer from '@/libs/ReactPlayer'
 
 // Components Imports
 import CustomAvatar from '@core/components/mui/Avatar'
+
 import CustomIconButton from '@core/components/mui/IconButton'
-import { useParams } from 'next/navigation'
 
 const Details = ({ data }) => {
   const theme = useTheme()

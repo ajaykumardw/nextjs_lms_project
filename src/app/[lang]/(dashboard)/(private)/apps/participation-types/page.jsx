@@ -4,13 +4,15 @@
 
 import { useEffect, useState } from 'react'
 
+import { useParams } from 'next/navigation'
+
 import { useSession } from 'next-auth/react'
 
 import ParticipationTypeComponent from '@/views/apps/participation-type/index'
 
 import SkeletonTableComponent from '@/components/skeleton/table/page'
+
 import PermissionGuard from '@/hocs/PermissionClientGuard'
-import { useParams } from 'next/navigation'
 
 const ParticipationTypeApp = () => {
   const URL = process.env.NEXT_PUBLIC_API_URL

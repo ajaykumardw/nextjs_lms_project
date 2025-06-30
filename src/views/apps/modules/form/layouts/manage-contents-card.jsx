@@ -50,6 +50,16 @@ const iconMap = {
             <path d='M10 8v8l5-4z' />
         </svg>
     ),
+    scorm: (
+        <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full" style={{ color: '#7367F0' }}>
+            {/* Document outline */}
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" fill="currentColor" opacity="0.1" />
+
+            {/* Play button inside document */}
+            <circle cx="12" cy="12" r="5" fill="currentColor" opacity="0.3" />
+            <path d="M11 10v4l3-2z" fill="currentColor" />
+        </svg>
+    ),
     youtube_videos: (
 
         // <svg viewBox='0 0 24 24' fill='currentColor' className='w-full h-full text-blue-600'>
