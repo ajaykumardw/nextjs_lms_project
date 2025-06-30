@@ -40,7 +40,8 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
   const verticalNavOptions = useVerticalNav()
   const params = useParams()
   const { isBreakpointReached, transitionDuration } = verticalNavOptions
-  const { lang: locale } = params
+  const { lang: locale, role: role } = params
+
 
   const [permissArray, setPermissArray] = useState()
 
@@ -110,7 +111,14 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
           icon={<i className='tabler-smart-home' />}
           suffix={<CustomChip label='5' size='small' color='error' round='true' />}
         >
-          <MenuItem href={`/${locale}/dashboards/crm`}>Crm</MenuItem>
+          {(permissArray?.notUser) && (
+            <MenuItem href={`/${locale}/dashboards/crm`}>Crm</MenuItem>
+          )}
+
+          {permissArray?.isUser && (
+            <MenuItem href={`/${locale}/dashboards/user/${role}`}>{`${role ? role.toUpperCase() : ''}`}</MenuItem>
+          )}
+
           {/* <MenuItem href={`/${locale}/dashboards/analytics`}>Analytics</MenuItem>
           <MenuItem href={`/${locale}/dashboards/ecommerce`}>ECommerce</MenuItem>
           <MenuItem href={`/${locale}/dashboards/academy`}>Academy</MenuItem>
@@ -218,6 +226,11 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
               <MenuItem key="Permission" href={`/${locale}/apps/permission`}>Permission</MenuItem>
               <MenuItem key="PackageType" href={`/${locale}/apps/package-type`}>Package type</MenuItem>
               <MenuItem key="Package" href={`/${locale}/apps/package`}>Package</MenuItem>
+            </SubMenu>
+          )}
+          {permissArray?.isUser && (
+            <SubMenu label="Module" icon={<i className="tabler-adjustments" />}>
+              <MenuItem key="Role" href={`/${locale}/apps/moduleProgram`}>My modules in progress</MenuItem>
             </SubMenu>
           )}
           {permissArray?.isCompany && (

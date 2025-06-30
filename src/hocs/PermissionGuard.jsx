@@ -18,22 +18,24 @@ const fetchPermission = async (url, token) => {
 
         if (!response.ok) {
             console.error('Permission API error:', await response.text());
-            
+
             return null;
         }
 
         const data = await response.json();
-        
+
         return data?.data || null;
     } catch (error) {
         console.error('Permission fetch error:', error);
-        
+
         return null;
     }
 };
 
 export default async function PermissionGuardServer({ children, locale, element }) {
+
     const session = await getServerSession(authOptions);
+
 
     if (!session) {
         redirect('/auth/login');
@@ -48,17 +50,22 @@ export default async function PermissionGuardServer({ children, locale, element 
     }
 
     const permissions = await fetchPermission(API_URL, token);
-    
+
     // Normalize permissions (ensure it's an object with arrays)
     const allowedPermissions = permissions?.[element];
     const listingId = session.user?.listing; // or wherever the current context ID comes from
+
 
     if (
         !permissions ||
         !permissions[element] ||
         (Array.isArray(allowedPermissions) && !allowedPermissions.includes(listingId))
     ) {
-        redirect(`/${locale}/dashboards/crm`);
+        if (permissions?.isUser) {
+            redirect(`/${locale}/dashboards/user/${'learner'}`);
+        } else {
+            redirect(`/${locale}/dashboards/crm`);
+        }
     }
 
     return <PermissionGuardClient>{children}</PermissionGuardClient>;
