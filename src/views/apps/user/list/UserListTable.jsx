@@ -103,7 +103,7 @@ const UserListTable = ({ userData, loadData, setIsUserCardShow, getStatsCount })
   const [openImportWindow, setOpenImportWindow] = useState(false)
   const [user, setUser] = useState()
   const { doPostFormData } = useApi();
-  const public_url = process.env.NEXT_PUBLIC_APP_URL;
+  const public_url = process.env.NEXT_PUBLIC_ASSETS_URL;
 
   const router = useRouter();
 
@@ -114,7 +114,7 @@ const UserListTable = ({ userData, loadData, setIsUserCardShow, getStatsCount })
     const fetchPermissions = async () => {
       try {
         const result = await getPermissions();
-        
+
         setPermissions(result);
       } catch (error) {
         console.error('Error fetching permissions:', error);

@@ -7,7 +7,7 @@ const ScormPlayerConverted = () => {
     const iframeRef = useRef(null);
     const [apiLoaded, setApiLoaded] = useState(false);
 
-    const public_url = process.env.NEXT_PUBLIC_APP_URL;
+    const public_url = process.env.NEXT_PUBLIC_ASSETS_URL;
 
     const student_id = "111";
     const student_name = "2222";

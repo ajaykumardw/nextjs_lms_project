@@ -116,7 +116,7 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
           )}
 
           {permissArray?.isUser && (
-            <MenuItem href={`/${locale}/dashboards/user/${role}`}>{`${role ? role.toUpperCase() : ''}`}</MenuItem>
+            <MenuItem href={`/${locale}/dashboards/user/learner`}>Learner</MenuItem>
           )}
 
           {/* <MenuItem href={`/${locale}/dashboards/analytics`}>Analytics</MenuItem>
