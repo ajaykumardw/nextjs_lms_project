@@ -51,7 +51,7 @@ const Courses = props => {
 
   // States
   const URL = process.env.NEXT_PUBLIC_API_URL
-  const APP_URL = process.env.NEXT_PUBLIC_APP_URL
+  const APP_URL = process.env.NEXT_PUBLIC_ASSETS_URL
   const { data: session, status } = useSession();
 
   const token = session?.user?.token;

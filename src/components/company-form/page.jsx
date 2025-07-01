@@ -53,7 +53,7 @@ import PermissionGuard from '@/hocs/PermissionClientGuard';
 const UserFormLayout = () => {
 
   const URL = process.env.NEXT_PUBLIC_API_URL
-  const public_url = process.env.NEXT_PUBLIC_APP_URL;
+  const public_url = process.env.NEXT_PUBLIC_ASSETS_URL;
   const { data: session } = useSession() || {}
   const token = session?.user?.token
   const [createData, setCreateData] = useState();
@@ -348,7 +348,7 @@ const UserFormLayout = () => {
       });
 
       if (editData.photo) {
-        setImgSrc(`${public_url}${editData.photo}`);
+        setImgSrc(`${public_url}/uploads/images/${editData.photo}`);
       }
 
       setCountryId(editData.country_id);
@@ -973,7 +973,7 @@ const UserFormLayout = () => {
           <Divider />
           <CardActions>
             <Button variant="contained" type="submit">Submit</Button>
-            <Button variant="tonal" color="error" type="reset" onClick={() => router.push(`/${locale}/apps/user/list`)}>
+            <Button variant="tonal" color="error" type="reset" onClick={() => router.push(`/${locale}/apps/company/list`)}>
               Cancel
             </Button>
           </CardActions>

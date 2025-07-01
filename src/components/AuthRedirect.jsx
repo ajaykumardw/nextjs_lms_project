@@ -5,12 +5,17 @@ import { redirect, usePathname } from 'next/navigation'
 
 // Config Imports
 import themeConfig from '@configs/themeConfig'
+import { usePermissionList } from '@/utils/getPermission'
 
 // Util Imports
 import { getLocalizedUrl } from '@/utils/i18n'
+import { utils } from 'xlsx'
 
 const AuthRedirect = ({ lang }) => {
   const pathname = usePathname()
+
+  console.log("permission", usePermissionList);
+
 
   // ℹ️ Bring me `lang`
   const redirectUrl = `/${lang}/login?redirectTo=${pathname}`

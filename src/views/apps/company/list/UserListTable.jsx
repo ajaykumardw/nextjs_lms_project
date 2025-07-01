@@ -110,7 +110,7 @@ const UserListTable = ({ userData }) => {
   const [data, setData] = useState([])
   const [filteredData, setFilteredData] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
-  const public_url = process.env.NEXT_PUBLIC_APP_URL;
+  const public_url = process.env.NEXT_PUBLIC_ASSETS_URL;
 
   const router = useRouter();
 
@@ -162,7 +162,7 @@ const UserListTable = ({ userData }) => {
           </div>
         )
       }),
-      
+
       // columnHelper.accessor('role', {
       //   header: 'Role',
       //   cell: ({ row }) => (
@@ -286,7 +286,7 @@ const UserListTable = ({ userData }) => {
     const { avatar, fullName } = params
 
     if (avatar) {
-      return <CustomAvatar src={`${public_url}/${avatar}`} size={34} />
+      return <CustomAvatar src={`${public_url}/uploads/images/${avatar}`} size={34} />
     } else {
       return <CustomAvatar size={34}>{getInitials(fullName)}</CustomAvatar>
     }
