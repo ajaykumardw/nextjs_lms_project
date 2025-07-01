@@ -231,6 +231,7 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
           {permissArray?.isUser && (
             <SubMenu label="Module" icon={<i className="tabler-adjustments" />}>
               <MenuItem key="Role" href={`/${locale}/apps/moduleProgram`}>My modules in progress</MenuItem>
+              <MenuItem key="Role" href={`/${locale}/apps/my-courses`}>My courses</MenuItem>
             </SubMenu>
           )}
           {permissArray?.isCompany && (

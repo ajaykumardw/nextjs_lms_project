@@ -2,7 +2,7 @@
 import dynamic from 'next/dynamic'
 
 // Component Imports
-import Settings from '@views/apps/ecommerce/settings'
+import CourseDetail from '@components/courses/page'
 
 const StoreDetailsTab = dynamic(() => import('@views/apps/ecommerce/settings/store-details'))
 const PaymentsTab = dynamic(() => import('@views/apps/ecommerce/settings/payments'))
@@ -13,7 +13,7 @@ const NotificationsTab = dynamic(() => import('@views/apps/ecommerce/settings/No
 
 // Vars
 const tabContentList = () => ({
-    'store-details': <StoreDetailsTab />,
+    'store-detail': <StoreDetailsTab />,
     payments: <PaymentsTab />,
     checkout: <CheckoutTab />,
     'shipping-delivery': <ShippingDeliveryTab />,
@@ -21,8 +21,8 @@ const tabContentList = () => ({
     notifications: <NotificationsTab />
 })
 
-const eCommerceSettings = () => {
-    return <Settings tabContentList={tabContentList()} />
+const MyCourses = () => {
+    return <CourseDetail tabContentList={tabContentList()} />
 }
 
-export default eCommerceSettings
+export default MyCourses
