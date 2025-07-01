@@ -111,7 +111,9 @@ const ScromCardLayout = ({ data, onClose, moduleData }) => {
     const onSubmit = async (values) => {
 
         const formData = new FormData();
+
         formData.append('file', file);
+
         Object.entries(values).forEach(([key, value]) => {
             formData.append(key, value);
         });
@@ -161,11 +163,16 @@ const ScromCardLayout = ({ data, onClose, moduleData }) => {
                     autoClose: 1200
                 });
             }
+
             setUploadedPath(res.data.filePath);
         } catch (error) {
+
             console.error('Upload error:', error);
+
             alert('Upload failed');
+
         }
+
         setLoading(false);
     };
 

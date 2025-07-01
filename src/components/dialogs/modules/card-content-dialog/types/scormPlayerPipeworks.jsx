@@ -15,6 +15,7 @@ const ScormPlayerConverted = ({ scormUrl }) => {
     const training_id = "3333";
     const module_id = "5555";
     const schedule_id = "66666";
+
     //const scormUrl = scormUrl //`${public_url}/uploads/module/content/scorm/1751024834573-Giving-Helpful-Feedback/index_lms.html`;
 
     const scorm = {
