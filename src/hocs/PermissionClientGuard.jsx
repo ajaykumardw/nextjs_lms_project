@@ -69,11 +69,11 @@ export default function PermissionGuard({ children, locale, element }) {
                 (!Array.isArray(allowedPermissions) || allowedPermissions.includes(listingId));
 
             if (!allowed) {
-                // if (permissions?.isUser) {
-                //     router.replace(`/${locale}/dashboards/user/learner`);
-                // } else {
-                //     router.replace(`/${locale}/dashboards/crm`);
-                // }
+                if (permissions?.isUser) {
+                    router.replace(`/${locale}/dashboards/user/learner`);
+                } else {
+                    router.replace(`/${locale}/dashboards/crm`);
+                }
             } else {
                 setIsAllowed(true);
             }

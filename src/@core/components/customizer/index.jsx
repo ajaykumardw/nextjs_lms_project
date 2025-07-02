@@ -183,9 +183,9 @@ const Customizer = ({ breakpoint = 'lg', dir = 'ltr', disableDirection = false }
               <div className='flex flex-col gap-2'>
                 <p className='font-medium'>Primary Color</p>
                 <div className='flex items-center justify-between'>
-                  {primaryColorConfig.map(item => (
+                  {primaryColorConfig.map((item, index) => (
                     <div
-                      key={item.main}
+                      key={index}
                       className={classnames(styles.primaryColorWrapper, {
                         [styles.active]: settings.primaryColor === item.main
                       })}

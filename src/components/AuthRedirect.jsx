@@ -1,7 +1,9 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 
 // Next Imports
+
 import { redirect, usePathname } from 'next/navigation'
 
 // Config Imports
@@ -12,7 +14,8 @@ import { usePermissionList } from '@/utils/getPermission'
 
 import { getLocalizedUrl } from '@/utils/i18n'
 
-import { useState, useEffect } from 'react'
+
+
 
 
 const AuthRedirect = ({ lang }) => {
