@@ -1,5 +1,6 @@
 'use client'
 
+
 // Next Imports
 import { redirect, usePathname } from 'next/navigation'
 
@@ -9,13 +10,34 @@ import { usePermissionList } from '@/utils/getPermission'
 
 // Util Imports
 import { getLocalizedUrl } from '@/utils/i18n'
-import { utils } from 'xlsx'
+
+import { useState, useEffect } from 'react'
 
 const AuthRedirect = ({ lang }) => {
   const pathname = usePathname()
 
-  console.log("permission", usePermissionList);
+  const getPermissions = usePermissionList(); // returns an async function
+  const [permissions, setPermissions] = useState({});
 
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      try {
+        const result = await getPermissions();
+
+        setPermissions(result);
+      } catch (error) {
+        console.error('Error fetching permissions:', error);
+      }
+    };
+
+    if (getPermissions) {
+      fetchPermissions();
+    }
+  }, [getPermissions]); // Include in dependency array
+
+  console.log("permission", permissions);
+
+  console.log("HI");
 
   // ℹ️ Bring me `lang`
   const redirectUrl = `/${lang}/login?redirectTo=${pathname}`
