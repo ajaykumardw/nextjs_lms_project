@@ -3,7 +3,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-const ScormPlayerConverted = () => {
+const ScormPlayerConverted = ({ scormUrl }) => {
+    console.log('scormUrl', scormUrl)
     const iframeRef = useRef(null);
     const [apiLoaded, setApiLoaded] = useState(false);
 
@@ -14,13 +15,14 @@ const ScormPlayerConverted = () => {
     const training_id = "3333";
     const module_id = "5555";
     const schedule_id = "66666";
-    const scormUrl = `${public_url}/uploads/module/content/scorm/1751024834573-Giving-Helpful-Feedback/index_lms.html`;
+
+    //const scormUrl = scormUrl //`${public_url}/uploads/module/content/scorm/1751024834573-Giving-Helpful-Feedback/index_lms.html`;
 
     const scorm = {
         modalita: 'iframe',
         key: 'scorm-',
         id_lezione: '00' + student_id + training_id + module_id + schedule_id,
-        url: scormUrl,
+        url: `${public_url}/${scormUrl}`,
         student_id,
         student_name,
         wW: 1080,
@@ -150,8 +152,7 @@ const ScormPlayerConverted = () => {
     }, []);
 
     return (
-        <div>
-            <h2>SCORM Player (Converted)</h2>
+        <>
             <iframe
                 ref={iframeRef}
                 id="iframescorm"
@@ -166,7 +167,7 @@ const ScormPlayerConverted = () => {
                 title="SCORM Content"
             ></iframe>
             {!apiLoaded && <p>Loading SCORM API...</p>}
-        </div>
+        </>
     );
 };
 

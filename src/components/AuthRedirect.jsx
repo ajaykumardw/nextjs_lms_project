@@ -17,6 +17,7 @@ import { getLocalizedUrl } from '@/utils/i18n'
 
 
 
+
 const AuthRedirect = ({ lang }) => {
   const pathname = usePathname()
 

@@ -38,7 +38,7 @@ const MyCourseHeader = props => {
         </Typography>
         <div className='flex items-center gap-4 max-sm:is-full'>
           <CustomTextField
-            placeholder='Find your course'
+            placeholder='Find your module'
             value={searchValue}
             onChange={e => setSearchValue(e.target.value)}
             className='sm:is-[350px] max-sm:flex-1'
