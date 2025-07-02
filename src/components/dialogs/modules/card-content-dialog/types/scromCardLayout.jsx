@@ -131,6 +131,9 @@ const ScromCardLayout = ({ data, onClose, moduleData }) => {
 
             const res = await axios.put(url, formData, {
                 headers: { 'Content-Type': 'multipart/form-data', ...(token && { Authorization: `Bearer ${token}` }), },
+                maxBodyLength: Infinity,
+                maxContentLength: Infinity,
+                timeout: 600000,
                 onUploadProgress: (event) => {
                     if (file) {
                         const percent = Math.round((event.loaded * 100) / event.total);
