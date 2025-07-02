@@ -1,7 +1,9 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 
 // Next Imports
+
 import { redirect, usePathname } from 'next/navigation'
 
 // Config Imports
@@ -9,9 +11,11 @@ import themeConfig from '@configs/themeConfig'
 import { usePermissionList } from '@/utils/getPermission'
 
 // Util Imports
+
 import { getLocalizedUrl } from '@/utils/i18n'
 
-import { useState, useEffect } from 'react'
+
+
 
 const AuthRedirect = ({ lang }) => {
   const pathname = usePathname()
