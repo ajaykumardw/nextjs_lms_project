@@ -20,16 +20,16 @@ const fetchPermission = async (url, token) => {
 
         if (!response.ok) {
             console.error('Permission API error:', await response.text());
-            
+
             return null;
         }
 
         const data = await response.json();
-        
+
         return data?.data || null;
     } catch (error) {
         console.error('Permission fetch error:', error);
-        
+
         return null;
     }
 };
@@ -45,7 +45,7 @@ export default function PermissionGuard({ children, locale, element }) {
 
             if (!session) {
                 router.replace('/auth/login');
-                
+
                 return;
             }
 
@@ -55,7 +55,7 @@ export default function PermissionGuard({ children, locale, element }) {
             if (!token || !API_URL) {
                 console.error('Missing token or API_URL');
                 router.replace('/auth/login');
-                
+
                 return;
             }
 
@@ -69,7 +69,11 @@ export default function PermissionGuard({ children, locale, element }) {
                 (!Array.isArray(allowedPermissions) || allowedPermissions.includes(listingId));
 
             if (!allowed) {
-                router.replace(`/${locale}/dashboards/crm`);
+                // if (permissions?.isUser) {
+                //     router.replace(`/${locale}/dashboards/user/learner`);
+                // } else {
+                //     router.replace(`/${locale}/dashboards/crm`);
+                // }
             } else {
                 setIsAllowed(true);
             }
