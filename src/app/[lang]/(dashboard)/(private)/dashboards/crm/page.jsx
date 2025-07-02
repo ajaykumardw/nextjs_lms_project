@@ -17,12 +17,11 @@ import ActivityTimeline from '@views/dashboards/crm/ActivityTimeline'
 // Permission Guard
 import PermissionGuard from '@/hocs/PermissionGuard'
 
-export default async function DashboardCRM({ params }) {
-
-  const locale = params.lang
+export default function DashboardCRM({ params }) {
+  const locale = params?.lang;
 
   return (
-    <PermissionGuard locale={locale} element='notUser'>
+    <PermissionGuard locale={locale} element="notUser">
       <Grid container spacing={6}>
         <Grid xs={12} sm={6} md={4} lg={2}>
           <DistributedBarChartOrder />
@@ -32,30 +31,30 @@ export default async function DashboardCRM({ params }) {
         </Grid>
         <Grid xs={12} sm={6} md={4} lg={2}>
           <CardStatVertical
-            title='Total Profit'
-            subtitle='Last Week'
-            stats='1.28k'
-            avatarColor='error'
-            avatarIcon='tabler-credit-card'
-            avatarSkin='light'
+            title="Total Profit"
+            subtitle="Last Week"
+            stats="1.28k"
+            avatarColor="error"
+            avatarIcon="tabler-credit-card"
+            avatarSkin="light"
             avatarSize={44}
-            chipText='-12.2%'
-            chipColor='error'
-            chipVariant='tonal'
+            chipText="-12.2%"
+            chipColor="error"
+            chipVariant="tonal"
           />
         </Grid>
         <Grid xs={12} sm={6} md={4} lg={2}>
           <CardStatVertical
-            title='Total Sales'
-            subtitle='Last Week'
-            stats='24.67k'
-            avatarColor='success'
-            avatarIcon='tabler-currency-dollar'
-            avatarSkin='light'
+            title="Total Sales"
+            subtitle="Last Week"
+            stats="24.67k"
+            avatarColor="success"
+            avatarIcon="tabler-currency-dollar"
+            avatarSkin="light"
             avatarSize={44}
-            chipText='+24.67%'
-            chipColor='success'
-            chipVariant='tonal'
+            chipText="+24.67%"
+            chipColor="success"
+            chipVariant="tonal"
           />
         </Grid>
         <Grid xs={12} md={8} lg={4}>
@@ -84,5 +83,6 @@ export default async function DashboardCRM({ params }) {
         </Grid>
       </Grid>
     </PermissionGuard>
-  )
+  );
 }
+
