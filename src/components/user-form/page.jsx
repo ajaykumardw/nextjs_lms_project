@@ -1139,8 +1139,8 @@ const UserFormLayout = () => {
                                         }}
                                     >
                                         {createData?.roles?.length > 0 ? (
-                                            createData.roles.map((role) => (
-                                                <MenuItem key={role._id} value={role._id}>
+                                            createData.roles.map((role, index) => (
+                                                <MenuItem key={index} value={role._id}>
                                                     <Checkbox checked={userRoles.includes(role._id)} />
                                                     <ListItemText primary={role.name} />
                                                 </MenuItem>

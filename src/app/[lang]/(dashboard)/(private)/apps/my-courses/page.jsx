@@ -22,7 +22,7 @@ const tabContentList = () => ({
 })
 
 const MyCourses = () => {
-    return <CourseDetail tabContentList={tabContentList()} />
+    return <CourseDetail tabContentList={tabContentList()} type={0} />
 }
 
 export default MyCourses
