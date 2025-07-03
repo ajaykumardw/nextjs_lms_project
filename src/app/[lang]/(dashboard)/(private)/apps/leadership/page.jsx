@@ -8,18 +8,25 @@ import {
     CardContent,
     Typography,
     Avatar,
+    Stack,
     Paper,
-    Chip,
+    Button,
+    Dialog,
     Tooltip,
+    DialogActions,
     TextField,
+    DialogContent,
     IconButton,
     InputAdornment,
 } from '@mui/material'
 
 import Grid from '@mui/material/Grid2'
 
+import DialogCloseButton from '@/components/dialogs/DialogCloseButton'
+
 export default function LeadershipBoard() {
-    const [tab, setTab] = useState(0)
+
+    const [showModal, setShowModal] = useState(false);
 
     const user = {
         name: 'Priya Kumar',
@@ -28,13 +35,32 @@ export default function LeadershipBoard() {
         initials: 'PK',
     }
 
+    const ruleData = [
+        {
+            rule_name: "Only on a user's first login",
+            points: 5,
+        },
+        {
+            rule_name: "Completion of a Micro-learning module by a Learner",
+            points: 5
+        }
+    ]
+
+    const handleClose = () => {
+        setShowModal(false);
+    }
+
     return (
         <Box p={3}>
+
             {/* Title */}
             <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
                 <Typography variant="h5" fontWeight="bold">
                     Leaderboard
                 </Typography>
+                <Button variant="outlined" onClick={() => {
+                    setShowModal(true);
+                }}>RuleBook</Button>
             </Box>
 
             <Grid container spacing={3}>
@@ -108,19 +134,7 @@ export default function LeadershipBoard() {
                             size="small"
                             placeholder="Search"
                             fullWidth
-                            InputProps={{
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        {/* Optional: Add search icon */}
-                                    </InputAdornment>
-                                ),
-                            }}
                         />
-                        <Tooltip title="Filter">
-                            <IconButton>
-                                {/* Optional: Add filter icon */}
-                            </IconButton>
-                        </Tooltip>
                     </Box>
 
                     {/* Rank List */}
@@ -129,6 +143,9 @@ export default function LeadershipBoard() {
                         sx={{
                             p: 2,
                             mt: 3,
+                            pl: 4,
+                            pr: 4,
+                            blockSize: 70,
                             borderRadius: 2,
                             display: 'flex',
                             alignItems: 'center',
@@ -147,6 +164,52 @@ export default function LeadershipBoard() {
                             {user.points} pts
                         </Typography>
                     </Paper>
+
+                    <Dialog
+                        open={showModal}
+                        onClose={handleClose}
+                        maxWidth="md"
+                        fullWidth
+                        sx={{ '& .MuiDialog-paper': { overflow: 'visible', borderRadius: 2 } }}
+                    >
+                        <DialogCloseButton onClick={handleClose} disableRipple>
+                            <i className="tabler-x" />
+                        </DialogCloseButton>
+
+                        <DialogContent sx={{ p: 3 }}>
+                            <Typography variant="h6" fontWeight="bold" gutterBottom>
+                                Rulebook
+                            </Typography>
+
+                            <Stack spacing={2} pt={9} pb={6} pl={2} pr={4}>
+                                {ruleData.map((rule, index) => (
+                                    <Paper
+                                        key={index}
+                                        elevation={2}
+                                        sx={{
+                                            gap:6,
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            p: 4,
+                                            borderRadius: 2
+                                        }}
+                                    >
+                                        <Typography variant="body1">{rule.rule_name}</Typography>
+                                        <Button
+                                            variant="contained"
+                                            sx={{
+                                                minWidth: 70,
+
+                                            }}
+                                        >
+                                            {rule.points} Pts
+                                        </Button>
+                                    </Paper>
+                                ))}
+                            </Stack>
+                        </DialogContent>
+                    </Dialog>
                 </Grid>
             </Grid>
         </Box>

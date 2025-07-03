@@ -79,10 +79,6 @@ const TeamCard = ({ teams = [], onAddTeamSubmit }) => {
         }, 1000)
     }
 
-    const handleDelete = (teamId) => {
-        console.log('Delete team with ID:', teamId)
-    }
-
     if (showTable && selectedTeam) {
         return (
             <TabContext value={value}>
