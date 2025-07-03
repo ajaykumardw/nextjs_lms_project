@@ -31,6 +31,7 @@ import { useApi } from '../../../../utils/api';
 import { getLocalizedUrl } from '@/utils/i18n'
 
 import SkeletonModulesComponent from './SkeletonModulesComponent.jsx'
+import PublishModuleDialog from '../../../../components/dialogs/modules/publish-module-dialog/page';
 
 const iconStyle = {
   minWidth: '40px',
@@ -63,6 +64,12 @@ const Courses = props => {
   const [activePage, setActivePage] = useState(1); // 0-based index
   const [totalItems, setTotalItems] = useState(0);
   const { doGet, doDelete, doPostFormData } = useApi();
+
+  const [open, setOpen] = useState(false)
+  const [cardItems, setCardItems] = useState([]);
+  const [module, setModule] = useState();
+  const [moduleStatus, setModuleStatus] = useState();
+
   const itemsPerPage = 12;
 
   // Hooks
@@ -130,6 +137,20 @@ const Courses = props => {
     }
   };
 
+  const onUpdateStatusChangeState = (status) => {
+
+    setData(prevData => ({
+      ...prevData,
+      modules: prevData.modules.map(mod =>
+        mod._id === module._id
+          ? { ...mod, status: status }  // update only this module
+          : mod
+      )
+    }));
+
+    setModuleStatus(status);
+  };
+
   useEffect(() => {
     if (token && URL) {
 
@@ -160,11 +181,12 @@ const Courses = props => {
     }
   }, [token, selectedCategory]);
 
-  const handleChange = e => {
+  const publishModuleDialogHandle = (item) => {
 
-    setHideCompleted(e.target.checked)
-
-    setActivePage(0)
+    setOpen(true);
+    setModuleStatus(item.status)
+    setCardItems(item.cards)
+    setModule(item)
   }
 
   if (loading) return <SkeletonModulesComponent />
@@ -258,12 +280,22 @@ const Courses = props => {
                           <i className="tabler-trash" />
                         </Button>
                       </Tooltip>
+                      <Tooltip title={item.status === 'draft' ? 'Publish' : 'Unpublish'}>
+                        <Button variant="tonal"
+                          color={item.status === 'draft' ? 'warning' : 'success'}
+                          onClick={() => {
+                            publishModuleDialogHandle(item);
+                          }} sx={iconStyle}>
+                          <i className={`tabler-${item.status === 'published' ? 'arrow-down' : 'arrow-up'}`} />
+                        </Button>
+                      </Tooltip>
                     </div>
 
                   </div>
                 </div>
               </Grid>
             ))}
+            <PublishModuleDialog open={open} setOpen={setOpen} moduleData={module} type={moduleStatus} onUpdateStatusChangeState={onUpdateStatusChangeState} cardItems={cardItems} />
           </Grid>
         ) : (
           <Typography className='text-center'>No Modules found</Typography>
