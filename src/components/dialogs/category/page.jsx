@@ -135,7 +135,7 @@ const CategoryDialog = ({ open, setOpen, data, loadTableData, type, location, on
 
     const submitData = async (value) => {
         setLoading(true)
-        console.log('type', type);
+
         const isEdit = Boolean(data)
 
         const payload = {

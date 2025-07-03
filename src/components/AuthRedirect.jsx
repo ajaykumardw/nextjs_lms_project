@@ -40,10 +40,6 @@ const AuthRedirect = ({ lang }) => {
     }
   }, [getPermissions]); // Include in dependency array
 
-  console.log("permission", permissions);
-
-  console.log("HI");
-
   // ℹ️ Bring me `lang`
   const redirectUrl = `/${lang}/login?redirectTo=${pathname}`
   const login = `/${lang}/login`

@@ -212,14 +212,10 @@ const Courses = ({ tabContentList }) => {
                         ))}
                     </CustomTabList>
                 </Grid>
-                <Grid size={{ xs: 12, md: 8 }}>
-                    <Grid container spacing={6}>
-                        <Grid size={{ xs: 12 }}>
-                            <TabPanel value={activeTab} className='p-0'>
-                                <Course searchValue={searchData} type={0} />
-                            </TabPanel>
-                        </Grid>
-                    </Grid>
+                <Grid item size={{ xs: 12, md: 8 }}>
+                    <TabPanel value={activeTab} className='p-0'>
+                        <Course searchValue={searchData} type={0} />
+                    </TabPanel>
                 </Grid>
             </Grid>
         </TabContext>

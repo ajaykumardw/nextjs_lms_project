@@ -1,8 +1,6 @@
-'use client'
-
-import { useEffect, useState } from "react"
-
 import CertificateCard from "@/components/certificateCard";
+
+import PermissionGuard from "@/hocs/PermissionGuard";
 
 const certificateData = [
     {
@@ -35,11 +33,17 @@ const certificateData = [
     }
 ];
 
-const MyCertificate = () => {
+const MyCertificate = async ({ params }) => {
+
+    const { lang: lang } = await params;
+
+    console.log("Params", lang);
 
     return (
         <>
-            <CertificateCard searchValue={certificateData} />
+            <PermissionGuard locale={lang} element={'isUser'}>
+                <CertificateCard searchValue={certificateData} />
+            </PermissionGuard>
         </>
     )
 
