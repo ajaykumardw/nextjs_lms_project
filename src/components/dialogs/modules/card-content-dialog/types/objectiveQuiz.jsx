@@ -231,10 +231,10 @@ const DocumentCardLayout = ({ data, onClose, moduleData }) => {
                     </div>
                     <Grid size={{ xs: 12, sm: 6 }}>
                         <AppReactDropzone>
-                            <div {...getRootProps({ className: 'dropzone', })} style={{ minHeight: '200px' }}>
+                            <div {...getRootProps({ className: 'dropzone' })}>
                                 <input {...getInputProps()} />
                                 <div className='flex items-center flex-col'>
-                                    <Avatar variant='rounded' className='bs-12 is-12 mbe-3'>
+                                    <Avatar variant='rounded' className='bs-12 is-12 mbe-9'>
                                         <i className='tabler-upload' />
                                     </Avatar>
                                     <Typography variant='h5' className='mbe-2.5'>

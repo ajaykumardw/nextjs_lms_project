@@ -34,8 +34,11 @@ import { useApi } from '../../../../../utils/api';
 
 import CardContentDialog from '../../../../../components/dialogs/modules/card-content-dialog/page'
 import ModuleTypeDialog from '../../../../../components/dialogs/modules/module-type-dialog/page'
+import PublishModuleDialog from '../../../../../components/dialogs/modules/publish-module-dialog/page'
 import ModuleSettingLayout from './module-setting-layout';
 import ColoredCards from './../../list/ColoredCards';
+
+import { getLocalizedUrl } from '@/utils/i18n'
 
 const iconMap = {
     documents: (
@@ -85,12 +88,15 @@ const ManageContentsCard = ({ cardrows, setShowContents, onDelete, setCardItemsM
     const [openFade, setOpenFade] = useState(true)
     const [open, setOpen] = useState(false);
     const [openCardContentDialog, setOpenCardContentDialog] = useState(false);
+    const [openPublishDialog, setOpenPublishDialog] = useState(false);
     const [cardItems, setCardItems] = useState([]);
     const [cardContent, setCardContent] = useState({});
+    const [moduleStatus, setModuleStatus] = useState(moduleData?.status);
     const { doDelete } = useApi();
     const router = useRouter();
     const [tab, setTab] = useState('1')
     const { lang: locale, id: id } = useParams()
+    const public_url = process.env.NEXT_PUBLIC_ASSETS_URL;
 
     const onSelectSlideFromPopup = (cardItems) => {
         // const updated = [...cardItems, newItem];
@@ -101,6 +107,10 @@ const ManageContentsCard = ({ cardrows, setShowContents, onDelete, setCardItemsM
     const handleEdit = (item) => {
         setCardContent(item);
         setOpenCardContentDialog(true);
+    };
+
+    const onUpdateStatusChangeState = (status) => {
+        setModuleStatus(status);
     };
 
     const handleCardDelete = async (item) => {
@@ -159,49 +169,68 @@ const ManageContentsCard = ({ cardrows, setShowContents, onDelete, setCardItemsM
                         <div className='flex items-center justify-between gap-4 flex-wrap'>
                             {/* Left: Icon + Title */}
                             <div className='flex items-center gap-3'>
-                                {/* SVG Icon */}
-                                <div className='w-8 h-8 text-primary'>
-                                    <svg viewBox='0 0 24 24' fill='currentColor' className='w-full h-full'>
-                                        <path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z' />
-                                    </svg>
+                                <div className='w-10 h-10 rounded-lg overflow-hidden bg-gray-100 shadow-sm flex items-center justify-center'>
+                                    {moduleData?.image ? (
+                                        <img
+                                            src={`${public_url}/${moduleData.image}`}
+                                            alt='Module Preview'
+                                            className='object-cover w-full h-full'
+                                        />
+                                    ) : (
+                                        <svg
+                                            viewBox='0 0 24 24'
+                                            fill='currentColor'
+                                            className='w-6 h-6 text-gray-400'
+                                        >
+                                            <path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z' />
+                                        </svg>
+                                    )}
                                 </div>
 
-                                {/* Title */}
-                                <Typography variant='h6' className='text-xl font-semibold text-textPrimary'>
-                                    {`${moduleData?.title} module` || 'Untitled Module'}
-                                </Typography>
+                                <div className='flex items-center gap-2'>
+                                    <Typography variant='h6' className='text-xl font-semibold text-textPrimary'>
+                                        {moduleData?.title ? `${moduleData.title} module` : 'Untitled Module'}
+                                    </Typography>
+                                    <i
+                                        className='tabler-edit cursor-pointer text-primary text-[18px]'
+                                        onClick={() => {
+                                            // router.replace(`/${locale}/apps/modules/form/${id}`);
+                                            if (id) {
+                                                location.href = `/${locale}/apps/modules/form/${id}`;
+                                            } else {
+                                                setShowCards(false);
+                                            }
+                                        }}
+                                    />
+                                </div>
                             </div>
 
                             {/* Right: Edit & Back Buttons */}
                             <div className='flex items-center gap-2'>
                                 <Button
-                                    variant='outlined'
-                                    color='primary'
-                                    size='small'
+                                    variant='contained'
+                                    color={moduleStatus === 'draft' ? 'warning' : 'success'}
+                                    size='medium'
                                     onClick={() => {
-                                        // router.replace(`/${locale}/apps/modules/form/${id}`);
-                                        if (id) {
-                                            location.href = `/${locale}/apps/modules/form/${id}`;
-                                        } else {
-                                            setShowCards(false);
-                                        }
+                                        setOpenPublishDialog(true)
                                     }}
                                 >
-                                    <i className='tabler-edit mr-1 text-sm' />
-                                    Edit
+                                    <i className={`tabler-${moduleStatus === 'published' ? 'arrow-down' : 'arrow-up'} mr-1 text-sm`} />
+                                    {moduleStatus === 'published' ? 'Unpublish' : 'Publish'}
                                 </Button>
-
-                                <Button
-                                    variant='outlined'
-                                    color='primary'
-                                    size='small'
-                                    onClick={() => {
-                                        setOpen(true)
-                                    }}
-                                >
-                                    <i className='tabler-plus mr-1 text-sm' />
-                                    Add more content
-                                </Button>
+                                {Array.isArray(cardItems) && cardItems.length > 0 &&
+                                    <Button
+                                        variant='outlined'
+                                        color='info'
+                                        size='medium'
+                                        onClick={() => {
+                                            setOpen(true)
+                                        }}
+                                    >
+                                        <i className='tabler-plus mr-1 text-sm' />
+                                        Add Content
+                                    </Button>
+                                }
                             </div>
                         </div>
                     }
@@ -215,73 +244,103 @@ const ManageContentsCard = ({ cardrows, setShowContents, onDelete, setCardItemsM
                     <TabPanel value='1' className='pt-10'>
                         <Grid key="item3" container spacing={5} >
                             <Grid key="item1" size={{ xs: 12, md: 8, lg: 8 }} className='flex flex-col gap-4'>
-                                {cardItems.map(item => (
-                                    <div
-                                        key={item._id}
-                                        className='flex items-center justify-between gap-4 p-3 border rounded-lg shadow-sm bg-white'
-                                    >
-                                        {/* Left: Icon + Info */}
-                                        <div className='flex items-center gap-4'>
-                                            <div className='w-10 h-20'>{iconMap[item.value]}</div>
-                                            <div className='flex flex-col gap-1'>
-                                                <Typography color='text.primary'>{item.title}</Typography>
-                                                {/* <Typography variant='h4'>{item.count}</Typography> */}
-                                                {(item.value === 'documents' || item.value === 'videos') && (
-                                                    item?.content?.media?.length > 0 ? (
-                                                        item.content.media.map((file, index) => (
-                                                            <div
-                                                                key={file.file || index}
-                                                                className='flex items-center gap-2.5 is-fit bg-actionHover rounded plb-[5px] pli-2.5'
-                                                            >
-                                                                {file.type === 'application/pdf' && (
-                                                                    <img height={20} alt='document' src='/images/icons/pdf-document.png' />
-                                                                )}
+                                {Array.isArray(cardItems) && cardItems.length > 0 ? (
+                                    cardItems.slice().reverse().map(item => (
+                                        <div
+                                            key={item._id}
+                                            className='flex items-center justify-between gap-4 p-3 border rounded-lg shadow-sm bg-white'
+                                        >
+                                            {/* Left: Icon + Info */}
+                                            <div className='flex items-center gap-4'>
+                                                <div className='w-10 h-20'>{iconMap[item.value]}</div>
+                                                <div className='flex flex-col gap-1'>
+                                                    <Typography color='text.primary'>{item.title}</Typography>
 
-                                                                {/* {file.type?.includes('video') && (
-                                                                    <img height={20} alt='video' src='/images/icons/video-icon.png' />
-                                                                )} */}
+                                                    {(item.value === 'documents' || item.value === 'videos') && (
+                                                        item?.content?.media?.length > 0 ? (
+                                                            item.content.media.map((file, index) => (
+                                                                <div
+                                                                    key={file.file || index}
+                                                                    className='flex items-center gap-2.5 is-fit bg-actionHover rounded plb-[5px] pli-2.5'
+                                                                >
+                                                                    {file.type === 'application/pdf' && (
+                                                                        <img height={20} alt='document' src='/images/icons/pdf-document.png' />
+                                                                    )}
+                                                                    <Typography variant='body2' className='font-medium'>
+                                                                        {file.file}
+                                                                    </Typography>
+                                                                </div>
+                                                            ))
+                                                        ) : (
+                                                            <Typography variant='body2' color='#FF0000' className='font-medium'>
+                                                                This activity is empty or invalid.
+                                                            </Typography>
+                                                        )
+                                                    )}
 
-                                                                <Typography variant='body2' className='font-medium'>
-                                                                    {file.file}
-                                                                </Typography>
-                                                            </div>
-                                                        ))
-                                                    ) : (
-                                                        <Typography variant='body2' color='#FF0000' className='font-medium'>
-                                                            This activity is empty or invalid.
-                                                        </Typography>
-                                                    )
-                                                )}
+                                                    {item.value === 'youtube_videos' && (
+                                                        item?.content?.url ? (
+                                                            <Typography variant='body2' color='text.primary'>
+                                                                {item.content.url}
+                                                            </Typography>
+                                                        ) : (
+                                                            <Typography variant='body2' color='#FF0000' className='font-medium'>
+                                                                This activity is empty or invalid.
+                                                            </Typography>
+                                                        )
+                                                    )}
+                                                </div>
+                                            </div>
 
-
-                                                {item.value === 'youtube_videos' && (
-                                                    item?.content?.url ? (
-                                                        <>{item.content.url}</>
-                                                    ) : (
-                                                        <Typography variant='body2' color='#FF0000' className='font-medium'>
-                                                            This activity is empty or invalid.
-                                                        </Typography>
-                                                    )
-                                                )}
-
+                                            {/* Right: Action Buttons */}
+                                            <div className='flex items-center gap-2'>
+                                                <IconButton color='primary' onClick={() => handleEdit(item)}>
+                                                    <i className='tabler-edit text-textSecondary' />
+                                                </IconButton>
+                                                <IconButton color='error' onClick={() => handleCardDelete(item)}>
+                                                    <i className='tabler-trash text-textSecondary' />
+                                                </IconButton>
                                             </div>
                                         </div>
-
-                                        {/* Right: Delete Button */}
-                                        <div className='flex items-center gap-2'>
-                                            <IconButton color='primary' onClick={() => handleEdit(item)}>
-                                                <i className='tabler-edit text-textSecondary' />
-                                            </IconButton>
-                                            <IconButton color='error' onClick={() => handleCardDelete(item)}>
-                                                <i className='tabler-trash text-textSecondary' />
-                                            </IconButton>
-                                        </div>
-                                    </div>
-                                ))}
+                                    ))
+                                ) : (
+                                    <Button
+                                        variant='outlined'
+                                        color='primary'
+                                        onClick={() => {
+                                            setOpen(true)
+                                        }}
+                                        className='mx-auto mt-4'
+                                    >
+                                        <i className='tabler-plus me-2' /> Add First Content
+                                    </Button>
+                                )}
                             </Grid>
 
+
                             <Grid key="item2" size={{ xs: 12, md: 4, lg: 4 }} className='flex flex-col gap-4'>
-                                <ColoredCards />
+                                <Typography variant='body2'>
+                                    To enhance engagement and deliver a complete learning experience, you can add multiple content types within each module. Use a combination of the following formats to make your content effective, interactive, and accessible:
+                                </Typography>
+
+                                <Typography variant='body2'>
+                                    1.  Enhance your course by adding objectives, documents, videos, YouTube links, SCORM content, and assessments.
+                                </Typography>
+
+                                <Typography variant='body2'>
+                                    2.  Build dynamic learning experiences with a mix of videos, documents, quizzes, YouTube, and SCORM modules.
+                                </Typography>
+
+                                <Typography variant='body2'>
+                                    3.  Combine videos, PDFs, SCORM, YouTube, and assessments to deliver a complete learning journey.
+                                </Typography>
+
+                                <Typography variant='body2'>
+                                    4.  Create impactful LMS content using documents, multimedia, YouTube, SCORM, and interactive quizzes.
+                                </Typography>
+
+
+
                                 <div className='flex justify-normal sm:justify-end xl:justify-normal'>
                                     {/* <Button variant='contained' onClick={(e) => { setOpen(true) }}>
                                     Add more activity
@@ -320,15 +379,31 @@ const ManageContentsCard = ({ cardrows, setShowContents, onDelete, setCardItemsM
                             'Submit'
                         )}
                     </Button> */}
-                {currentPage != 'direct' ? (
-                    <Button variant="tonal" color="error" type="reset" onClick={(e) => { setShowContents(false) }}>
-                        Cancel
+                <CardActions sx={{ display: 'flex', justifyContent: 'left', gap: 2 }}>
+                    <Button
+                        type='button'
+                        variant='outlined'
+                        component={Link}
+                        href={getLocalizedUrl(`/apps/modules`, locale)}
+                        startIcon={<DirectionalIcon ltrIconClass='tabler-arrow-left' rtlIconClass='tabler-arrow-right' />}
+
+                    // sx={{ height: 40 }}
+                    >
+                        Back to Module list
                     </Button>
-                ) : ('')}
+                    {currentPage != 'direct' ? (
+                        <Button variant="tonal" color="warning" type="reset"
+                            startIcon={<DirectionalIcon ltrIconClass='tabler-arrow-left' rtlIconClass='tabler-arrow-right' />}
+                            onClick={(e) => { setShowContents(false) }}>
+                            Previous
+                        </Button>
+                    ) : ('')}
+                </CardActions>
             </CardActions>
 
             <ModuleTypeDialog open={open} setOpen={setOpen} onSelectSlideFromPopup={onSelectSlideFromPopup} moduleData={moduleData} />
             <CardContentDialog open={openCardContentDialog} setOpen={setOpenCardContentDialog} moduleData={moduleData} cardContent={cardContent} onSetCardItems={onSelectSlideFromPopup} />
+            <PublishModuleDialog open={openPublishDialog} setOpen={setOpenPublishDialog} moduleData={moduleData} type={moduleStatus} onUpdateStatusChangeState={onUpdateStatusChangeState} cardItems={cardItems} />
         </Card >
 
     )
