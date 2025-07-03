@@ -1,16 +1,27 @@
 'use client'
 
 import { useState } from 'react'
-import Card from '@mui/material/Card'
-import CardContent from '@mui/material/CardContent'
-import Typography from '@mui/material/Typography'
-import Grid from '@mui/material/Grid2'
+
 import Image from 'next/image'
+
 import Dialog from '@mui/material/Dialog'
+
 import DialogContent from '@mui/material/DialogContent'
+
 import DialogActions from '@mui/material/DialogActions'
+
 import Button from '@mui/material/Button'
+
 import { jsPDF } from 'jspdf'
+
+import Card from '@mui/material/Card'
+
+import CardContent from '@mui/material/CardContent'
+
+import Typography from '@mui/material/Typography'
+
+import Grid from '@mui/material/Grid2'
+
 import DialogCloseButton from './dialogs/DialogCloseButton'
 
 const badgeIcon = '/images/apps/academy/badge.png'
@@ -39,6 +50,7 @@ const CertificateCard = ({ searchValue }) => {
             const blob = await response.blob()
 
             const reader = new FileReader()
+            
             reader.onloadend = () => {
                 const imgData = reader.result
                 const pageWidth = pdf.internal.pageSize.getWidth()
