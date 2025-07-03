@@ -4,6 +4,8 @@ import dynamic from 'next/dynamic'
 // Component Imports
 import CourseDetail from '@components/courses/page'
 
+import PermissionGuard from '@/hocs/PermissionGuard';
+
 const StoreDetailsTab = dynamic(() => import('@views/apps/ecommerce/settings/store-details'))
 const PaymentsTab = dynamic(() => import('@views/apps/ecommerce/settings/payments'))
 const CheckoutTab = dynamic(() => import('@views/apps/ecommerce/settings/checkout'))
@@ -21,8 +23,16 @@ const tabContentList = () => ({
     notifications: <NotificationsTab />
 })
 
-const MyCourses = () => {
-    return <CourseDetail tabContentList={tabContentList()} />
+
+
+export default async function MyCourses({ params }) {
+
+    const { lang: lang } = await params;
+
+    return (
+        <PermissionGuard locale={lang} element={'isUser'}>
+            <CourseDetail tabContentList={tabContentList()} type={0} />
+        </PermissionGuard>
+    );
 }
 
-export default MyCourses

@@ -36,9 +36,8 @@ export default async function PermissionGuardServer({ children, locale, element 
 
     const session = await getServerSession(authOptions);
 
-
     if (!session) {
-        redirect('/auth/login');
+        redirect(`/${locale}/login`);
     }
 
     const token = session.user?.token;
@@ -46,10 +45,15 @@ export default async function PermissionGuardServer({ children, locale, element 
 
     if (!token || !API_URL) {
         console.error('Missing token or API_URL');
-        redirect('/auth/login');
+        redirect(`/${locale}/login`);
     }
 
     const permissions = await fetchPermission(API_URL, token);
+
+    if (!permissions) {
+        // Optional: Log out the user if the token is invalid or expired
+        redirect(`/${locale}/login`);
+    }
 
     // Normalize permissions (ensure it's an object with arrays)
     const allowedPermissions = permissions?.[element];
@@ -61,11 +65,11 @@ export default async function PermissionGuardServer({ children, locale, element 
         !permissions[element] ||
         (Array.isArray(allowedPermissions) && !allowedPermissions.includes(listingId))
     ) {
-        // if (permissions?.isUser) {
-        //     redirect(`/${locale}/dashboards/user/${'learner'}`);
-        // } else {
-        //     redirect(`/${locale}/dashboards/crm`);
-        // }
+        if (permissions?.isUser) {
+            redirect(`/${locale}/dashboards/user/${'learner'}`);
+        } else {
+            redirect(`/${locale}/dashboards/crm`);
+        }
     }
 
     return <PermissionGuardClient>{children}</PermissionGuardClient>;

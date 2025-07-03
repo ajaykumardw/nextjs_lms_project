@@ -666,8 +666,8 @@ const ImportUsers = ({ batch, onBack }) => {
                   }}
                 >
                   {roles?.length > 0 ? (
-                    roles.map((role) => (
-                      <MenuItem key={role._id} value={role._id}>
+                    roles.map((role, index) => (
+                      <MenuItem key={index} value={role._id}>
                         <Checkbox checked={userRoles.includes(role._id)} />
                         <ListItemText primary={role.name} />
                       </MenuItem>

@@ -109,7 +109,7 @@ const BranchDialog = ({
     useEffect(() => {
         if (typeForm && selectedRegion) {
             const regionId = selectedRegion?.data?._id || ''
-            
+
             reset({
                 branch: selectedRegion?.data?.branch?.map(r => ({
                     name: r.name || '',
@@ -136,9 +136,9 @@ const BranchDialog = ({
                     Authorization: `Bearer ${token}`
                 }
             })
-            
+
             const data = await response.json()
-            
+
             if (response.ok) {
                 setBranchOptions(data?.data || [])
             }
@@ -168,7 +168,7 @@ const BranchDialog = ({
 
             if (!response.ok) {
                 console.error("Server error:", data);
-                
+
                 return null; // or throw new Error(data.message)
             }
 
@@ -176,7 +176,7 @@ const BranchDialog = ({
 
         } catch (error) {
             console.error("Fetch error:", error.message || error);
-            
+
             return null;
         }
     };
@@ -220,7 +220,7 @@ const BranchDialog = ({
             branchFields.forEach((branch) => {
                 const name = branch.name?.trim().toLowerCase();
                 const code = branch.code?.trim().toLowerCase();
-                
+
                 if (name) nameCount.set(name, (nameCount.get(name) || 0) + 1);
                 if (code) codeCount.set(code, (codeCount.get(code) || 0) + 1);
             });
@@ -268,14 +268,14 @@ const BranchDialog = ({
             const nameExist = tableData.some(item => {
                 const currentName = item.data.name?.trim().toLowerCase();
                 const currentId = item.data._id?.toString();
-                
+
                 return currentName === name && (!isEditMode || currentId !== branchId);
             });
 
             const codeExist = tableData.some(item => {
                 const currentCode = item.data.code?.trim().toLowerCase();
                 const currentId = item.data._id?.toString();
-                
+
                 return currentCode === code && (!isEditMode || currentId !== branchId);
             });
 
@@ -299,7 +299,7 @@ const BranchDialog = ({
         if (hasError) return;
 
         setLoading(true);
-        
+
         try {
             const url = selectedRegion
                 ? `${API_URL}/company/app/branch/region/${selectedRegion.data._id}`
@@ -321,6 +321,7 @@ const BranchDialog = ({
             const data = await response.json();
 
             if (response.ok) {
+
                 toast.success(`Branch ${isEdit ? 'updated' : 'added'} successfully!`, {
                     autoClose: 1000,
                 });
@@ -367,7 +368,7 @@ const BranchDialog = ({
                                                 fullWidth
                                                 onChange={(e) => {
                                                     const allowed = e.target.value.replace(/[^A-Za-z0-9 ]/g, '');
-                                                    
+
                                                     field.onChange(allowed);
                                                 }}
                                                 error={!!errors.branch?.[index]?.name}
@@ -388,7 +389,7 @@ const BranchDialog = ({
                                                 fullWidth
                                                 onChange={(e) => {
                                                     const allowed = e.target.value.replace(/[^A-Za-z0-9 ]/g, '');
-                                                    
+
                                                     field.onChange(allowed);
                                                 }}
                                                 error={!!errors.branch?.[index]?.code}
@@ -457,7 +458,7 @@ const BranchDialog = ({
                                             helperText={errors.code?.message}
                                             onChange={(e) => {
                                                 const allowed = e.target.value.replace(/[^A-Za-z0-9 ]/g, '');
-                                                
+
                                                 field.onChange(allowed);
                                             }}
                                         />

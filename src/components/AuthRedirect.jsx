@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 
 // Next Imports
+
 import { redirect, usePathname } from 'next/navigation'
 
 // Config Imports
@@ -12,6 +13,8 @@ import { usePermissionList } from '@/utils/getPermission'
 // Util Imports
 
 import { getLocalizedUrl } from '@/utils/i18n'
+
+
 
 
 
@@ -37,10 +40,6 @@ const AuthRedirect = ({ lang }) => {
       fetchPermissions();
     }
   }, [getPermissions]); // Include in dependency array
-
-  console.log("permission", permissions);
-
-  console.log("HI");
 
   // ℹ️ Bring me `lang`
   const redirectUrl = `/${lang}/login?redirectTo=${pathname}`

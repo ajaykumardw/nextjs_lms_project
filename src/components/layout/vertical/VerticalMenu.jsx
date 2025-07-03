@@ -229,10 +229,31 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
             </SubMenu>
           )}
           {permissArray?.isUser && (
-            <SubMenu label="Module" icon={<i className="tabler-adjustments" />}>
-              <MenuItem key="Role" href={`/${locale}/apps/moduleProgram`}>My modules in progress</MenuItem>
-              <MenuItem key="Role" href={`/${locale}/apps/my-courses`}>My courses</MenuItem>
-            </SubMenu>
+            <>
+              <MenuItem key="leadership" href={`/${locale}/apps/leadership`}>
+                <i className="tabler-puzzle" style={{ marginRight: 8, fontSize: '1.2rem' }} />
+                Leadership
+              </MenuItem>
+              <MenuItem key="module" href={`/${locale}/apps/moduleProgram`}>
+                <i className="tabler-puzzle" style={{ marginRight: 8 }} />
+                Module
+              </MenuItem>
+
+              <MenuItem key="courses" href={`/${locale}/apps/my-courses`}>
+                <i className="tabler-book" style={{ marginRight: 8 }} />
+                Course
+              </MenuItem>
+
+              <MenuItem key="certificates" href={`/${locale}/apps/my-certificates`}>
+                <i className="tabler-certificate" style={{ marginRight: 8 }} />
+                Certificate
+              </MenuItem>
+
+              <MenuItem key="team" href={`/${locale}/apps/my-team`}>
+                <i className="tabler-users" style={{ marginRight: 8 }} />
+                Team
+              </MenuItem>
+            </>
           )}
           {permissArray?.isCompany && (
             <SubMenu label="Module & Category" icon={<i className="tabler-adjustments" />}>
