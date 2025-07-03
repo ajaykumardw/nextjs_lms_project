@@ -44,7 +44,7 @@ export default function PermissionGuard({ children, locale, element }) {
             if (status === 'loading') return;
 
             if (!session) {
-                router.replace('/auth/login');
+                router.replace(`/${locale}/login`);
 
                 return;
             }
@@ -54,7 +54,7 @@ export default function PermissionGuard({ children, locale, element }) {
 
             if (!token || !API_URL) {
                 console.error('Missing token or API_URL');
-                router.replace('/auth/login');
+                router.replace(`/${locale}/login`);
 
                 return;
             }

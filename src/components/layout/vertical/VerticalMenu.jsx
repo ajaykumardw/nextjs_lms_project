@@ -229,20 +229,31 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
             </SubMenu>
           )}
           {permissArray?.isUser && (
-            <SubMenu label="Modules" icon={<i className="tabler-puzzle" />}>
-              <MenuItem key="module" href={`/${locale}/apps/moduleProgram`}>Module</MenuItem>
-            </SubMenu>
-          )}
+            <>
+              <MenuItem key="leadership" href={`/${locale}/apps/leadership`}>
+                <i className="tabler-puzzle" style={{ marginRight: 8, fontSize: '1.2rem' }} />
+                Leadership
+              </MenuItem>
+              <MenuItem key="module" href={`/${locale}/apps/moduleProgram`}>
+                <i className="tabler-puzzle" style={{ marginRight: 8 }} />
+                Module
+              </MenuItem>
 
-          {permissArray?.isUser && (
-            <SubMenu label="Courses" icon={<i className="tabler-book" />}>
-              <MenuItem key="courses" href={`/${locale}/apps/my-courses`}>Course</MenuItem>
-            </SubMenu>
-          )}
-          {permissArray?.isUser && (
-            <SubMenu label="Certificates" icon={<i className="tabler-certificate" />}>
-              <MenuItem key="certificates" href={`/${locale}/apps/my-certificates`}>Certificate</MenuItem>
-            </SubMenu>
+              <MenuItem key="courses" href={`/${locale}/apps/my-courses`}>
+                <i className="tabler-book" style={{ marginRight: 8 }} />
+                Course
+              </MenuItem>
+
+              <MenuItem key="certificates" href={`/${locale}/apps/my-certificates`}>
+                <i className="tabler-certificate" style={{ marginRight: 8 }} />
+                Certificate
+              </MenuItem>
+
+              <MenuItem key="team" href={`/${locale}/apps/my-team`}>
+                <i className="tabler-users" style={{ marginRight: 8 }} />
+                Team
+              </MenuItem>
+            </>
           )}
           {permissArray?.isCompany && (
             <SubMenu label="Module & Category" icon={<i className="tabler-adjustments" />}>

@@ -94,14 +94,6 @@ const AddContent = ({ control, errors, createData }) => (
       />
     </div>
 
-    {/* <Controller name="permissionmodule" control={control} render={({ field }) => (
-            <CustomTextField {...field} select fullWidth label="Permission module" variant="outlined" placeholder="Select Package Type" className="mbe-2" error={!!errors.permissionmodule} helperText={errors?.permissionmodule?.message}>
-                {createData.map((data) => (
-                    <MenuItem key={data._id} value={data._id}>{data.name}</MenuItem>
-                ))}
-            </CustomTextField>
-        )} /> */}
-
     <Controller
       name="permissionmodule"
       control={control}

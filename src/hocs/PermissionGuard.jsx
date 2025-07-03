@@ -45,7 +45,7 @@ export default async function PermissionGuardServer({ children, locale, element 
 
     if (!token || !API_URL) {
         console.error('Missing token or API_URL');
-        redirect('/auth/login');
+        redirect(`/${locale}/login`);
     }
 
     const permissions = await fetchPermission(API_URL, token);
