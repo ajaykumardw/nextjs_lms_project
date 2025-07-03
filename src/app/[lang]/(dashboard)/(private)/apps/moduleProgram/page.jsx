@@ -1,11 +1,16 @@
 'use client'
 
+
 import { useState } from 'react'
+
 import Tab from '@mui/material/Tab'
 import TabContext from '@mui/lab/TabContext'
 import TabList from '@mui/lab/TabList'
+
 import TabPanel from '@mui/lab/TabPanel'
+
 import Courses from '@components/Courses'
+
 import PermissionGuard from '@/hocs/PermissionClientGuard'
 
 const moduleList = [
