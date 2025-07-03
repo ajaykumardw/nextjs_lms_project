@@ -115,9 +115,9 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
             <MenuItem href={`/${locale}/dashboards/crm`}>Crm</MenuItem>
           )}
 
-          {/* {permissArray?.isUser && ( */}
-          <MenuItem href={`/${locale}/dashboards/user/learner`}>Learner</MenuItem>
-          {/* )} */}
+          {permissArray?.isUser && (
+            <MenuItem href={`/${locale}/dashboards/user/learner`}>Learner</MenuItem>
+          )}
 
           {/* <MenuItem href={`/${locale}/dashboards/analytics`}>Analytics</MenuItem>
           <MenuItem href={`/${locale}/dashboards/ecommerce`}>ECommerce</MenuItem>
@@ -229,9 +229,19 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
             </SubMenu>
           )}
           {permissArray?.isUser && (
-            <SubMenu label="Module" icon={<i className="tabler-adjustments" />}>
-              <MenuItem key="module" href={`/${locale}/apps/moduleProgram`}>My modules in progress</MenuItem>
-              <MenuItem key="courses" href={`/${locale}/apps/my-courses`}>My courses</MenuItem>
+            <SubMenu label="Modules" icon={<i className="tabler-puzzle" />}>
+              <MenuItem key="module" href={`/${locale}/apps/moduleProgram`}>Module</MenuItem>
+            </SubMenu>
+          )}
+
+          {permissArray?.isUser && (
+            <SubMenu label="Courses" icon={<i className="tabler-book" />}>
+              <MenuItem key="courses" href={`/${locale}/apps/my-courses`}>Course</MenuItem>
+            </SubMenu>
+          )}
+          {permissArray?.isUser && (
+            <SubMenu label="Certificates" icon={<i className="tabler-certificate" />}>
+              <MenuItem key="certificates" href={`/${locale}/apps/my-certificates`}>Certificate</MenuItem>
             </SubMenu>
           )}
           {permissArray?.isCompany && (

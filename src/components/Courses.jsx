@@ -1,65 +1,52 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-
-// Next Imports
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 
-// MUI Imports
+// MUI
+import Grid from '@mui/material/Grid'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
-import Chip from '@mui/material/Chip'
 import Typography from '@mui/material/Typography'
+import Chip from '@mui/material/Chip'
 
 // Utils
-import Grid from '@mui/material/Grid2'
-
 import { getLocalizedUrl } from '@/utils/i18n'
-import themeConfig from '@/configs/themeConfig'
-
 
 const Courses = ({ searchValue, type }) => {
   const [filteredCourses, setFilteredCourses] = useState([])
   const { lang: locale } = useParams()
 
-  const slugify = (text) =>
+  const slugify = text =>
     text
       .toLowerCase()
       .trim()
-      .replace(/[\s_]+/g, '-')         // Replace spaces and underscores with -
-      .replace(/[^\w\-]+/g, '')        // Remove all non-word chars
-      .replace(/\-\-+/g, '-');         // Replace multiple - with single -
-
+      .replace(/[\s_]+/g, '-')
+      .replace(/[^\w\-]+/g, '')
+      .replace(/\-\-+/g, '-')
 
   useEffect(() => {
     if (searchValue) {
-      setFilteredCourses(searchValue);
+      setFilteredCourses(searchValue)
     }
-
-  }, [searchValue]);
-
-  console.log("Theme", themeConfig);
-
+  }, [searchValue])
 
   return (
     <Grid container spacing={6}>
       {filteredCourses.map((course, index) => (
-        <Grid key={index} size={{ xs: 12, sm: 3 }}>
-          {/* // <div key={index} className='flex-none w-[19%]'> */}
+        <Grid item key={index} xs={12} sm={6} md={4} lg={3}>
           <Card
-            key={index}
-            className='rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.02] hover:border-primary'
-            style={{
-              width: "100%",
-              height: 310,
+            className='rounded-xl shadow-md transition-all duration-300 hover:shadow-lg hover:scale-[1.02] hover:border-primary'
+            sx={{
+              blockSize: '100%',
               display: 'flex',
               flexDirection: 'column',
               cursor: 'pointer',
               border: '1px solid transparent',
               '&:hover': {
-                borderColor: theme => theme.palette.primary.main,
-              },
+                borderColor: theme => theme.palette.primary.main
+              }
             }}
           >
             <Link href={getLocalizedUrl(`/apps/moduleProgram/detail/${slugify(course.courseTitle)}`, locale)}>
@@ -67,7 +54,7 @@ const Courses = ({ searchValue, type }) => {
                 src={course.tutorImg}
                 alt={course.courseTitle}
                 className='w-full object-cover'
-                style={{ height: 120 }}
+                style={{ blockSize: 120 }}
               />
             </Link>
 
@@ -91,32 +78,28 @@ const Courses = ({ searchValue, type }) => {
                   {course.courseTitle}
                 </Typography>
 
-                {type == 1 && (
+                {type === 1 && course.tags && (
                   <div className='flex flex-wrap gap-1 my-1'>
-                    {course.tags && (
-                      <Chip
-                        label={course.tags}
-                        variant='outlined'
-                        size='small'
-                        sx={{ fontSize: '0.7rem', borderRadius: '12px' }}
-                      />
-                    )}
+                    <Chip
+                      label={course.tags}
+                      variant='outlined'
+                      size='small'
+                      sx={{ fontSize: '0.7rem', borderRadius: '12px' }}
+                    />
                   </div>
                 )}
 
                 {type === 0 && (
-                  <Typography className="mt-5 text-center w-full flex justify-center">
+                  <Typography className='mt-5 text-center w-full flex justify-center'>
                     Estimated to 2
                   </Typography>
                 )}
-
-
               </div>
 
               {type === 0 && (
                 <Typography
-                  variant="body2"
-                  className="line-clamp-3 text-sm text-grey-600"
+                  variant='body2'
+                  className='line-clamp-3 text-sm text-grey-600'
                   sx={{
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
@@ -125,13 +108,11 @@ const Courses = ({ searchValue, type }) => {
                     WebkitBoxOrient: 'vertical'
                   }}
                 >
-                  Angular is a TypeScript-based front-end web application framework developed by Google. It is used to build dynamic, single-page web applications (SPAs) with a structured and scalable architecture.
+                  Angular is a TypeScript-based front-end web application framework...
                 </Typography>
               )}
 
-
-              {type == 1 && (
-
+              {type === 1 && (
                 <div>
                   <Typography variant='body2' color='text.primary'>
                     In Progress
@@ -143,12 +124,16 @@ const Courses = ({ searchValue, type }) => {
               )}
             </CardContent>
 
-            {type == 1 && (
-
-              <div style={{ blockSize: 4, inlineSize: `${course.percentage}%`, backgroundColor: '#FACC15' }} />
+            {type === 1 && (
+              <div
+                style={{
+                  blockSize: 4,
+                  inlineSize: `${course.percentage || 60}%`,
+                  backgroundColor: '#FACC15'
+                }}
+              />
             )}
           </Card>
-          {/* // </div> */}
         </Grid>
       ))}
     </Grid>

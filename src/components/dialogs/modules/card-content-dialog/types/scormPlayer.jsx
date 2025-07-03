@@ -31,7 +31,7 @@ const ScormPlayerLegacy = ({
         window.API_1484_11 = api;
         apiRef.current = api;
 
-        console.log('api', api);
+
         api.lmsInitialize();
         api.on('Initialize', async () => {
             alert();
@@ -58,7 +58,7 @@ const ScormPlayerLegacy = ({
                 };
             },
             onLogMessage: (level, message) => {
-                console.log(`[${level}] ${message}`);
+                // console.log(`[${level}] ${message}`);
             },
         };
 

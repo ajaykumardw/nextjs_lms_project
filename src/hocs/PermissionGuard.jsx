@@ -36,9 +36,8 @@ export default async function PermissionGuardServer({ children, locale, element 
 
     const session = await getServerSession(authOptions);
 
-
     if (!session) {
-        redirect('/auth/login');
+        redirect(`/${locale}/login`);
     }
 
     const token = session.user?.token;
@@ -50,6 +49,11 @@ export default async function PermissionGuardServer({ children, locale, element 
     }
 
     const permissions = await fetchPermission(API_URL, token);
+
+    if (!permissions) {
+        // Optional: Log out the user if the token is invalid or expired
+        redirect(`/${locale}/login`);
+    }
 
     // Normalize permissions (ensure it's an object with arrays)
     const allowedPermissions = permissions?.[element];
