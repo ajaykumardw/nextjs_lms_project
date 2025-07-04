@@ -334,7 +334,7 @@ const ScromCardLayout = ({ data, onClose, moduleData }) => {
                             </Grid>
                         </>
                     ) : (
-                        <> {media?.length}
+                        <>
                             {media?.length > 0 && (
                                 <div className='mt-4'>
                                     {media.map(file => (

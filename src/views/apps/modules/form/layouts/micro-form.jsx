@@ -18,6 +18,8 @@ import Avatar from '@mui/material/Avatar'
 import CardHeader from '@mui/material/CardHeader'
 import CircularProgress from '@mui/material/CircularProgress'
 
+
+
 import Typography from '@mui/material/Typography'
 
 import { useForm, Controller, useFormContext } from 'react-hook-form'
@@ -26,9 +28,11 @@ import CardContent from '@mui/material/CardContent'
 
 import InputAdornment from '@mui/material/InputAdornment'
 
+
 import IconButton from '@mui/material/IconButton'
 
 import { valibotResolver } from '@hookform/resolvers/valibot';
+
 import { useDropzone } from 'react-dropzone'
 
 import { toast } from 'react-toastify'
@@ -50,6 +54,9 @@ import {
     custom,
     array
 } from 'valibot';
+
+import DirectionalIcon from '@components/DirectionalIcon'
+import { getLocalizedUrl } from '@/utils/i18n'
 
 import AppReactDropzone from '@/libs/styles/AppReactDropzone';
 
@@ -275,12 +282,13 @@ const ModuleFormLayout = ({ setLayoutType, setShowCards, setModuleData }) => {
             onSuccess: (response) => {
                 if (!id) {
                     router.replace(`/${locale}/apps/modules/form/${response.data._id}?showCards=1`);
-                } else {
-                    setShowCards(true); // Only run if no redirection
-                    setModuleData(response.data);
                     toast.success(response.message, {
                         autoClose: 700
                     });
+                } else {
+                    setShowCards(true); // Only run if no redirection
+                    setModuleData(response.data);
+                    toast.success(response.message);
                 }
             },
         });
@@ -296,7 +304,18 @@ const ModuleFormLayout = ({ setLayoutType, setShowCards, setModuleData }) => {
         <>
 
             <Card>
-                <CardHeader title={id ? `Edit ${module?.title}` : 'Add Micro Module'} />
+                <CardHeader
+                    title={id ? `Edit ${module?.title}` : 'Add Micro Module'}
+                    action={
+                        <Button
+                            variant='outlined'
+                            startIcon={<DirectionalIcon ltrIconClass='tabler-arrow-left' rtlIconClass='tabler-arrow-right' />}
+                            onClick={() => router.push(getLocalizedUrl('/apps/modules', locale))}
+                        >
+                            Back to Modules
+                        </Button>
+                    }
+                />
                 <Divider />
                 <form onSubmit={handleSubmit(onSubmit)} noValidate encType="multipart/form-data">
                     <CardContent>

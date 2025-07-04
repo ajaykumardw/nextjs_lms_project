@@ -23,6 +23,7 @@ import DocumentCardLayout from './types/documentCardLayout';
 import VideosCardLayout from './types/videosCardLayout';
 import YoutubeCardLayout from './types/youtubeCardLayout';
 import ScromCardLayout from './types/scromCardLayout.jsx';
+import ObjectiveQuiz from './types/objectiveQuiz';
 import ScormPlayer from './types/scormPlayer';
 import ScormPlayerPipeworks from './types/scormPlayerPipeworks';
 
@@ -57,11 +58,11 @@ const CardContentDialog = ({ open, setOpen, cardContent, moduleData, onSetCardIt
                 <i className='tabler-x' />
             </DialogCloseButton>
 
-
             {cardContent.value === 'documents' && <DocumentCardLayout data={cardContent} moduleData={moduleData} onClose={onClose} />}
             {cardContent.value === 'videos' && <VideosCardLayout data={cardContent} moduleData={moduleData} onClose={onClose} />}
             {cardContent.value === 'youtube_videos' && <YoutubeCardLayout data={cardContent} moduleData={moduleData} onClose={onClose} />}
             {cardContent.value === 'scorm' && <ScromCardLayout data={cardContent} moduleData={moduleData} onClose={onClose} />}
+            {cardContent.value === 'quiz' && <ObjectiveQuiz data={cardContent} moduleData={moduleData} onClose={onClose} />}
 
         </Dialog>
     )

@@ -11,9 +11,12 @@ import Grid from '@mui/material/Grid2'
 import Card from '@mui/material/Card'
 import Typography from '@mui/material/Typography'
 import { CardContent, CardHeader, CardActions } from '@mui/material'
+
 import Button from '@mui/material/Button'
 
 import { toast } from 'react-toastify'
+
+import DirectionalIcon from '@components/DirectionalIcon'
 
 import CustomInputVertical from '@core/components/custom-inputs/Vertical'
 
@@ -311,6 +314,7 @@ const ModuleTypes = ({ setShowCards, source, setOpen, onSelectSlideFromPopup, mo
     const initialSelected = data.filter(item => item.isSelected)[data.filter(item => item.isSelected).length - 1].value
 
     // States
+    const public_url = process.env.NEXT_PUBLIC_ASSETS_URL;
     const [selected, setSelected] = useState(initialSelected)
     const [loading, setLoading] = useState(false)
     const [showContents, setShowContents] = useState(false)
@@ -320,6 +324,11 @@ const ModuleTypes = ({ setShowCards, source, setOpen, onSelectSlideFromPopup, mo
     const router = useRouter();
 
     const handleChange = async (row) => {
+        if (source == 'popup') {
+
+            setOpen(false);
+        }
+
         const matched = data.find(item => item.value === row.value);
 
         setSelected(matched);
@@ -389,18 +398,31 @@ const ModuleTypes = ({ setShowCards, source, setOpen, onSelectSlideFromPopup, mo
                                     <div className='flex items-center justify-between gap-4 flex-wrap'>
                                         {/* Left: Icon + Title */}
                                         <div className='flex items-center gap-3'>
-                                            {/* SVG Icon */}
-                                            <div className='w-8 h-8 text-primary'>
-                                                <svg viewBox='0 0 24 24' fill='currentColor' className='w-full h-full'>
-                                                    <path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z' />
-                                                </svg>
+                                            {/* Image/Icon */}
+                                            <div className='w-10 h-10 rounded-lg overflow-hidden bg-gray-100 shadow-sm flex items-center justify-center'>
+                                                {moduleData?.image ? (
+                                                    <img
+                                                        src={`${public_url}/${moduleData.image}`}
+                                                        alt='Module Preview'
+                                                        className='object-cover w-full h-full'
+                                                    />
+                                                ) : (
+                                                    <svg
+                                                        viewBox='0 0 24 24'
+                                                        fill='currentColor'
+                                                        className='w-6 h-6 text-gray-400'
+                                                    >
+                                                        <path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z' />
+                                                    </svg>
+                                                )}
                                             </div>
 
                                             {/* Title */}
                                             <Typography variant='h6' className='text-xl font-semibold text-textPrimary'>
-                                                {`${moduleData?.title} module` || 'Untitled Module'}
+                                                {moduleData?.title ? `${moduleData.title} module` : 'Untitled Module'}
                                             </Typography>
                                         </div>
+
 
                                         {/* Right: Edit & Back Buttons */}
                                         <div className='flex items-center gap-2'>
@@ -450,22 +472,25 @@ const ModuleTypes = ({ setShowCards, source, setOpen, onSelectSlideFromPopup, mo
                                         selected={selected?.value}
                                         name='custom-radios-icons'
                                         handleChange={() => handleChange(item)}
+                                        disabled={true}
                                         gridProps={{ size: { xs: 12, sm: 3 } }}
                                     />
                                 )
                             })}
                         </Grid>
                     </CardContent>
-                    <CardActions sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
-                        {/* <Button
-                            type='button'
-                            variant='contained'
-                            onClick={handleAddCard}
-                            disabled={!selected}
-                            sx={{ height: 40 }}
-                        >
-                            Next
-                        </Button> */}
+                    <CardActions sx={{ display: 'flex', justifyContent: 'left', gap: 2 }}>
+                        {!onSelectSlideFromPopup &&
+                            <Button
+                                type='button'
+                                variant='outlined'
+                                component={Link}
+                                href={getLocalizedUrl(`/apps/modules`, locale)}
+                                startIcon={<DirectionalIcon ltrIconClass='tabler-arrow-left' rtlIconClass='tabler-arrow-right' />}
+                            >
+                                Back to Modules
+                            </Button>
+                        }
                     </CardActions>
                 </Card>) :
                 (<ManageContentsCard
