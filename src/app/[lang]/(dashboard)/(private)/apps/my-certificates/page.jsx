@@ -37,8 +37,6 @@ const MyCertificate = async ({ params }) => {
 
     const { lang: lang } = await params;
 
-    console.log("Params", lang);
-
     return (
         <>
             <PermissionGuard locale={lang} element={'isUser'}>

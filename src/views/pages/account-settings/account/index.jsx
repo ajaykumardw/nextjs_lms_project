@@ -11,9 +11,9 @@ const Account = () => {
       <Grid size={{ xs: 12 }}>
         <AccountDetails />
       </Grid>
-      <Grid size={{ xs: 12 }}>
+      {/* <Grid size={{ xs: 12 }}>
         <AccountDelete />
-      </Grid>
+      </Grid> */}
     </Grid>
   )
 }
