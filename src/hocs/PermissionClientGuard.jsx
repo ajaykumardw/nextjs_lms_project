@@ -71,7 +71,9 @@ export default function PermissionGuard({ children, locale, element }) {
             if (!allowed) {
                 if (permissions?.isUser) {
                     router.replace(`/${locale}/dashboards/user/learner`);
-                } else {
+                } 
+                
+                if (permissions?.notUser) {
                     router.replace(`/${locale}/dashboards/crm`);
                 }
             } else {
