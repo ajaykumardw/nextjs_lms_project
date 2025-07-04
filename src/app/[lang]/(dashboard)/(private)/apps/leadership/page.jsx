@@ -80,10 +80,10 @@ export default function LeadershipBoard() {
                                 {user.initials}
                             </Avatar>
                             <Box>
-                                <Typography fontWeight="bold">{user.name}</Typography>
-                                <Typography variant="body2" color="text.secondary">
+                                <Typography fontWeight="bold" color='#000'>{user.name}</Typography>
+                                <Typography variant="body2" color="text.secondary" style={{ color: "#000" }}>
                                     🏅 Rank {user.rank} &nbsp;&nbsp; 🛡️ Points{' '}
-                                    <Typography component="span" color="primary" fontWeight="medium">
+                                    <Typography component="span" color="primary" fontWeight="medium" style={{ color: "#000" }}>
                                         {user.points}
                                     </Typography>
                                 </Typography>
@@ -187,7 +187,7 @@ export default function LeadershipBoard() {
                                         key={index}
                                         elevation={2}
                                         sx={{
-                                            gap:6,
+                                            gap: 6,
                                             display: 'flex',
                                             justifyContent: 'space-between',
                                             alignItems: 'center',
