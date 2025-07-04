@@ -19,7 +19,7 @@ const fetchPermission = async (url, token) => {
         });
 
         if (!response.ok) {
-            console.error('Permission API error:', await response.text());
+            console.error('Permission API error 1st:', await response.text());
 
             return null;
         }
@@ -69,13 +69,15 @@ export default function PermissionGuard({ children, locale, element }) {
                 (!Array.isArray(allowedPermissions) || allowedPermissions.includes(listingId));
 
             if (!allowed) {
-                if (permissions?.isUser) {
-                    router.replace(`/${locale}/dashboards/user/learner`);
-                } 
+
+               if (permissions?.isUser) {
+                     redirect(`/${locale}/dashboards/user/${'learner'}`);
+               }
+        
+               if (permissions?.notUser) {
+                    redirect(`/${locale}/dashboards/crm`);
+               }
                 
-                if (permissions?.notUser) {
-                    router.replace(`/${locale}/dashboards/crm`);
-                }
             } else {
                 setIsAllowed(true);
             }
