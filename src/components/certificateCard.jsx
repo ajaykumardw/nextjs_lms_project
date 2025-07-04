@@ -50,7 +50,7 @@ const CertificateCard = ({ searchValue }) => {
             const blob = await response.blob()
 
             const reader = new FileReader()
-            
+
             reader.onloadend = () => {
                 const imgData = reader.result
                 const pageWidth = pdf.internal.pageSize.getWidth()
@@ -105,7 +105,7 @@ const CertificateCard = ({ searchValue }) => {
                                     <div style={{ inlineSize: 'calc(50% - 12px)' }}>
                                         <Typography variant="body2" color="text.secondary">
                                             <strong>Issued By:</strong>{' '}
-                                            {certificate.issued_by === 'DW' ? 'Disprz' : certificate.issued_by}
+                                            {certificate.issued_by}
                                         </Typography>
                                     </div>
                                     <div style={{ inlineSize: 'calc(50% - 12px)' }}>

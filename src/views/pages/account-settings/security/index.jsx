@@ -14,18 +14,18 @@ const Security = () => {
       <Grid size={{ xs: 12 }}>
         <ChangePasswordCard />
       </Grid>
-      <Grid size={{ xs: 12 }}>
+      {/* <Grid size={{ xs: 12 }}>
         <TwoFactorAuthenticationCard />
-      </Grid>
-      <Grid size={{ xs: 12 }}>
+      </Grid> */}
+      {/* <Grid size={{ xs: 12 }}>
         <CreateApiKey />
-      </Grid>
-      <Grid size={{ xs: 12 }}>
+      </Grid> */}
+      {/* <Grid size={{ xs: 12 }}>
         <ApiKeyList />
-      </Grid>
-      <Grid size={{ xs: 12 }}>
+      </Grid> */}
+      {/* <Grid size={{ xs: 12 }}>
         <RecentDevicesTable />
-      </Grid>
+      </Grid> */}
     </Grid>
   )
 }

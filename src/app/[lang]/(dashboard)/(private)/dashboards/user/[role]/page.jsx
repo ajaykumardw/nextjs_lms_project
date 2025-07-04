@@ -1,9 +1,9 @@
 import LogisticsDashboard from '../../../apps/dashboard/page'
 import PermissionGuard from '@/hocs/PermissionGuard';
 
-export default function UserDashboard({ params }) {
+export default async function UserDashboard({ params }) {
 
-    const locale = params.lang;
+    const locale = await params?.lang;
 
     return (
         <>
