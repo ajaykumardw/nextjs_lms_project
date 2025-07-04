@@ -43,13 +43,7 @@ export default function PermissionGuard({ children, locale, element }) {
         const checkPermission = async () => {
             if (status === 'loading') return;
 
-            if (!session) {
-                router.replace(`/${locale}/login`);
-
-                return;
-            }
-
-            const token = session.user?.token;
+            const token = session?.user?.token;
             const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
             if (!token || !API_URL) {

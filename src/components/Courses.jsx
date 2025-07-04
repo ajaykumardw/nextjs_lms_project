@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 
 // MUI
-import Grid from '@mui/material/Grid'
+import Grid from '@mui/material/Grid2'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
@@ -37,7 +37,7 @@ const Courses = ({ searchValue, type }) => {
   return (
     <Grid container spacing={6}>
       {filteredCourses.map((course, index) => (
-        <Grid item key={index} xs={12} sm={6} md={4} lg={3}>
+        <Grid item key={index} size={{ xs: 12, sm: 6, lg: 4 }}>
           <Card
             className='rounded-xl shadow-md transition-all duration-300 hover:shadow-lg hover:scale-[1.02] hover:border-primary'
             sx={{

@@ -57,7 +57,15 @@ const liveList = [{
     courseTitle: 'React for Beginners',
     tags: 'Web',
     percentage: 40
-},];
+},
+{
+    id: 10,
+    tutorImg: '/images/apps/academy/4.png',
+    courseTitle: 'Advanced React Native',
+    tags: 'Web',
+    percentage: 40
+}
+];
 
 const loocList = [
     {
