@@ -72,16 +72,6 @@ const defaultSuggestions = [
         href: '/pages/account-settings',
         icon: 'tabler-settings'
       },
-      {
-        label: 'Pricing',
-        href: '/pages/pricing',
-        icon: 'tabler-currency-dollar'
-      },
-      {
-        label: 'FAQ',
-        href: '/pages/faq',
-        icon: 'tabler-help-circle'
-      }
     ]
   },
   {

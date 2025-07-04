@@ -170,32 +170,10 @@ const Footer = ({ mode }) => {
           )}
         >
           <Typography className='text-white' variant='body2'>
-            <span>{`© ${new Date().getFullYear()}, Made with `}</span>
-            <span>{`❤️`}</span>
+            <span>{`©2025 , Made with `}</span>
             <span>{` by `}</span>
-            <Link href='https://pixinvent.com/' target='_blank' className='font-medium text-white'>
-              Pixinvent
-            </Link>
+            <span>DreamWeavers</span>
           </Typography>
-          <div className='flex gap-1.5 items-center'>
-            <IconButton component={Link} size='small' href='https://github.com/pixinvent' target='_blank'>
-              <i className='tabler-brand-github-filled text-white text-lg' />
-            </IconButton>
-            <IconButton component={Link} size='small' href='https://www.facebook.com/pixinvents/' target='_blank'>
-              <i className='tabler-brand-facebook-filled text-white text-lg' />
-            </IconButton>
-            <IconButton component={Link} size='small' href='https://x.com/pixinvents' target='_blank'>
-              <i className='tabler-brand-twitter-filled text-white text-lg' />
-            </IconButton>
-            <IconButton
-              component={Link}
-              size='small'
-              href='https://www.youtube.com/channel/UClOcB3o1goJ293ri_Hxpklg'
-              target='_blank'
-            >
-              <i className='tabler-brand-youtube-filled text-white text-lg' />
-            </IconButton>
-          </div>
         </div>
       </div>
     </footer>

@@ -195,7 +195,7 @@ const Courses = ({ tabContentList }) => {
     return (
         <TabContext value={activeTab}>
             <Grid container spacing={6}>
-                <Grid size={{ xs: 12, md: 4 }}>
+                <Grid size={{ xs: 12, md: 3 }}>
                     <Typography variant='h5' className='mbe-4'>
                         My Courses
                     </Typography>
