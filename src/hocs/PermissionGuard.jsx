@@ -67,7 +67,8 @@ export default async function PermissionGuardServer({ children, locale, element 
     ) {
         if (permissions?.isUser) {
             redirect(`/${locale}/dashboards/user/${'learner'}`);
-        } else {
+        }
+        if (permissions?.notUser) {
             redirect(`/${locale}/dashboards/crm`);
         }
     }
