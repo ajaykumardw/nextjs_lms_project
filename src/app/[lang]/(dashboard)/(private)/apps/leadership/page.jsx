@@ -97,7 +97,9 @@ export default function LeadershipBoard() {
                         sx={{
                             p: 4,
                             borderRadius: 3,
+                            
                             // backgroundColor: '#bhh23',
+
                             display: 'flex',
                             justifyContent: 'center',
                             alignItems: 'flex-end',
