@@ -315,7 +315,7 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
               <MenuItem href={`/${locale}/apps/user/view`}>{dictionary['navigation'].view_plural}</MenuItem>
             </SubMenu>
           )}
-          {permissArray?.isCompany && (
+          {permissArray?.isCompany && permissArray?.hasGroupPermission && (
             <SubMenu label="Groups" icon={<i className="tabler-users" />}>
               <MenuItem key="Role" href={`/${locale}/apps/group`}>Group</MenuItem>
             </SubMenu>

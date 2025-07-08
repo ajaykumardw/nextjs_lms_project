@@ -175,7 +175,7 @@ const GroupTable = ({ tableData, fetchRoleData }) => {
       header: 'Actions',
       cell: ({ row }) => (
         <div className='flex items-center'>
-          {row.original.created_by != '6811ae35704460d978b84eaa' && permissions['hasRoleEditPermission'] && (
+          {permissions?.['hasGroupEditPermission'] && (
             <IconButton
               onClick={() => {
                 setSelectedRole(row.original)
@@ -312,6 +312,7 @@ const GroupTable = ({ tableData, fetchRoleData }) => {
           setOpen={setOpenDialog}
           selectedRole={selectedRole}
           fetchRoleData={fetchRoleData}
+          permissionArr={permissions}
         />
       )}
     </Card>

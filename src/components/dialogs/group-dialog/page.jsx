@@ -40,7 +40,7 @@ const schema = object({
     users: pipe(array(string()), minLength(1, 'At least one user must be selected'))
 })
 
-const GroupDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole, tableData }) => {
+const GroupDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole, tableData, permissionArr }) => {
     const { data: session } = useSession()
     const token = session?.user?.token
     const API_URL = process.env.NEXT_PUBLIC_API_URL
@@ -79,14 +79,14 @@ const GroupDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole, t
     const filteredUsers = useMemo(() => {
         return userList.filter(user => {
             const content = `${user.first_name} ${user.last_name} ${user.email}`.toLowerCase()
-            
+
             return content.includes(search.toLowerCase())
         })
     }, [userList, search])
 
     const paginatedUsers = useMemo(() => {
         const start = pagination.pageIndex * pagination.pageSize
-        
+
         return filteredUsers.slice(start, start + pagination.pageSize)
     }, [filteredUsers, pagination])
 
@@ -111,9 +111,9 @@ const GroupDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole, t
                     Authorization: `Bearer ${token}`
                 }
             })
-            
+
             const data = await response.json()
-            
+
             if (response.ok) {
                 setUserList(data?.data?.company || [])
             }
@@ -145,7 +145,7 @@ const GroupDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole, t
         if (matchUserId.length > 0 && userList.length > 0) {
             const validMatchedIds = matchUserId.filter(id => userList.some(user => user._id === id))
             const updatedUsers = Array.from(new Set([...selectedUsers, ...validMatchedIds]))
-            
+
             setValue('users', updatedUsers, { shouldValidate: true })
         }
     }, [matchUserId, userList])
@@ -164,7 +164,7 @@ const GroupDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole, t
 
     const submitData = async (values) => {
         setLoading(true)
-        
+
         try {
             const response = await fetch(
                 selectedRole ? `${API_URL}/company/group/${selectedRole._id}` : `${API_URL}/company/group`,
@@ -177,7 +177,7 @@ const GroupDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole, t
                     body: JSON.stringify(values)
                 }
             )
-            
+
             const data = await response.json()
 
             if (response.ok) {
@@ -227,14 +227,14 @@ const GroupDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole, t
                                 variant="outlined"
                                 onKeyDown={(e) => {
                                     const allowed = ['Backspace', 'Tab', 'ArrowLeft', 'ArrowRight', 'Delete', ' ']
-                                    
+
                                     if (!/^[a-zA-Z ]$/.test(e.key) && !allowed.includes(e.key)) {
                                         e.preventDefault()
                                     }
                                 }}
                                 onPaste={(e) => {
                                     const paste = e.clipboardData.getData('text')
-                                    
+
                                     if (!/^[a-zA-Z ]+$/.test(paste)) {
                                         e.preventDefault()
                                     }
@@ -310,12 +310,14 @@ const GroupDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole, t
                     </FormControl>
 
                     {/* Users */}
-                    <div className="flex items-center justify-between">
-                        <Typography variant="h6">User List <span>*</span></Typography>
-                        <Button variant="outlined" onClick={() => setIsImport(true)}>
-                            <i className="tabler-upload" style={{ marginRight: 5 }} /> Import user
-                        </Button>
-                    </div>
+                    {permissionArr?.hasGroupImportData && (
+                        <div className="flex items-center justify-between">
+                            <Typography variant="h6">User List <span>*</span></Typography>
+                            <Button variant="outlined" onClick={() => setIsImport(true)}>
+                                <i className="tabler-upload" style={{ marginRight: 5 }} /> Import user
+                            </Button>
+                        </div>
+                    )}
 
                     <div className="space-y-6">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -351,7 +353,7 @@ const GroupDialog = ({ open, setOpen, title = '', fetchRoleData, selectedRole, t
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                             {paginatedUsers.map((user, index) => {
                                 const activeCode = user.codes?.find(c => c.type === 'active')?.code
-                                
+
                                 return (
                                     <div key={user._id || index} className="border p-3 rounded-md shadow-sm">
                                         <FormControlLabel
