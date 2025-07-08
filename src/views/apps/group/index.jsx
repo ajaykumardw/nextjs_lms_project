@@ -15,7 +15,7 @@ import GroupCard from './GroupCards'
 
 import GroupTable from './GroupTable'
 
-const Roles = () => {
+const Group = () => {
 
   const [roleData, setRoleData] = useState();
   const [loading, setLoading] = useState(false);
@@ -83,4 +83,4 @@ const Roles = () => {
   )
 }
 
-export default Roles
+export default Group
