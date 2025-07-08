@@ -5,7 +5,7 @@ import React, { useState, useMemo, useEffect } from 'react'
 import {
     Dialog, DialogTitle, DialogActions, Typography, Button,
     Card, CardContent, Alert, Avatar, IconButton, List,
-    ListItem, LinearProgress
+    ListItem, LinearProgress, MenuItem
 } from '@mui/material'
 
 import * as XLSX from 'xlsx'
@@ -15,7 +15,6 @@ import classnames from 'classnames'
 import { toast } from 'react-toastify'
 
 import { useDropzone } from 'react-dropzone'
-
 
 import { useSession } from 'next-auth/react'
 
@@ -31,18 +30,40 @@ import {
     getSortedRowModel
 } from '@tanstack/react-table'
 
+import CustomTextField from '@/@core/components/mui/TextField'
+
 import AppReactDropzone from '@/libs/styles/AppReactDropzone'
 
 import DialogCloseButton from './dialogs/DialogCloseButton'
+
+import TablePaginationComponent from '@components/TablePaginationComponent'
 
 import tableStyles from '@core/styles/table.module.css'
 
 const fuzzyFilter = (row, columnId, value, addMeta) => {
     const itemRank = rankItem(row.getValue(columnId), value)
-    
+
     addMeta({ itemRank })
-    
+
     return itemRank.passed
+}
+
+const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...props }) => {
+    const [value, setValue] = useState(initialValue)
+
+    useEffect(() => {
+        setValue(initialValue)
+    }, [initialValue])
+
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            onChange(value)
+        }, debounce)
+
+        return () => clearTimeout(timeout)
+    }, [value])
+
+    return <CustomTextField {...props} value={value} onChange={e => setValue(e.target.value)} />
 }
 
 const ImportComponent = ({ open, onClose, setMatchUserId, matchUserId }) => {
@@ -86,7 +107,7 @@ const ImportComponent = ({ open, onClose, setMatchUserId, matchUserId }) => {
 
         try {
             const queryParam = encodeURIComponent(JSON.stringify(data))
-            
+
             const response = await fetch(`${URL}/company/check/group/empId/${queryParam}`, {
                 method: 'GET',
                 headers: {
@@ -138,7 +159,7 @@ const ImportComponent = ({ open, onClose, setMatchUserId, matchUserId }) => {
             setSRNOArr([])
 
             const reader = new FileReader()
-            
+
             reader.onload = async (e) => {
                 try {
                     const arrayBuffer = e.target.result
@@ -152,7 +173,7 @@ const ImportComponent = ({ open, onClose, setMatchUserId, matchUserId }) => {
 
                     if (missing.length) {
                         setMissingHeaders(missing)
-                        
+
                         return
                     }
 
@@ -215,6 +236,30 @@ const ImportComponent = ({ open, onClose, setMatchUserId, matchUserId }) => {
 
     const TableImportComponent = () => (
         <Card className='mt-4'>
+            <CardContent className='flex justify-between flex-col gap-4 items-start sm:flex-row sm:items-center'>
+                <div className='flex items-center gap-2'>
+                    <Typography>Show</Typography>
+                    <CustomTextField
+                        select
+                        value={table.getState().pagination.pageSize}
+                        onChange={e => table.setPageSize(Number(e.target.value))}
+                        className='max-sm:is-full sm:is-[70px]'
+                    >
+                        <MenuItem value={10}>10</MenuItem>
+                        <MenuItem value={25}>25</MenuItem>
+                        <MenuItem value={50}>50</MenuItem>
+                        <MenuItem value={200}>200</MenuItem>
+                    </CustomTextField>
+                </div>
+                <div className='flex gap-4 flex-col !items-start max-sm:is-full sm:flex-row sm:items-center'>
+                    <DebouncedInput
+                        value={globalFilter ?? ''}
+                        className='max-sm:is-full min-is-[250px]'
+                        onChange={value => setGlobalFilter(String(value))}
+                        placeholder='Search Employee ID'
+                    />
+                </div>
+            </CardContent>
             <div className='overflow-x-auto'>
                 <table className={tableStyles.table}>
                     <thead>
@@ -257,6 +302,7 @@ const ImportComponent = ({ open, onClose, setMatchUserId, matchUserId }) => {
                     </tbody>
                 </table>
             </div>
+            <TablePaginationComponent table={table} />
         </Card>
     )
 

@@ -152,6 +152,14 @@ const GroupTable = ({ tableData, fetchRoleData }) => {
         </Typography>
       )
     }),
+    columnHelper.accessor('userId', {
+      header: 'Total users',
+      cell: ({ row }) => (
+        <Typography variant='body2' color='text.secondary'>
+          {row.original.userId.length}
+        </Typography>
+      )
+    }),
     columnHelper.accessor('status', {
       header: 'Status',
       cell: ({ row }) => (
