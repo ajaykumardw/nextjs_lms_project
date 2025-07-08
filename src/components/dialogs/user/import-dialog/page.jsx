@@ -124,7 +124,7 @@ const ImportDialog = ({ open, setOpen }) => {
               ) : null}
             </AppReactDropzone>
 
-            {data.length > 0 ? tableItems : ''}
+            {/* {data.length > 0 ? tableItems : ''} */}
 
 
           </>

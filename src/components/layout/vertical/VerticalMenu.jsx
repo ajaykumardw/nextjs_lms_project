@@ -267,8 +267,13 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
               <MenuItem key="Role" href={`/${locale}/apps/role`}>Roles</MenuItem>
             </SubMenu>
           )}
+          {permissArray?.isCompany && (
+            <SubMenu label="Groups" icon={<i className="tabler-user" />}>
+              <MenuItem key="Role" href={`/${locale}/apps/group`}>Group</MenuItem>
+            </SubMenu>
+          )}
           {permissArray?.isCompany && (permissArray?.hasZonePermission || permissArray?.hasRegionPermission || permissArray?.hasBranchPermission || permissArray?.hasChannelPermission || permissArray?.hasDepartmentPermission || permissArray?.hasDesignationPermission) && (
-            <SubMenu label={dictionary['navigation']['manage-organization_plural']} icon={<i className='tabler-user' />}>
+            <SubMenu label={dictionary['navigation']['manage-organization_plural']} icon={<i className='tabler-world' />}>
               {permissArray?.hasZonePermission && (
                 <MenuItem href={`/${locale}/apps/zones`}>
                   {dictionary['navigation'].zone_plural}

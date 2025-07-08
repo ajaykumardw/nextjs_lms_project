@@ -11,11 +11,11 @@ import Grid from '@mui/material/Grid2'
 
 import SkeletonTableComponent from '@/components/skeleton/table/page'
 
-import RoleCards from './RoleCards'
+import GroupCard from './GroupCards'
 
-import RolesTable from './RolesTable'
+import GroupTable from './GroupTable'
 
-const Role = () => {
+const Roles = () => {
 
   const [roleData, setRoleData] = useState();
   const [loading, setLoading] = useState(false);
@@ -28,7 +28,7 @@ const Role = () => {
 
   async function fetchRoleData() {
     try {
-      const response = await fetch(`${URL}/company/role`,
+      const response = await fetch(`${URL}/company/group`,
         {
           method: "GET",
           headers: {
@@ -64,25 +64,15 @@ const Role = () => {
     <Grid container spacing={6}>
       <Grid size={{ xs: 12 }}>
         <Typography variant='h4' className='mbe-1'>
-          Roles List
-        </Typography>
-        <Typography>
-          A role provided access to predefined menus and features so that depending on assigned role an administrator
-          can have access to what he need
+          Group List
         </Typography>
       </Grid>
       <Grid size={{ xs: 12 }}>
-        <RoleCards fetchRoleData={fetchRoleData} tableData={roleData} />
-      </Grid>
-      <Grid size={{ xs: 12 }} className='!pbs-12'>
-        <Typography variant='h4' className='mbe-1'>
-          Total users with their roles
-        </Typography>
-        <Typography>Find all of your company&#39;s administrator accounts and their associate roles.</Typography>
+        <GroupCard fetchRoleData={fetchRoleData} tableData={roleData} />
       </Grid>
       <Grid size={{ xs: 12 }}>
         {roleData ? (
-          <RolesTable tableData={roleData} fetchRoleData={fetchRoleData} />
+          <GroupTable tableData={roleData} fetchRoleData={fetchRoleData} />
         )
           : (
             <SkeletonTableComponent />
@@ -93,4 +83,4 @@ const Role = () => {
   )
 }
 
-export default Role
+export default Roles
