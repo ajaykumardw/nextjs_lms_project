@@ -51,7 +51,7 @@ const GroupCard = ({ fetchRoleData, tableData }) => {
   return (
     <Grid container spacing={6}>
       {/* Add Role Card */}
-      {permissions && permissions?.['hasRoleAddPermission'] && (
+      {permissions && permissions?.['hasGroupAddPermission'] && (
         <Grid xs={12} sm={6} lg={4}>
           <OpenDialogOnElementClick
             element={Card}

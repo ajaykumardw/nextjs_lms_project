@@ -11,7 +11,7 @@ export default function GroupApp({ params }) {
     const locale = params.lang;
 
     return (
-        <PermissionGuard locale={locale} element={'hasRolePermission'}>
+        <PermissionGuard locale={locale} element={'hasGroupPermission'}>
             <Group />
         </PermissionGuard>
     )
