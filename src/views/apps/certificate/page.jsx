@@ -45,7 +45,7 @@ const schema = object({
 
 const CertificateForm = () => {
     const assert_url = process.env.NEXT_PUBLIC_ASSETS_URL || ''
-    const signature_url = `${assert_url}/signature/signature.png`
+    const signature_url = `${assert_url}/signature/signature1.png`
     const logo_url = `${assert_url}/company_logo/demo39.svg`
 
     const [customBg, setCustomBg] = useState(null)
