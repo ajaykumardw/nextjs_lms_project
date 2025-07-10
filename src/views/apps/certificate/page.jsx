@@ -181,7 +181,7 @@ const CertificateForm = () => {
                                         <Typography>{formData.signatureContent}</Typography>
                                     </Box>
                                     <Box>
-                                        <Image src={formData.signature2URL} alt="Signature 2" width={50} height={20} />
+                                        <img src={formData.signature2URL} alt="Signature 2" width={50} height={20} />
                                         <Typography fontWeight="bold">{formData.signature2Name}</Typography>
                                         <Typography>{formData.signature2Content}</Typography>
                                     </Box>
