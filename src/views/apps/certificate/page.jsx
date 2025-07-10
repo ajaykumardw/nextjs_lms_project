@@ -176,7 +176,7 @@ const CertificateForm = () => {
                             {formData.signature2Name && (
                                 <Box mt={6} display="flex" justifyContent="space-between" gap={formData.signature2Name ? 6 : 0}>
                                     <Box>
-                                        <Image src={`${formData.signature1URL}`} alt="Signature 1" width={50} height={20} />
+                                        <img src={`${formData.signature1URL}`} alt="Signature 1" width={50} height={20} />
                                         <Typography fontWeight="bold">{formData.signatureName}</Typography>
                                         <Typography>{formData.signatureContent}</Typography>
                                     </Box>
