@@ -92,7 +92,7 @@ const CertificateForm = () => {
 
         if (file) {
             const url = URL.createObjectURL(file)
-            
+
             setCustomBg(url)
             handleBgChange(url)
         }
@@ -100,10 +100,10 @@ const CertificateForm = () => {
 
     const handleSignature1URL = (e) => {
         const file = e.target.files?.[0]
-        
+
         if (file) {
             const url = URL.createObjectURL(file)
-            
+
             setSignature1(url)
             setFormData(prev => ({ ...prev, signature1URL: url }))
         }
@@ -111,10 +111,10 @@ const CertificateForm = () => {
 
     const handleSignature2URL = (e) => {
         const file = e.target.files?.[0]
-        
+
         if (file) {
             const url = URL.createObjectURL(file)
-            
+
             setSignature2(url)
             setFormData(prev => ({ ...prev, signature2URL: url }))
         }
@@ -122,10 +122,10 @@ const CertificateForm = () => {
 
     const handleLogo = (e) => {
         const file = e.target.files?.[0]
-        
+
         if (file) {
             const url = URL.createObjectURL(file)
-            
+
             setLogoURL(url)
             setFormData(prev => ({ ...prev, logoURL: url }))
         }
@@ -166,7 +166,7 @@ const CertificateForm = () => {
                             {!formData.signature2Name && (
                                 <Box mt={6} display="flex" justifyContent="center" gap={formData.signature2Name ? 6 : 0}>
                                     <Box>
-                                        <Image src={formData.signature1URL} alt="Signature 1" width={100} height={40} />
+                                        <Image src={`${formData.signature1URL}`} alt="Signature 1" width={100} height={40} />
                                         <Typography fontWeight="bold">{formData.signatureName}</Typography>
                                         <Typography>{formData.signatureContent}</Typography>
                                     </Box>
@@ -176,7 +176,7 @@ const CertificateForm = () => {
                             {formData.signature2Name && (
                                 <Box mt={6} display="flex" justifyContent="space-between" gap={formData.signature2Name ? 6 : 0}>
                                     <Box>
-                                        <Image src={formData.signature1URL} alt="Signature 1" width={50} height={20} />
+                                        <Image src={`${formData.signature1URL}`} alt="Signature 1" width={50} height={20} />
                                         <Typography fontWeight="bold">{formData.signatureName}</Typography>
                                         <Typography>{formData.signatureContent}</Typography>
                                     </Box>
@@ -245,7 +245,7 @@ const CertificateForm = () => {
                         <Grid container spacing={2}>
                             {presetBackgrounds.map((img, idx) => {
                                 const fullPath = `${assert_url}${img.src}`
-                                
+
                                 return (
                                     <Grid item xs={4} sm={3} key={idx}>
                                         <Card
