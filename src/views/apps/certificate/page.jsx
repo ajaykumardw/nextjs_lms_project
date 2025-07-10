@@ -132,13 +132,21 @@ const CertificateForm = () => {
     }
 
     return (
-        <Box p={4} display="flex" flexDirection={{ xs: 'column', md: 'row' }} gap={6}>
+        <Box p={4} display="flex" flexDirection={{ xs: 'column', md: 'row' }} bgcolor={"#fff"} gap={6}>
             {/* Certificate Preview */}
-            <Box width={{ xs: '100%', md: '40%' }}>
+            <Box
+                width={{ xs: '100%', md: '40%' }}
+                sx={{
+                    position: 'sticky',
+                    insetBlockStart: 112, // Adjust based on your layout spacing
+                    alignSelf: 'flex-start', // Ensures it doesn't stretch vertically
+                }}
+            >
+                <Typography variant="h5" gutterBottom>Create Certificate Template</Typography>
                 <Card
                     variant="outlined"
                     sx={{
-                        width: '100%',
+                        inlineSize: '100%',
                         backgroundImage: formData.backgroundImage ? `url(${formData.backgroundImage})` : 'none',
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
@@ -195,7 +203,6 @@ const CertificateForm = () => {
 
             {/* Form Section */}
             <Box width={{ xs: '100%', md: '60%' }}>
-                <Typography variant="h6" gutterBottom>Create Certificate Template</Typography>
 
                 <Grid container spacing={3}>
                     {/* <Grid item size={{ xs: 12 }}>
@@ -215,9 +222,9 @@ const CertificateForm = () => {
 
                     {/* Signature 2 Upload */}
                     <Grid item size={{ xs: 12 }}>
-                        <Typography variant="body2" gutterBottom>Upload Signature 2</Typography>
+                        <Typography variant="body2" gutterBottom>Upload Logo</Typography>
                         <Grid container spacing={2}>
-                            <Grid item xs={6} sm={4} md={3}>
+                            <Grid item size={{ xs: 6 }} width={0.2} sm={4} md={3}>
                                 <Card
                                     sx={{
                                         border: formData.logoURL === logoURL ? '2px solid #1976d2' : '2px solid transparent',
@@ -227,7 +234,7 @@ const CertificateForm = () => {
                                     onClick={() => setFormData({ ...formData, logoURL: logoURL })}
                                 >
                                     <CardActionArea>
-                                        <CardMedia component="img" height="100" image={logoURL} alt="Signature 2" />
+                                        <CardMedia component="img" image={logoURL} alt="Signature 2" />
                                     </CardActionArea>
                                 </Card>
                             </Grid>
@@ -263,7 +270,7 @@ const CertificateForm = () => {
                                 )
                             })}
                             {customBg && (
-                                <Grid item xs={4} sm={3}>
+                                <Grid item xs={4} sm={3} width={"105px"} height={'100%'}>
                                     <Card
                                         sx={{
                                             border: formData.backgroundImage === customBg ? '2px solid #1976d2' : '2px solid transparent',
@@ -272,7 +279,7 @@ const CertificateForm = () => {
                                         }}
                                     >
                                         <CardActionArea onClick={() => handleBgChange(customBg)}>
-                                            <CardMedia component="img" height="80" image={customBg} alt="Custom" />
+                                            <CardMedia component="img" image={customBg} alt="Custom" />
                                         </CardActionArea>
                                     </Card>
                                 </Grid>
@@ -287,69 +294,114 @@ const CertificateForm = () => {
                     </Grid>
 
                     {/* Text Inputs */}
-                    {['title', 'content', 'content2', 'signatureName', 'signatureContent', 'signature2Name', 'signature2Content'].map((key, i) => (
-                        <Grid item size={{ xs: 12 }} key={i}>
-                            <TextField
-                                fullWidth
-                                label={key.replace(/([A-Z])/g, ' $1').replace('signature', 'Signature')}
-                                value={formData[key]}
-                                onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
-                            />
+                    <>
+                        {['title', 'content', 'content2'].map((key, i) => (
+                            <Grid item size={{ xs: 12 }} key={key}>
+                                <TextField
+                                    fullWidth
+                                    label={key.replace(/([A-Z])/g, ' $1')}
+                                    value={formData[key]}
+                                    onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
+                                />
+                            </Grid>
+                        ))}
+
+                        {/* Signature 1 and 2 grouped in one row */}
+                        <Grid container spacing={2}>
+                            <Grid item size={{ xs: 6 }}>
+                                <TextField
+                                    fullWidth
+                                    label="Signature 1 Name"
+                                    value={formData.signatureName}
+                                    onChange={(e) => setFormData({ ...formData, signatureName: e.target.value })}
+                                />
+                            </Grid>
+                            <Grid item size={{ xs: 6 }}>
+                                <TextField
+                                    fullWidth
+                                    label="Signature 1 Content"
+                                    value={formData.signatureContent}
+                                    onChange={(e) => setFormData({ ...formData, signatureContent: e.target.value })}
+                                />
+                            </Grid>
+                            <Grid item size={{ xs: 6 }}>
+                                <TextField
+                                    fullWidth
+                                    label="Signature 2 Name"
+                                    value={formData.signature2Name}
+                                    onChange={(e) => setFormData({ ...formData, signature2Name: e.target.value })}
+                                />
+                            </Grid>
+                            <Grid item size={{ xs: 6 }}>
+                                <TextField
+                                    fullWidth
+                                    label="Signature 2 Content"
+                                    value={formData.signature2Content}
+                                    onChange={(e) => setFormData({ ...formData, signature2Content: e.target.value })}
+                                />
+                            </Grid>
                         </Grid>
-                    ))}
+                    </>
 
                     {/* Signature 1 Upload */}
-                    <Grid item size={{ xs: 12 }}>
-                        <Typography variant="body2" gutterBottom>Upload Signature 1</Typography>
-                        <Grid container spacing={2}>
-                            <Grid item xs={6} sm={4} md={3}>
-                                <Card
-                                    sx={{
-                                        border: formData.signature1URL === signature1 ? '2px solid #1976d2' : '2px solid transparent',
-                                        backgroundColor: '#fff',
-                                        borderRadius: 2,
-                                    }}
-                                    onClick={() => setFormData({ ...formData, signature1URL: signature1 })}
-                                >
-                                    <CardActionArea>
-                                        <CardMedia component="img" height="100" image={signature1} alt="Signature 1" />
-                                    </CardActionArea>
-                                </Card>
+                    <Grid container spacing={4}>
+                        {/* Signature 1 Upload */}
+                        <Grid item size={{ xs: 12, sm: 6 }}>
+                            <Typography variant="body2" gutterBottom>
+                                Upload Signature 1
+                            </Typography>
+                            <Grid container spacing={2}>
+                                <Grid item size={{ xs: 6, sm: 4, md: 3 }}>
+                                    <Card
+                                        sx={{
+                                            border: formData.signature1URL === signature1 ? '2px solid #1976d2' : '2px solid transparent',
+                                            backgroundColor: '#fff',
+                                            borderRadius: 2,
+                                        }}
+                                        onClick={() => setFormData({ ...formData, signature1URL: signature1 })}
+                                    >
+                                        <CardActionArea>
+                                            <CardMedia component="img" style={{ padding: 8 }} image={signature1} alt="Signature 1" />
+                                        </CardActionArea>
+                                    </Card>
+                                </Grid>
                             </Grid>
+                            <Box mt={2}>
+                                <Button variant="outlined" component="label">
+                                    Upload Signature
+                                    <input hidden type="file" accept="image/*" onChange={handleSignature1URL} />
+                                </Button>
+                            </Box>
                         </Grid>
-                        <Box mt={2}>
-                            <Button variant="outlined" component="label">
-                                Upload Signature
-                                <input hidden type="file" accept="image/*" onChange={handleSignature1URL} />
-                            </Button>
-                        </Box>
-                    </Grid>
 
-                    {/* Signature 2 Upload */}
-                    <Grid item size={{ xs: 12 }}>
-                        <Typography variant="body2" gutterBottom>Upload Signature 2</Typography>
-                        <Grid container spacing={2}>
-                            <Grid item xs={6} sm={4} md={3}>
-                                <Card
-                                    sx={{
-                                        border: formData.signature2URL === signature2 ? '2px solid #1976d2' : '2px solid transparent',
-                                        backgroundColor: '#fff',
-                                        borderRadius: 2,
-                                    }}
-                                    onClick={() => setFormData({ ...formData, signature2URL: signature2 })}
-                                >
-                                    <CardActionArea>
-                                        <CardMedia component="img" height="100" image={signature2} alt="Signature 2" />
-                                    </CardActionArea>
-                                </Card>
+                        {/* Signature 2 Upload */}
+                        <Grid item size={{ xs: 12, sm: 6 }} >
+                            <Typography variant="body2" gutterBottom>
+                                Upload Signature 2
+                            </Typography>
+                            <Grid container spacing={2}>
+                                <Grid item size={{ xs: 6, sm: 4, md: 3 }}>
+                                    <Card
+                                        sx={{
+                                            border: formData.signature2URL === signature2 ? '2px solid #1976d2' : '2px solid transparent',
+                                            backgroundColor: '#fff',
+                                            borderRadius: 2,
+                                        }}
+                                        onClick={() => setFormData({ ...formData, signature2URL: signature2 })}
+                                    >
+                                        <CardActionArea>
+                                            <CardMedia component="img" style={{ padding: 8 }} image={signature2} alt="Signature 2" />
+                                        </CardActionArea>
+                                    </Card>
+                                </Grid>
                             </Grid>
+                            <Box mt={2}>
+                                <Button variant="outlined" component="label">
+                                    Upload Signature
+                                    <input hidden type="file" accept="image/*" onChange={handleSignature2URL} />
+                                </Button>
+                            </Box>
                         </Grid>
-                        <Box mt={2}>
-                            <Button variant="outlined" component="label">
-                                Upload Signature
-                                <input hidden type="file" accept="image/*" onChange={handleSignature2URL} />
-                            </Button>
-                        </Box>
                     </Grid>
 
                     <Grid item size={{ xs: 12 }}>
