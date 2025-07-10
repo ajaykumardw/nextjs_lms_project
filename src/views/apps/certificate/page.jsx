@@ -1,5 +1,9 @@
 'use client'
 
+import { useState } from 'react'
+
+import Image from 'next/image'
+
 import {
     Box,
     Button,
@@ -16,10 +20,9 @@ import { useForm, Controller } from 'react-hook-form'
 import { valibotResolver } from '@hookform/resolvers/valibot'
 
 // Valibot schema
+
 import { object, string, minLength, pipe, maxLength, boolean, regex } from 'valibot'
 
-import Image from 'next/image'
-import { useState } from 'react'
 import Grid from '@mui/material/Grid2'
 
 const presetBackgrounds = [
@@ -86,8 +89,10 @@ const CertificateForm = () => {
 
     const handleUpload = (e) => {
         const file = e.target.files?.[0]
+
         if (file) {
             const url = URL.createObjectURL(file)
+            
             setCustomBg(url)
             handleBgChange(url)
         }
@@ -95,8 +100,10 @@ const CertificateForm = () => {
 
     const handleSignature1URL = (e) => {
         const file = e.target.files?.[0]
+        
         if (file) {
             const url = URL.createObjectURL(file)
+            
             setSignature1(url)
             setFormData(prev => ({ ...prev, signature1URL: url }))
         }
@@ -104,8 +111,10 @@ const CertificateForm = () => {
 
     const handleSignature2URL = (e) => {
         const file = e.target.files?.[0]
+        
         if (file) {
             const url = URL.createObjectURL(file)
+            
             setSignature2(url)
             setFormData(prev => ({ ...prev, signature2URL: url }))
         }
@@ -113,8 +122,10 @@ const CertificateForm = () => {
 
     const handleLogo = (e) => {
         const file = e.target.files?.[0]
+        
         if (file) {
             const url = URL.createObjectURL(file)
+            
             setLogoURL(url)
             setFormData(prev => ({ ...prev, logoURL: url }))
         }
@@ -234,6 +245,7 @@ const CertificateForm = () => {
                         <Grid container spacing={2}>
                             {presetBackgrounds.map((img, idx) => {
                                 const fullPath = `${assert_url}${img.src}`
+                                
                                 return (
                                     <Grid item xs={4} sm={3} key={idx}>
                                         <Card

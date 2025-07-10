@@ -1,7 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+
 import Image from 'next/image'
+
+import { redirect } from 'next/navigation';
+
 import {
     Box,
     Button,
@@ -11,10 +15,6 @@ import {
 } from '@mui/material'
 
 import Grid from '@mui/material/Grid2';
-
-import { redirect } from 'next/navigation';
-
-import CertificateForm from '@/views/apps/certificate/page';
 
 const CertificateCard = ({ teams = [], onAddTeamSubmit }) => {
     const [files, setFiles] = useState([])
@@ -29,6 +29,7 @@ const CertificateCard = ({ teams = [], onAddTeamSubmit }) => {
     const handleOpen = () => {
 
         redirect('/apps/certificate/form')
+        
         // setOpen(true)
     }
 
