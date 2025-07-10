@@ -4,7 +4,7 @@ import { useState } from 'react'
 
 import Image from 'next/image'
 
-import { redirect } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 import {
     Box,
@@ -17,29 +17,16 @@ import {
 import Grid from '@mui/material/Grid2';
 
 const CertificateCard = ({ teams = [], onAddTeamSubmit }) => {
-    const [files, setFiles] = useState([])
-    const [open, setOpen] = useState(false)
-    const [certificateName, setCertificateName] = useState('')
-    const [certificateDescription, setCertificateDescription] = useState('')
-    const [loading, setLoading] = useState(false)
     const [selectedTeam, setSelectedTeam] = useState(null)
     const [showTable, setShowTable] = useState(false)
-    const [value, setValue] = useState('info')
+
+    const router = useRouter() // ✅ Add router
 
     const handleOpen = () => {
 
-        redirect('/apps/certificate/form')
-        
+        router.push('/apps/certificate/form')
+
         // setOpen(true)
-    }
-
-
-    const handleClose = () => {
-        setOpen(false)
-        setCertificateName('')
-        setCertificateDescription('')
-        setFiles([])
-        setLoading(false)
     }
 
     return (
