@@ -323,6 +323,7 @@ const ModuleTypes = ({ setShowCards, source, setOpen, onSelectSlideFromPopup, mo
     const { doGet, doPost, doPostFormData } = useApi();
     const router = useRouter();
 
+
     const handleChange = async (row) => {
         if (source == 'popup') {
 
@@ -441,7 +442,7 @@ const ModuleTypes = ({ setShowCards, source, setOpen, onSelectSlideFromPopup, mo
                                                     }
                                                 }}
                                             >
-                                                <i className='tabler-edit mr-1 text-sm' />
+                                                <i className='tabler-edit mr-1' />
                                                 Edit
                                             </Button>
 

@@ -31,7 +31,7 @@ import { useApi } from '../../../../utils/api';
 import { getLocalizedUrl } from '@/utils/i18n'
 
 import SkeletonModulesComponent from './SkeletonModulesComponent.jsx'
-import PublishModuleDialog from '../../../../components/dialogs/modules/publish-module-dialog/page';
+import PublishTrainingDialog from '../../../../components/dialogs/trainings/publish-module-dialog/page';
 
 const iconStyle = {
   minWidth: '40px',
@@ -44,7 +44,7 @@ const iconStyle = {
   justifyContent: 'center',
 };
 
-const Courses = props => {
+const Trainings = props => {
   // Props
   const { searchValue } = props
 
@@ -98,7 +98,7 @@ const Courses = props => {
 
     const query = queryParams.length > 0 ? `&${queryParams.join('&')}` : '';
 
-    const modulesData = await doGet(`admin/modules/list?page=${activePage + 1}&limit=${itemsPerPage}${query}`);
+    const modulesData = await doGet(`admin/trainings/list?page=${activePage + 1}&limit=${itemsPerPage}${query}`);
 
     setData(prevData => ({
       ...prevData,
@@ -111,7 +111,7 @@ const Courses = props => {
   };
 
   const loadData = async () => {
-    const categoryData = await doGet(`admin/categories?type=module`);
+    const categoryData = await doGet(`admin/categories?type=training`);
 
     setData(prevData => ({
       ...prevData,
@@ -120,7 +120,7 @@ const Courses = props => {
   };
 
   const handleDelete = async (id) => {
-    const endpoint = `admin/module/${id}`;
+    const endpoint = `admin/training/${id}`;
 
     if (confirm('Are you sure?')) {
       await doDelete({
@@ -196,18 +196,18 @@ const Courses = props => {
       <CardContent className='flex flex-col gap-6'>
         <div className='flex flex-wrap items-center justify-between gap-2'>
           <div>
-            <Typography variant='h5'>My Modules</Typography>
-            <Typography>Total {totalItems} modules you have in your bucket</Typography>
+            <Typography variant='h5'>My Trainings</Typography>
+            <Typography>Total {totalItems} trainings you have in your bucket</Typography>
           </div>
           <div className='flex flex-wrap items-center gap-y-4 gap-x-6'>
             <Button
               variant='contained'
               startIcon={<i className='tabler-plus' />}
               component={Link}
-              href={getLocalizedUrl(`/apps/modules/form`, locale)}
+              href={getLocalizedUrl(`/apps/trainings/form`, locale)}
               className='max-sm:is-full'
             >
-              Add New Module
+              Add New Training
             </Button>
             <FormControl fullWidth size='small' className='is-[250px] flex-auto'>
               <Select
@@ -247,7 +247,7 @@ const Courses = props => {
               <Grid size={{ xs: 12, sm: 4, md: 3 }} key={index}>
                 <div className='border rounded bs-full'>
                   <div className='pli-2 pbs-2'>
-                    <Link href={getLocalizedUrl(`/apps/modules/form/${item._id}`, locale)} className='flex'>
+                    <Link href={getLocalizedUrl(`/apps/trainings/form/${item._id}`, locale)} className='flex'>
                       <img src={item.image ? `${APP_URL}/${item.image}` : placeholderBase64} alt={item.title} className='is-full' />
                     </Link>
                   </div>
@@ -266,7 +266,7 @@ const Courses = props => {
                       <Typography
                         variant='h5'
                         component={Link}
-                        href={getLocalizedUrl(`/apps/modules/form/${item._id}`, locale)}
+                        href={getLocalizedUrl(`/apps/trainings/form/${item._id}`, locale)}
                         className='hover:text-primary'
                       >
                         {item.title}
@@ -279,7 +279,7 @@ const Courses = props => {
                           color="primary"
                           sx={iconStyle}
                           component={Link}
-                          href={getLocalizedUrl(`/apps/modules/form/${item._id}`, locale)}
+                          href={getLocalizedUrl(`/apps/trainings/form/${item._id}`, locale)}
                         >
                           <i className="tabler-edit" />
                         </Button>
@@ -304,10 +304,10 @@ const Courses = props => {
                 </div>
               </Grid>
             ))}
-            <PublishModuleDialog open={open} setOpen={setOpen} moduleData={module} type={moduleStatus} onUpdateStatusChangeState={onUpdateStatusChangeState} cardItems={cardItems} />
+            <PublishTrainingDialog open={open} setOpen={setOpen} moduleData={module} type={moduleStatus} onUpdateStatusChangeState={onUpdateStatusChangeState} cardItems={cardItems} />
           </Grid>
         ) : (
-          <Typography className='text-center'>No Modules found</Typography>
+          <Typography className='text-center'>No Trainings Found</Typography>
         )}
         <div className='flex justify-center'>
           <Pagination
@@ -326,4 +326,4 @@ const Courses = props => {
   )
 }
 
-export default Courses
+export default Trainings

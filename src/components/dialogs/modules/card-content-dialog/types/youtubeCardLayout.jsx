@@ -190,7 +190,7 @@ const YoutubeCardLayout = ({ data, onClose, moduleData }) => {
                                     fullWidth
                                     size="small"
                                     variant="outlined"
-                                    label="Video url"
+                                    label="Video URL*"
                                     placeholder=""
                                     error={!!errors.url}
                                     helperText={errors.url?.message}

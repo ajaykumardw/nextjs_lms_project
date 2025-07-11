@@ -71,7 +71,7 @@ import CustomTextField from '@core/components/mui/TextField'
 // Third-party Imports
 
 
-const ModuleFormLayout = ({ setLayoutType, setShowCards, setModuleData }) => {
+const TrainingFormLayout = ({ setLayoutType, setShowCards, setModuleData }) => {
 
     const URL = process.env.NEXT_PUBLIC_API_URL
     const public_url = process.env.NEXT_PUBLIC_ASSETS_URL;
@@ -79,7 +79,7 @@ const ModuleFormLayout = ({ setLayoutType, setShowCards, setModuleData }) => {
     const token = session?.user?.token
     const [categories, setCategories] = useState([]);
     const [createData, setCreateData] = useState({ categories: [] });
-    const [module, setmodule] = useState();
+    const [training, setTraining] = useState();
     const [isLoading, setIsLoading] = useState(true);
     const { doGet, doPost, doPostFormData } = useApi();
     const [loading, setLoading] = useState(false)
@@ -199,7 +199,7 @@ const ModuleFormLayout = ({ setLayoutType, setShowCards, setModuleData }) => {
     // ))
 
     const loadData = async () => {
-        const result = await doGet(`admin/categories?type=module&status=true`);
+        const result = await doGet(`admin/categories?type=training&status=true`);
 
         setCreateData(prevData => ({
             ...prevData,
@@ -210,9 +210,9 @@ const ModuleFormLayout = ({ setLayoutType, setShowCards, setModuleData }) => {
 
     const getModule = async () => {
 
-        const result = await doGet(`admin/module/${id}`);
+        const result = await doGet(`admin/training/${id}`);
 
-        setmodule(result);
+        setTraining(result);
         setModuleData(result);
     };
 
@@ -244,15 +244,15 @@ const ModuleFormLayout = ({ setLayoutType, setShowCards, setModuleData }) => {
     }, [URL, token, id])
 
     useEffect(() => {
-        if (id && module) {
+        if (id && training) {
             reset({
-                title: module?.title || '',
-                status: module?.status || '',
-                description: module?.description || '',
-                category_id: module?.category_id || '',
+                title: training?.title || '',
+                status: training?.status || '',
+                description: training?.description || '',
+                category_id: training?.category_id || '',
             });
         }
-    }, [id, module, setValue])
+    }, [id, training, setValue])
 
     useEffect(() => {
         //if (!router.isReady) return;
@@ -264,7 +264,7 @@ const ModuleFormLayout = ({ setLayoutType, setShowCards, setModuleData }) => {
 
 
     const onSubmit = async (data) => {
-        const endpoint = id ? `admin/module/${id}` : `admin/module`;
+        const endpoint = id ? `admin/training/${id}` : `admin/training`;
 
         const newData = {
             ...data,
@@ -280,16 +280,18 @@ const ModuleFormLayout = ({ setLayoutType, setShowCards, setModuleData }) => {
             successMessage: '',
             errorMessage: '',
             onSuccess: (response) => {
-                if (!id) {
-                    router.replace(`/${locale}/apps/modules/form/${response.data._id}?showCards=1`);
-                    toast.success(response.message, {
-                        autoClose: 700
-                    });
-                } else {
-                    setShowCards(true); // Only run if no redirection
-                    setModuleData(response.data);
-                    toast.success(response.message);
-                }
+                toast.success(response.message);
+
+                // if (!id) {
+                //     router.replace(`/${locale}/apps/modules/form/${response.data._id}?showCards=1`);
+                //     toast.success(response.message, {
+                //         autoClose: 700
+                //     });
+                // } else {
+                //     setShowCards(true); // Only run if no redirection
+                //     setModuleData(response.data);
+                //     toast.success(response.message);
+                // }
             },
         });
 
@@ -305,14 +307,14 @@ const ModuleFormLayout = ({ setLayoutType, setShowCards, setModuleData }) => {
 
             <Card>
                 <CardHeader
-                    title={id ? `Edit ${module?.title}` : 'Add Micro Module'}
+                    title={id ? `Edit ${training?.title}` : 'Add Training'}
                     action={
                         <Button
                             variant='outlined'
                             startIcon={<DirectionalIcon ltrIconClass='tabler-arrow-left' rtlIconClass='tabler-arrow-right' />}
-                            onClick={() => router.push(getLocalizedUrl('/apps/modules', locale))}
+                            onClick={() => router.push(getLocalizedUrl('/apps/trainings', locale))}
                         >
-                            Back to Modules
+                            Back to Trainings
                         </Button>
                     }
                 />
@@ -378,26 +380,6 @@ const ModuleFormLayout = ({ setLayoutType, setShowCards, setModuleData }) => {
                                 />
 
                             </Grid>
-                            {/* <Grid size={{ xs: 12, sm: 6 }}>
-                                    <Controller
-                                        name="status"
-                                        control={control}
-                                        render={({ field }) => (
-                                            <CustomTextField
-                                                {...field}
-                                                select
-                                                fullWidth
-                                                label="Status*"
-                                                error={!!errors.status}
-                                                helperText={errors.status?.message}
-                                            >
-                                                <MenuItem value={true}>Published</MenuItem>
-                                                <MenuItem value={false}>Draft</MenuItem>
-                                            </CustomTextField>
-                                        )}
-                                    />
-                                </Grid> */}
-
                             <Grid size={{ xs: 12, sm: 6 }}>
                                 <Controller
                                     name="description"
@@ -419,7 +401,7 @@ const ModuleFormLayout = ({ setLayoutType, setShowCards, setModuleData }) => {
                                 />
                             </Grid>
                             <Grid size={{ xs: 6, sm: 6 }}>
-                                Image
+                                <Typography variant='body'>Image</Typography>
                                 <AppReactDropzone>
                                     <div {...getRootProps({ className: 'dropzone', })} style={{ minHeight: '150px' }}>
                                         <input {...getInputProps()} />
@@ -438,9 +420,9 @@ const ModuleFormLayout = ({ setLayoutType, setShowCards, setModuleData }) => {
                                             </div>
                                         )}
 
-                                        {module?.image && !preview && (
+                                        {training?.image && !preview && (
                                             <div className='mt-4'>
-                                                <img src={`${public_url}/${module.image}`} alt='Preview' style={{ maxWidth: '200px', 'borderRadius': '10%' }} />
+                                                <img src={`${public_url}/${training.image}`} alt='Preview' style={{ maxWidth: '100px', 'borderRadius': '10%' }} />
                                             </div>
                                         )}
 
@@ -498,10 +480,10 @@ const ModuleFormLayout = ({ setLayoutType, setShowCards, setModuleData }) => {
                     </CardActions>
                 </form>
 
-                <CategoryDialog open={open} setOpen={setOpen} type="module" location="addmoduleform" onLoadCategories={onLoadCategories} />
+                <CategoryDialog open={open} setOpen={setOpen} type="training" location="addmoduleform" onLoadCategories={onLoadCategories} />
             </Card>
         </>
     )
 }
 
-export default ModuleFormLayout
+export default TrainingFormLayout
