@@ -1,415 +1,458 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import Image from 'next/image'
 
+import { useSession } from 'next-auth/react'
+
 import {
-    Box,
-    Button,
-    Card,
-    CardContent,
-    TextField,
-    Typography,
-    CardMedia,
-    CardActionArea,
+    Box, Button, Card, CardHeader, Divider, CardContent,
+    TextField, Typography, CardMedia, Skeleton
 } from '@mui/material'
+
+import Grid from '@mui/material/Grid2'
 
 import { useForm, Controller } from 'react-hook-form'
 
 import { valibotResolver } from '@hookform/resolvers/valibot'
 
-// Valibot schema
+import {
+    object, string, minLength, transform,
+    maxLength, pipe, regex, optional
+} from 'valibot'
 
-import { object, string, minLength, pipe, maxLength, boolean, regex } from 'valibot'
+const alphaSpaceRegex = /^[A-Za-z ]+$/
 
-import Grid from '@mui/material/Grid2'
-
-const presetBackgrounds = [
-    { src: '/frames/bg1.jpg', label: 'BG 1' },
-    { src: '/frames/bg2.jpg', label: 'BG 2' },
-    { src: '/frames/bg3.jpg', label: 'BG 3' },
-    { src: '/frames/bg4.jpg', label: 'BG 4' },
-]
-
+const optionalAlphaField = optional(
+    pipe(
+        transform((val) => val === '' ? undefined : val),
+        maxLength(20, 'Maximum 20 characters'),
+        regex(alphaSpaceRegex, 'Only alphabets and spaces are allowed')
+    )
+)
 
 const schema = object({
     templateName: pipe(
         string(),
         minLength(1, 'Template Name is required'),
         maxLength(255, 'Template Name can be maximum of 255 characters'),
-        regex(/^[A-Za-z\s]+$/, 'Only alphabets and spaces are allowed')
+        regex(alphaSpaceRegex, 'Only alphabets and spaces are allowed')
     ),
-    status: boolean()
+    title: pipe(
+        string(),
+        minLength(1, "Title is required"),
+        maxLength(50, 'Title can be maximum of 50 characters'),
+        regex(alphaSpaceRegex, 'Only alphabets and spaces are allowed')
+    ),
+    content: pipe(
+        string(),
+        minLength(1, "Content is required"),
+        maxLength(100, 'Content can be maximum of 100 characters'),
+        regex(alphaSpaceRegex, 'Only alphabets and spaces are allowed')
+    ),
+    content2: pipe(
+        string(),
+        minLength(1, "Content 2 is required"),
+        maxLength(100, 'Content 2 can be maximum of 100 characters'),
+        regex(alphaSpaceRegex, 'Only alphabets and spaces are allowed')
+    ),
+    signatureName: optionalAlphaField,
+    signatureContent: optionalAlphaField,
+    signature2Name: optionalAlphaField,
+    signature2Content: optionalAlphaField,
+    logoURL: optional(string()),
+    backgroundImage: optional(string()),
+    signature1URL: optional(string()),
+    signature2URL: optional(string())
 })
 
 const CertificateForm = () => {
+    const { data: session } = useSession()
+    const token = session?.user?.token
+    const API_URL = process.env.NEXT_PUBLIC_API_URL
     const assert_url = process.env.NEXT_PUBLIC_ASSETS_URL || ''
-    const signature_url = `${assert_url}/signature/signature1.png`
-    const logo_url = `${assert_url}/company_logo/demo39.svg`
 
     const [customBg, setCustomBg] = useState(null)
-    const [signature1, setSignature1] = useState(signature_url)
-    const [signature2, setSignature2] = useState(signature_url)
-    const [logoURL, setLogoURL] = useState(logo_url);
-
-    const [formData, setFormData] = useState({
-        templateName: '',
-        title: 'CERTIFICATE',
-        content: 'This is to certify that',
-        content2: 'has successfully completed the',
-        signatureName: 'Sandeep Soni',
-        signatureContent: 'CEO Dreamweavers',
-        signature1URL: signature_url,
-        signature2URL: signature_url,
-        logoURL,
-        signature2Name: '',
-        signature2Content: '',
-        backgroundImage: `${assert_url}${presetBackgrounds[0].src}`, // Default
+    const [defaultBackground, setDefaultBackground] = useState([])
+    const [logoPreview, setLogoPreview] = useState('')
+    const [signature1Preview, setSignature1Preview] = useState('')
+    const [signature2Preview, setSignature2Preview] = useState('')
+    
+    const [uploadedFiles, setUploadedFiles] = useState({
+        logoURL: null,
+        backgroundImage: null,
+        signature1URL: null,
+        signature2URL: null
     })
 
+    const [loading, setLoading] = useState(false)
+
     const {
-        control,
-        handleSubmit,
-        reset,
-        setError,
-        formState: { errors },
+        control, handleSubmit, setValue, getValues, formState: { errors }
     } = useForm({
         resolver: valibotResolver(schema),
         mode: 'onChange',
         defaultValues: {
             templateName: '',
-            status: false
+            title: '',
+            content: '',
+            content2: '',
+            signatureName: '',
+            signatureContent: '',
+            signature2Name: '',
+            signature2Content: '',
+            logoURL: '',
+            backgroundImage: '',
+            signature1URL: '',
+            signature2URL: ''
         }
     })
 
-    const handleBgChange = (img) => {
-        setFormData(prev => ({ ...prev, backgroundImage: img }))
-    }
+    const fetchCreateData = async () => {
+        try {
+            const res = await fetch(`${API_URL}/company/certificate/create`, {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+            
+            const data = await res.json()
+            
+            if (res.ok) {
+                setLoading(true)
+                const val = data.data
 
-    const handleUpload = (e) => {
-        const file = e.target.files?.[0]
+                const logo = `${assert_url}/company_logo/${val.logoURL}`
+                const sig = `${assert_url}/signature/${val.signatureURL}`
+                const bg = `${assert_url}/frames/${val.frameImage?.[0]}`
 
-        if (file) {
-            const url = URL.createObjectURL(file)
+                setLogoPreview(logo)
+                setSignature1Preview(sig)
+                setSignature2Preview(sig)
 
-            setCustomBg(url)
-            handleBgChange(url)
+                setValue('logoURL', logo)
+                setValue('signature1URL', sig)
+                setValue('signature2URL', sig)
+                setValue('backgroundImage', bg)
+                setValue('title', val.title)
+                setValue('content', val.content)
+                setValue('content2', val.content2)
+
+                setDefaultBackground(val.frameImage.map((f) => `${assert_url}/frames/${f}`))
+            }
+        } catch (err) {
+            console.error('Fetch failed:', err)
         }
     }
 
-    const handleSignature1URL = (e) => {
-        const file = e.target.files?.[0]
+    useEffect(() => {
+        if (token && API_URL) fetchCreateData()
+    }, [token, API_URL])
 
-        if (file) {
-            const url = URL.createObjectURL(file)
+    const handleImageUpload = (file, previewSetter, fieldKey) => {
+        if (!file) return
+        const objectUrl = URL.createObjectURL(file)
+        
+        previewSetter(objectUrl)
+        setUploadedFiles((prev) => ({ ...prev, [fieldKey]: file }))
+        setValue(fieldKey, objectUrl) // only for preview; real File is in uploadedFiles
+    }
 
-            setSignature1(url)
-            setFormData(prev => ({ ...prev, signature1URL: url }))
+    const handleFormSubmit = async (values) => {
+        const formDatas = new FormData()
+
+        // Append text fields (exclude file preview URLs)
+        Object.entries(values).forEach(([k, v]) => {
+            if (
+                !['logoURL', 'backgroundImage', 'signature1URL', 'signature2URL'].includes(k) &&
+                v !== undefined &&
+                v !== null
+            ) {
+                formDatas.append(k, v)
+            }
+        })
+
+        // Append real files or fallback URLs
+        Object.entries(uploadedFiles).forEach(([key, file]) => {
+            if (file instanceof File) {
+                formDatas.append(key, file)
+            } else if (values[key]) {
+                formDatas.append(key, values[key]) // fallback to demo/static
+            }
+        })
+
+        try {
+            const res = await fetch(`${API_URL}/company/certificate`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+                body: formDatas
+            })
+            
+            const result = await res.json()
+            
+            console.log('Submitted:', result)
+        } catch (err) {
+            console.error('Submission Error:', err)
         }
     }
 
-    const handleSignature2URL = (e) => {
-        const file = e.target.files?.[0]
+    const CertificateTemplateSkeleton = () => {
+        return (
+            <Card>
+                <CardHeader title={<Skeleton width="40%" />} />
+                <Divider />
+                <CardContent>
+                    <Grid container spacing={4}>
+                        {/* Preview Panel Skeleton */}
+                        <Grid item size={{ xs: 12, md: 5 }}>
+                            <Card variant="outlined" sx={{ borderRadius: 2 }}>
+                                <CardContent>
+                                    <Box p={2} textAlign="center">
+                                        <Skeleton variant="rectangular" width={80} height={40} sx={{ margin: '0 auto' }} />
+                                        <Skeleton variant="text" width="60%" sx={{ mt: 2, mx: 'auto' }} />
+                                        <Skeleton variant="text" width="80%" sx={{ mx: 'auto' }} />
+                                        <Skeleton variant="text" width="40%" sx={{ mt: 1, mx: 'auto' }} />
+                                        <Skeleton variant="text" width="70%" sx={{ mx: 'auto' }} />
+                                        <Skeleton variant="text" width="50%" sx={{ mt: 2, mx: 'auto' }} />
+                                        <Box mt={6} display="flex" justifyContent="space-between" gap={4}>
+                                            {[1, 2].map((i) => (
+                                                <Box key={i} textAlign="center">
+                                                    <Skeleton variant="rectangular" width={50} height={20} sx={{ mx: 'auto' }} />
+                                                    <Skeleton variant="text" width={80} />
+                                                    <Skeleton variant="text" width={100} />
+                                                </Box>
+                                            ))}
+                                        </Box>
+                                    </Box>
+                                </CardContent>
+                            </Card>
+                        </Grid>
 
-        if (file) {
-            const url = URL.createObjectURL(file)
+                        {/* Form Panel Skeleton */}
+                        <Grid item size={{ xs: 12, md: 7 }}>
+                            <Grid container spacing={3}>
+                                {[...Array(10)].map((_, idx) => (
+                                    <Grid item key={idx} size={{ xs: 12, sm: (idx > 5 ? 6 : 12) }}>
 
-            setSignature2(url)
-            setFormData(prev => ({ ...prev, signature2URL: url }))
-        }
-    }
+                                        <Skeleton variant="text" width="100%" height={56} />
+                                    </Grid>
+                                ))}
+                                {[...Array(2)].map((_, idx) => (
+                                    <Grid item size={{ xs: 12, sm: 6 }} key={`signature-${idx}`}>
+                                        <Skeleton variant="rectangular" width={150} height={60} />
+                                        <Skeleton variant="text" width="60%" sx={{ mt: 2 }} />
+                                    </Grid>
+                                ))}
+                                <Grid item size={{ xs: 12 }}>
+                                    <Skeleton variant="rectangular" width="100%" height={40} />
+                                </Grid>
+                            </Grid>
+                        </Grid>
+                    </Grid>
+                </CardContent>
+            </Card>
+        );
+    };
 
-    const handleLogo = (e) => {
-        const file = e.target.files?.[0]
-
-        if (file) {
-            const url = URL.createObjectURL(file)
-
-            setLogoURL(url)
-            setFormData(prev => ({ ...prev, logoURL: url }))
-        }
-    }
+    if (!loading) return (
+        <CertificateTemplateSkeleton />
+    )
 
     return (
-        <Box p={4} display="flex" flexDirection={{ xs: 'column', md: 'row' }} bgcolor={"#fff"} gap={6}>
-            {/* Certificate Preview */}
-            <Box
-                width={{ xs: '100%', md: '40%' }}
-                sx={{
-                    position: 'sticky',
-                    insetBlockStart: 112, // Adjust based on your layout spacing
-                    alignSelf: 'flex-start', // Ensures it doesn't stretch vertically
-                }}
-            >
-                <Typography variant="h5" gutterBottom>Create Certificate Template</Typography>
-                <Card
-                    variant="outlined"
-                    sx={{
-                        inlineSize: '100%',
-                        backgroundImage: formData.backgroundImage ? `url(${formData.backgroundImage})` : 'none',
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                        borderRadius: 2,
-                    }}
-                >
-                    <CardContent>
-                        <Box
-                            p={2}
-                            textAlign="center"
+        <Card>
+            <CardHeader title='Create Certificate Template' />
+            <Divider />
+            <CardContent>
+                <Grid container spacing={4}>
+                    {/* Preview */}
+                    <Grid size={{ xs: 12, md: 5 }}>
+                        <Card
+                            variant="outlined"
                             sx={{
-                                backgroundColor: 'transparent',
-                                borderRadius: 2,
+                                backgroundImage: `url(${getValues('backgroundImage')})`,
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                                borderRadius: 2
                             }}
                         >
-                            <Image src={`${logoURL}`} alt="Logo" width={80} height={40} />
+                            <CardContent>
+                                <Box textAlign="center" p={2}>
+                                    {getValues('logoURL') && (
+                                        <Image
+                                            src={getValues('logoURL')}
+                                            alt="Logo"
+                                            width={80}
+                                            height={40}
+                                            style={{ objectFit: 'contain' }}
+                                        />
+                                    )}
+                                    <Typography variant="h6" fontWeight="bold" mt={2}>
+                                        {getValues('title')}
+                                    </Typography>
+                                    <Typography>{getValues('content')}</Typography>
+                                    <Typography variant="h6" fontWeight="bold">[UserName]</Typography>
+                                    <Typography>{getValues('content2')}</Typography>
+                                    <Typography variant="h6" fontWeight="bold">[QuizName]</Typography>
+                                    <Typography variant="body2" color="text.secondary">On [date]</Typography>
 
-                            <Typography variant="h6" fontWeight="bold">{formData.title}</Typography>
-                            <Typography>{formData.content}</Typography>
-                            <Typography variant="h6" fontWeight="bold">[UserName]</Typography>
-                            <Typography>{formData.content2}</Typography>
-                            <Typography variant="h6" fontWeight="bold">[QuizName]</Typography>
-                            <Typography variant="body2" color="textSecondary">On [date]</Typography>
-
-                            {!formData.signature2Name && (
-                                <Box mt={6} display="flex" justifyContent="center" gap={formData.signature2Name ? 6 : 0}>
-                                    <Box>
-                                        <img src={`${formData.signature1URL}`} alt="Signature 1" width={50} height={20} />
-                                        <Typography fontWeight="bold">{formData.signatureName}</Typography>
-                                        <Typography>{formData.signatureContent}</Typography>
+                                    <Box mt={6} display="flex" justifyContent="space-between" gap={4}>
+                                        {getValues('signatureName') && (
+                                            <Box textAlign="center">
+                                                <img src={getValues('signature1URL')} alt="Signature 1" width={50} height={20} />
+                                                <Typography fontWeight="bold">{getValues('signatureName')}</Typography>
+                                                <Typography variant="body2">{getValues('signatureContent')}</Typography>
+                                            </Box>
+                                        )}
+                                        {getValues('signature2Name') && (
+                                            <Box textAlign="center">
+                                                <img src={getValues('signature2URL')} alt="Signature 2" width={50} height={20} />
+                                                <Typography fontWeight="bold">{getValues('signature2Name')}</Typography>
+                                                <Typography variant="body2">{getValues('signature2Content')}</Typography>
+                                            </Box>
+                                        )}
                                     </Box>
                                 </Box>
-                            )}
-
-                            {formData.signature2Name && (
-                                <Box mt={6} display="flex" justifyContent="space-between" gap={formData.signature2Name ? 6 : 0}>
-                                    <Box>
-                                        <img src={`${formData.signature1URL}`} alt="Signature 1" width={50} height={20} />
-                                        <Typography fontWeight="bold">{formData.signatureName}</Typography>
-                                        <Typography>{formData.signatureContent}</Typography>
-                                    </Box>
-                                    <Box>
-                                        <img src={formData.signature2URL} alt="Signature 2" width={50} height={20} />
-                                        <Typography fontWeight="bold">{formData.signature2Name}</Typography>
-                                        <Typography>{formData.signature2Content}</Typography>
-                                    </Box>
-                                </Box>
-                            )}
-
-                        </Box>
-                    </CardContent>
-                </Card>
-            </Box>
-
-            {/* Form Section */}
-            <Box width={{ xs: '100%', md: '60%' }}>
-
-                <Grid container spacing={3}>
-                    {/* <Grid item size={{ xs: 12 }}>
-                        <TextField fullWidth label="Template Type" value={formData.templateType} disabled />
-                    </Grid> */}
-
-                    <Grid item size={{ xs: 12 }}>
-                        <TextField
-                            required
-                            fullWidth label="Template Name"
-                            value={formData.templateName}
-                            onChange={(e) => setFormData({ ...formData, templateName: e.target.value })}
-                            error={!!errors?.templateName}
-                            helperText={errors?.templateName?.message}
-                        />
+                            </CardContent>
+                        </Card>
                     </Grid>
 
-                    {/* Signature 2 Upload */}
-                    <Grid item size={{ xs: 12 }}>
-                        <Typography variant="body2" gutterBottom>Upload Logo</Typography>
-                        <Grid container spacing={2}>
-                            <Grid item size={{ xs: 6 }} width={0.2} sm={4} md={3}>
-                                <Card
-                                    sx={{
-                                        border: formData.logoURL === logoURL ? '2px solid #1976d2' : '2px solid transparent',
-                                        backgroundColor: '#fff',
-                                        borderRadius: 2,
-                                    }}
-                                    onClick={() => setFormData({ ...formData, logoURL: logoURL })}
-                                >
-                                    <CardActionArea>
-                                        <CardMedia component="img" image={logoURL} alt="Signature 2" />
-                                    </CardActionArea>
-                                </Card>
-                            </Grid>
-                        </Grid>
-                        <Box mt={2}>
-                            <Button variant="outlined" component="label">
-                                Upload Logo
-                                <input hidden type="file" accept="image/*" onChange={handleLogo} />
-                            </Button>
-                        </Box>
-                    </Grid>
+                    {/* Form */}
+                    <Grid size={{ xs: 12, md: 7 }}>
+                        <form onSubmit={handleSubmit(handleFormSubmit)} noValidate>
+                            <Grid container spacing={3}>
+                                <Grid size={{ xs: 12 }}>
+                                    <Controller
+                                        name="templateName"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <TextField
+                                                {...field}
+                                                label="Template Name"
+                                                fullWidth
+                                                required
+                                                error={!!errors.templateName}
+                                                helperText={errors.templateName?.message}
+                                            />
+                                        )}
+                                    />
+                                </Grid>
 
-                    <Grid item size={{ xs: 12 }}>
-                        <Typography variant="body2" gutterBottom>Select Certificate Background</Typography>
-                        <Grid container spacing={2}>
-                            {presetBackgrounds.map((img, idx) => {
-                                const fullPath = `${assert_url}${img.src}`
-
-                                return (
-                                    <Grid item xs={4} sm={3} key={idx}>
-                                        <Card
-                                            sx={{
-                                                border: formData.backgroundImage === fullPath ? '2px solid #1976d2' : '2px solid transparent',
-                                                boxShadow: formData.backgroundImage === fullPath ? '0 0 4px #1976d2' : undefined,
-                                                borderRadius: 2,
-                                            }}
-                                        >
-                                            <CardActionArea onClick={() => handleBgChange(fullPath)}>
-                                                <CardMedia component="img" height="80" image={fullPath} alt={img.label} />
-                                            </CardActionArea>
+                                {/* Upload Logo */}
+                                <Grid size={{ xs: 12 }}>
+                                    <Typography variant="body2" gutterBottom>Upload Logo</Typography>
+                                    {logoPreview && (
+                                        <Card sx={{ maxWidth: 150, mb: 1 }}>
+                                            <CardMedia component="img" image={logoPreview} alt="Logo" />
                                         </Card>
+                                    )}
+                                    <Button variant="outlined" component="label">
+                                        Upload Logo
+                                        <input hidden type="file" accept="image/*" onChange={(e) => handleImageUpload(e.target.files[0], setLogoPreview, 'logoURL')} />
+                                    </Button>
+                                </Grid>
+
+                                {/* Backgrounds */}
+                                <Grid size={{ xs: 12 }}>
+                                    <Typography>Select Background</Typography>
+                                    <Grid container spacing={2}>
+                                        {defaultBackground.map((bg, idx) => (
+                                            <Grid xs={4} key={idx}>
+                                                <Card
+                                                    onClick={() => setValue('backgroundImage', bg)}
+                                                    sx={{
+                                                        border: getValues('backgroundImage') === bg ? '2px solid' : '1px dashed grey',
+                                                        borderRadius: 2
+                                                    }}
+                                                >
+                                                    <CardMedia component="img" image={bg} height="100" />
+                                                </Card>
+                                            </Grid>
+                                        ))}
+                                        {customBg && (
+                                            <Grid xs={4}>
+                                                <Card onClick={() => setValue('backgroundImage', customBg)}>
+                                                    <CardMedia component="img" image={customBg} height="100" />
+                                                </Card>
+                                            </Grid>
+                                        )}
                                     </Grid>
-                                )
-                            })}
-                            {customBg && (
-                                <Grid item xs={4} sm={3} width={"105px"} height={'100%'}>
-                                    <Card
-                                        sx={{
-                                            border: formData.backgroundImage === customBg ? '2px solid #1976d2' : '2px solid transparent',
-                                            boxShadow: formData.backgroundImage === customBg ? '0 0 4px #1976d2' : undefined,
-                                            borderRadius: 2,
-                                        }}
-                                    >
-                                        <CardActionArea onClick={() => handleBgChange(customBg)}>
-                                            <CardMedia component="img" image={customBg} alt="Custom" />
-                                        </CardActionArea>
-                                    </Card>
+                                    <Box mt={2}>
+                                        <Button variant="outlined" component="label">
+                                            Upload Custom Background
+                                            <input hidden type="file" accept="image/*" onChange={(e) => handleImageUpload(e.target.files[0], setCustomBg, 'backgroundImage')} />
+                                        </Button>
+                                    </Box>
                                 </Grid>
-                            )}
-                        </Grid>
-                        <Box mt={2}>
-                            <Button variant="outlined" component="label">
-                                Upload Custom Background
-                                <input hidden type="file" accept="image/*" onChange={handleUpload} />
-                            </Button>
-                        </Box>
-                    </Grid>
 
-                    {/* Text Inputs */}
-                    <>
-                        {['title', 'content', 'content2'].map((key, i) => (
-                            <Grid item size={{ xs: 12 }} key={key}>
-                                <TextField
-                                    fullWidth
-                                    label={key.replace(/([A-Z])/g, ' $1')}
-                                    value={formData[key]}
-                                    onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
-                                />
-                            </Grid>
-                        ))}
+                                {/* Text Inputs */}
+                                {['title', 'content', 'content2'].map((key) => (
+                                    <Grid size={{ xs: 12 }} key={key}>
+                                        <Controller
+                                            name={key}
+                                            control={control}
+                                            render={({ field }) => (
+                                                <TextField
+                                                    {...field}
+                                                    label={key.toUpperCase()}
+                                                    fullWidth
+                                                    required
+                                                    error={!!errors[key]}
+                                                    helperText={errors[key]?.message}
+                                                />
+                                            )}
+                                        />
+                                    </Grid>
+                                ))}
 
-                        {/* Signature 1 and 2 grouped in one row */}
-                        <Grid container spacing={2}>
-                            <Grid item size={{ xs: 6 }}>
-                                <TextField
-                                    fullWidth
-                                    label="Signature 1 Name"
-                                    value={formData.signatureName}
-                                    onChange={(e) => setFormData({ ...formData, signatureName: e.target.value })}
-                                />
-                            </Grid>
-                            <Grid item size={{ xs: 6 }}>
-                                <TextField
-                                    fullWidth
-                                    label="Signature 1 Content"
-                                    value={formData.signatureContent}
-                                    onChange={(e) => setFormData({ ...formData, signatureContent: e.target.value })}
-                                />
-                            </Grid>
-                            <Grid item size={{ xs: 6 }}>
-                                <TextField
-                                    fullWidth
-                                    label="Signature 2 Name"
-                                    value={formData.signature2Name}
-                                    onChange={(e) => setFormData({ ...formData, signature2Name: e.target.value })}
-                                />
-                            </Grid>
-                            <Grid item size={{ xs: 6 }}>
-                                <TextField
-                                    fullWidth
-                                    label="Signature 2 Content"
-                                    value={formData.signature2Content}
-                                    onChange={(e) => setFormData({ ...formData, signature2Content: e.target.value })}
-                                />
-                            </Grid>
-                        </Grid>
-                    </>
+                                {/* Signature Inputs */}
+                                {[
+                                    ['signatureName', 'Signature 1 Name'],
+                                    ['signatureContent', 'Signature 1 Content'],
+                                    ['signature2Name', 'Signature 2 Name'],
+                                    ['signature2Content', 'Signature 2 Content']
+                                ].map(([key, label]) => (
+                                    <Grid size={{ xs: 12, sm: 6 }} key={key}>
+                                        <Controller
+                                            name={key}
+                                            control={control}
+                                            render={({ field }) => (
+                                                <TextField
+                                                    {...field}
+                                                    label={label}
+                                                    fullWidth
+                                                    error={!!errors[key]}
+                                                    helperText={errors[key]?.message}
+                                                />
+                                            )}
+                                        />
+                                    </Grid>
+                                ))}
 
-                    {/* Signature 1 Upload */}
-                    <Grid container spacing={4}>
-                        {/* Signature 1 Upload */}
-                        <Grid item size={{ xs: 12, sm: 6 }}>
-                            <Typography variant="body2" gutterBottom>
-                                Upload Signature 1
-                            </Typography>
-                            <Grid container spacing={2}>
-                                <Grid item size={{ xs: 6, sm: 4, md: 3 }}>
-                                    <Card
-                                        sx={{
-                                            border: formData.signature1URL === signature1 ? '2px solid #1976d2' : '2px solid transparent',
-                                            backgroundColor: '#fff',
-                                            borderRadius: 2,
-                                        }}
-                                        onClick={() => setFormData({ ...formData, signature1URL: signature1 })}
-                                    >
-                                        <CardActionArea>
-                                            <CardMedia component="img" style={{ padding: 8 }} image={signature1} alt="Signature 1" />
-                                        </CardActionArea>
-                                    </Card>
+                                {/* Signature Uploads */}
+                                {[['signature1URL', signature1Preview, setSignature1Preview], ['signature2URL', signature2Preview, setSignature2Preview]]
+                                    .map(([key, preview, setter], i) => (
+                                        <Grid size={{ xs: 12, sm: 6 }} key={key}>
+                                            <Typography>Upload Signature {i + 1}</Typography>
+                                            {preview && (
+                                                <Card sx={{ maxWidth: 150, mb: 1 }}>
+                                                    <CardMedia component="img" image={preview} height="60" />
+                                                </Card>
+                                            )}
+                                            <Button variant="outlined" component="label">
+                                                Upload Signature
+                                                <input hidden type="file" accept="image/*" onChange={(e) => handleImageUpload(e.target.files[0], setter, key)} />
+                                            </Button>
+                                        </Grid>
+                                    ))}
+
+                                <Grid size={{ xs: 12 }}>
+                                    <Button type="submit" fullWidth variant="contained">Save</Button>
                                 </Grid>
                             </Grid>
-                            <Box mt={2}>
-                                <Button variant="outlined" component="label">
-                                    Upload Signature
-                                    <input hidden type="file" accept="image/*" onChange={handleSignature1URL} />
-                                </Button>
-                            </Box>
-                        </Grid>
-
-                        {/* Signature 2 Upload */}
-                        <Grid item size={{ xs: 12, sm: 6 }} >
-                            <Typography variant="body2" gutterBottom>
-                                Upload Signature 2
-                            </Typography>
-                            <Grid container spacing={2}>
-                                <Grid item size={{ xs: 6, sm: 4, md: 3 }}>
-                                    <Card
-                                        sx={{
-                                            border: formData.signature2URL === signature2 ? '2px solid #1976d2' : '2px solid transparent',
-                                            backgroundColor: '#fff',
-                                            borderRadius: 2,
-                                        }}
-                                        onClick={() => setFormData({ ...formData, signature2URL: signature2 })}
-                                    >
-                                        <CardActionArea>
-                                            <CardMedia component="img" style={{ padding: 8 }} image={signature2} alt="Signature 2" />
-                                        </CardActionArea>
-                                    </Card>
-                                </Grid>
-                            </Grid>
-                            <Box mt={2}>
-                                <Button variant="outlined" component="label">
-                                    Upload Signature
-                                    <input hidden type="file" accept="image/*" onChange={handleSignature2URL} />
-                                </Button>
-                            </Box>
-                        </Grid>
-                    </Grid>
-
-                    <Grid item size={{ xs: 12 }}>
-                        <Button fullWidth variant="contained">Save</Button>
+                        </form>
                     </Grid>
                 </Grid>
-            </Box>
-        </Box>
+            </CardContent>
+        </Card>
     )
 }
 
