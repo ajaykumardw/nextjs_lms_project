@@ -17,7 +17,7 @@ const fetchPermission = async (url, token) => {
         });
 
         if (!response.ok) {
-            console.error('Permission API error:', await response.text());
+            console.error('Permission API error 2nd:', await response.text());
 
             return null;
         }
@@ -36,24 +36,11 @@ export default async function PermissionGuardServer({ children, locale, element 
 
     const session = await getServerSession(authOptions);
 
-    if (!session) {
-        redirect(`/${locale}/login`);
-    }
-
-    const token = session.user?.token;
+    const token = session?.user?.token;
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-    if (!token || !API_URL) {
-        console.error('Missing token or API_URL');
-        redirect(`/${locale}/login`);
-    }
 
     const permissions = await fetchPermission(API_URL, token);
 
-    if (!permissions) {
-        // Optional: Log out the user if the token is invalid or expired
-        redirect(`/${locale}/login`);
-    }
 
     // Normalize permissions (ensure it's an object with arrays)
     const allowedPermissions = permissions?.[element];
@@ -67,7 +54,9 @@ export default async function PermissionGuardServer({ children, locale, element 
     ) {
         if (permissions?.isUser) {
             redirect(`/${locale}/dashboards/user/${'learner'}`);
-        } else {
+        }
+
+        if (permissions?.notUser) {
             redirect(`/${locale}/dashboards/crm`);
         }
     }

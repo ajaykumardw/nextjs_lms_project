@@ -27,31 +27,52 @@ export const db = {
   ],
   statsHorizontalWithBorder: [
     {
-      title: 'On route vehicles',
+      title: 'Module enrolled',
       stats: 42,
       trendNumber: 18.2,
-      avatarIcon: 'tabler-truck',
+      avatarIcon: 'tabler-book',
       color: 'primary'
     },
     {
-      title: 'Vehicles with errors',
+      title: 'Module completed',
       stats: 8,
       trendNumber: -8.7,
-      avatarIcon: 'tabler-alert-triangle',
-      color: 'warning'
+      avatarIcon: 'tabler-checklist',
+      color: 'success'
     },
     {
-      title: 'Deviated from route',
+      title: 'Content consumed',
       stats: 27,
       trendNumber: 4.3,
-      avatarIcon: 'tabler-git-fork',
+      avatarIcon: 'tabler-play',
       color: 'error'
     },
     {
-      title: 'Late vehicles',
+      title: 'Certificates earned',
       stats: 13,
       trendNumber: 2.5,
-      avatarIcon: 'tabler-clock',
+      avatarIcon: 'tabler-certificate',
+      color: 'info'
+    },
+    {
+      title: 'Social feed post',
+      stats: 13,
+      trendNumber: 2.5,
+      avatarIcon: 'tabler-message-circle',
+      color: 'info'
+    },
+    {
+      title: 'Learner analytics',
+      stats: 13,
+      trendNumber: 2.5,
+      avatarIcon: 'tabler-chart-bar',
+      color: 'info'
+    },
+    {
+      title: 'Teams',
+      stats: 13,
+      trendNumber: 2.5,
+      avatarIcon: 'tabler-users',
       color: 'info'
     }
   ],

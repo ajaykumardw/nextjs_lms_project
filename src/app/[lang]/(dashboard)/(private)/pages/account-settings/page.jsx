@@ -14,9 +14,11 @@ const ConnectionsTab = dynamic(() => import('@views/pages/account-settings/conne
 const tabContentList = () => ({
   account: <AccountTab />,
   security: <SecurityTab />,
-  'billing-plans': <BillingPlansTab />,
+  
+  // 'billing-plans': <BillingPlansTab />,
   notifications: <NotificationsTab />,
-  connections: <ConnectionsTab />
+  
+  // connections: <ConnectionsTab />
 })
 
 const AccountSettingsPage = () => {

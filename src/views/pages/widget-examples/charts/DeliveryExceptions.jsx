@@ -14,14 +14,14 @@ import OptionMenu from '@core/components/option-menu'
 
 // Styled Component Imports
 const AppReactApexCharts = dynamic(() => import('@/libs/styles/AppReactApexCharts'))
-const deliveryExceptionsChartSeries = [13, 25, 22, 40]
+const deliveryExceptionsChartSeries = [13, 25, 52]
 
 const DeliveryExceptions = () => {
   // Hooks
   const theme = useTheme()
 
   const options = {
-    labels: ['Incorrect address', 'Weather conditions', 'Federal Holidays', 'Damage during transit'],
+    labels: ['Admins', 'Instructor', 'Learner'],
     stroke: {
       width: 0
     },
@@ -94,7 +94,7 @@ const DeliveryExceptions = () => {
 
   return (
     <Card className='bs-full'>
-      <CardHeader title='Delivery exceptions' action={<OptionMenu options={['Select All', 'Refresh', 'Share']} />} />
+      <CardHeader title='Users' action={<OptionMenu options={['Select All', 'Refresh', 'Share']} />} />
       <CardContent>
         <AppReactApexCharts
           type='donut'
