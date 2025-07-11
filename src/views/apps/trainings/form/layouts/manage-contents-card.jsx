@@ -36,7 +36,7 @@ import CardContentDialog from '../../../../../components/dialogs/modules/card-co
 import ModuleTypeDialog from '../../../../../components/dialogs/modules/module-type-dialog/page'
 import PublishModuleDialog from '../../../../../components/dialogs/modules/publish-module-dialog/page'
 import ModuleSettingLayout from './module-setting-layout';
-import ColoredCards from './../../list/ColoredCards';
+import ColoredCards from '../../list/ColoredCards';
 
 import { getLocalizedUrl } from '@/utils/i18n'
 

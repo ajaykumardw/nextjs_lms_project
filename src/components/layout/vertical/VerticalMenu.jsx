@@ -257,9 +257,17 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
           )}
           {permissArray?.isCompany && (
             <SubMenu label="Module & Category" icon={<i className="tabler-adjustments" />}>
-              <MenuItem key="Role" href={`/${locale}/apps/modules`}>modules</MenuItem>
-              <MenuItem key="Permission" href={`/${locale}/apps/modules/form`}>Module form</MenuItem>
-              <MenuItem key="PermissionModule" href={`/${locale}/apps/modules/categories`}>Catgory</MenuItem>
+              <MenuItem key="Permission" href={`/${locale}/apps/modules/form`}>Add new module</MenuItem>
+              <MenuItem key="Role" href={`/${locale}/apps/modules`}>Modules list</MenuItem>
+              <MenuItem key="PermissionModule" href={`/${locale}/apps/modules/categories`}>Catgories</MenuItem>
+            </SubMenu>
+          )}
+
+          {permissArray?.isCompany && (
+            <SubMenu label="Trainings" icon={<i className="tabler-adjustments" />}>
+              <MenuItem key="Permission" href={`/${locale}/apps/trainings/form`}>Add new training</MenuItem>
+              <MenuItem key="Role" href={`/${locale}/apps/trainings`}>Training list</MenuItem>
+              <MenuItem key="PermissionModule" href={`/${locale}/apps/trainings/categories`}>Catgories</MenuItem>
             </SubMenu>
           )}
           {permissArray?.isCompany && permissArray?.hasRolePermission && (

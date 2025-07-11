@@ -49,7 +49,7 @@ const CardContentDialog = ({ open, setOpen, cardContent, moduleData, onSetCardIt
             fullWidth
             open={open}
             onClose={() => setOpen(false)}
-            maxWidth='md'
+            maxWidth={cardContent.value === 'quiz' ? 'lg' : 'md'}
             scroll='body'
             closeAfterTransition={false}
             sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}
