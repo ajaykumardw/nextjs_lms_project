@@ -1169,7 +1169,7 @@ const UserFormLayout = () => {
                                         helperText={errors.user_code?.message}
                                         slotProps={{
                                             input: {
-                                                // readOnly: !!this.value,
+                                                readOnly: editData && editData.emp_id ? true : false,
                                             }
                                         }}
                                     />

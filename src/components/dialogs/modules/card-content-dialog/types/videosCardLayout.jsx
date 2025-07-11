@@ -208,10 +208,10 @@ const VideosCardLayout = ({ data, onClose, moduleData }) => {
                     </div>
                     <Grid size={{ xs: 12, sm: 6 }}>
                         <AppReactDropzone>
-                            <div {...getRootProps({ className: 'dropzone' })}>
+                            <div {...getRootProps({ className: 'dropzone', })} style={{ minHeight: '200px' }}>
                                 <input {...getInputProps()} />
                                 <div className='flex items-center flex-col'>
-                                    <Avatar variant='rounded' className='bs-12 is-12 mbe-9'>
+                                    <Avatar variant='rounded' className='bs-12 is-12 mbe-5'>
                                         <i className='tabler-upload' />
                                     </Avatar>
                                     <Typography variant='h5' className='mbe-2.5'>

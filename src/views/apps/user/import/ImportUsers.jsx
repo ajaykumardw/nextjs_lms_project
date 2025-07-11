@@ -249,7 +249,7 @@ const ImportUsers = ({ batch, onBack }) => {
 
 
   const getRoles = async () => {
-    const roleData = await doGet(`admin/role`);
+    const roleData = await doGet(`company/role`);
 
     setRoles(roleData);
   }
