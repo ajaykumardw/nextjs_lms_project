@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import Image from 'next/image'
 
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation'
 
 import {
     Box,
@@ -12,21 +12,35 @@ import {
     Card,
     CardContent,
     Typography,
+    Menu,
+    MenuItem,
+    IconButton
 } from '@mui/material'
+import Grid from '@mui/material/Grid2'
 
-import Grid from '@mui/material/Grid2';
 
 const CertificateCard = ({ teams = [], onAddTeamSubmit }) => {
     const [selectedTeam, setSelectedTeam] = useState(null)
     const [showTable, setShowTable] = useState(false)
+    const [anchorEl, setAnchorEl] = useState(null)
 
-    const router = useRouter() // ✅ Add router
+    const router = useRouter()
+
+    useEffect(() => {
+        router.prefetch('/apps/certificate/form')
+    }, [router])
 
     const handleOpen = () => {
-
         router.push('/apps/certificate/form')
+    }
 
-        // setOpen(true)
+    const handleMenuOpen = (event, team) => {
+        setSelectedTeam(team)
+        setAnchorEl(event.currentTarget)
+    }
+
+    const handleMenuClose = () => {
+        setAnchorEl(null)
     }
 
     return (
@@ -44,7 +58,7 @@ const CertificateCard = ({ teams = [], onAddTeamSubmit }) => {
             {/* Cards */}
             <Grid container spacing={4}>
                 {teams.map((team) => (
-                    <Grid key={team.id} item>
+                    <Grid key={team.id} item size={{ xs: 12, sm: 6, md: 4 }}>
                         <Card
                             sx={{
                                 borderRadius: 2,
@@ -76,7 +90,7 @@ const CertificateCard = ({ teams = [], onAddTeamSubmit }) => {
                                     alt={team.name}
                                     width={500}
                                     height={200}
-                                    style={{ width: '100%', height: '200px', objectFit: 'contain' }}
+                                    style={{ inlineSize: '100%', blockSize: '200px', objectFit: 'contain' }}
                                 />
 
                                 {/* Hover Overlay */}
@@ -84,10 +98,10 @@ const CertificateCard = ({ teams = [], onAddTeamSubmit }) => {
                                     className="hoverOverlay"
                                     sx={{
                                         position: 'absolute',
-                                        top: 0,
-                                        left: 0,
-                                        right: 0,
-                                        bottom: 0,
+                                        insetBlockStart: 0,
+                                        insetInlineStart: 0,
+                                        insetInlineEnd: 0,
+                                        insetBlockEnd: 0,
                                         backgroundColor: 'rgba(0,0,0,0.6)',
                                         color: '#fff',
                                         display: 'flex',
@@ -123,14 +137,51 @@ const CertificateCard = ({ teams = [], onAddTeamSubmit }) => {
                                     {team.name}
                                 </Typography>
 
-                                <Box sx={{ cursor: 'pointer' }}>
+                                <IconButton onClick={(e) => handleMenuOpen(e, team)}>
                                     <i className="tabler-dots-vertical" />
-                                </Box>
+                                </IconButton>
                             </CardContent>
                         </Card>
                     </Grid>
                 ))}
             </Grid>
+
+            {/* Action Menu */}
+            <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            >
+                <MenuItem
+                    onClick={() => {
+                        console.log('Edit', selectedTeam)
+                        handleMenuClose()
+                    }}
+                >
+                    <i className="tabler-edit" style={{ marginRight: 8 }} />
+                    Edit
+                </MenuItem>
+                <MenuItem
+                    onClick={() => {
+                        console.log('Reset', selectedTeam)
+                        handleMenuClose()
+                    }}
+                >
+                    <i className="tabler-refresh" style={{ marginRight: 8 }} />
+                    Reset to default template
+                </MenuItem>
+                <MenuItem
+                    onClick={() => {
+                        console.log('Clone', selectedTeam)
+                        handleMenuClose()
+                    }}
+                >
+                    <i className="tabler-copy" style={{ marginRight: 8 }} />
+                    Clone
+                </MenuItem>
+            </Menu>
         </>
     )
 }
