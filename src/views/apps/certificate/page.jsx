@@ -1,22 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-
 import Image from 'next/image'
-
 import { useSession } from 'next-auth/react'
-
 import {
     Box, Button, Card, CardHeader, Divider, CardContent,
     TextField, Typography, CardMedia, Skeleton
 } from '@mui/material'
-
 import Grid from '@mui/material/Grid2'
-
 import { useForm, Controller } from 'react-hook-form'
-
 import { valibotResolver } from '@hookform/resolvers/valibot'
-
 import {
     object, string, minLength, transform,
     maxLength, pipe, regex, optional
@@ -78,7 +71,8 @@ const CertificateForm = () => {
     const [logoPreview, setLogoPreview] = useState('')
     const [signature1Preview, setSignature1Preview] = useState('')
     const [signature2Preview, setSignature2Preview] = useState('')
-    
+    const [selectedBg, setSelectedBg] = useState('')
+
     const [uploadedFiles, setUploadedFiles] = useState({
         logoURL: null,
         backgroundImage: null,
@@ -114,9 +108,9 @@ const CertificateForm = () => {
             const res = await fetch(`${API_URL}/company/certificate/create`, {
                 headers: { Authorization: `Bearer ${token}` }
             })
-            
+
             const data = await res.json()
-            
+
             if (res.ok) {
                 setLoading(true)
                 const val = data.data
@@ -137,6 +131,8 @@ const CertificateForm = () => {
                 setValue('content', val.content)
                 setValue('content2', val.content2)
 
+                setSelectedBg(bg)
+
                 setDefaultBackground(val.frameImage.map((f) => `${assert_url}/frames/${f}`))
             }
         } catch (err) {
@@ -151,16 +147,19 @@ const CertificateForm = () => {
     const handleImageUpload = (file, previewSetter, fieldKey) => {
         if (!file) return
         const objectUrl = URL.createObjectURL(file)
-        
+
         previewSetter(objectUrl)
         setUploadedFiles((prev) => ({ ...prev, [fieldKey]: file }))
-        setValue(fieldKey, objectUrl) // only for preview; real File is in uploadedFiles
+        setValue(fieldKey, objectUrl)
+
+        if (fieldKey === 'backgroundImage') {
+            setSelectedBg(objectUrl)
+        }
     }
 
     const handleFormSubmit = async (values) => {
         const formDatas = new FormData()
 
-        // Append text fields (exclude file preview URLs)
         Object.entries(values).forEach(([k, v]) => {
             if (
                 !['logoURL', 'backgroundImage', 'signature1URL', 'signature2URL'].includes(k) &&
@@ -171,12 +170,11 @@ const CertificateForm = () => {
             }
         })
 
-        // Append real files or fallback URLs
         Object.entries(uploadedFiles).forEach(([key, file]) => {
             if (file instanceof File) {
                 formDatas.append(key, file)
             } else if (values[key]) {
-                formDatas.append(key, values[key]) // fallback to demo/static
+                formDatas.append(key, values[key])
             }
         })
 
@@ -186,76 +184,52 @@ const CertificateForm = () => {
                 headers: { Authorization: `Bearer ${token}` },
                 body: formDatas
             })
-            
+
             const result = await res.json()
-            
             console.log('Submitted:', result)
         } catch (err) {
             console.error('Submission Error:', err)
         }
     }
 
-    const CertificateTemplateSkeleton = () => {
-        return (
-            <Card>
-                <CardHeader title={<Skeleton width="40%" />} />
-                <Divider />
-                <CardContent>
-                    <Grid container spacing={4}>
-                        {/* Preview Panel Skeleton */}
-                        <Grid item size={{ xs: 12, md: 5 }}>
-                            <Card variant="outlined" sx={{ borderRadius: 2 }}>
-                                <CardContent>
-                                    <Box p={2} textAlign="center">
-                                        <Skeleton variant="rectangular" width={80} height={40} sx={{ margin: '0 auto' }} />
-                                        <Skeleton variant="text" width="60%" sx={{ mt: 2, mx: 'auto' }} />
-                                        <Skeleton variant="text" width="80%" sx={{ mx: 'auto' }} />
-                                        <Skeleton variant="text" width="40%" sx={{ mt: 1, mx: 'auto' }} />
-                                        <Skeleton variant="text" width="70%" sx={{ mx: 'auto' }} />
-                                        <Skeleton variant="text" width="50%" sx={{ mt: 2, mx: 'auto' }} />
-                                        <Box mt={6} display="flex" justifyContent="space-between" gap={4}>
-                                            {[1, 2].map((i) => (
-                                                <Box key={i} textAlign="center">
-                                                    <Skeleton variant="rectangular" width={50} height={20} sx={{ mx: 'auto' }} />
-                                                    <Skeleton variant="text" width={80} />
-                                                    <Skeleton variant="text" width={100} />
-                                                </Box>
-                                            ))}
-                                        </Box>
+    const CertificateTemplateSkeleton = () => (
+        <Card>
+            <CardHeader title={<Skeleton width="40%" />} />
+            <Divider />
+            <CardContent>
+                <Grid container spacing={4}>
+                    <Grid item size={{ xs: 12, md: 5 }}>
+                        <Card variant="outlined" sx={{ borderRadius: 2 }}>
+                            <CardContent>
+                                <Box p={2} textAlign="center">
+                                    <Skeleton variant="rectangular" width={80} height={40} sx={{ margin: '0 auto' }} />
+                                    <Skeleton variant="text" width="60%" sx={{ mt: 2, mx: 'auto' }} />
+                                    <Skeleton variant="text" width="80%" sx={{ mx: 'auto' }} />
+                                    <Skeleton variant="text" width="40%" sx={{ mt: 1, mx: 'auto' }} />
+                                    <Skeleton variant="text" width="70%" sx={{ mx: 'auto' }} />
+                                    <Skeleton variant="text" width="50%" sx={{ mt: 2, mx: 'auto' }} />
+                                    <Box mt={6} display="flex" justifyContent="space-between" gap={4}>
+                                        {[1, 2].map((i) => (
+                                            <Box key={i} textAlign="center">
+                                                <Skeleton variant="rectangular" width={50} height={20} sx={{ mx: 'auto' }} />
+                                                <Skeleton variant="text" width={80} />
+                                                <Skeleton variant="text" width={100} />
+                                            </Box>
+                                        ))}
                                     </Box>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        {/* Form Panel Skeleton */}
-                        <Grid item size={{ xs: 12, md: 7 }}>
-                            <Grid container spacing={3}>
-                                {[...Array(10)].map((_, idx) => (
-                                    <Grid item key={idx} size={{ xs: 12, sm: (idx > 5 ? 6 : 12) }}>
-
-                                        <Skeleton variant="text" width="100%" height={56} />
-                                    </Grid>
-                                ))}
-                                {[...Array(2)].map((_, idx) => (
-                                    <Grid item size={{ xs: 12, sm: 6 }} key={`signature-${idx}`}>
-                                        <Skeleton variant="rectangular" width={150} height={60} />
-                                        <Skeleton variant="text" width="60%" sx={{ mt: 2 }} />
-                                    </Grid>
-                                ))}
-                                <Grid item size={{ xs: 12 }}>
-                                    <Skeleton variant="rectangular" width="100%" height={40} />
-                                </Grid>
-                            </Grid>
-                        </Grid>
+                                </Box>
+                            </CardContent>
+                        </Card>
                     </Grid>
-                </CardContent>
-            </Card>
-        );
-    };
-
-    if (!loading) return (
-        <CertificateTemplateSkeleton />
+                    <Grid item size={{ xs: 12, md: 7 }}>
+                        <Skeleton variant="rectangular" width="100%" height={600} />
+                    </Grid>
+                </Grid>
+            </CardContent>
+        </Card>
     )
+
+    if (!loading) return <CertificateTemplateSkeleton />
 
     return (
         <Card>
@@ -263,12 +237,12 @@ const CertificateForm = () => {
             <Divider />
             <CardContent>
                 <Grid container spacing={4}>
-                    {/* Preview */}
+                    {/* Preview Panel */}
                     <Grid size={{ xs: 12, md: 5 }}>
                         <Card
                             variant="outlined"
                             sx={{
-                                backgroundImage: `url(${getValues('backgroundImage')})`,
+                                backgroundImage: `url(${selectedBg})`,
                                 backgroundSize: 'cover',
                                 backgroundPosition: 'center',
                                 borderRadius: 2
@@ -276,18 +250,10 @@ const CertificateForm = () => {
                         >
                             <CardContent>
                                 <Box textAlign="center" p={2}>
-                                    {getValues('logoURL') && (
-                                        <Image
-                                            src={getValues('logoURL')}
-                                            alt="Logo"
-                                            width={80}
-                                            height={40}
-                                            style={{ objectFit: 'contain' }}
-                                        />
+                                    {logoPreview && (
+                                        <Image src={logoPreview} alt="Logo" width={80} height={40} style={{ objectFit: 'contain' }} />
                                     )}
-                                    <Typography variant="h6" fontWeight="bold" mt={2}>
-                                        {getValues('title')}
-                                    </Typography>
+                                    <Typography variant="h6" fontWeight="bold" mt={2}>{getValues('title')}</Typography>
                                     <Typography>{getValues('content')}</Typography>
                                     <Typography variant="h6" fontWeight="bold">[UserName]</Typography>
                                     <Typography>{getValues('content2')}</Typography>
@@ -315,7 +281,7 @@ const CertificateForm = () => {
                         </Card>
                     </Grid>
 
-                    {/* Form */}
+                    {/* Form Panel */}
                     <Grid size={{ xs: 12, md: 7 }}>
                         <form onSubmit={handleSubmit(handleFormSubmit)} noValidate>
                             <Grid container spacing={3}>
@@ -324,21 +290,13 @@ const CertificateForm = () => {
                                         name="templateName"
                                         control={control}
                                         render={({ field }) => (
-                                            <TextField
-                                                {...field}
-                                                label="Template Name"
-                                                fullWidth
-                                                required
-                                                error={!!errors.templateName}
-                                                helperText={errors.templateName?.message}
-                                            />
+                                            <TextField {...field} label="Template Name" fullWidth required error={!!errors.templateName} helperText={errors.templateName?.message} />
                                         )}
                                     />
                                 </Grid>
 
-                                {/* Upload Logo */}
                                 <Grid size={{ xs: 12 }}>
-                                    <Typography variant="body2" gutterBottom>Upload Logo</Typography>
+                                    <Typography variant="body2">Upload Logo</Typography>
                                     {logoPreview && (
                                         <Card sx={{ maxWidth: 150, mb: 1 }}>
                                             <CardMedia component="img" image={logoPreview} alt="Logo" />
@@ -350,17 +308,20 @@ const CertificateForm = () => {
                                     </Button>
                                 </Grid>
 
-                                {/* Backgrounds */}
                                 <Grid size={{ xs: 12 }}>
                                     <Typography>Select Background</Typography>
                                     <Grid container spacing={2}>
                                         {defaultBackground.map((bg, idx) => (
-                                            <Grid xs={4} key={idx}>
+                                            <Grid size={{ xs: 4 }} key={idx}>
                                                 <Card
-                                                    onClick={() => setValue('backgroundImage', bg)}
+                                                    onClick={() => {
+                                                        setSelectedBg(bg)
+                                                        setValue('backgroundImage', bg)
+                                                    }}
                                                     sx={{
-                                                        border: getValues('backgroundImage') === bg ? '2px solid' : '1px dashed grey',
-                                                        borderRadius: 2
+                                                        border: selectedBg === bg ? '2px solid #1976d2' : '1px dashed grey',
+                                                        borderRadius: 2,
+                                                        cursor: 'pointer'
                                                     }}
                                                 >
                                                     <CardMedia component="img" image={bg} height="100" />
@@ -368,8 +329,11 @@ const CertificateForm = () => {
                                             </Grid>
                                         ))}
                                         {customBg && (
-                                            <Grid xs={4}>
-                                                <Card onClick={() => setValue('backgroundImage', customBg)}>
+                                            <Grid size={{ xs: 4 }}>
+                                                <Card onClick={() => {
+                                                    setSelectedBg(customBg)
+                                                    setValue('backgroundImage', customBg)
+                                                }}>
                                                     <CardMedia component="img" image={customBg} height="100" />
                                                 </Card>
                                             </Grid>
@@ -383,7 +347,6 @@ const CertificateForm = () => {
                                     </Box>
                                 </Grid>
 
-                                {/* Text Inputs */}
                                 {['title', 'content', 'content2'].map((key) => (
                                     <Grid size={{ xs: 12 }} key={key}>
                                         <Controller
@@ -403,7 +366,6 @@ const CertificateForm = () => {
                                     </Grid>
                                 ))}
 
-                                {/* Signature Inputs */}
                                 {[
                                     ['signatureName', 'Signature 1 Name'],
                                     ['signatureContent', 'Signature 1 Content'],
@@ -415,19 +377,12 @@ const CertificateForm = () => {
                                             name={key}
                                             control={control}
                                             render={({ field }) => (
-                                                <TextField
-                                                    {...field}
-                                                    label={label}
-                                                    fullWidth
-                                                    error={!!errors[key]}
-                                                    helperText={errors[key]?.message}
-                                                />
+                                                <TextField {...field} label={label} fullWidth error={!!errors[key]} helperText={errors[key]?.message} />
                                             )}
                                         />
                                     </Grid>
                                 ))}
 
-                                {/* Signature Uploads */}
                                 {[['signature1URL', signature1Preview, setSignature1Preview], ['signature2URL', signature2Preview, setSignature2Preview]]
                                     .map(([key, preview, setter], i) => (
                                         <Grid size={{ xs: 12, sm: 6 }} key={key}>
