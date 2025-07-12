@@ -55,6 +55,10 @@
   },
   "[javascript]": {
     "editor.defaultFormatter": "vscode.typescript-language-features"
+<<<<<<< HEAD
   },
   "compile-hero.disable-compile-files-on-did-save-code": false
+=======
+  }
+>>>>>>> e332d90af1d95c526be215b307edd3005234d4b9
 }
