@@ -1,19 +1,35 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+
 import Image from 'next/image'
+
 import { useSession } from 'next-auth/react'
+
 import {
     Box, Button, Card, CardHeader, Divider, CardContent,
     TextField, Typography, CardMedia, Skeleton
 } from '@mui/material'
+
 import Grid from '@mui/material/Grid2'
+
 import { useForm, Controller } from 'react-hook-form'
+
 import { valibotResolver } from '@hookform/resolvers/valibot'
+
 import {
-    object, string, minLength, transform,
-    maxLength, pipe, regex, optional
+    object,
+    string,
+    minLength,
+    transform,
+    maxLength,
+    pipe,
+    regex,
+    optional
 } from 'valibot'
+
+import { useParams, useRouter } from 'next/navigation'
+import { toast } from 'react-toastify'
 
 const alphaSpaceRegex = /^[A-Za-z ]+$/
 
@@ -30,7 +46,7 @@ const schema = object({
         string(),
         minLength(1, 'Template Name is required'),
         maxLength(255, 'Template Name can be maximum of 255 characters'),
-        regex(alphaSpaceRegex, 'Only alphabets and spaces are allowed')
+        regex(/^[A-Za-z0-9 ]+$/, 'Only alphabets and spaces are allowed')
     ),
     title: pipe(
         string(),
@@ -61,6 +77,7 @@ const schema = object({
 })
 
 const CertificateForm = () => {
+
     const { data: session } = useSession()
     const token = session?.user?.token
     const API_URL = process.env.NEXT_PUBLIC_API_URL
@@ -72,12 +89,29 @@ const CertificateForm = () => {
     const [signature1Preview, setSignature1Preview] = useState('')
     const [signature2Preview, setSignature2Preview] = useState('')
     const [selectedBg, setSelectedBg] = useState('')
+    const [titleText, setTitleText] = useState('');
+    const [contentText, setContentText] = useState('');
+    const [content2Text, setContent2Text] = useState('');
+    const [signatureName, setSignatureName] = useState('')
+    const [signatureContent, setSignatureContent] = useState('')
+    const [signatureName2, setSignatureName2] = useState('')
+    const [signatureContent2, setSignatureContent2] = useState('')
+    const [editData, setEditData] = useState();
+    const [createData, setCreateData] = useState();
+
+    const router = useRouter();
+
+    const { id: id } = useParams()
 
     const [uploadedFiles, setUploadedFiles] = useState({
         logoURL: null,
         backgroundImage: null,
         signature1URL: null,
-        signature2URL: null
+        signature2URL: null,
+        signatureName: null,
+        signatureContent: null,
+        signature2Name: null,
+        signature2Content: null,
     })
 
     const [loading, setLoading] = useState(false)
@@ -105,6 +139,9 @@ const CertificateForm = () => {
 
     const fetchCreateData = async () => {
         try {
+
+            setLoading(false)
+
             const res = await fetch(`${API_URL}/company/certificate/create`, {
                 headers: { Authorization: `Bearer ${token}` }
             })
@@ -112,37 +149,138 @@ const CertificateForm = () => {
             const data = await res.json()
 
             if (res.ok) {
-                setLoading(true)
+
                 const val = data.data
 
-                const logo = `${assert_url}/company_logo/${val.logoURL}`
-                const sig = `${assert_url}/signature/${val.signatureURL}`
-                const bg = `${assert_url}/frames/${val.frameImage?.[0]}`
+                setCreateData(val);
 
-                setLogoPreview(logo)
-                setSignature1Preview(sig)
-                setSignature2Preview(sig)
-
-                setValue('logoURL', logo)
-                setValue('signature1URL', sig)
-                setValue('signature2URL', sig)
-                setValue('backgroundImage', bg)
-                setValue('title', val.title)
-                setValue('content', val.content)
-                setValue('content2', val.content2)
-
-                setSelectedBg(bg)
-
-                setDefaultBackground(val.frameImage.map((f) => `${assert_url}/frames/${f}`))
             }
         } catch (err) {
             console.error('Fetch failed:', err)
         }
     }
 
+    const fetchEditData = async () => {
+        try {
+
+            setLoading(false);
+
+            const response = await fetch(`${API_URL}/company/certificate/edit/${id}`,
+                {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            )
+
+            const data = await response.json();
+
+            if (response.ok) {
+
+                setLoading(true)
+
+                const result = data?.data;
+
+                if (result) {
+
+                    setEditData(result);
+
+                }
+
+
+            }
+
+        } catch (error) {
+            next(error)
+        }
+    }
+
     useEffect(() => {
-        if (token && API_URL) fetchCreateData()
-    }, [token, API_URL])
+        if (createData && !id) {
+            const logo = `${assert_url}/company_logo/${createData.logoURL}`
+            const sig = `${assert_url}/signature/${createData.signatureURL}`
+            const bg = `${assert_url}/frames/${createData.frameImage?.[0]}`
+
+            setLogoPreview(logo)
+            setSignature1Preview(sig)
+            setSignature2Preview(sig)
+
+            setValue('logoURL', logo)
+            setValue('signature1URL', sig)
+            setValue('signature2URL', sig)
+            setValue('backgroundImage', bg)
+            setValue('title', createData.title)
+            setValue('content', createData.content)
+            setValue('content2', createData.content2)
+
+            setTitleText(createData.title);
+            setContentText(createData.content)
+            setContent2Text(createData.content2)
+
+            setSelectedBg(bg)
+
+            setDefaultBackground(createData.frameImage.map((f) => `${assert_url}/frames/${f}`))
+
+            setLoading(true)
+        }
+
+        if (id && createData && editData) {
+
+            const sig = `${assert_url}/signature/${createData.signatureURL}`
+
+            setSignature1Preview(sig)
+            setSignature2Preview(sig)
+
+            setDefaultBackground(createData.frameImage.map((f) => `${assert_url}/frames/${f}`))
+
+            if (editData.backgroundImage) {
+                if (editData.backgroundImage != 'bg1.jpg' && editData.backgroundImage != 'bg2.jpg' && editData.backgroundImage != 'bg3.jpg' && editData.backgroundImage != 'bg4.jpg') {
+                    setCustomBg(assert_url + '/frames/' + editData.backgroundImage)
+                }
+                setSelectedBg(assert_url + '/frames/' + editData.backgroundImage)
+
+
+            }
+
+            Object.entries(editData).forEach(([key, value]) => {
+                if (key == 'signatureName2') {
+                    setValue('signature2Name', value ?? '')
+                } else if (key == 'signatureContent2') {
+                    setValue('signatureContent2', value ?? '')
+                } else if (key == 'signatureURL') {
+                    setValue('signature1URL', (assert_url + '/signature/' + editData.signatureURL) ?? '')
+                } else if (key == 'signatureURL2') {
+                    setValue('signature2URL', (assert_url + '/signature/' + editData.signatureURL2) ?? '')
+                } else {
+                    setValue(key, value ?? '')
+                }
+            })
+
+            setTitleText(editData.title || '')
+            setContentText(editData.content || '')
+            setContent2Text(editData.content2 || '')
+            setSignatureName(editData.signatureName || '')
+            setSignatureContent(editData.signatureContent || '')
+            setSignatureName2(editData.signatureName2 || '')
+            setSignatureContent2(editData.signatureContent2 || '')
+
+            if (editData.logoURL) setLogoPreview(assert_url + '/company_logo/' + editData.logoURL)
+            if (editData.signatureURL) setSignature1Preview(assert_url + '/signature/' + editData.signatureURL)
+            if (editData.signatureURL2) setSignature2Preview(assert_url + '/signature/' + editData.signatureURL2)
+
+            setLoading(true)
+        }
+    }, [createData, editData, id])
+
+    useEffect(() => {
+        if (token && API_URL) {
+            fetchCreateData()
+            if (id) {
+                fetchEditData();
+            }
+        }
+    }, [API_URL, token, id])
 
     const handleImageUpload = (file, previewSetter, fieldKey) => {
         if (!file) return
@@ -158,39 +296,57 @@ const CertificateForm = () => {
     }
 
     const handleFormSubmit = async (values) => {
-        const formDatas = new FormData()
+
+        const formData = new FormData()
 
         Object.entries(values).forEach(([k, v]) => {
             if (
-                !['logoURL', 'backgroundImage', 'signature1URL', 'signature2URL'].includes(k) &&
+                !['logoURL', 'backgroundImage', 'signature2Name', 'signature2Content', 'signatureName', 'signatureContent', 'signature1URL', 'signature2URL'].includes(k) &&
                 v !== undefined &&
                 v !== null
             ) {
-                formDatas.append(k, v)
+
+                formData.append(k, v)
+                console.log("Data", k, v, formData);
             }
         })
 
         Object.entries(uploadedFiles).forEach(([key, file]) => {
             if (file instanceof File) {
-                formDatas.append(key, file)
+                formData.append(key, file)
             } else if (values[key]) {
-                formDatas.append(key, values[key])
+                formData.append(key, values[key])
             }
         })
 
         try {
-            const res = await fetch(`${API_URL}/company/certificate`, {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${token}` },
-                body: formDatas
-            })
+            const res = await fetch(
+                id
+                    ? `${API_URL}/company/certificate/update/${id}`
+                    : `${API_URL}/company/certificate`,
+                {
+                    method: 'POST', // Always use POST when sending FormData
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        // Do NOT set 'Content-Type' manually when using FormData
+                    },
+                    body: formData
+                }
+            );
 
-            const result = await res.json()
-            console.log('Submitted:', result)
+            if (res.ok) {
+                toast.success(`Certificate ${id ? 'updated' : 'added'} successfully!`, {
+                    autoClose: 8000,
+                });
+                router.replace('/apps/certificate');
+            } else {
+                const errorData = await res.json();
+                console.error('Server responded with error:', errorData);
+            }
         } catch (err) {
-            console.error('Submission Error:', err)
+            console.error('Submission Error:', err);
         }
-    }
+    };
 
     const CertificateTemplateSkeleton = () => (
         <Card>
@@ -253,26 +409,26 @@ const CertificateForm = () => {
                                     {logoPreview && (
                                         <Image src={logoPreview} alt="Logo" width={80} height={40} style={{ objectFit: 'contain' }} />
                                     )}
-                                    <Typography variant="h6" fontWeight="bold" mt={2}>{getValues('title')}</Typography>
-                                    <Typography>{getValues('content')}</Typography>
+                                    <Typography variant="h6" fontWeight="bold" mt={2}>{titleText}</Typography>
+                                    <Typography>{contentText}</Typography>
                                     <Typography variant="h6" fontWeight="bold">[UserName]</Typography>
-                                    <Typography>{getValues('content2')}</Typography>
+                                    <Typography>{content2Text}</Typography>
                                     <Typography variant="h6" fontWeight="bold">[QuizName]</Typography>
                                     <Typography variant="body2" color="text.secondary">On [date]</Typography>
 
-                                    <Box mt={6} display="flex" justifyContent="space-between" gap={4}>
-                                        {getValues('signatureName') && (
+                                    <Box mt={6} display="flex" justifyContent={(signatureName && signatureName2) ? "space-between" : "center"} gap={4}>
+                                        {signatureName && (
                                             <Box textAlign="center">
-                                                <img src={getValues('signature1URL')} alt="Signature 1" width={50} height={20} />
-                                                <Typography fontWeight="bold">{getValues('signatureName')}</Typography>
-                                                <Typography variant="body2">{getValues('signatureContent')}</Typography>
+                                                <img src={signature1Preview} alt="Signature 1" width={50} height={20} />
+                                                <Typography fontWeight="bold">{signatureName}</Typography>
+                                                <Typography variant="body2">{signatureContent}</Typography>
                                             </Box>
                                         )}
-                                        {getValues('signature2Name') && (
+                                        {signatureName2 && (
                                             <Box textAlign="center">
-                                                <img src={getValues('signature2URL')} alt="Signature 2" width={50} height={20} />
-                                                <Typography fontWeight="bold">{getValues('signature2Name')}</Typography>
-                                                <Typography variant="body2">{getValues('signature2Content')}</Typography>
+                                                <img src={signature2Preview} alt="Signature 2" width={50} height={20} />
+                                                <Typography fontWeight="bold">{signatureName2}</Typography>
+                                                <Typography variant="body2">{signatureContent2}</Typography>
                                             </Box>
                                         )}
                                     </Box>
@@ -358,6 +514,21 @@ const CertificateForm = () => {
                                                     label={key.toUpperCase()}
                                                     fullWidth
                                                     required
+                                                    onChange={(e) => {
+                                                        field.onChange(e)
+                                                        e.preventDefault();
+                                                        if (key == 'title') {
+                                                            setValue('title', e.target.value)
+                                                            setTitleText(e.target.value)
+                                                        } else if (key == 'content') {
+                                                            setValue('content', e.target.value)
+                                                            setContentText(e.target.value);
+                                                        } else if (key == 'content2') {
+                                                            setValue('content2', e.target.value)
+                                                            setContent2Text(e.target.value);
+                                                        }
+
+                                                    }}
                                                     error={!!errors[key]}
                                                     helperText={errors[key]?.message}
                                                 />
@@ -377,7 +548,29 @@ const CertificateForm = () => {
                                             name={key}
                                             control={control}
                                             render={({ field }) => (
-                                                <TextField {...field} label={label} fullWidth error={!!errors[key]} helperText={errors[key]?.message} />
+                                                <TextField
+                                                    {...field}
+                                                    label={label}
+                                                    fullWidth
+                                                    onChange={(e) => {
+                                                        e.preventDefault();
+                                                        field.onChange(e);
+                                                        if (key == 'signatureName') {
+                                                            setValue('signatureName', e.target.value)
+                                                            setSignatureName(e.target.value)
+                                                        } else if (key == 'signatureContent') {
+                                                            setValue('signatureContent', e.target.value)
+                                                            setSignatureContent(e.target.value)
+                                                        } else if (key == 'signature2Name') {
+                                                            setValue('signature2Name', e.target.value)
+                                                            setSignatureName2(e.target.value)
+                                                        } else if (key == 'signature2Content') {
+                                                            setValue('signature2Content', e.target.value)
+                                                            setSignatureContent2(e.target.value)
+                                                        }
+                                                    }}
+                                                    error={!!errors[key]}
+                                                    helperText={errors[key]?.message} />
                                             )}
                                         />
                                     </Grid>
@@ -407,7 +600,7 @@ const CertificateForm = () => {
                     </Grid>
                 </Grid>
             </CardContent>
-        </Card>
+        </Card >
     )
 }
 
