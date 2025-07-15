@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react'
 
-import { useSession } from 'next-auth/react'
-
 import { useParams, useRouter } from 'next/navigation'
+
+import { useSession } from 'next-auth/react'
 
 import {
     Box,
@@ -136,6 +136,7 @@ const CertificateCard = ({ teams = [], onAddTeamSubmit }) => {
                         <Card
                             sx={{
                                 borderRadius: 2,
+                                
                                 // inlineSize: "400px",
                                 border: '1px solid #e0e0e0',
                                 boxShadow: 'none',
@@ -166,6 +167,7 @@ const CertificateCard = ({ teams = [], onAddTeamSubmit }) => {
                                         backgroundImage: `url(${assert_url}/frames/${item.backgroundImage})`,
                                         backgroundSize: 'cover',
                                         backgroundPosition: 'center',
+                                        
                                         // minHeight: 280,
                                         // p: 2,
                                         borderRadius: 2,

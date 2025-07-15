@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 
 import Image from 'next/image'
 
+import { useParams, useRouter } from 'next/navigation'
+
 import { useSession } from 'next-auth/react'
 
 import {
@@ -28,7 +30,6 @@ import {
     optional
 } from 'valibot'
 
-import { useParams, useRouter } from 'next/navigation'
 import { toast } from 'react-toastify'
 
 const alphaSpaceRegex = /^[A-Za-z ]+$/
@@ -238,6 +239,7 @@ const CertificateForm = () => {
                 if (editData.backgroundImage != 'bg1.jpg' && editData.backgroundImage != 'bg2.jpg' && editData.backgroundImage != 'bg3.jpg' && editData.backgroundImage != 'bg4.jpg') {
                     setCustomBg(assert_url + '/frames/' + editData.backgroundImage)
                 }
+                
                 setSelectedBg(assert_url + '/frames/' + editData.backgroundImage)
 
 
@@ -276,6 +278,7 @@ const CertificateForm = () => {
     useEffect(() => {
         if (token && API_URL) {
             fetchCreateData()
+            
             if (id) {
                 fetchEditData();
             }
@@ -328,6 +331,7 @@ const CertificateForm = () => {
                     method: 'POST', // Always use POST when sending FormData
                     headers: {
                         Authorization: `Bearer ${token}`,
+                        
                         // Do NOT set 'Content-Type' manually when using FormData
                     },
                     body: formData
@@ -341,6 +345,7 @@ const CertificateForm = () => {
                 router.replace('/apps/certificate');
             } else {
                 const errorData = await res.json();
+                
                 console.error('Server responded with error:', errorData);
             }
         } catch (err) {
@@ -517,6 +522,7 @@ const CertificateForm = () => {
                                                     onChange={(e) => {
                                                         field.onChange(e)
                                                         e.preventDefault();
+                                                        
                                                         if (key == 'title') {
                                                             setValue('title', e.target.value)
                                                             setTitleText(e.target.value)
@@ -555,6 +561,7 @@ const CertificateForm = () => {
                                                     onChange={(e) => {
                                                         e.preventDefault();
                                                         field.onChange(e);
+                                                        
                                                         if (key == 'signatureName') {
                                                             setValue('signatureName', e.target.value)
                                                             setSignatureName(e.target.value)
