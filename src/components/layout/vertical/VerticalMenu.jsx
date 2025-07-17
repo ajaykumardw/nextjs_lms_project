@@ -338,7 +338,8 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
               {permissArray?.isSuperAdmin && (
                 [
                   <MenuItem key="language" href={`/${locale}/apps/language`}>Language</MenuItem>,
-                  <MenuItem key="terminology" href={`/${locale}/apps/terminology`}>Terminology</MenuItem>
+                  <MenuItem key="terminology" href={`/${locale}/apps/terminology`}>Terminology</MenuItem>,
+                  <MenuItem key="notification_templates" href={`/${locale}/apps/admin/notification`}>Notification</MenuItem>
                 ]
               )}
               {permissArray?.isCompany && permissArray?.hasLabelPermission && (
