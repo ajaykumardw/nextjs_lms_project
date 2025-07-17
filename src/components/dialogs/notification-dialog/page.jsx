@@ -40,6 +40,16 @@ import PermissionGuard from '@/hocs/PermissionClientGuard'
 
 import SkeletonFormComponent from '@/components/skeleton/form/page'
 
+function slugify(text) {
+    return text
+        ?.toString()
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '') // remove non-alphanumeric except space and hyphen
+        .replace(/\s+/g, '-')         // replace spaces with hyphens
+        .replace(/-+/g, '-')          // collapse multiple hyphens
+        .replace(/^-+|-+$/g, '');     // trim hyphens from start and end
+}
 
 const EditorToolbar = ({ editor }) => {
     if (!editor) return null
@@ -85,18 +95,33 @@ const NotificationForm = () => {
 
     const [editData, setEditData] = useState()
 
+    const [isEditorFocused, setIsEditorFocused] = useState(false);
+
     const [loading, setLoading] = useState(false);
+
+    const [placeholder, setPlaceholder] = useState()
+
+    const [selectedPlaceholder, setSelectedPlaceholder] = useState("");
+    const [selectedVariable, setSelectedVariable] = useState("")
+
+    const [selectedValue, setSelectedValue] = useState()
+
+    useEffect(() => {
+        if (selectedPlaceholder && selectedVariable) {
+            setSelectedValue(`${slugify(selectedPlaceholder)}_${slugify(selectedVariable)}`)
+        }
+    }, [selectedPlaceholder, selectedVariable])
 
     const schema = useMemo(() => {
         return object({
-            template_name: pipe(string(), minLength(1, 'Template name is required'), maxLength(255, 'Too long')),
+            template_name: pipe(string(), minLength(1, 'Template name is required'), maxLength(50, 'Template name max length can be 50')),
             notification_type: pipe(string(), minLength(1, 'Notification Type is required')),
             category_type: (selectOpt && selectOpt === '687752877c5f232a7b35c975')
                 ? pipe(string(), minLength(1, 'Category Type is required'))
                 : pipe(),
-            subject: pipe(string(), minLength(1, 'Subject is required'), maxLength(255, 'Too long')),
-            message: pipe(string(), minLength(1, 'Message is required')),
-            footer: pipe(string(), minLength(1, 'Footer is required')),
+            subject: pipe(string(), minLength(1, 'Subject is required'), maxLength(50, 'Subject max length can be 50')),
+            message: pipe(string(), minLength(1, 'Message is required'), maxLength(1000, 'Subject max length can be 50')),
+            footer: pipe(string(), minLength(1, 'Footer is required'), maxLength(500, 'Subject max length can be 50')),
         })
     }, [selectOpt])
 
@@ -137,10 +162,15 @@ const NotificationForm = () => {
             const res = await fetch(`${API_URL}/company/notification/create`, {
                 headers: { Authorization: `Bearer ${token}` }
             })
-            
+
             const data = await res.json()
-            
-            if (res.ok) setCreateData(data?.data)
+
+            if (res.ok) {
+                console.log("Data", data?.data?.placeholder);
+
+                setPlaceholder(data?.data?.placeholder?.placeholder_data)
+                setCreateData(data?.data?.notification)
+            }
         } catch (error) {
             toast.error('Failed to load create data')
         }
@@ -151,12 +181,12 @@ const NotificationForm = () => {
             const res = await fetch(`${API_URL}/company/notification/edit/${id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             })
-            
+
             const data = await res.json()
-            
+
             if (res.ok) {
                 const result = data?.data
-                
+
                 setEditData(result)
                 setValue('template_name', result?.template_name)
                 setValue('notification_type', result?.notification_type)
@@ -202,10 +232,10 @@ const NotificationForm = () => {
     useEffect(() => {
         if (createData && selectOpt && editor && footerEditor && selectForm) {
             const selected = createData?.notification_data?.find(item => item._id === selectOpt)
-            
+
             if (selected) {
                 const { default_message = '', default_footer = '' } = selected
-                
+
                 editor.commands.setContent(default_message)
                 footerEditor.commands.setContent(default_footer)
                 setValue('message', default_message)
@@ -235,7 +265,7 @@ const NotificationForm = () => {
             )
 
             const result = await res.json()
-            
+
             if (res.ok) {
                 toast.success(`Notification ${id ? 'updated' : 'created'} successfully`, { autoClose: 1000 })
                 router.push(`/${locale}/apps/admin/notification`)
@@ -334,11 +364,87 @@ const NotificationForm = () => {
                                 />
                             </Grid>
 
+                            <Grid item size={{ xs: 12 }}>
+                                <Typography>
+                                    Message <span style={{ color: 'red' }}>*</span>
+                                </Typography>
+                            </Grid>
+
+                            {/* Placeholder, Variable and Insert in one row */}
                             <Grid size={{ xs: 12 }}>
-                                <Typography>Message <span>*</span></Typography>
+                                <Grid container spacing={2}>
+                                    {/* Placeholder Dropdown */}
+                                    <Grid size={{ xs: 5 }}>
+                                        <CustomTextField
+                                            select
+                                            fullWidth
+                                            value={selectedPlaceholder}
+                                            onChange={(e) => {
+                                                setSelectedPlaceholder(e.target.value);
+                                                setSelectedVariable(""); // reset variable on placeholder change
+                                            }}
+                                        >
+                                            {placeholder && placeholder.map((item, index) => (
+                                                <MenuItem key={index} value={item.name}>
+                                                    {item.name}
+                                                </MenuItem>
+                                            ))}
+                                        </CustomTextField>
+                                    </Grid>
+
+                                    {/* Variable Dropdown */}
+                                    <Grid size={{ xs: 5 }}>
+                                        <CustomTextField
+                                            select
+                                            fullWidth
+                                            value={selectedVariable}
+                                            onChange={(e) => setSelectedVariable(e.target.value)}
+                                            disabled={!selectedPlaceholder}
+                                        >
+                                            {(
+                                                selectedPlaceholder && placeholder && placeholder.find((p) => p.name === selectedPlaceholder)
+                                                    ?.variable || []
+                                            ).map((v) => (
+                                                <MenuItem key={v.name} value={v.name}>
+                                                    {v.name}
+                                                </MenuItem>
+                                            ))}
+                                        </CustomTextField>
+                                    </Grid>
+
+                                    {/* Insert Button */}
+                                    <Grid size={{ xs: 2 }}>
+                                        <Button
+                                            fullWidth
+                                            variant="outlined"
+                                            onClick={() => {
+                                                if (selectedValue && editor && isEditorFocused) {
+                                                    setIsEditorFocused(false)
+                                                    editor
+                                                        .chain()
+                                                        .insertContent(`{{${selectedValue}}}`)
+                                                        .run();
+                                                }
+                                            }}
+                                            disabled={!selectedPlaceholder || !selectedVariable}
+                                        >
+                                            Insert
+                                        </Button>
+                                    </Grid>
+                                </Grid>
+                            </Grid>
+
+
+                            <Grid item size={{ xs: 12 }}>
                                 <EditorToolbar editor={editor} />
-                                <EditorContent editor={editor} className="border rounded p-2 min-h-[150px]" />
-                                {errors.message && <p className="text-error text-sm mt-1">{errors.message?.message}</p>}
+                                <EditorContent
+                                    editor={editor}
+                                    onFocus={() => setIsEditorFocused(true)}
+                                    className="border rounded p-2 min-h-[150px]"
+                                />
+                                {errors.message && (
+                                    <p className="text-error text-sm mt-1">{errors.message?.message}</p>
+                                )}
                             </Grid>
 
                             <Grid size={{ xs: 12 }}>
