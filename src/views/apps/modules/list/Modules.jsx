@@ -48,8 +48,6 @@ const Courses = props => {
   // Props
   const { searchValue } = props
 
-  console.log('searchValue', searchValue);
-
   // States
   const URL = process.env.NEXT_PUBLIC_API_URL
   const APP_URL = process.env.NEXT_PUBLIC_ASSETS_URL

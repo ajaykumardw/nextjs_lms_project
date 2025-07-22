@@ -15,8 +15,16 @@ import {
 } from 'valibot'
 
 import {
-    Card, Button, Divider, CardHeader, CardContent, CardActions,
-    MenuItem, Typography
+    Card,
+    Button,
+    Divider,
+    MenuItem,
+    CardHeader,
+    Typography,
+    CardActions,
+    Checkbox,
+    CardContent,
+    FormControlLabel,
 } from '@mui/material'
 
 import Grid from '@mui/material/Grid2'
@@ -83,6 +91,7 @@ const EditorToolbar = ({ editor }) => {
 }
 
 const NotificationForm = () => {
+    
     const router = useRouter()
     const { lang: locale, id } = useParams()
     const { data: session } = useSession()
@@ -119,9 +128,10 @@ const NotificationForm = () => {
             category_type: (selectOpt && selectOpt === '687752877c5f232a7b35c975')
                 ? pipe(string(), minLength(1, 'Category Type is required'))
                 : pipe(),
-            subject: pipe(string(), minLength(1, 'Subject is required'), maxLength(50, 'Subject max length can be 50')),
-            message: pipe(string(), minLength(1, 'Message is required'), maxLength(1000, 'Subject max length can be 50')),
-            footer: pipe(string(), minLength(1, 'Footer is required'), maxLength(500, 'Subject max length can be 50')),
+            default_select: pipe(),
+            subject: pipe(string(), minLength(1, 'Subject is required'), maxLength(100, 'Subject max length can be 100')),
+            message: pipe(string(), minLength(1, 'Message is required'), maxLength(5000, 'Message max length can be 5000')),
+            footer: pipe(string(), minLength(1, 'Footer is required'), maxLength(500, 'Footer max length can be 500')),
         })
     }, [selectOpt])
 
@@ -130,8 +140,13 @@ const NotificationForm = () => {
     } = useForm({
         resolver: valibotResolver(schema),
         defaultValues: {
-            template_name: '', notification_type: '',
-            category_type: '', subject: '', message: '', footer: ''
+            template_name: '',
+            notification_type: '',
+            category_type: '',
+            subject: '',
+            message: '',
+            footer: '',
+            default_select: true
         }
     })
 
@@ -166,7 +181,6 @@ const NotificationForm = () => {
             const data = await res.json()
 
             if (res.ok) {
-                console.log("Data", data?.data?.placeholder);
 
                 setPlaceholder(data?.data?.placeholder?.placeholder_data)
                 setCreateData(data?.data?.notification)
@@ -195,6 +209,8 @@ const NotificationForm = () => {
                 setValue('subject', result?.subject)
                 setValue('message', result?.message)
                 setValue('footer', result?.footer)
+                setValue('default_select', !!result?.default_select)
+
 
                 editor?.commands.setContent(result?.message || '')
                 footerEditor?.commands.setContent(result?.footer || '')
@@ -246,6 +262,7 @@ const NotificationForm = () => {
 
     const onSubmit = async (values) => {
         try {
+
             if (selectOpt !== '687752877c5f232a7b35c975') {
                 values.category_type = null
             }
@@ -337,7 +354,12 @@ const NotificationForm = () => {
                                         name="category_type"
                                         control={control}
                                         render={({ field }) => (
-                                            <CustomTextField {...field} select required fullWidth label="Category Type"
+                                            <CustomTextField
+                                                {...field}
+                                                select
+                                                required
+                                                fullWidth
+                                                label="Category Type"
                                                 error={!!errors.category_type}
                                                 helperText={errors.category_type?.message}
                                             >
@@ -364,9 +386,38 @@ const NotificationForm = () => {
                                 />
                             </Grid>
 
+                            <Grid item xs={12}>
+                                <FormControlLabel
+                                    control={
+                                        <Controller
+                                            name="default_select"
+                                            control={control}
+                                            render={({ field }) => (
+                                                <Checkbox
+                                                    {...field}
+                                                    checked={!!field.value}
+                                                    onChange={(e) => {
+                                                        field.onChange(e.target.checked)
+                                                        setValue('default_select', e.target.checked)
+
+
+                                                    }}
+
+                                                />
+                                            )}
+                                        />
+                                    }
+                                    label={
+                                        <Typography component="span">
+                                            Default selected <Typography component="span" color="danger">*</Typography>
+                                        </Typography>
+                                    }
+                                />
+                            </Grid>
+
                             <Grid item size={{ xs: 12 }}>
                                 <Typography>
-                                    Message <span style={{ color: 'red' }}>*</span>
+                                    Message <span>*</span>
                                 </Typography>
                             </Grid>
 

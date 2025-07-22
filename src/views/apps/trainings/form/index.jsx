@@ -17,7 +17,6 @@ const ModuleLayout = props => {
     useEffect(() => {
         if (id) {
             setLayoutType('micro-modules');
-            console.log('idid', id);
         }
 
     }, [id])

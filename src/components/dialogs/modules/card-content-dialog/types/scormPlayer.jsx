@@ -57,9 +57,6 @@ const ScormPlayerLegacy = ({
                     errorCode: responseObj.error,
                 };
             },
-            onLogMessage: (level, message) => {
-                // console.log(`[${level}] ${message}`);
-            },
         };
 
         const api = new Scorm2004API(settings);
@@ -71,21 +68,6 @@ const ScormPlayerLegacy = ({
             lmsCommitUrl: 'https://your-lms.com/api/scorm/commit'
         });
 
-        // Monitor online/offline status
-        window.addEventListener('online', () => {
-            console.log('Back online - syncing data...');
-        });
-
-        window.addEventListener('offline', () => {
-            console.log('Gone offline - storing data locally...');
-        });
-
-        // Listen for sync events
-        window.API.on('OfflineDataSynced', () => {
-            console.log('Offline data synchronized successfully!');
-        });
-
-        console.log('scormUrl', scormUrl);
         document.getElementById('iframescorm')?.setAttribute('src', scormUrl);
 
     }, [studentId, trainingId, moduleId, scheduleId]);

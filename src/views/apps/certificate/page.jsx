@@ -310,7 +310,6 @@ const CertificateForm = () => {
             ) {
 
                 formData.append(k, v)
-                console.log("Data", k, v, formData);
             }
         })
 

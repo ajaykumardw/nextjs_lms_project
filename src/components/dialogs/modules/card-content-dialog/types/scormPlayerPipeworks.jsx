@@ -4,7 +4,6 @@
 import { useEffect, useRef, useState } from 'react';
 
 const ScormPlayerConverted = ({ scormUrl }) => {
-    console.log('scormUrl', scormUrl)
     const iframeRef = useRef(null);
     const [apiLoaded, setApiLoaded] = useState(false);
 
@@ -61,7 +60,6 @@ const ScormPlayerConverted = ({ scormUrl }) => {
         loadLocal: function () {
             const json = localStorage.getItem(this.key + this.id_lezione);
 
-            console.log('loadLocal', json);
             if (json) window.API.loadFromJSON(JSON.parse(json));
         },
         updateLessonStatus: function () { },
@@ -90,17 +88,10 @@ const ScormPlayerConverted = ({ scormUrl }) => {
 
         script.onload = () => {
             if (window.API) {
-                console.log('window.API loaded', window.API);
-
-                window.API.on("LMSInitialize", () => {
-                    console.log("LMSInitialize");
-                });
 
                 window.API.on("LMSSetValue", () => {
 
                     const data = window.API.cmi.toJSON();
-
-                    console.log("LMSSetValue", data);
 
                     scorm.saveLocal(data);
                     scorm.saveRemote(data);
@@ -112,25 +103,20 @@ const ScormPlayerConverted = ({ scormUrl }) => {
                 window.API.on("LMSGetLastError", () => {
                     const data = window.API.cmi.toJSON();
 
-                    console.log("LMSGetLastError", data);
                 });
 
                 window.API.on("LMSGetErrorString", () => {
                     const data = window.API.cmi.toJSON();
 
-                    console.log("LMSGetErrorString", data);
                 });
 
                 window.API.on("LMSGetDiagnostic", () => {
                     const data = window.API.cmi.toJSON();
-
-                    console.log("LMSGetDiagnostic", data);
                 });
 
                 window.API.on("LMSFinish", () => {
                     const data = window.API.cmi.toJSON();
 
-                    console.log("LMSFinish", data);
                     scorm.saveLocal(data);
                     scorm.saveRemote(data);
                     scorm.updateLessonStatus(data);

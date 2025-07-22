@@ -177,7 +177,6 @@ const RemoteSessionModuleFormLayout = ({ setLayoutType }) => {
 
     useEffect(() => {
         if (id && module) {
-            console.log('module', module);
             reset({
                 title: module.title,
                 status: module.status,

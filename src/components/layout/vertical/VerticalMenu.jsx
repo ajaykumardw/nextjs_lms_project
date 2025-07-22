@@ -345,6 +345,9 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
               {permissArray?.isCompany && permissArray?.hasLabelPermission && (
                 <MenuItem href={`/${locale}/apps/label`}>Label</MenuItem>
               )}
+              {permissArray?.isCompany && (
+                <MenuItem href={`/${locale}/apps/notification`}>Notification</MenuItem>
+              )}
             </SubMenu>
           )}
           {/* <SubMenu label={"Pages"} icon={<i className='tabler-file' />}>
