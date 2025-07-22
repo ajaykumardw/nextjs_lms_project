@@ -131,7 +131,6 @@ const YoutubeCardLayout = ({ data, onClose, moduleData }) => {
             onSuccess: (response) => {
                 onClose(response.data.cards);
                 setItem(response.data.card);
-                console.log('response.data.cards', response.data.cards);
                 setCardItems(response.data.cards);
                 toast.success(response.message, {
                     autoClose: 700

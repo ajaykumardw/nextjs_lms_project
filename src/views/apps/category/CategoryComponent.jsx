@@ -112,7 +112,6 @@ const CategoryComponent = ({ tableRows, loadTableData, type }) => {
     const { data: session } = useSession()
 
     useEffect(() => {
-        console.log('result.data2', tableRows);
 
         if (tableRows) {
             setData(tableRows);

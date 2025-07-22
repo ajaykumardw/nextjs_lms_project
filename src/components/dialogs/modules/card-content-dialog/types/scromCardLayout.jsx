@@ -120,14 +120,11 @@ const ScromCardLayout = ({ data, onClose, moduleData }) => {
 
         setLoading(true);
         startTimeRef.current = Date.now();
-        console.log('startTimeRef', startTimeRef);
 
         try {
 
             const endpoint = `admin/module/${moduleData._id}/card/scorm/${data._id}`;
             const url = `${process.env.NEXT_PUBLIC_API_URL}/${endpoint}`;
-
-            console.log('endpoint', url);
 
             const res = await axios.put(url, formData, {
                 headers: { 'Content-Type': 'multipart/form-data', ...(token && { Authorization: `Bearer ${token}` }), },

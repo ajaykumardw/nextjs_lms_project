@@ -94,7 +94,6 @@ const WelcomeModuleCardLayout = ({ setLayoutType }) => {
 
 
     const handleModuleSections = (item) => {
-        console.log(item.type);
         setLayoutType(item.type);
     }
 
@@ -145,7 +144,6 @@ const WelcomeModuleCardLayout = ({ setLayoutType }) => {
                                                             <DirectionalIcon ltrIconClass='tabler-chevron-right' rtlIconClass='tabler-chevron-left' />
                                                         }
                                                         onClick={(e) => {
-                                                            console.log(e);
                                                             handleModuleSections(item)
                                                         }}
                                                         className='is-auto flex-auto'

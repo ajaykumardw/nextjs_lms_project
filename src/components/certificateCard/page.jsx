@@ -58,7 +58,6 @@ const CertificateCard = ({ teams = [], onAddTeamSubmit }) => {
 
             if (response.ok) {
                 setLoading(true);
-                console.log("Data", data);
 
                 setCertificateData(data?.data)
             }
@@ -409,7 +408,6 @@ const CertificateCard = ({ teams = [], onAddTeamSubmit }) => {
                 </MenuItem>
                 <MenuItem
                     onClick={() => {
-                        console.log('Clone', selectedTeam)
                         handleMenuClose()
                     }}
                 >

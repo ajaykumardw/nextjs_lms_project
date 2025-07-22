@@ -216,8 +216,6 @@ const DocumentCardLayout = ({ data, onClose, moduleData }) => {
         //     return;
         // }
 
-        console.log('questions', questions);
-
         setLoading(true);
 
         const newData = {
