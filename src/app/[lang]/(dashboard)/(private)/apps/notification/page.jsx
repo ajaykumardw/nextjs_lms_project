@@ -14,6 +14,7 @@ import {
     FormControlLabel,
     Stack,
     Typography,
+    Skeleton,
     Tab,
     Switch,
     Card,
@@ -97,6 +98,28 @@ const EditorToolbar = ({ editor }) => {
                 </CustomIconButton>
             ))}
         </div>
+    )
+}
+
+const SkeletonComponent = () => {
+    return (
+        <Card>
+            <CardContent>
+                {/* Skeleton for Tabs */}
+                <Stack direction="row" spacing={2} sx={{ overflowX: 'auto' }}>
+                    {[...Array(4)].map((_, idx) => (
+                        <Skeleton key={idx} variant="rectangular" width={100} height={40} />
+                    ))}
+                </Stack>
+
+                {/* Skeleton for Tab Panel Content */}
+                <Box mt={4}>
+                    <Skeleton variant="text" height={40} width="60%" />
+                    <Skeleton variant="text" height={30} width="40%" />
+                    <Skeleton variant="rectangular" height={200} sx={{ mt: 2 }} />
+                </Box>
+            </CardContent>
+        </Card>
     )
 }
 
@@ -450,7 +473,7 @@ const NotificationTabs = () => {
         }
     }
 
-    if (loading) return <Box p={4}>Loading...</Box>
+    if (loading) return <SkeletonComponent />
 
     return (
         <Card>
