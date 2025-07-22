@@ -35,6 +35,8 @@ const Logo = ({ color }) => {
   // Refs
   const logoTextRef = useRef(null)
 
+  const asset_url = process.env.NEXT_PUBLIC_ASSETS_URL
+
   // Hooks
   const { isHovered, transitionDuration, isBreakpointReached } = useVerticalNav()
   const { settings } = useSettings()
@@ -59,8 +61,9 @@ const Logo = ({ color }) => {
 
   return (
     <div className='flex items-center'>
-      <VuexyLogo className='text-2xl text-primary' />
-      <LogoText
+      <img src={`${asset_url}/company_logo/demo39.svg`} alt="DW" width={120} height={80} />
+      {/* <VuexyLogo className='text-2xl text-primary' /> */}
+      {/* <LogoText
         color={color}
         ref={logoTextRef}
         isHovered={isHovered}
@@ -69,7 +72,7 @@ const Logo = ({ color }) => {
         isBreakpointReached={isBreakpointReached}
       >
         {themeConfig.templateName}
-      </LogoText>
+      </LogoText> */}
     </div>
   )
 }
