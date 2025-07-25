@@ -10,9 +10,9 @@ import Grid from '@mui/material/Grid2'
 import MyCourseHeader from './MyCourseHeader'
 import ColoredCards from './ColoredCards'
 import FreeCourses from './FreeCourses'
-import Trainings from './Trainings'
+import Program from './Programs'
 
-const TrainingLayout = ({ courseData, mode }) => {
+const ProgramLayout = ({ courseData, mode }) => {
   // States
   const [searchValue, setSearchValue] = useState('')
 
@@ -22,7 +22,7 @@ const TrainingLayout = ({ courseData, mode }) => {
         <MyCourseHeader mode={mode} searchValue={searchValue} setSearchValue={setSearchValue} />
       </Grid> */}
       <Grid size={{ xs: 12 }}>
-        <Trainings courseData={courseData} searchValue={searchValue} />
+        <Program courseData={courseData} searchValue={searchValue} />
       </Grid>
       {/* <Grid size={{ xs: 12 }}>
         <ColoredCards />
@@ -34,4 +34,4 @@ const TrainingLayout = ({ courseData, mode }) => {
   )
 }
 
-export default TrainingLayout
+export default ProgramLayout

@@ -44,7 +44,7 @@ const iconStyle = {
   justifyContent: 'center',
 };
 
-const Trainings = props => {
+const Program = props => {
   // Props
   const { searchValue } = props
 
@@ -194,7 +194,7 @@ const Trainings = props => {
       <CardContent className='flex flex-col gap-6'>
         <div className='flex flex-wrap items-center justify-between gap-2'>
           <div>
-            <Typography variant='h5'>My Trainings</Typography>
+            <Typography variant='h5'>My Programs</Typography>
             <Typography>Total {totalItems} trainings you have in your bucket</Typography>
           </div>
           <div className='flex flex-wrap items-center gap-y-4 gap-x-6'>
@@ -202,10 +202,10 @@ const Trainings = props => {
               variant='contained'
               startIcon={<i className='tabler-plus' />}
               component={Link}
-              href={getLocalizedUrl(`/apps/trainings/form`, locale)}
+              href={getLocalizedUrl(`/apps/program/form`, locale)}
               className='max-sm:is-full'
             >
-              Add New Training
+              Add New Program
             </Button>
             <FormControl fullWidth size='small' className='is-[250px] flex-auto'>
               <Select
@@ -245,7 +245,7 @@ const Trainings = props => {
               <Grid size={{ xs: 12, sm: 4, md: 3 }} key={index}>
                 <div className='border rounded bs-full'>
                   <div className='pli-2 pbs-2'>
-                    <Link href={getLocalizedUrl(`/apps/trainings/form/${item._id}`, locale)} className='flex'>
+                    <Link href={getLocalizedUrl(`/apps/content-folder/${item._id}`, locale)} className='flex'>
                       <img src={item.image ? `${APP_URL}/${item.image}` : placeholderBase64} alt={item.title} className='is-full' />
                     </Link>
                   </div>
@@ -324,4 +324,4 @@ const Trainings = props => {
   )
 }
 
-export default Trainings
+export default Program

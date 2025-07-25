@@ -7,7 +7,7 @@ import { useRouter, useParams, useSearchParams } from 'next/navigation'
 
 import { getLocalizedUrl } from '@/utils/i18n'
 
-import TrainingFormLayout from './training-form-layout';
+import ProgramFormLayout from './program-form-layout';
 
 
 const ModuleLayout = props => {
@@ -23,7 +23,7 @@ const ModuleLayout = props => {
 
     return (
         <>
-            <TrainingFormLayout setLayoutType={setLayoutType} />
+            <ProgramFormLayout setLayoutType={setLayoutType} />
         </>
     )
 }

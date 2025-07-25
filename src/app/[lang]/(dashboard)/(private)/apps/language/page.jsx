@@ -1,10 +1,12 @@
-// Component Imports
+'use client'
+
+import { useParams } from 'next/navigation';
 import Language from '@views/apps/language'
-import PermissionGuard from '@/hocs/PermissionGuard'
+import PermissionGuard from '@/hocs/PermissionClientGuard'
 
-export default function LanguageApp({ params }) {
+export default function LanguageApp() {
 
-  const locale = params.lang;
+  const { lang: locale } = useParams();
 
   return (
     <PermissionGuard locale={locale} element={'isSuperAdmin'}>
@@ -13,10 +15,3 @@ export default function LanguageApp({ params }) {
   )
 
 }
-
-// const LanguageApp = async () => {
-
-//   return <Language />
-// }
-
-// export default LanguageApp

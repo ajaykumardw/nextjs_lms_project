@@ -1,10 +1,13 @@
 // Component Imports
-import PermissionGuard from '@/hocs/PermissionGuard'
+'use client'
+
+import PermissionGuard from '@/hocs/PermissionClientGuard'
 import Terminology from '@views/apps/terminology'
+import { useParams } from 'next/navigation';
 
-export default function TerminologyApp({params}) {
+export default function TerminologyApp() {
 
-  const locale = params.lang;
+  const { lang: locale } = useParams();
 
   return (
     <PermissionGuard locale={locale} element={'isSuperAdmin'}>

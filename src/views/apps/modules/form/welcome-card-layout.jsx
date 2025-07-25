@@ -101,7 +101,7 @@ const WelcomeModuleCardLayout = ({ setLayoutType }) => {
         <>
             <Card>
                 <CardContent className='flex flex-col gap-6'>
-                    <Typography variant="body1">Select the type of Module to continue</Typography>
+                    <Typography variant="body1">Select the type of Module to continue s</Typography>
                     {data.length > 0 ? (
                         <Grid container spacing={6}>
                             {data.slice(activePage * 6, activePage * 6 + 6).map((item, index) => (

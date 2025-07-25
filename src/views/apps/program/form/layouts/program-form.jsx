@@ -71,7 +71,7 @@ import CustomTextField from '@core/components/mui/TextField'
 // Third-party Imports
 
 
-const TrainingFormLayout = ({ setLayoutType, setShowCards, setModuleData }) => {
+const ProgramFormLayout = ({ setLayoutType, setShowCards, setModuleData }) => {
 
     const URL = process.env.NEXT_PUBLIC_API_URL
     const public_url = process.env.NEXT_PUBLIC_ASSETS_URL;
@@ -307,12 +307,12 @@ const TrainingFormLayout = ({ setLayoutType, setShowCards, setModuleData }) => {
 
             <Card>
                 <CardHeader
-                    title={id ? `Edit ${training?.title}` : 'Add Training'}
+                    title={id ? `Edit ${training?.title}` : 'Add Program'}
                     action={
                         <Button
                             variant='outlined'
                             startIcon={<DirectionalIcon ltrIconClass='tabler-arrow-left' rtlIconClass='tabler-arrow-right' />}
-                            onClick={() => router.push(getLocalizedUrl('/apps/trainings', locale))}
+                            onClick={() => router.push(getLocalizedUrl('/apps/program', locale))}
                         >
                             Back to Trainings
                         </Button>
@@ -465,18 +465,16 @@ const TrainingFormLayout = ({ setLayoutType, setShowCards, setModuleData }) => {
                             )}
                         </Button>
 
-
-                        {!id ? (
-                            <Button variant="tonal" color="error" type="reset" onClick={(e) => {
-                                setLayoutType('')
-                            }}>
-                                Cancel
-                            </Button>
-                        ) : (<Button variant="tonal" color="warning" type="reset" onClick={(e) => {
-                            handleNextToCard()
-                        }}>
-                            Skip and Continue
-                        </Button>)}
+                        <Button
+                            variant="tonal"
+                            color="error"
+                            type="reset"
+                            onClick={() => {
+                                router.push(`/${locale}/apps/program`);
+                            }}
+                        >
+                            Cancel
+                        </Button>
                     </CardActions>
                 </form>
 
@@ -486,4 +484,4 @@ const TrainingFormLayout = ({ setLayoutType, setShowCards, setModuleData }) => {
     )
 }
 
-export default TrainingFormLayout
+export default ProgramFormLayout

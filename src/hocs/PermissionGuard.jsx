@@ -44,7 +44,7 @@ export default async function PermissionGuardServer({ children, locale, element 
 
     // Normalize permissions (ensure it's an object with arrays)
     const allowedPermissions = permissions?.[element];
-    const listingId = session.user?.listing; // or wherever the current context ID comes from
+    const listingId = session?.user?.listing; // or wherever the current context ID comes from
 
 
     if (

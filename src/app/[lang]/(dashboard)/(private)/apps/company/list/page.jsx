@@ -1,10 +1,13 @@
-// Component Imports
-import PermissionGuard from '@/hocs/PermissionGuard'
+'use client'
+
+
+import { useParams } from 'next/navigation';
+import PermissionGuard from '@/hocs/PermissionClientGuard'
 import UserList from '@/views/apps/company/list'
 
-export default function UserListApp({ params }) {
+export default function UserListApp() {
 
-  const locale = params.lang;
+  const { lang: locale } = useParams();
 
   return (
     <PermissionGuard locale={locale} element={'isSuperAdmin'}>

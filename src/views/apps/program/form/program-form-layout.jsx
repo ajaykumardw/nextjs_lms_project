@@ -6,9 +6,9 @@ import { useState, useEffect } from 'react'
 
 import { useRouter, useParams, useSearchParams } from 'next/navigation'
 
-import TrainingForm from './layouts/training-form';
+import ProgramForm from './layouts/program-form';
 
-const TrainingFormLayout = ({ setLayoutType }) => {
+const ProgramFormLayout = ({ setLayoutType }) => {
     const [showCards, setShowCards] = useState(false);
     const [moduleData, setModuleData] = useState();
     const [cardItems, setCardItems] = useState([]);
@@ -37,9 +37,9 @@ const TrainingFormLayout = ({ setLayoutType }) => {
 
     return (
         <>
-            <TrainingForm setLayoutType={setLayoutType} setShowCards={setShowCards} setModuleData={setModuleData} />
+            <ProgramForm setLayoutType={setLayoutType} setShowCards={setShowCards} setModuleData={setModuleData} />
         </>
     )
 }
 
-export default TrainingFormLayout
+export default ProgramFormLayout
