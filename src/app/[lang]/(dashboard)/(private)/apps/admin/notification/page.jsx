@@ -1,14 +1,19 @@
+'use client'
 
-import PermissionGuardServer from '@/hocs/PermissionGuard';
+
+import { useParams } from 'next/navigation';
+
+import PermissionServer from '@/hocs/PermissionClientGuard';
+
 import Notification from '@views/apps/Notification/page'
 
-export default async function AdminNotification({ params }) {
+export default function AdminNotification() {
 
-    const { lang: lang } = await params?.lang;
+    const { lang: locale } = useParams()
 
     return (
-        <PermissionGuardServer locale={lang} element={'isSuperAdmin'}>
+        <PermissionServer locale={locale} element={'isSuperAdmin'}>
             <Notification />
-        </PermissionGuardServer>
+        </PermissionServer>
     );
 }

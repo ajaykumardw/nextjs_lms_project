@@ -138,6 +138,7 @@ const Login = ({ mode }) => {
         redirect: false
       })
 
+      console.log("Res", res);
 
       setLoading(false)
 

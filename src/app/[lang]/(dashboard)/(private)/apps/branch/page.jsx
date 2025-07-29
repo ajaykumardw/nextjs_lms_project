@@ -1,10 +1,14 @@
-// Do NOT add 'use client' here — this is a Server Component
+'use client'
 
-import PermissionGuard from '@/hocs/PermissionGuard';
+import { useParams } from 'next/navigation';
+
+import PermissionGuard from '@/hocs/PermissionClientGuard';
+
 import Branch from '@views/apps/branch'
 
-export default async function BranchApp({ params }) {
-    const locale = params.lang;
+export default function BranchApp() {
+
+    const { lang: locale } = useParams();
 
     return (
         <PermissionGuard locale={locale} element="hasBranchPermission">
