@@ -1,13 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+
+import { useParams, useRouter } from 'next/navigation'
+
 import {
     Card,
     CardHeader,
     Button,
     Divider,
-    Select,
-    FormControl,
     MenuItem,
     Typography,
     CardActions,
@@ -29,16 +30,21 @@ import {
     regex
 } from 'valibot'
 
-import { useParams, useRouter } from 'next/navigation'
 import { useDropzone } from 'react-dropzone'
+
 import { valibotResolver } from '@hookform/resolvers/valibot'
-import AppReactDropzone from '@/libs/styles/AppReactDropzone'
-import { getLocalizedUrl } from '@/utils/i18n'
-import CustomTextField from '@/@core/components/mui/TextField'
-import DirectionalIcon from '../DirectionalIcon'
 
 import { toast } from 'react-toastify'
+
+import { getLocalizedUrl } from '@/utils/i18n'
+
+import CustomTextField from '@/@core/components/mui/TextField'
+
+import DirectionalIcon from '../DirectionalIcon'
+
 import SkeletonFormComponent from '../skeleton/form/page'
+
+import AppReactDropzone from '@/libs/styles/AppReactDropzone'
 
 const FormComponent = ({
     stage,
@@ -104,18 +110,22 @@ const FormComponent = ({
         onDrop: (acceptedFiles) => {
             if (!acceptedFiles.length) return
             const selectedFile = acceptedFiles[0]
+            
             setFile(selectedFile)
             setImageError('') // Clear any previous error
             const reader = new FileReader()
+            
             reader.onload = (e) => {
                 setPreview(e.target.result)
             }
+            
             reader.readAsDataURL(selectedFile)
         },
         onDropRejected: (rejectedFiles) => {
             rejectedFiles.forEach(file => {
                 file.errors.forEach(error => {
                     let msg = ''
+                    
                     switch (error.code) {
                         case 'file-invalid-type':
                             msg = `Invalid file type. Allowed types: JPG, PNG, GIF, WebP, SVG, BMP, TIFF, ICO`
@@ -128,7 +138,9 @@ const FormComponent = ({
                             break
                         default:
                             msg = `There was an issue with the uploaded file.`
-                    }
+                    
+                        }
+                    
                     toast.error(msg, { hideProgressBar: false })
                     setImageError(msg)
                 })
@@ -157,6 +169,7 @@ const FormComponent = ({
 
         if (!file && !editData?.image_url) {
             setImageError('Image is required');
+            
             return;
         } else {
             setImageError(''); // Clear error

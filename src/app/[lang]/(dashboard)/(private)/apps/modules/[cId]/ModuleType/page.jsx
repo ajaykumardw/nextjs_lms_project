@@ -2,15 +2,13 @@
 
 import { useState, useEffect } from 'react'
 
+import { useRouter, useParams } from 'next/navigation'
+
 import { useSession } from 'next-auth/react'
 
 import {
     Skeleton
 } from '@mui/material'
-
-import { useParams } from 'next/navigation'
-
-import { useRouter } from 'next/navigation'
 
 import Grid from '@mui/material/Grid2'
 
@@ -51,8 +49,9 @@ const ModuleTypeCardComponent = () => {
             const result = await response.json();
 
             if (response.ok) {
+
                 const value = result?.data?.appConfig;
-                console.log("Value", value);
+
 
                 setCardData(value);
             }

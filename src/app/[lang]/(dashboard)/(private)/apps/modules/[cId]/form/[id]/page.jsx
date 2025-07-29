@@ -37,6 +37,7 @@ const CreateNewModuleLayouts = () => {
 
             if (response.ok) {
                 const result = data?.data;
+                
                 setLoading(true)
                 setEditData(result)
             }

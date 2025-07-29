@@ -1,9 +1,12 @@
 // Component Imports
 'use client'
 
-import PermissionGuard from '@/hocs/PermissionClientGuard'
-import Terminology from '@views/apps/terminology'
 import { useParams } from 'next/navigation';
+
+import PermissionGuard from '@/hocs/PermissionClientGuard'
+
+import Terminology from '@views/apps/terminology'
+
 
 export default function TerminologyApp() {
 

@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 
-import { useSession } from 'next-auth/react';
-
 import { useParams } from 'next/navigation';
+
+import { useSession } from 'next-auth/react';
 
 import PermissionGuard from '@/hocs/PermissionClientGuard'
 
@@ -33,6 +33,7 @@ const MyCoursePage = () => {
 
       if (response.ok) {
         const result = data?.data;
+
         setCreateData(result)
       }
 
@@ -58,6 +59,7 @@ const MyCoursePage = () => {
         formLink={`/${locale}/apps/modules/${cid}/form`}
         parentCategory={`/${locale}/apps/modules`}
         data={createData}
+        nextLink={`/${locale}/apps/activity`}
       />
     </PermissionGuard>
   )

@@ -1,10 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
+
 import { useParams } from 'next/navigation';
 
+import { useSession } from 'next-auth/react';
+
 import PermissionGuard from '@/hocs/PermissionClientGuard';
+
 import CardComponent from '@components/program-component/CardComponent';
 
 const MyTrainingPage = () => {

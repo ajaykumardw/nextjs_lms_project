@@ -2,7 +2,9 @@
 
 
 import { useParams } from 'next/navigation';
+
 import PermissionServer from '@/hocs/PermissionClientGuard';
+
 import Notification from '@views/apps/Notification/page'
 
 export default function AdminNotification() {

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 
+import { useRouter } from 'next/navigation';
+
 import { useSession } from 'next-auth/react';
 
 import {
@@ -20,8 +22,8 @@ import {
     MenuItem,
     Pagination
 } from '@mui/material';
+
 import Grid from '@mui/material/Grid2';
-import { useRouter } from 'next/navigation';
 
 const BreadcumbComponent = ({ data, locale, stage }) => {
     return (
@@ -154,6 +156,7 @@ const ProgramCardComponent = ({
         if (API_URL && token && stage) {
             fetchCategory()
         }
+        
         if (API_URL && token && parent && currentId) {
             fetchBreadCumbCategory();
         }

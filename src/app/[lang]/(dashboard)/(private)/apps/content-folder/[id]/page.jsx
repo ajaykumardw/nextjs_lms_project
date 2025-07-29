@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 
-import { useSession } from "next-auth/react";
-
 import { useParams } from "next/navigation";
+
+import { useSession } from "next-auth/react";
 
 import ProgramCardComponent from "@/components/program-component/CardComponent";
 
@@ -34,6 +34,7 @@ const ContentComponent = () => {
 
             if (response.ok) {
                 const value = result?.data;
+                
                 setCardData(value);
                 setTotalItems(value?.length || 0);
             }

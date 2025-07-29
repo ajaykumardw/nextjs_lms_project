@@ -390,118 +390,121 @@ const ModuleTypes = ({ setShowCards, source, setOpen, onSelectSlideFromPopup, mo
     return (
         <>
             {!showContents ?
-                (<Card>
-                    <CardContent className='flex flex-col gap-6'>
-                        {source != 'popup' ? (
-                            <CardHeader
-                                className='p-4 pb-2'
-                                title={
-                                    <div className='flex items-center justify-between gap-4 flex-wrap'>
-                                        {/* Left: Icon + Title */}
-                                        <div className='flex items-center gap-3'>
-                                            {/* Image/Icon */}
-                                            <div className='w-10 h-10 rounded-lg overflow-hidden bg-gray-100 shadow-sm flex items-center justify-center'>
-                                                {moduleData?.image ? (
-                                                    <img
-                                                        src={`${public_url}/${moduleData.image}`}
-                                                        alt='Module Preview'
-                                                        className='object-cover w-full h-full'
-                                                    />
-                                                ) : (
-                                                    <svg
-                                                        viewBox='0 0 24 24'
-                                                        fill='currentColor'
-                                                        className='w-6 h-6 text-gray-400'
-                                                    >
-                                                        <path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z' />
-                                                    </svg>
-                                                )}
+                (
+                    <Card>
+                        <CardContent className='flex flex-col gap-6'>
+                            {source != 'popup' ? (
+                                <CardHeader
+                                    className='p-4 pb-2'
+                                    title={
+                                        <div className='flex items-center justify-between gap-4 flex-wrap'>
+                                            {/* Left: Icon + Title */}
+                                            <div className='flex items-center gap-3'>
+                                                {/* Image/Icon */}
+                                                <div className='w-10 h-10 rounded-lg overflow-hidden bg-gray-100 shadow-sm flex items-center justify-center'>
+                                                    {moduleData?.image ? (
+                                                        <img
+                                                            src={`${public_url}/${moduleData.image}`}
+                                                            alt='Module Preview'
+                                                            className='object-cover w-full h-full'
+                                                        />
+                                                    ) : (
+                                                        <svg
+                                                            viewBox='0 0 24 24'
+                                                            fill='currentColor'
+                                                            className='w-6 h-6 text-gray-400'
+                                                        >
+                                                            <path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z' />
+                                                        </svg>
+                                                    )}
+                                                </div>
+
+                                                {/* Title */}
+                                                <Typography variant='h6' className='text-xl font-semibold text-textPrimary'>
+                                                    {moduleData?.title ? `${moduleData.title} module` : 'Untitled Module'}
+                                                </Typography>
                                             </div>
 
-                                            {/* Title */}
-                                            <Typography variant='h6' className='text-xl font-semibold text-textPrimary'>
-                                                {moduleData?.title ? `${moduleData.title} module` : 'Untitled Module'}
-                                            </Typography>
+
+                                            {/* Right: Edit & Back Buttons */}
+                                            <div className='flex items-center gap-2'>
+                                                <Button
+                                                    variant='outlined'
+                                                    color='primary'
+                                                    size='small'
+                                                    onClick={() => {
+                                                        if (id) {
+                                                            location.href = `/${locale}/apps/modules/form/${id}`;
+
+                                                            // router.replace(`/${locale}/apps/modules/form/${id}`);
+                                                            // setShowCards(false);
+                                                        } else {
+                                                            setShowCards(false);
+                                                        }
+                                                    }}
+                                                >
+                                                    <i className='tabler-edit mr-1' />
+                                                    Edit
+                                                </Button>
+
+                                                <Button
+                                                    variant='contained'
+                                                    color='primary'
+                                                    size='small'
+                                                    onClick={() => {
+                                                        setShowContents(true);
+                                                    }}
+                                                >
+                                                    <i className='tabler-arrow-right mr-1 text-sm' />
+                                                    Next
+                                                </Button>
+                                            </div>
                                         </div>
+                                    }
+                                />
 
-
-                                        {/* Right: Edit & Back Buttons */}
-                                        <div className='flex items-center gap-2'>
-                                            <Button
-                                                variant='outlined'
-                                                color='primary'
-                                                size='small'
-                                                onClick={() => {
-                                                    if (id) {
-                                                        location.href = `/${locale}/apps/modules/form/${id}`;
-
-                                                        // router.replace(`/${locale}/apps/modules/form/${id}`);
-                                                        // setShowCards(false);
-                                                    } else {
-                                                        setShowCards(false);
-                                                    }
-                                                }}
-                                            >
-                                                <i className='tabler-edit mr-1' />
-                                                Edit
-                                            </Button>
-
-                                            <Button
-                                                variant='contained'
-                                                color='primary'
-                                                size='small'
-                                                onClick={() => {
-                                                    setShowContents(true);
-                                                }}
-                                            >
-                                                <i className='tabler-arrow-right mr-1 text-sm' />
-                                                Next
-                                            </Button>
-                                        </div>
-                                    </div>
-                                }
-                            />
-
-                        ) : ''}
-                        <Grid container spacing={4}>
-                            {data.map((item, index) => {
-                                return (
-                                    <CustomInputVertical
-                                        type='radio'
-                                        key={index}
-                                        data={{ ...item, asset: SVGs[index].asset }}
-                                        selected={selected?.value}
-                                        name='custom-radios-icons'
-                                        handleChange={() => handleChange(item)}
-                                        disabled={true}
-                                        gridProps={{ size: { xs: 12, sm: 3 } }}
-                                    />
-                                )
-                            })}
-                        </Grid>
-                    </CardContent>
-                    <CardActions sx={{ display: 'flex', justifyContent: 'left', gap: 2 }}>
-                        {!onSelectSlideFromPopup &&
-                            <Button
-                                type='button'
-                                variant='outlined'
-                                component={Link}
-                                href={getLocalizedUrl(`/apps/modules`, locale)}
-                                startIcon={<DirectionalIcon ltrIconClass='tabler-arrow-left' rtlIconClass='tabler-arrow-right' />}
-                            >
-                                Back to Modules
-                            </Button>
-                        }
-                    </CardActions>
-                </Card>) :
-                (<ManageContentsCard
-                    cardrows={cardItemsModuleType}
-                    setShowContents={setShowContents}
-                    onDelete={handleDelete}
-                    setCardItemsModuleType={setCardItemsModuleType}
-                    moduleData={moduleData}
-                    setShowCards={setShowCards}
-                />)
+                            ) : ''}
+                            <Grid container spacing={4}>
+                                {data.map((item, index) => {
+                                    return (
+                                        <CustomInputVertical
+                                            type='radio'
+                                            key={index}
+                                            data={{ ...item, asset: SVGs[index].asset }}
+                                            selected={selected?.value}
+                                            name='custom-radios-icons'
+                                            handleChange={() => handleChange(item)}
+                                            disabled={true}
+                                            gridProps={{ size: { xs: 12, sm: 3 } }}
+                                        />
+                                    )
+                                })}
+                            </Grid>
+                        </CardContent>
+                        <CardActions sx={{ display: 'flex', justifyContent: 'left', gap: 2 }}>
+                            {!onSelectSlideFromPopup &&
+                                <Button
+                                    type='button'
+                                    variant='outlined'
+                                    component={Link}
+                                    href={getLocalizedUrl(`/apps/modules`, locale)}
+                                    startIcon={<DirectionalIcon ltrIconClass='tabler-arrow-left' rtlIconClass='tabler-arrow-right' />}
+                                >
+                                    Back to Modules
+                                </Button>
+                            }
+                        </CardActions>
+                    </Card>
+                ) :
+                (
+                    <ManageContentsCard
+                        cardrows={cardItemsModuleType}
+                        setShowContents={setShowContents}
+                        onDelete={handleDelete}
+                        setCardItemsModuleType={setCardItemsModuleType}
+                        moduleData={moduleData}
+                        setShowCards={setShowCards}
+                    />)
             }
         </>
     )
