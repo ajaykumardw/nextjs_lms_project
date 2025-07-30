@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 
 import { useRouter } from "next/navigation"
 
@@ -8,7 +8,7 @@ import { useParams } from "next/navigation"
 
 import { useSession } from "next-auth/react"
 
-import { Document, Page, pdfjs } from 'react-pdf';
+import * as pdfjsLib from 'pdfjs-dist';
 
 import {
     Box,
@@ -66,53 +66,110 @@ import CustomTextField from "@/@core/components/mui/TextField"
 
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
     'pdfjs-dist/build/pdf.worker.min.mjs',
     import.meta.url
 ).toString();
 
 const ShowFileModal = ({ open, setOpen, docURL }) => {
     const router = useRouter();
+    const canvasRef = useRef(null);
+    const [loading, setLoading] = useState(false);
+    const [pdfError, setPdfError] = useState(null);
+
+    const ASSET_URL = process.env.NEXT_PUBLIC_ASSETS_URL;
+    const fullURL = `${ASSET_URL}/activity/${docURL}`;
+    const ext = docURL?.split('.').pop()?.toLowerCase();
     const backURL = '/activities';
 
-    const ASSET_URL = process.env.NEXT_PUBLIC_ASSETS_URL
+    const handleClose = () => setOpen(false);
 
-    const handleClose = () => {
-        setOpen(false);
-    };
+    useEffect(() => {
+        const renderPDF = async () => {
+            if (ext !== 'pdf' || !open) return;
+
+            try {
+                setLoading(true);
+                const loadingTask = pdfjsLib.getDocument(fullURL);
+                const pdf = await loadingTask.promise;
+                const page = await pdf.getPage(1);
+                const viewport = page.getViewport({ scale: 1.5 });
+
+                const canvas = canvasRef.current;
+                const context = canvas.getContext('2d');
+
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                await page.render({ canvasContext: context, viewport }).promise;
+                setLoading(false);
+            } catch (err) {
+                console.error('PDF Render Error:', err);
+                setPdfError('Failed to load PDF. Ensure the file is publicly accessible and CORS is enabled.');
+                setLoading(false);
+            }
+        };
+
+        renderPDF();
+    }, [fullURL, ext, open]);
+
+    const isPublicURL = fullURL.startsWith('https://');
 
     const getViewerContent = () => {
-        const ext = docURL?.split('.')?.pop()?.toLowerCase();
-
+        // PDF Preview
         if (ext === 'pdf') {
+            if (loading) return <CircularProgress />;
+            if (pdfError) return <p>{pdfError}</p>;
+            
+            return <canvas ref={canvasRef} style={{ width: '100%' }} />;
+        }
+
+        // DOCX/PPTX: Only show Office viewer if hosted on public HTTPS URL
+        if (['doc', 'docx', 'ppt', 'pptx'].includes(ext)) {
+            if (!isPublicURL) {
+                return (
+                    <p>
+                        Office files must be hosted on a <strong>public HTTPS URL</strong> to preview.
+                        <br />
+                        <a href={fullURL} target="_blank" rel="noopener noreferrer">
+                            Click here to download the file
+                        </a>
+                    </p>
+                );
+            }
+
+            const officeViewerURL = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(fullURL)}`;
+            
+            
             return (
                 <iframe
-                    src={`https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(`${ASSET_URL}/activity/${docURL}`)}`}
+                    src={officeViewerURL}
                     style={{ width: '100%', height: '600px', border: 'none' }}
+                    title="Office document"
                 />
             );
         }
 
-        if (['doc', 'docx', 'pptx'].includes(ext)) {
-            return (
-                <iframe
-                    src={`https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(docURL)}`}
-                    style={{ width: '100%', height: '600px', border: 'none' }}
-                />
-            );
-        }
-
-        return <p>Unsupported file format</p>;
+        return (
+            <p>
+                Unsupported file format.
+                <br />
+                <a href={fullURL} target="_blank" rel="noopener noreferrer">
+                    Click here to download
+                </a>
+            </p>
+        );
     };
 
     return (
         <Dialog open={open} fullWidth maxWidth="md" sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}>
             <DialogCloseButton onClick={handleClose}>
-                <i className="tabler-x"></i>
+                <i className="tabler-x" />
             </DialogCloseButton>
 
             <DialogTitle>Document View</DialogTitle>
-            <DialogContent>{getViewerContent()}</DialogContent>
+
+            <DialogContent sx={{ pt: 1 }}>{getViewerContent()}</DialogContent>
 
             <DialogActions sx={{ justifyContent: 'center', gap: 2 }}>
                 <Button variant="contained">Submit</Button>
@@ -189,7 +246,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
                 type: 'Document'
             }
         }
-        
+
         if (id === '688723af5dd97f4ccae68835') {
             return {
                 accept: { 'video/mp4': ['.mp4'] },
@@ -197,7 +254,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
                 type: 'Video'
             }
         }
-        
+
         if (id === '688723af5dd97f4ccae68837') {
             return {
                 accept: { 'application/zip': ['.zip'] },
@@ -205,7 +262,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
                 type: 'SCORM Content'
             }
         }
-        
+
         if (id === '688723af5dd97f4ccae68836') {
             return { type: 'Youtube videos' }
         }
@@ -222,10 +279,10 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
         onDrop: (acceptedFiles) => {
             if (!acceptedFiles.length) return
             const selectedFile = acceptedFiles[0]
-            
+
             setFile(selectedFile)
             setImageError('')
-            
+
             if (fileConfig.type === 'Video') {
                 setPreview(URL.createObjectURL(selectedFile))
             } else {
@@ -236,7 +293,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
             rejectedFiles.forEach(file => {
                 file.errors.forEach(error => {
                     let msg = ''
-                    
+
                     switch (error.code) {
                         case 'file-invalid-type':
                             msg = `Invalid file type for ${fileConfig.type}.`
@@ -250,7 +307,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
                         default:
                             msg = `There was an issue with the uploaded file.`
                     }
-                    
+
                     toast.error(msg)
                     setImageError(msg)
                 })
@@ -262,7 +319,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
 
         if (!isYoutube && !file && !editData?.file_url) {
             setImageError(`Please upload a ${fileConfig.type.toLowerCase()}.`)
-            
+
             return
         }
 
@@ -271,7 +328,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
         try {
 
             const formData = new FormData()
-            
+
             formData.append('title', data.title)
 
             formData.append('file_type', fileConfig.type)
@@ -498,7 +555,7 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
                 fetchActivities();
             } else {
                 const result = await response.json();
-                
+
                 toast.error(result.message || "Failed to update name");
             }
         } catch (error) {
@@ -511,13 +568,13 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
 
         if (!editingTitle.trim()) {
             setEditingError("Title is required");
-            
+
             return;
         }
 
         if (editingTitle.length > 150) {
             setEditingError("Title cannot exceed 150 characters");
-            
+
             return;
         }
 
@@ -933,7 +990,7 @@ const ContentFlowModal = ({ open, data, setOpen, setSelected, selected, setNext,
 
             if (response.ok) {
                 const value = result?.data;
-                
+
                 toast.success("Activity added successfully", {
                     autoClose: 1000
                 })
@@ -990,7 +1047,7 @@ const ContentFlowModal = ({ open, data, setOpen, setSelected, selected, setNext,
                                 const selectedItem = data?.appConfig?.activity_data?.find(
                                     (item) => item.title === e.target.value
                                 )
-                                
+
                                 handleChange(selectedItem)
                             }}
                         >
@@ -1094,7 +1151,7 @@ const AcitivityCard = () => {
             if (response.ok) {
 
                 const value = result?.data;
-                
+
                 setActivity(value)
             }
         } catch (error) {
@@ -1116,7 +1173,7 @@ const AcitivityCard = () => {
             if (response.ok) {
 
                 const value = result?.data;
-                
+
                 setData(value)
             }
 
