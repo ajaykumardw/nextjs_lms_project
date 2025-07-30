@@ -33,6 +33,8 @@ import {
     CircularProgress,
 } from '@mui/material'
 
+import DocViewer, { DocViewerRenderers } from "react-doc-viewer";
+
 import Grid from '@mui/material/Grid2'
 
 import { useDropzone } from 'react-dropzone'
@@ -63,8 +65,6 @@ import DialogCloseButton from "@/components/dialogs/DialogCloseButton"
 import CustomTextField from "@/@core/components/mui/TextField"
 
 import 'react-pdf/dist/Page/AnnotationLayer.css';
-
-import DocViewer, { DocViewerRenderers } from "react-doc-viewer";
 
 const ShowFileModal = ({ open, setOpen, docURL }) => {
     const router = useRouter();
