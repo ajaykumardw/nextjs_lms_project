@@ -1,14 +1,12 @@
 'use client'
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useMemo } from "react"
 
 import { useRouter } from "next/navigation"
 
 import { useParams } from "next/navigation"
 
 import { useSession } from "next-auth/react"
-
-import * as pdfjsLib from 'pdfjs-dist';
 
 import {
     Box,
@@ -66,112 +64,91 @@ import CustomTextField from "@/@core/components/mui/TextField"
 
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.min.mjs',
-    import.meta.url
-).toString();
+import DocViewer, { DocViewerRenderers } from "react-doc-viewer";
 
 const ShowFileModal = ({ open, setOpen, docURL }) => {
     const router = useRouter();
-    const canvasRef = useRef(null);
-    const [loading, setLoading] = useState(false);
-    const [pdfError, setPdfError] = useState(null);
-
     const ASSET_URL = process.env.NEXT_PUBLIC_ASSETS_URL;
     const fullURL = `${ASSET_URL}/activity/${docURL}`;
     const ext = docURL?.split('.').pop()?.toLowerCase();
-    const backURL = '/activities';
+    const backURL = "/activities";
 
     const handleClose = () => setOpen(false);
 
-    useEffect(() => {
-        const renderPDF = async () => {
-            if (ext !== 'pdf' || !open) return;
+    const isPublicURL = fullURL.startsWith("https://");
 
-            try {
-                setLoading(true);
-                const loadingTask = pdfjsLib.getDocument(fullURL);
-                const pdf = await loadingTask.promise;
-                const page = await pdf.getPage(1);
-                const viewport = page.getViewport({ scale: 1.5 });
+    const documents = useMemo(() => {
+        if (!docURL) return [];
 
-                const canvas = canvasRef.current;
-                const context = canvas.getContext('2d');
+        // react-doc-viewer supports these extensions
+        const supportedExtensions = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'txt'];
 
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
+        if (!supportedExtensions.includes(ext)) return [];
 
-                await page.render({ canvasContext: context, viewport }).promise;
-                setLoading(false);
-            } catch (err) {
-                console.error('PDF Render Error:', err);
-                setPdfError('Failed to load PDF. Ensure the file is publicly accessible and CORS is enabled.');
-                setLoading(false);
-            }
-        };
+        return [
+            {
+                uri: fullURL,
+                fileType: ext,
+                fileName: docURL,
+            },
+        ];
+    }, [fullURL, ext, docURL]);
 
-        renderPDF();
-    }, [fullURL, ext, open]);
-
-    const isPublicURL = fullURL.startsWith('https://');
-
-    const getViewerContent = () => {
-        // PDF Preview
-        if (ext === 'pdf') {
-            if (loading) return <CircularProgress />;
-            if (pdfError) return <p>{pdfError}</p>;
-            
-            return <canvas ref={canvasRef} style={{ width: '100%' }} />;
+    const renderViewer = () => {
+        if (!documents.length) {
+            return (
+                <p>
+                    Unsupported file format or invalid file URL.
+                    <br />
+                    <a href={fullURL} target="_blank" rel="noopener noreferrer">
+                        Click here to download
+                    </a>
+                </p>
+            );
         }
 
-        // DOCX/PPTX: Only show Office viewer if hosted on public HTTPS URL
-        if (['doc', 'docx', 'ppt', 'pptx'].includes(ext)) {
-            if (!isPublicURL) {
-                return (
-                    <p>
-                        Office files must be hosted on a <strong>public HTTPS URL</strong> to preview.
-                        <br />
-                        <a href={fullURL} target="_blank" rel="noopener noreferrer">
-                            Click here to download the file
-                        </a>
-                    </p>
-                );
-            }
-
-            const officeViewerURL = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(fullURL)}`;
-            
-            
+        if (['doc', 'docx', 'ppt', 'pptx'].includes(ext) && !isPublicURL) {
             return (
-                <iframe
-                    src={officeViewerURL}
-                    style={{ width: '100%', height: '600px', border: 'none' }}
-                    title="Office document"
-                />
+                <p>
+                    Office files must be hosted on a <strong>public HTTPS URL</strong> to preview.
+                    <br />
+                    <a href={fullURL} target="_blank" rel="noopener noreferrer">
+                        Click here to download the file
+                    </a>
+                </p>
             );
         }
 
         return (
-            <p>
-                Unsupported file format.
-                <br />
-                <a href={fullURL} target="_blank" rel="noopener noreferrer">
-                    Click here to download
-                </a>
-            </p>
+            <div style={{ height: "600px" }}>
+                <DocViewer
+                    documents={documents}
+                    pluginRenderers={DocViewerRenderers}
+                    config={{
+                        header: {
+                            disableHeader: false,
+                            disableFileName: false,
+                        },
+                    }}
+                />
+            </div>
         );
     };
 
     return (
         <Dialog open={open} fullWidth maxWidth="md" sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}>
-            <DialogCloseButton onClick={handleClose}>
+            <Button
+                onClick={handleClose}
+                sx={{ position: "absolute", top: 10, right: 10, zIndex: 1 }}
+            >
                 <i className="tabler-x" />
-            </DialogCloseButton>
+            </Button>
 
             <DialogTitle>Document View</DialogTitle>
 
-            <DialogContent sx={{ pt: 1 }}>{getViewerContent()}</DialogContent>
+            <DialogContent sx={{ pt: 1 }}>{renderViewer()}</DialogContent>
 
-            <DialogActions sx={{ justifyContent: 'center', gap: 2 }}>
+            <DialogActions sx={{ justifyContent: "center", gap: 2 }}>
                 <Button variant="contained">Submit</Button>
                 <Button variant="tonal" color="error" onClick={() => router.push(backURL)}>
                     Cancel
