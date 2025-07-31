@@ -54,8 +54,6 @@ import { TabContext, TabList, TabPanel } from "@mui/lab"
 
 import { toast } from "react-toastify"
 
-import { Document, Page, pdfjs } from 'react-pdf'
-
 import PermissionGuard from "@/hocs/PermissionClientGuard"
 
 import AppReactDropzone from '@/libs/styles/AppReactDropzone'
@@ -64,8 +62,6 @@ import DialogCloseButton from "@/components/dialogs/DialogCloseButton"
 
 import CustomTextField from "@/@core/components/mui/TextField"
 
-pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js' // ✅ FIXED: Use local worker
-
 const ShowFileModal = ({ open, setOpen, docURL }) => {
     const router = useRouter()
     const ASSET_URL = process.env.NEXT_PUBLIC_ASSETS_URL
@@ -73,75 +69,36 @@ const ShowFileModal = ({ open, setOpen, docURL }) => {
     const ext = docURL?.split('.').pop()?.toLowerCase()
     const backURL = '/activities'
 
-    const [numPages, setNumPages] = useState(null)
-    const [isOnlineEnv, setIsOnlineEnv] = useState(false)
-
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            setIsOnlineEnv(!window.location.origin.includes('localhost'))
-        }
-    }, [])
+    const isPDF = ext === 'pdf'
 
     const handleClose = () => setOpen(false)
 
-    const isPDF = ext === 'pdf'
-    const isOfficeFile = ['doc', 'docx', 'ppt', 'pptx'].includes(ext)
-
-    const officeViewerURL = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fullURL)}`
-    const googleViewerURL = `https://docs.google.com/gview?url=${encodeURIComponent(fullURL)}&embedded=true`
-
     return (
-        <Dialog open={open} fullWidth maxWidth="md" onClose={handleClose}>
+        <Dialog open={open} fullWidth maxWidth="lg" onClose={handleClose}>
             <DialogTitle>Document Preview</DialogTitle>
 
             <DialogContent dividers sx={{ minHeight: 600 }}>
                 {isPDF ? (
-                    <Document
-                        file={fullURL}
-                        onLoadSuccess={({ numPages }) => setNumPages(numPages)}
-                        onLoadError={(err) => console.error('PDF Load Error:', err)}
+                    <Box
+                        sx={{
+                            width: '100%',
+                            height: '100%',
+                            overflow: 'auto',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            position: 'relative',
+                        }}
                     >
-                        <Grid container spacing={2}>
-                            {Array.from({ length: numPages }, (_, i) => (
-                                <Grid item xs={12} sm={6} md={4} key={i}>
-                                    <Box
-                                        p={2}
-                                        border="1px solid #ccc"
-                                        borderRadius={2}
-                                        display="flex"
-                                        flexDirection="column"
-                                        alignItems="center"
-                                        justifyContent="center"
-                                        boxShadow={2}
-                                        height="100%"
-                                        bgcolor="#f9f9f9"
-                                    >
-                                        <Page
-                                            pageNumber={i + 1}
-                                            renderAnnotationLayer={false}
-                                            renderTextLayer={false}
-                                            width={250}
-                                        />
-                                        <Typography variant="caption" fontWeight="bold" mt={2}>
-                                            Page {i + 1}
-                                        </Typography>
-                                    </Box>
-                                </Grid>
-                            ))}
-                        </Grid>
-                    </Document>
-                ) : isOfficeFile && isOnlineEnv ? (
-                    <iframe
-                        src={officeViewerURL}
-                        style={{ width: '100%', height: '600px', border: 'none' }}
-                        title="Office Viewer"
-                    />
-                ) : isOfficeFile && !isOnlineEnv ? (
-                    <iframe
-                        src={googleViewerURL}
-                        style={{ width: '100%', height: '600px', border: 'none' }}
-                        title="Google Viewer"
-                    />
+                        <iframe
+                            src={fullURL}
+                            title="PDF Preview"
+                            style={{
+                                width: '100%',
+                                height: '800px',
+                                border: 'none',
+                            }}
+                        />
+                    </Box>
                 ) : (
                     <Typography variant="body2">
                         File preview not supported.{' '}
