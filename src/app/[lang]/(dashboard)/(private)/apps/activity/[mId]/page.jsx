@@ -64,7 +64,7 @@ import DialogCloseButton from "@/components/dialogs/DialogCloseButton"
 
 import CustomTextField from "@/@core/components/mui/TextField"
 
-pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
+pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js' // ✅ FIXED: Use local worker
 
 const ShowFileModal = ({ open, setOpen, docURL }) => {
     const router = useRouter()
@@ -77,9 +77,6 @@ const ShowFileModal = ({ open, setOpen, docURL }) => {
     const [isOnlineEnv, setIsOnlineEnv] = useState(false)
 
     useEffect(() => {
-        // Setup PDF.js worker
-        pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`
-
         if (typeof window !== 'undefined') {
             setIsOnlineEnv(!window.location.origin.includes('localhost'))
         }
