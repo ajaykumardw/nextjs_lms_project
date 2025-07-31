@@ -56,13 +56,11 @@ import { TabContext, TabList, TabPanel } from "@mui/lab"
 
 import { toast } from "react-toastify"
 
-import 'react-pdf/dist/Page/AnnotationLayer.css';
+import { Document, Page, pdfjs } from 'react-pdf'
 
-const DocViewer = dynamic(() => import('react-doc-viewer').then(mod => mod.default), { ssr: false });
+import 'react-pdf/dist/esm/Page/TextLayer.css';
 
-import { DocViewerRenderers } from 'react-doc-viewer';
-
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
+import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 
 import PermissionGuard from "@/hocs/PermissionClientGuard"
 
@@ -72,111 +70,107 @@ import DialogCloseButton from "@/components/dialogs/DialogCloseButton"
 
 import CustomTextField from "@/@core/components/mui/TextField"
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`
 
 const ShowFileModal = ({ open, setOpen, docURL }) => {
-    const router = useRouter();
-    const ASSET_URL = process.env.NEXT_PUBLIC_ASSETS_URL;
-    const fullURL = `${ASSET_URL}/activity/${docURL}`;
-    const ext = docURL?.split('.').pop()?.toLowerCase();
-    const backURL = '/activities';
-    const isPublicURL = fullURL.startsWith('https://');
+    const router = useRouter()
+    const ASSET_URL = process.env.NEXT_PUBLIC_ASSETS_URL
+    const fullURL = `${ASSET_URL}/activity/${docURL}`
+    const ext = docURL?.split('.').pop()?.toLowerCase()
+    const backURL = '/activities'
 
-    const [shouldRenderViewer, setShouldRenderViewer] = useState(false);
+    const [numPages, setNumPages] = useState(null)
+    const [isOnlineEnv, setIsOnlineEnv] = useState(false)
 
     useEffect(() => {
-        if (open) {
-            const timer = setTimeout(() => setShouldRenderViewer(true), 100);
-
-            
-            return () => clearTimeout(timer);
-        } else {
-            setShouldRenderViewer(false);
+        if (typeof window !== 'undefined') {
+            setIsOnlineEnv(!window.location.origin.includes('localhost'))
         }
-    }, [open]);
+    }, [])
 
-    const handleClose = () => setOpen(false);
+    const handleClose = () => setOpen(false)
 
-    const documents = useMemo(() => {
-        if (!docURL) return [];
-        const supportedExtensions = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'txt'];
-        
-        if (!supportedExtensions.includes(ext)) return [];
-        
-        return [
-            {
-                uri: fullURL,
-                fileType: ext,
-                fileName: docURL,
-            },
-        ];
-    }, [fullURL, ext, docURL]);
+    const isPDF = ext === 'pdf'
+    const isOfficeFile = ['doc', 'docx', 'ppt', 'pptx'].includes(ext)
 
-    const renderViewer = () => {
-        if (!documents.length) {
-            return (
-                <p>
-                    Unsupported file format or invalid file URL.
-                    <br />
-                    <a href={fullURL} target="_blank" rel="noopener noreferrer">
-                        Click here to download
-                    </a>
-                </p>
-            );
-        }
-
-        if (['doc', 'docx', 'ppt', 'pptx', 'pdf'].includes(ext) && !isPublicURL) {
-            return (
-                <p>
-                    Office files must be hosted on a <strong>public HTTPS URL</strong> to preview.
-                    <br />
-                    <a href={fullURL} target="_blank" rel="noopener noreferrer">
-                        Click here to download the file
-                    </a>
-                </p>
-            );
-        }
-
-        if (!shouldRenderViewer) return <p>Loading document...</p>;
-
-        return (
-            <div style={{ height: '600px' }}>
-                <DocViewer
-                    documents={documents}
-                    pluginRenderers={DocViewerRenderers}
-                    config={{
-                        header: {
-                            disableHeader: false,
-                            disableFileName: false,
-                        },
-                    }}
-                />
-            </div>
-        );
-    };
+    const officeViewerURL = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fullURL)}`
+    const googleViewerURL = `https://docs.google.com/gview?url=${encodeURIComponent(fullURL)}&embedded=true`
 
     return (
-        <Dialog open={open} fullWidth maxWidth="md" sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}>
-            <Button
-                onClick={handleClose}
-                sx={{ position: 'absolute', top: 10, right: 10, zIndex: 1 }}
-            >
-                <i className="tabler-x" />
-            </Button>
+        <Dialog open={open} fullWidth maxWidth="md" onClose={handleClose}>
+            <DialogTitle>Document Preview</DialogTitle>
 
-            <DialogTitle>Document View</DialogTitle>
-
-            <DialogContent sx={{ pt: 1 }}>{renderViewer()}</DialogContent>
+            <DialogContent dividers sx={{ minHeight: '600px' }}>
+                {isPDF ? (
+                    <Document
+                        file={fullURL}
+                        onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+                        onLoadError={(err) => console.error('PDF Load Error:', err)}
+                    >
+                        <Grid container spacing={3}>
+                            {Array.from({ length: numPages }, (_, i) => (
+                                <Grid item xs={12} sm={6} md={4} key={i}>
+                                    <Box
+                                        p={2}
+                                        border="1px solid #ccc"
+                                        borderRadius={2}
+                                        display="flex"
+                                        flexDirection="column"
+                                        alignItems="center"
+                                        boxShadow={2}
+                                    >
+                                        <Page
+                                            pageNumber={i + 1}
+                                            renderAnnotationLayer={false}
+                                            renderTextLayer={false}
+                                            width={250}
+                                        />
+                                        <Typography variant="caption" fontWeight={"bold"} mt={2}>
+                                            Page {i + 1}
+                                        </Typography>
+                                    </Box>
+                                </Grid>
+                            ))}
+                        </Grid>
+                    </Document>
+                ) : isOfficeFile && isOnlineEnv ? (
+                    <iframe
+                        src={officeViewerURL}
+                        style={{ width: '100%', height: '100%', border: 'none' }}
+                        title="Office Viewer"
+                    />
+                ) : isOfficeFile && !isOnlineEnv ? (
+                    <iframe
+                        src={googleViewerURL}
+                        style={{ width: '100%', height: '100%', border: 'none' }}
+                        title="Google Viewer"
+                    />
+                ) : (
+                    <Typography variant="body2">
+                        File preview not supported in this environment.{' '}
+                        <a href={fullURL} target="_blank" rel="noopener noreferrer">
+                            Click here to download
+                        </a>
+                    </Typography>
+                )}
+            </DialogContent>
 
             <DialogActions sx={{ justifyContent: 'center', gap: 2 }}>
                 <Button variant="contained">Submit</Button>
-                <Button variant="tonal" color="error" onClick={() => router.push(backURL)}>
+                <Button
+                    variant="outlined"
+                    color="error"
+                    onClick={() => {
+                        handleClose()
+                        router.push(backURL)
+                    }}
+                >
                     Cancel
                 </Button>
             </DialogActions>
         </Dialog>
-    );
-};
+    )
+}
 
 const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, activityId }) => {
     const router = useRouter()
