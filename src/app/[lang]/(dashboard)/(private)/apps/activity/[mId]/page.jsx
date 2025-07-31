@@ -63,9 +63,8 @@ import AppReactDropzone from '@/libs/styles/AppReactDropzone'
 import DialogCloseButton from "@/components/dialogs/DialogCloseButton"
 
 import CustomTextField from "@/@core/components/mui/TextField"
-import { startOfDay } from "@fullcalendar/common"
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`npm run startOfDay
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`
 
 const ShowFileModal = ({ open, setOpen, docURL }) => {
     const router = useRouter()
