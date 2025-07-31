@@ -72,19 +72,25 @@ const ShowFileModal = ({ open, setOpen, docURL }) => {
     const fullURL = `${ASSET_URL}/activity/${docURL}`;
     const ext = docURL?.split('.').pop()?.toLowerCase();
     const backURL = "/activities";
+    const isPublicURL = fullURL.startsWith("https://");
+
+    const [shouldRenderViewer, setShouldRenderViewer] = useState(false);
+
+    useEffect(() => {
+        if (open) {
+            const timer = setTimeout(() => setShouldRenderViewer(true), 100); // delay rendering PDF
+            return () => clearTimeout(timer);
+        } else {
+            setShouldRenderViewer(false); // reset on close
+        }
+    }, [open]);
 
     const handleClose = () => setOpen(false);
 
-    const isPublicURL = fullURL.startsWith("https://");
-
     const documents = useMemo(() => {
         if (!docURL) return [];
-
-        // react-doc-viewer supports these extensions
         const supportedExtensions = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'txt'];
-
         if (!supportedExtensions.includes(ext)) return [];
-
         return [
             {
                 uri: fullURL,
@@ -118,6 +124,8 @@ const ShowFileModal = ({ open, setOpen, docURL }) => {
                 </p>
             );
         }
+
+        if (!shouldRenderViewer) return <p>Loading document...</p>;
 
         return (
             <div style={{ height: "600px" }}>
