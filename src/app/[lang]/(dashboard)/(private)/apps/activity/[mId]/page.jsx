@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation"
 
 import { useParams } from "next/navigation"
 
+import dynamic from 'next/dynamic';
+
 import { useSession } from "next-auth/react"
 
 import {
@@ -33,8 +35,6 @@ import {
     CircularProgress,
 } from '@mui/material'
 
-import DocViewer, { DocViewerRenderers } from "react-doc-viewer";
-
 import Grid from '@mui/material/Grid2'
 
 import { useDropzone } from 'react-dropzone'
@@ -56,32 +56,42 @@ import { TabContext, TabList, TabPanel } from "@mui/lab"
 
 import { toast } from "react-toastify"
 
-import AppReactDropzone from '@/libs/styles/AppReactDropzone'
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+
+const DocViewer = dynamic(() => import('react-doc-viewer').then(mod => mod.default), { ssr: false });
+
+import { DocViewerRenderers } from 'react-doc-viewer';
+
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
 
 import PermissionGuard from "@/hocs/PermissionClientGuard"
+
+import AppReactDropzone from '@/libs/styles/AppReactDropzone'
 
 import DialogCloseButton from "@/components/dialogs/DialogCloseButton"
 
 import CustomTextField from "@/@core/components/mui/TextField"
 
-import 'react-pdf/dist/Page/AnnotationLayer.css';
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 const ShowFileModal = ({ open, setOpen, docURL }) => {
     const router = useRouter();
     const ASSET_URL = process.env.NEXT_PUBLIC_ASSETS_URL;
     const fullURL = `${ASSET_URL}/activity/${docURL}`;
     const ext = docURL?.split('.').pop()?.toLowerCase();
-    const backURL = "/activities";
-    const isPublicURL = fullURL.startsWith("https://");
+    const backURL = '/activities';
+    const isPublicURL = fullURL.startsWith('https://');
 
     const [shouldRenderViewer, setShouldRenderViewer] = useState(false);
 
     useEffect(() => {
         if (open) {
-            const timer = setTimeout(() => setShouldRenderViewer(true), 100); // delay rendering PDF
+            const timer = setTimeout(() => setShouldRenderViewer(true), 100);
+
+            
             return () => clearTimeout(timer);
         } else {
-            setShouldRenderViewer(false); // reset on close
+            setShouldRenderViewer(false);
         }
     }, [open]);
 
@@ -90,7 +100,9 @@ const ShowFileModal = ({ open, setOpen, docURL }) => {
     const documents = useMemo(() => {
         if (!docURL) return [];
         const supportedExtensions = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'txt'];
+        
         if (!supportedExtensions.includes(ext)) return [];
+        
         return [
             {
                 uri: fullURL,
@@ -113,7 +125,7 @@ const ShowFileModal = ({ open, setOpen, docURL }) => {
             );
         }
 
-        if (['doc', 'docx', 'ppt', 'pptx'].includes(ext) && !isPublicURL) {
+        if (['doc', 'docx', 'ppt', 'pptx', 'pdf'].includes(ext) && !isPublicURL) {
             return (
                 <p>
                     Office files must be hosted on a <strong>public HTTPS URL</strong> to preview.
@@ -128,7 +140,7 @@ const ShowFileModal = ({ open, setOpen, docURL }) => {
         if (!shouldRenderViewer) return <p>Loading document...</p>;
 
         return (
-            <div style={{ height: "600px" }}>
+            <div style={{ height: '600px' }}>
                 <DocViewer
                     documents={documents}
                     pluginRenderers={DocViewerRenderers}
@@ -147,7 +159,7 @@ const ShowFileModal = ({ open, setOpen, docURL }) => {
         <Dialog open={open} fullWidth maxWidth="md" sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}>
             <Button
                 onClick={handleClose}
-                sx={{ position: "absolute", top: 10, right: 10, zIndex: 1 }}
+                sx={{ position: 'absolute', top: 10, right: 10, zIndex: 1 }}
             >
                 <i className="tabler-x" />
             </Button>
@@ -156,7 +168,7 @@ const ShowFileModal = ({ open, setOpen, docURL }) => {
 
             <DialogContent sx={{ pt: 1 }}>{renderViewer()}</DialogContent>
 
-            <DialogActions sx={{ justifyContent: "center", gap: 2 }}>
+            <DialogActions sx={{ justifyContent: 'center', gap: 2 }}>
                 <Button variant="contained">Submit</Button>
                 <Button variant="tonal" color="error" onClick={() => router.push(backURL)}>
                     Cancel
