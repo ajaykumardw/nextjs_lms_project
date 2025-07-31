@@ -6,8 +6,6 @@ import { useRouter } from "next/navigation"
 
 import { useParams } from "next/navigation"
 
-import dynamic from 'next/dynamic';
-
 import { useSession } from "next-auth/react"
 
 import {
@@ -58,10 +56,6 @@ import { toast } from "react-toastify"
 
 import { Document, Page, pdfjs } from 'react-pdf'
 
-import 'react-pdf/dist/esm/Page/TextLayer.css';
-
-import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
-
 import PermissionGuard from "@/hocs/PermissionClientGuard"
 
 import AppReactDropzone from '@/libs/styles/AppReactDropzone'
@@ -83,6 +77,9 @@ const ShowFileModal = ({ open, setOpen, docURL }) => {
     const [isOnlineEnv, setIsOnlineEnv] = useState(false)
 
     useEffect(() => {
+        // Setup PDF.js worker
+        pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`
+
         if (typeof window !== 'undefined') {
             setIsOnlineEnv(!window.location.origin.includes('localhost'))
         }
@@ -100,14 +97,14 @@ const ShowFileModal = ({ open, setOpen, docURL }) => {
         <Dialog open={open} fullWidth maxWidth="md" onClose={handleClose}>
             <DialogTitle>Document Preview</DialogTitle>
 
-            <DialogContent dividers sx={{ minHeight: '600px' }}>
+            <DialogContent dividers sx={{ minHeight: 600 }}>
                 {isPDF ? (
                     <Document
                         file={fullURL}
                         onLoadSuccess={({ numPages }) => setNumPages(numPages)}
                         onLoadError={(err) => console.error('PDF Load Error:', err)}
                     >
-                        <Grid container spacing={3}>
+                        <Grid container spacing={2}>
                             {Array.from({ length: numPages }, (_, i) => (
                                 <Grid item xs={12} sm={6} md={4} key={i}>
                                     <Box
@@ -117,7 +114,10 @@ const ShowFileModal = ({ open, setOpen, docURL }) => {
                                         display="flex"
                                         flexDirection="column"
                                         alignItems="center"
+                                        justifyContent="center"
                                         boxShadow={2}
+                                        height="100%"
+                                        bgcolor="#f9f9f9"
                                     >
                                         <Page
                                             pageNumber={i + 1}
@@ -125,7 +125,7 @@ const ShowFileModal = ({ open, setOpen, docURL }) => {
                                             renderTextLayer={false}
                                             width={250}
                                         />
-                                        <Typography variant="caption" fontWeight={"bold"} mt={2}>
+                                        <Typography variant="caption" fontWeight="bold" mt={2}>
                                             Page {i + 1}
                                         </Typography>
                                     </Box>
@@ -136,18 +136,18 @@ const ShowFileModal = ({ open, setOpen, docURL }) => {
                 ) : isOfficeFile && isOnlineEnv ? (
                     <iframe
                         src={officeViewerURL}
-                        style={{ width: '100%', height: '100%', border: 'none' }}
+                        style={{ width: '100%', height: '600px', border: 'none' }}
                         title="Office Viewer"
                     />
                 ) : isOfficeFile && !isOnlineEnv ? (
                     <iframe
                         src={googleViewerURL}
-                        style={{ width: '100%', height: '100%', border: 'none' }}
+                        style={{ width: '100%', height: '600px', border: 'none' }}
                         title="Google Viewer"
                     />
                 ) : (
                     <Typography variant="body2">
-                        File preview not supported in this environment.{' '}
+                        File preview not supported.{' '}
                         <a href={fullURL} target="_blank" rel="noopener noreferrer">
                             Click here to download
                         </a>
