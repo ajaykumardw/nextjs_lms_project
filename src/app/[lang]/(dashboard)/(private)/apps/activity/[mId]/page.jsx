@@ -64,7 +64,7 @@ import DialogCloseButton from "@/components/dialogs/DialogCloseButton"
 
 import CustomTextField from "@/@core/components/mui/TextField"
 
-pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`
+pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
 
 const ShowFileModal = ({ open, setOpen, docURL }) => {
     const router = useRouter()
@@ -77,9 +77,6 @@ const ShowFileModal = ({ open, setOpen, docURL }) => {
     const [isOnlineEnv, setIsOnlineEnv] = useState(false)
 
     useEffect(() => {
-        // Setup PDF.js worker
-        pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`
-
         if (typeof window !== 'undefined') {
             setIsOnlineEnv(!window.location.origin.includes('localhost'))
         }
@@ -102,31 +99,31 @@ const ShowFileModal = ({ open, setOpen, docURL }) => {
                     <Document
                         file={fullURL}
                         onLoadSuccess={({ numPages }) => setNumPages(numPages)}
-                        onLoadError={(err) => console.error('PDF Load Error:', err)}
+                        onLoadError={(error) => {
+                            console.error("PDF Load Error:", error)
+                        }}
                     >
                         <Grid container spacing={2}>
-                            {Array.from({ length: numPages }, (_, i) => (
-                                <Grid item xs={12} sm={6} md={4} key={i}>
+                            {Array.from(new Array(numPages), (_, index) => (
+                                <Grid item xs={12} sm={6} md={4} key={index}>
                                     <Box
-                                        p={2}
+                                        p={1}
                                         border="1px solid #ccc"
                                         borderRadius={2}
                                         display="flex"
                                         flexDirection="column"
                                         alignItems="center"
-                                        justifyContent="center"
-                                        boxShadow={2}
-                                        height="100%"
-                                        bgcolor="#f9f9f9"
+                                        boxShadow={1}
+                                        bgcolor="#fafafa"
                                     >
                                         <Page
-                                            pageNumber={i + 1}
+                                            pageNumber={index + 1}
                                             renderAnnotationLayer={false}
                                             renderTextLayer={false}
                                             width={250}
                                         />
-                                        <Typography variant="caption" fontWeight="bold" mt={2}>
-                                            Page {i + 1}
+                                        <Typography variant="caption" mt={1}>
+                                            Page {index + 1}
                                         </Typography>
                                     </Box>
                                 </Grid>
