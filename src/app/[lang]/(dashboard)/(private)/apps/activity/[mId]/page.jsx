@@ -69,36 +69,45 @@ const ShowFileModal = ({ open, setOpen, docURL }) => {
     const ext = docURL?.split('.').pop()?.toLowerCase()
     const backURL = '/activities'
 
-    const isPDF = ext === 'pdf'
+    const [isOnlineEnv, setIsOnlineEnv] = useState(false)
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            setIsOnlineEnv(!window.location.origin.includes('localhost'))
+        }
+    }, [])
 
     const handleClose = () => setOpen(false)
 
+    const isPDF = ext === 'pdf'
+    const isOfficeFile = ['doc', 'docx', 'ppt', 'pptx'].includes(ext)
+
+    const officeViewerURL = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fullURL)}`
+    const googleViewerURL = `https://docs.google.com/gview?url=${encodeURIComponent(fullURL)}&embedded=true`
+
     return (
-        <Dialog open={open} fullWidth maxWidth="lg" onClose={handleClose}>
+        <Dialog open={open} fullWidth maxWidth="md" onClose={handleClose}>
             <DialogTitle>Document Preview</DialogTitle>
 
             <DialogContent dividers sx={{ minHeight: 600 }}>
                 {isPDF ? (
-                    <Box
-                        sx={{
-                            width: '100%',
-                            height: '100%',
-                            overflow: 'auto',
-                            display: 'flex',
-                            justifyContent: 'center',
-                            position: 'relative',
-                        }}
-                    >
-                        <iframe
-                            src={fullURL}
-                            title="PDF Preview"
-                            style={{
-                                width: '100%',
-                                height: '800px',
-                                border: 'none',
-                            }}
-                        />
-                    </Box>
+                    <iframe
+                        src={fullURL}
+                        style={{ width: '100%', height: '100%', minHeight: '600px', border: 'none' }}
+                        title="PDF Viewer"
+                    />
+                ) : isOfficeFile && isOnlineEnv ? (
+                    <iframe
+                        src={officeViewerURL}
+                        style={{ width: '100%', height: '100%', minHeight: '600px', border: 'none' }}
+                        title="Office Viewer"
+                    />
+                ) : isOfficeFile && !isOnlineEnv ? (
+                    <iframe
+                        src={googleViewerURL}
+                        style={{ width: '100%', height: '100%', minHeight: '600px', border: 'none' }}
+                        title="Google Viewer"
+                    />
                 ) : (
                     <Typography variant="body2">
                         File preview not supported.{' '}
