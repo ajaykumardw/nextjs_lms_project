@@ -75,6 +75,7 @@
     "react-hook-form": "7.54.1",
     "react-map-gl": "7.1.8",
     "react-pdf": "^8.0.2",
+    "react-pdf-js": "^5.1.0",
     "react-perfect-scrollbar": "1.5.8",
     "react-player": "2.16.0",
     "react-redux": "9.2.0",
