@@ -56,6 +56,8 @@ import { toast } from "react-toastify"
 
 import { Document, Page, pdfjs } from 'react-pdf'
 
+import workerSrc from 'pdfjs-dist/build/pdf.worker.entry';
+
 import PermissionGuard from "@/hocs/PermissionClientGuard"
 
 import AppReactDropzone from '@/libs/styles/AppReactDropzone'
@@ -64,7 +66,7 @@ import DialogCloseButton from "@/components/dialogs/DialogCloseButton"
 
 import CustomTextField from "@/@core/components/mui/TextField"
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`
+pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
 
 const ShowFileModal = ({ open, setOpen, docURL }) => {
     const router = useRouter()
