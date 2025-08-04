@@ -8,6 +8,8 @@ import { useParams } from "next/navigation"
 
 import { useSession } from "next-auth/react"
 
+import ReactPlayer from 'react-player'
+
 import {
     Box,
     Button,
@@ -63,6 +65,7 @@ import DialogCloseButton from "@/components/dialogs/DialogCloseButton"
 import CustomTextField from "@/@core/components/mui/TextField"
 
 const ShowFileModal = ({ open, setOpen, docURL }) => {
+
     const router = useRouter()
     const ASSET_URL = process.env.NEXT_PUBLIC_ASSETS_URL
     const fullURL = `${ASSET_URL}/activity/${docURL}`
@@ -125,7 +128,6 @@ const ShowFileModal = ({ open, setOpen, docURL }) => {
                     color="error"
                     onClick={() => {
                         handleClose()
-                        router.push(backURL)
                     }}
                 >
                     Cancel
@@ -135,16 +137,14 @@ const ShowFileModal = ({ open, setOpen, docURL }) => {
     )
 }
 
-const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, activityId }) => {
-    const router = useRouter()
-    const backURL = '/activities'
+const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, activityId, fetchActivities }) => {
 
     const [preview, setPreview] = useState()
     const [imageError, setImageError] = useState()
     const [loading, setLoading] = useState(false)
     const [file, setFile] = useState()
 
-    const isYoutube = id === '688723af5dd97f4ccae68836'
+    const isYoutube = id == '688723af5dd97f4ccae68836'
 
     const schema = object({
         title: pipe(
@@ -156,7 +156,6 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
         live_session_type: string(),
         video_url: isYoutube
             ? pipe(
-                string(),
                 minLength(1, 'Video URL is required'),
                 maxLength(200, 'Video URL too long'),
                 regex(
@@ -170,22 +169,36 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
     const {
         reset,
         control,
+        watch,
         handleSubmit,
         formState: { errors }
     } = useForm({
         resolver: valibotResolver(schema),
         defaultValues: {
-            title: editData?.title || '',
-            video_url: editData?.video_url || '',
+            title: '',
+            video_url: '',
             live_session_type: ''
         }
     })
 
     useEffect(() => {
-        if (editData?.file_url) {
-            setPreview(editData.file_url)
+        if (editData && open) {
+            if (isYoutube) {
+                reset({
+                    title: editData?.video_data?.title || '',
+                    video_url: editData?.video_data?.video_url || '',
+                    live_session_type: ''
+                })
+            } else {
+                reset({
+                    title: editData?.title || '',
+                    video_url: '',
+                    live_session_type: ''
+                })
+                setPreview(editData?.file_url)
+            }
         }
-    }, [editData])
+    }, [editData, id, open, isYoutube, reset])
 
     const getFileConfig = () => {
         if (id === '688723af5dd97f4ccae68834') {
@@ -236,7 +249,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
 
             setFile(selectedFile)
             setImageError('')
-
+            
             if (fileConfig.type === 'Video') {
                 setPreview(URL.createObjectURL(selectedFile))
             } else {
@@ -247,7 +260,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
             rejectedFiles.forEach(file => {
                 file.errors.forEach(error => {
                     let msg = ''
-
+                    
                     switch (error.code) {
                         case 'file-invalid-type':
                             msg = `Invalid file type for ${fileConfig.type}.`
@@ -270,23 +283,19 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
     })
 
     const handleDataSave = async (data) => {
-
         if (!isYoutube && !file && !editData?.file_url) {
             setImageError(`Please upload a ${fileConfig.type.toLowerCase()}.`)
-
+            
             return
         }
 
         setLoading(true)
 
         try {
-
             const formData = new FormData()
 
             formData.append('title', data.title)
-
             formData.append('file_type', fileConfig.type)
-
             if (file) formData.append('file', file)
             if (isYoutube) formData.append('video_url', data.video_url)
 
@@ -298,15 +307,12 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
                 body: formData
             })
 
-            const result = await response.json()
-
             if (response.ok) {
-
                 toast.success(`${fileConfig.type} uploaded successfully`)
+                fetchActivities()
                 handleClose()
                 setISOpen(false)
             }
-
         } catch (error) {
             toast.error('Upload failed')
         } finally {
@@ -330,12 +336,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
 
             <DialogTitle>Upload {fileConfig.type}</DialogTitle>
 
-            <form
-                onSubmit={(e) => {
-                    handleSubmit(handleDataSave)(e)
-                }}
-                noValidate
-            >
+            <form onSubmit={handleSubmit(handleDataSave)} noValidate>
                 <DialogContent>
                     <Grid container spacing={5}>
                         <Grid item size={{ xs: 12 }}>
@@ -429,49 +430,91 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
                         )}
 
                         {isYoutube && (
-                            <Grid item size={{ xs: 12 }}>
-                                <Controller
-                                    name="video_url"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <CustomTextField
-                                            {...field}
-                                            fullWidth
-                                            label="Video URL*"
-                                            placeholder="Enter Video URL"
-                                            error={!!errors.video_url}
-                                            helperText={errors.video_url?.message}
-                                        />
-                                    )}
-                                />
-                            </Grid>
+                            <>
+                                <Grid item size={{ xs: 12 }}>
+                                    <Controller
+                                        name="video_url"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <CustomTextField
+                                                {...field}
+                                                fullWidth
+                                                label="Video URL*"
+                                                placeholder="Enter YouTube video URL"
+                                                error={!!errors.video_url}
+                                                helperText={errors.video_url?.message}
+                                            />
+                                        )}
+                                    />
+                                </Grid>
+
+                                {/* Video Preview */}
+                                {ReactPlayer.canPlay(watch('video_url')) && (
+                                    <Grid item size={{ xs: 12 }}>
+                                        <Typography variant="subtitle1" gutterBottom>
+                                            Video Preview
+                                        </Typography>
+                                        <Box
+                                            sx={{
+                                                position: 'relative',
+                                                width: '100%',
+                                                height: '300px', // fixed smaller height
+                                                borderRadius: 2,
+                                                overflow: 'hidden',
+                                                boxShadow: 1,
+                                            }}
+                                        >
+                                            <ReactPlayer
+                                                url={watch('video_url')}
+                                                controls
+                                                width="100%"
+                                                height="100%"
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: 0,
+                                                    left: 0,
+                                                }}
+                                            />
+                                        </Box>
+                                    </Grid>
+                                )}
+
+                            </>
                         )}
                     </Grid>
                 </DialogContent>
+
                 <DialogActions sx={{ justifyContent: 'center', gap: 2 }}>
-                    <Button
-                        type="submit"
-                        variant="contained"
-                        disabled={loading}
-                        sx={{ blockSize: 40, position: 'relative' }}
-                    >
-                        {loading ? (
-                            <CircularProgress
-                                size={24}
-                                sx={{
-                                    color: 'white',
-                                    position: 'absolute',
-                                    top: '50%',
-                                    left: '50%',
-                                    marginTop: '-12px',
-                                    marginLeft: '-12px'
-                                }}
-                            />
-                        ) : (
-                            'Submit'
-                        )}
-                    </Button>
-                    <Button variant="tonal" color="error" onClick={() => router.push(backURL)}>
+                    {isYoutube && (
+
+
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            disabled={loading}
+                            sx={{ blockSize: 40, position: 'relative' }}
+                        >
+                            {loading ? (
+                                <CircularProgress
+                                    size={24}
+                                    sx={{
+                                        color: 'white',
+                                        position: 'absolute',
+                                        top: '50%',
+                                        left: '50%',
+                                        marginTop: '-12px',
+                                        marginLeft: '-12px'
+                                    }}
+                                />
+                            ) : (
+                                'Submit'
+                            )}
+                        </Button>
+                    )}
+                    <Button variant="tonal" color="error" onClick={() => {
+                        setISOpen(false)
+                    }
+                    }>
                         Cancel
                     </Button>
                 </DialogActions>
@@ -484,14 +527,14 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
     const [editingId, setEditingId] = useState(null);
     const [editingTitle, setEditingTitle] = useState("");
     const [editingError, setEditingError] = useState("");
-    const [selectedId, setSelectedId] = useState()
+    const [selectedId, setSelectedId] = useState();
     const [isOpen, setISOpen] = useState(false);
     const [activityId, setActivityId] = useState();
-    const [docURL, setDocURL] = useState()
-    const [isModalOpen, setIsModalOpen] = useState(false)
+    const [docURL, setDocURL] = useState();
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [logData, setLogData] = useState();
 
     const handleChangeName = async (id) => {
-
         const data = { title: editingTitle };
 
         try {
@@ -509,26 +552,25 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
                 fetchActivities();
             } else {
                 const result = await response.json();
-
+                
                 toast.error(result.message || "Failed to update name");
             }
         } catch (error) {
             toast.error("Error updating activity name");
         }
-
     };
 
     const handleSave = async (id) => {
-
         if (!editingTitle.trim()) {
+            
             setEditingError("Title is required");
-
+            
             return;
         }
 
         if (editingTitle.length > 150) {
             setEditingError("Title cannot exceed 150 characters");
-
+            
             return;
         }
 
@@ -550,9 +592,7 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
         try {
             const response = await fetch(`${API_URL}/company/activity/delete/${mId}/${id}`, {
                 method: "DELETE",
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
+                headers: { Authorization: `Bearer ${token}` },
             });
 
             const data = await response.json();
@@ -568,9 +608,32 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
         }
     };
 
+    const handleCardClick = (activity) => {
+        const isDocumentType = activity.module_type_id === "688723af5dd97f4ccae68834";
+
+        // Close modals first to force re-render
+        setISOpen(false);
+        setIsModalOpen(false);
+
+        // Delay to ensure proper re-opening
+        setTimeout(() => {
+            setLogData(activity);
+            setActivityId(activity._id);
+            setSelectedId(activity.module_type_id);
+
+            if (isDocumentType && activity.document_data?.image_url) {
+                setDocURL(activity.document_data.image_url);
+                setIsModalOpen(true);
+            } else {
+                setISOpen(true);
+            }
+        }, 10);
+    };
+
     return (
         <Box p={3}>
             <Grid container spacing={3}>
+
                 <Grid item size={{ xs: 12, md: 8 }}>
                     <Box sx={{ maxHeight: '70vh', overflowY: 'auto', pr: 1 }}>
                         {activities && activities.length > 0 ? (
@@ -599,33 +662,14 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
                                                     sx={{
                                                         inlineSize: 40,
                                                         blockSize: 40,
-                                                        cursor: 'pointer', // Makes it clear it's clickable
+                                                        cursor: 'pointer',
                                                         '& svg': {
                                                             transform: 'scale(0.6)',
                                                             transformOrigin: 'center',
                                                             display: 'block',
                                                         },
                                                     }}
-                                                    onClick={() => {
-                                                        console.log(activity?.module_type_id);
-
-                                                        if (activity.module_type_id == '688723af5dd97f4ccae68834') {
-                                                            if (activity.document_data.image_url) {
-                                                                setIsModalOpen(true)
-                                                                setDocURL(activity.document_data.image_url)
-                                                            } else {
-                                                                setISOpen(true)
-                                                                setActivityId(activity._id)
-                                                                setSelectedId(activity.module_type_id)
-                                                            }
-                                                        } else {
-                                                            console.log("Hu");
-
-                                                            setISOpen(true)
-                                                            setActivityId(activity._id)
-                                                            setSelectedId(activity.module_type_id)
-                                                        }
-                                                    }}
+                                                    onClick={() => handleCardClick(activity)}
                                                     dangerouslySetInnerHTML={{
                                                         __html: activity?.activity_type?.activity_data?.svg_content,
                                                     }}
@@ -653,7 +697,7 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
                                                                                 placeholder="Enter title"
                                                                             />
                                                                             {editingError && (
-                                                                                <Typography variant="caption" color="var(--mui-palette-error-main)" ml={0.5}>
+                                                                                <Typography variant="caption" color="error" ml={0.5}>
                                                                                     {editingError}
                                                                                 </Typography>
                                                                             )}
@@ -721,21 +765,6 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
                                             </IconButton>
                                         </Grid>
                                     </Grid>
-                                    <ShowFileModal
-                                        open={isModalOpen}
-                                        setOpen={setIsModalOpen}
-                                        docURL={docURL}
-                                    />
-                                    <ActivityModal
-                                        open={isOpen}
-                                        id={selectedId}
-                                        setISOpen={setISOpen}
-                                        editData={activity}
-                                        API_URL={API_URL}
-                                        token={token}
-                                        mId={mId}
-                                        activityId={activityId}
-                                    />
                                 </Card>
                             ))
                         ) : (
@@ -744,7 +773,6 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
                     </Box>
                 </Grid>
 
-                {/* Right Side: Settings */}
                 <Grid item size={{ xs: 12, md: 4 }}>
                     <Box display="flex" justifyContent="flex-start" gap={2} mb={2}>
                         <Button variant="contained" color="primary" onClick={handleActivity}>
@@ -795,6 +823,25 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
                     </Box>
                 </Grid>
             </Grid>
+
+            <ShowFileModal
+                open={isModalOpen}
+                setOpen={setIsModalOpen}
+                docURL={docURL}
+            />
+
+            <ActivityModal
+                fetchActivities={fetchActivities}
+                key={activityId} // 👈 this forces remount when activity changes
+                open={isOpen}
+                id={selectedId}
+                setISOpen={setISOpen}
+                editData={logData}
+                API_URL={API_URL}
+                token={token}
+                mId={mId}
+                activityId={activityId}
+            />
         </Box>
     );
 };
