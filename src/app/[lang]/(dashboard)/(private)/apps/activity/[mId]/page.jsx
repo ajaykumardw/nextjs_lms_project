@@ -249,7 +249,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
 
             setFile(selectedFile)
             setImageError('')
-            
+
             if (fileConfig.type === 'Video') {
                 setPreview(URL.createObjectURL(selectedFile))
             } else {
@@ -260,7 +260,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
             rejectedFiles.forEach(file => {
                 file.errors.forEach(error => {
                     let msg = ''
-                    
+
                     switch (error.code) {
                         case 'file-invalid-type':
                             msg = `Invalid file type for ${fileConfig.type}.`
@@ -285,7 +285,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
     const handleDataSave = async (data) => {
         if (!isYoutube && !file && !editData?.file_url) {
             setImageError(`Please upload a ${fileConfig.type.toLowerCase()}.`)
-            
+
             return
         }
 
@@ -356,78 +356,78 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
                             />
                         </Grid>
 
-                        {!isYoutube && (
-                            <Grid item size={{ xs: 12 }}>
-                                <Typography variant="body1" fontWeight={500} gutterBottom>
-                                    {fileConfig.type} <span>*</span>
-                                </Typography>
+                        {/* {!isYoutube && ( */}
+                        <Grid item size={{ xs: 12 }}>
+                            <Typography variant="body1" fontWeight={500} gutterBottom>
+                                {fileConfig.type} <span>*</span>
+                            </Typography>
 
-                                <AppReactDropzone>
-                                    <div
-                                        {...getRootProps()}
-                                        style={{
-                                            minHeight: '150px',
-                                            border: '2px dashed #ccc',
-                                            padding: '1rem',
-                                            borderRadius: '8px',
-                                            textAlign: 'center',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            gap: '1rem'
-                                        }}
-                                    >
-                                        <input {...getInputProps()} />
-                                        <Avatar variant="rounded" className="bs-12 is-12 mbe-1">
-                                            <i className="tabler-upload" />
-                                        </Avatar>
+                            <AppReactDropzone>
+                                <div
+                                    {...getRootProps()}
+                                    style={{
+                                        minHeight: '150px',
+                                        border: '2px dashed #ccc',
+                                        padding: '1rem',
+                                        borderRadius: '8px',
+                                        textAlign: 'center',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '1rem'
+                                    }}
+                                >
+                                    <input {...getInputProps()} />
+                                    <Avatar variant="rounded" className="bs-12 is-12 mbe-1">
+                                        <i className="tabler-upload" />
+                                    </Avatar>
 
-                                        <Typography variant="body2">
-                                            {fileConfig.type === 'Document' &&
-                                                'Allowed *.pdf, *.pptx, *.docx, *.doc. Max 1 file, max 5MB'}
-                                            {fileConfig.type === 'Video' &&
-                                                'Allowed *.mp4. Max 1 file, max 500MB'}
-                                            {fileConfig.type === 'SCORM Content' &&
-                                                'Allowed *.zip. Max 1 file, max 500MB'}
-                                        </Typography>
+                                    <Typography variant="body2">
+                                        {fileConfig.type === 'Document' &&
+                                            'Allowed *.pdf, *.pptx, *.docx, *.doc. Max 1 file, max 5MB'}
+                                        {fileConfig.type === 'Video' &&
+                                            'Allowed *.mp4. Max 1 file, max 500MB'}
+                                        {fileConfig.type === 'SCORM Content' &&
+                                            'Allowed *.zip. Max 1 file, max 500MB'}
+                                    </Typography>
 
-                                        {(file || editData?.file_url) && (
-                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-                                                <Avatar variant="rounded" sx={{ bgcolor: '#f5f5f5', color: '#0A2E73', width: 48, height: 48 }}>
-                                                    {(file?.name || editData?.file_url || '').endsWith('.pdf') ||
-                                                        (file?.name || editData?.file_url || '').endsWith('.doc') ||
-                                                        (file?.name || editData?.file_url || '').endsWith('.docx') ||
-                                                        (file?.name || editData?.file_url || '').endsWith('.pptx') ? (
-                                                        <i className="tabler-file-description" />
-                                                    ) : (file?.name || editData?.file_url || '').endsWith('.mp4') ? (
-                                                        <i className="tabler-video" />
-                                                    ) : (file?.name || editData?.file_url || '').endsWith('.zip') ? (
-                                                        <i className="tabler-archive" />
-                                                    ) : (
-                                                        <i className="tabler-file" />
-                                                    )}
-                                                </Avatar>
+                                    {(file || editData?.file_url) && (
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                                            <Avatar variant="rounded" sx={{ bgcolor: '#f5f5f5', color: '#0A2E73', width: 48, height: 48 }}>
+                                                {(file?.name || editData?.file_url || '').endsWith('.pdf') ||
+                                                    (file?.name || editData?.file_url || '').endsWith('.doc') ||
+                                                    (file?.name || editData?.file_url || '').endsWith('.docx') ||
+                                                    (file?.name || editData?.file_url || '').endsWith('.pptx') ? (
+                                                    <i className="tabler-file-description" />
+                                                ) : (file?.name || editData?.file_url || '').endsWith('.mp4') ? (
+                                                    <i className="tabler-video" />
+                                                ) : (file?.name || editData?.file_url || '').endsWith('.zip') ? (
+                                                    <i className="tabler-archive" />
+                                                ) : (
+                                                    <i className="tabler-file" />
+                                                )}
+                                            </Avatar>
 
-                                                <Typography variant="body2" fontWeight={500}>
-                                                    {file?.name || editData?.file_url}
-                                                </Typography>
-
-                                                <Typography variant="caption" color="textSecondary">
-                                                    {file && `${(file.size / 1024 / 1024).toFixed(2)} MB`}
-                                                </Typography>
-                                            </div>
-                                        )}
-
-                                        {imageError && (
-                                            <Typography variant="caption" color="var(--mui-palette-error-main)" sx={{ mt: 1 }}>
-                                                {imageError}
+                                            <Typography variant="body2" fontWeight={500}>
+                                                {file?.name || editData?.file_url}
                                             </Typography>
-                                        )}
-                                    </div>
-                                </AppReactDropzone>
-                            </Grid>
-                        )}
+
+                                            <Typography variant="caption" color="textSecondary">
+                                                {file && `${(file.size / 1024 / 1024).toFixed(2)} MB`}
+                                            </Typography>
+                                        </div>
+                                    )}
+
+                                    {imageError && (
+                                        <Typography variant="caption" color="var(--mui-palette-error-main)" sx={{ mt: 1 }}>
+                                            {imageError}
+                                        </Typography>
+                                    )}
+                                </div>
+                            </AppReactDropzone>
+                        </Grid>
+                        {/* )} */}
 
                         {isYoutube && (
                             <>
@@ -552,7 +552,7 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
                 fetchActivities();
             } else {
                 const result = await response.json();
-                
+
                 toast.error(result.message || "Failed to update name");
             }
         } catch (error) {
@@ -562,15 +562,15 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
 
     const handleSave = async (id) => {
         if (!editingTitle.trim()) {
-            
+
             setEditingError("Title is required");
-            
+
             return;
         }
 
         if (editingTitle.length > 150) {
             setEditingError("Title cannot exceed 150 characters");
-            
+
             return;
         }
 
