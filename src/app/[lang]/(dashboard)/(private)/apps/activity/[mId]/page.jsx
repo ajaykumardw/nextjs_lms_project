@@ -121,7 +121,7 @@ const ShowFileModal = ({ open, setOpen, docURL }) => {
                 )}
             </DialogContent>
 
-            <DialogActions sx={{ justifyContent: 'center', gap: 2 }}>
+            <DialogActions sx={{ justifyContent: 'center', gap: 2, mt: "18px" }}>
                 <Button variant="contained">Submit</Button>
                 <Button
                     variant="outlined"
@@ -337,7 +337,12 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
             <DialogTitle>Upload {fileConfig.type}</DialogTitle>
 
             <form onSubmit={handleSubmit(handleDataSave)} noValidate>
-                <DialogContent>
+                <DialogContent
+                    sx={{
+                        maxHeight: '80vh',
+                        overflowY: 'auto',
+                    }}
+                >
                     <Grid container spacing={5}>
                         <Grid item size={{ xs: 12 }}>
                             <Controller
@@ -356,78 +361,80 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
                             />
                         </Grid>
 
-                        {/* {!isYoutube && ( */}
-                        <Grid item size={{ xs: 12 }}>
-                            <Typography variant="body1" fontWeight={500} gutterBottom>
-                                {fileConfig.type} <span>*</span>
-                            </Typography>
+                        {!isYoutube && (
 
-                            <AppReactDropzone>
-                                <div
-                                    {...getRootProps()}
-                                    style={{
-                                        minHeight: '150px',
-                                        border: '2px dashed #ccc',
-                                        padding: '1rem',
-                                        borderRadius: '8px',
-                                        textAlign: 'center',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '1rem'
-                                    }}
-                                >
-                                    <input {...getInputProps()} />
-                                    <Avatar variant="rounded" className="bs-12 is-12 mbe-1">
-                                        <i className="tabler-upload" />
-                                    </Avatar>
 
-                                    <Typography variant="body2">
-                                        {fileConfig.type === 'Document' &&
-                                            'Allowed *.pdf, *.pptx, *.docx, *.doc. Max 1 file, max 5MB'}
-                                        {fileConfig.type === 'Video' &&
-                                            'Allowed *.mp4. Max 1 file, max 500MB'}
-                                        {fileConfig.type === 'SCORM Content' &&
-                                            'Allowed *.zip. Max 1 file, max 500MB'}
-                                    </Typography>
+                            <Grid item size={{ xs: 12 }}>
+                                <Typography variant="body1" fontWeight={500} gutterBottom>
+                                    {fileConfig.type} <span>*</span>
+                                </Typography>
 
-                                    {(file || editData?.file_url) && (
-                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-                                            <Avatar variant="rounded" sx={{ bgcolor: '#f5f5f5', color: '#0A2E73', width: 48, height: 48 }}>
-                                                {(file?.name || editData?.file_url || '').endsWith('.pdf') ||
-                                                    (file?.name || editData?.file_url || '').endsWith('.doc') ||
-                                                    (file?.name || editData?.file_url || '').endsWith('.docx') ||
-                                                    (file?.name || editData?.file_url || '').endsWith('.pptx') ? (
-                                                    <i className="tabler-file-description" />
-                                                ) : (file?.name || editData?.file_url || '').endsWith('.mp4') ? (
-                                                    <i className="tabler-video" />
-                                                ) : (file?.name || editData?.file_url || '').endsWith('.zip') ? (
-                                                    <i className="tabler-archive" />
-                                                ) : (
-                                                    <i className="tabler-file" />
-                                                )}
-                                            </Avatar>
+                                <AppReactDropzone>
+                                    <div
+                                        {...getRootProps()}
+                                        style={{
+                                            minHeight: '150px',
+                                            border: '2px dashed #ccc',
+                                            padding: '1rem',
+                                            borderRadius: '8px',
+                                            textAlign: 'center',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '1rem'
+                                        }}
+                                    >
+                                        <input {...getInputProps()} />
+                                        <Avatar variant="rounded" className="bs-12 is-12 mbe-1">
+                                            <i className="tabler-upload" />
+                                        </Avatar>
 
-                                            <Typography variant="body2" fontWeight={500}>
-                                                {file?.name || editData?.file_url}
-                                            </Typography>
-
-                                            <Typography variant="caption" color="textSecondary">
-                                                {file && `${(file.size / 1024 / 1024).toFixed(2)} MB`}
-                                            </Typography>
-                                        </div>
-                                    )}
-
-                                    {imageError && (
-                                        <Typography variant="caption" color="var(--mui-palette-error-main)" sx={{ mt: 1 }}>
-                                            {imageError}
+                                        <Typography variant="body2">
+                                            {fileConfig.type === 'Document' &&
+                                                'Allowed *.pdf, *.pptx, *.docx, *.doc. Max 1 file, max 5MB'}
+                                            {fileConfig.type === 'Video' &&
+                                                'Allowed *.mp4. Max 1 file, max 500MB'}
+                                            {fileConfig.type === 'SCORM Content' &&
+                                                'Allowed *.zip. Max 1 file, max 500MB'}
                                         </Typography>
-                                    )}
-                                </div>
-                            </AppReactDropzone>
-                        </Grid>
-                        {/* )} */}
+
+                                        {(file || editData?.file_url) && (
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                                                <Avatar variant="rounded" sx={{ bgcolor: '#f5f5f5', color: '#0A2E73', width: 48, height: 48 }}>
+                                                    {(file?.name || editData?.file_url || '').endsWith('.pdf') ||
+                                                        (file?.name || editData?.file_url || '').endsWith('.doc') ||
+                                                        (file?.name || editData?.file_url || '').endsWith('.docx') ||
+                                                        (file?.name || editData?.file_url || '').endsWith('.pptx') ? (
+                                                        <i className="tabler-file-description" />
+                                                    ) : (file?.name || editData?.file_url || '').endsWith('.mp4') ? (
+                                                        <i className="tabler-video" />
+                                                    ) : (file?.name || editData?.file_url || '').endsWith('.zip') ? (
+                                                        <i className="tabler-archive" />
+                                                    ) : (
+                                                        <i className="tabler-file" />
+                                                    )}
+                                                </Avatar>
+
+                                                <Typography variant="body2" fontWeight={500}>
+                                                    {file?.name || editData?.file_url}
+                                                </Typography>
+
+                                                <Typography variant="caption" color="textSecondary">
+                                                    {file && `${(file.size / 1024 / 1024).toFixed(2)} MB`}
+                                                </Typography>
+                                            </div>
+                                        )}
+
+                                        {imageError && (
+                                            <Typography variant="caption" color="var(--mui-palette-error-main)" sx={{ mt: 1 }}>
+                                                {imageError}
+                                            </Typography>
+                                        )}
+                                    </div>
+                                </AppReactDropzone>
+                            </Grid>
+                        )}
 
                         {isYoutube && (
                             <>
@@ -482,48 +489,46 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
                             </>
                         )}
                     </Grid>
-                </DialogContent>
-
-                <DialogActions sx={{ justifyContent: 'center', gap: 2 }}>
-                    {isYoutube && (
-
-
-                        <Button
-                            type="submit"
-                            variant="contained"
-                            disabled={loading}
-                            sx={{ blockSize: 40, position: 'relative' }}
-                        >
-                            {loading ? (
-                                <CircularProgress
-                                    size={24}
-                                    sx={{
-                                        color: 'white',
-                                        position: 'absolute',
-                                        top: '50%',
-                                        left: '50%',
-                                        marginTop: '-12px',
-                                        marginLeft: '-12px'
-                                    }}
-                                />
-                            ) : (
-                                'Submit'
-                            )}
+                    <DialogActions sx={{ justifyContent: 'center', gap: 2 }}>
+                        {isYoutube && (
+                            <Button
+                                type="submit"
+                                variant="contained"
+                                disabled={loading}
+                                sx={{ blockSize: 40, position: 'relative' }}
+                            >
+                                {loading ? (
+                                    <CircularProgress
+                                        size={24}
+                                        sx={{
+                                            color: 'white',
+                                            position: 'absolute',
+                                            top: '50%',
+                                            left: '50%',
+                                            marginTop: '-12px',
+                                            marginLeft: '-12px'
+                                        }}
+                                    />
+                                ) : (
+                                    'Submit'
+                                )}
+                            </Button>
+                        )}
+                        <Button variant="tonal" color="error" onClick={() => {
+                            setISOpen(false)
+                        }
+                        }>
+                            Cancel
                         </Button>
-                    )}
-                    <Button variant="tonal" color="error" onClick={() => {
-                        setISOpen(false)
-                    }
-                    }>
-                        Cancel
-                    </Button>
-                </DialogActions>
+                    </DialogActions>
+                </DialogContent>
             </form>
         </Dialog>
     )
 }
 
 const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivities, mId }) => {
+
     const [editingId, setEditingId] = useState(null);
     const [editingTitle, setEditingTitle] = useState("");
     const [editingError, setEditingError] = useState("");
@@ -635,7 +640,11 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
             <Grid container spacing={3}>
 
                 <Grid item size={{ xs: 12, md: 8 }}>
-                    <Box sx={{ maxHeight: '70vh', overflowY: 'auto', pr: 1 }}>
+                    <Box sx={{
+                        maxHeight: '70vh',
+                        overflowY: 'auto',
+                        pr: 1
+                    }}>
                         {activities && activities.length > 0 ? (
                             activities.map((activity, index) => (
                                 <Card
