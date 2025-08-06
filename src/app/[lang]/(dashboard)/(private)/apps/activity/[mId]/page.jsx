@@ -10,6 +10,10 @@ import { useSession } from "next-auth/react"
 
 import ReactPlayer from 'react-player'
 
+import JSZip from 'jszip'
+
+import { XMLParser } from 'fast-xml-parser'
+
 import {
     Box,
     Button,
@@ -145,25 +149,24 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
     const [file, setFile] = useState()
 
     const isYoutube = id == '688723af5dd97f4ccae68836'
+    const isVideo = id == '688723af5dd97f4ccae68835'
+    const isScrom = id == '688723af5dd97f4ccae68837'
 
     const schema = object({
         title: pipe(
             string(),
             minLength(1, 'Title is required'),
-            maxLength(100, 'Title can be max of 100 length'),
-            regex(/^[A-Za-z0-9\s]+$/, 'Only alphabet and number allowed')
+            maxLength(100, 'Title can be max of 100 characters'),
+            regex(/^[A-Za-z0-9\s]+$/, 'Only letters and numbers allowed')
         ),
-        live_session_type: string(),
-        video_url: isYoutube
+        live_session_type: pipe(),
+        video_url: (isYoutube || isVideo)
             ? pipe(
                 minLength(1, 'Video URL is required'),
                 maxLength(200, 'Video URL too long'),
-                regex(
-                    /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/[^\s]+$/,
-                    'Enter a valid YouTube URL'
-                )
+                regex(/^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/[^\s]+$/, 'Enter a valid YouTube URL')
             )
-            : pipe(string())
+            : pipe()
     })
 
     const {
@@ -183,10 +186,16 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
 
     useEffect(() => {
         if (editData && open) {
-            if (isYoutube) {
+            if (isYoutube || isVideo) {
                 reset({
                     title: editData?.video_data?.title || '',
                     video_url: editData?.video_data?.video_url || '',
+                    live_session_type: ''
+                })
+            } else if (isScrom) {
+                reset({
+                    title: editData?.scrom_data?.title,
+                    video_url: '',
                     live_session_type: ''
                 })
             } else {
@@ -198,7 +207,13 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
                 setPreview(editData?.file_url)
             }
         }
-    }, [editData, id, open, isYoutube, reset])
+    }, [editData, id, open, isYoutube, isVideo, reset])
+
+    useEffect(() => {
+        if (errors) {
+            console.log("Error", errors);
+        }
+    }, [errors])
 
     const getFileConfig = () => {
         if (id === '688723af5dd97f4ccae68834') {
@@ -243,24 +258,63 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
         multiple: false,
         maxSize: fileConfig.maxSize,
         accept: fileConfig.accept,
-        onDrop: (acceptedFiles) => {
+        onDrop: async (acceptedFiles) => {
             if (!acceptedFiles.length) return
             const selectedFile = acceptedFiles[0]
 
-            setFile(selectedFile)
+            setFile(null)
             setImageError('')
+            setPreview(null)
+
+            if (fileConfig.type === 'SCORM Content') {
+                try {
+                    const zip = await JSZip.loadAsync(selectedFile)
+                    const manifestFile = zip.file("imsmanifest.xml")
+
+                    if (!manifestFile) {
+                        const msg = "SCORM zip must include 'imsmanifest.xml' at the root level."
+                        
+                        toast.error(msg)
+                        setImageError(msg)
+
+                        return
+                    }
+
+                    const manifestText = await manifestFile.async("string")
+                    const parser = new XMLParser({ ignoreAttributes: false })
+                    const manifest = parser.parse(manifestText)
+
+                    if (!manifest?.manifest) {
+                        const msg = "'imsmanifest.xml' is not a valid SCORM manifest file."
+                        
+                        toast.error(msg)
+                        setImageError(msg)
+                        
+                        return
+                    }
+                } catch (err) {
+                    console.error(err)
+                    const msg = "Invalid SCORM zip. Could not parse 'imsmanifest.xml'."
+                    
+                    toast.error(msg)
+                    
+                    setImageError(msg)
+                    
+                    return
+                }
+            }
+
+            setFile(selectedFile)
 
             if (fileConfig.type === 'Video') {
                 setPreview(URL.createObjectURL(selectedFile))
-            } else {
-                setPreview(null)
             }
         },
         onDropRejected: (rejectedFiles) => {
             rejectedFiles.forEach(file => {
                 file.errors.forEach(error => {
                     let msg = ''
-
+                    
                     switch (error.code) {
                         case 'file-invalid-type':
                             msg = `Invalid file type for ${fileConfig.type}.`
@@ -283,42 +337,53 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
     })
 
     const handleDataSave = async (data) => {
-        if (!isYoutube && !file && !editData?.file_url) {
-            setImageError(`Please upload a ${fileConfig.type.toLowerCase()}.`)
+        console.log("Data", data);
 
-            return
+        const isEdit = !!editData;
+
+        // Determine if a file is required based on conditions
+        const requiresFile =
+            !isYoutube &&
+            !isVideo &&
+            !isScrom &&
+            (!file && (!isEdit || !editData?.file_url));
+
+        if (requiresFile) {
+            setImageError(`Please upload a ${fileConfig.type.toLowerCase()}.`);
+            
+            return;
         }
 
-        setLoading(true)
+        console.log(imageError);
+        setLoading(true);
 
         try {
-            const formData = new FormData()
+            const formData = new FormData();
+            
+            formData.append('title', data.title);
+            formData.append('file_type', fileConfig.type);
 
-            formData.append('title', data.title)
-            formData.append('file_type', fileConfig.type)
-            if (file) formData.append('file', file)
-            if (isYoutube) formData.append('video_url', data.video_url)
+            if (file) formData.append('file', file);
+            if (isYoutube) formData.append('video_url', data.video_url);
 
             const response = await fetch(`${API_URL}/company/activity/data/${mId}/${id}/${activityId}`, {
                 method: "POST",
-                headers: {
-                    Authorization: `Bearer ${token}`
-                },
+                headers: { Authorization: `Bearer ${token}` },
                 body: formData
-            })
+            });
 
             if (response.ok) {
-                toast.success(`${fileConfig.type} uploaded successfully`)
-                fetchActivities()
-                handleClose()
-                setISOpen(false)
+                toast.success(`${fileConfig.type} uploaded successfully`);
+                fetchActivities();
+                handleClose();
+                setISOpen(false);
             }
         } catch (error) {
-            toast.error('Upload failed')
+            toast.error('Upload failed');
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
-    }
+    };
 
     const handleClose = () => {
         setFile()
@@ -337,12 +402,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
             <DialogTitle>Upload {fileConfig.type}</DialogTitle>
 
             <form onSubmit={handleSubmit(handleDataSave)} noValidate>
-                <DialogContent
-                    sx={{
-                        maxHeight: '80vh',
-                        overflowY: 'auto',
-                    }}
-                >
+                <DialogContent sx={{ maxHeight: '80vh', overflowY: 'auto' }}>
                     <Grid container spacing={5}>
                         <Grid item size={{ xs: 12 }}>
                             <Controller
@@ -362,8 +422,6 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
                         </Grid>
 
                         {!isYoutube && (
-
-
                             <Grid item size={{ xs: 12 }}>
                                 <Typography variant="body1" fontWeight={500} gutterBottom>
                                     {fileConfig.type} <span>*</span>
@@ -391,29 +449,15 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
                                         </Avatar>
 
                                         <Typography variant="body2">
-                                            {fileConfig.type === 'Document' &&
-                                                'Allowed *.pdf, *.pptx, *.docx, *.doc. Max 1 file, max 5MB'}
-                                            {fileConfig.type === 'Video' &&
-                                                'Allowed *.mp4. Max 1 file, max 500MB'}
-                                            {fileConfig.type === 'SCORM Content' &&
-                                                'Allowed *.zip. Max 1 file, max 500MB'}
+                                            {fileConfig.type === 'Document' && 'Allowed *.pdf, *.pptx, *.docx, *.doc. Max 5MB'}
+                                            {fileConfig.type === 'Video' && 'Allowed *.mp4. Max 500MB'}
+                                            {fileConfig.type === 'SCORM Content' && 'Allowed *.zip. Must include imsmanifest.xml. Max 500MB'}
                                         </Typography>
 
                                         {(file || editData?.file_url) && (
                                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
                                                 <Avatar variant="rounded" sx={{ bgcolor: '#f5f5f5', color: '#0A2E73', width: 48, height: 48 }}>
-                                                    {(file?.name || editData?.file_url || '').endsWith('.pdf') ||
-                                                        (file?.name || editData?.file_url || '').endsWith('.doc') ||
-                                                        (file?.name || editData?.file_url || '').endsWith('.docx') ||
-                                                        (file?.name || editData?.file_url || '').endsWith('.pptx') ? (
-                                                        <i className="tabler-file-description" />
-                                                    ) : (file?.name || editData?.file_url || '').endsWith('.mp4') ? (
-                                                        <i className="tabler-video" />
-                                                    ) : (file?.name || editData?.file_url || '').endsWith('.zip') ? (
-                                                        <i className="tabler-archive" />
-                                                    ) : (
-                                                        <i className="tabler-file" />
-                                                    )}
+                                                    <i className="tabler-file" />
                                                 </Avatar>
 
                                                 <Typography variant="body2" fontWeight={500}>
@@ -455,71 +499,34 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
                                     />
                                 </Grid>
 
-                                {/* Video Preview */}
                                 {ReactPlayer.canPlay(watch('video_url')) && (
                                     <Grid item size={{ xs: 12 }}>
-                                        <Typography variant="subtitle1" gutterBottom>
-                                            Video Preview
-                                        </Typography>
-                                        <Box
-                                            sx={{
-                                                position: 'relative',
-                                                width: '100%',
-                                                height: '300px', // fixed smaller height
-                                                borderRadius: 2,
-                                                overflow: 'hidden',
-                                                boxShadow: 1,
-                                            }}
-                                        >
+                                        <Typography variant="subtitle1" gutterBottom>Video Preview</Typography>
+                                        <Box sx={{ position: 'relative', width: '100%', height: '300px', borderRadius: 2, overflow: 'hidden', boxShadow: 1 }}>
                                             <ReactPlayer
                                                 url={watch('video_url')}
                                                 controls
                                                 width="100%"
                                                 height="100%"
-                                                style={{
-                                                    position: 'absolute',
-                                                    top: 0,
-                                                    left: 0,
-                                                }}
+                                                style={{ position: 'absolute', top: 0, left: 0 }}
                                             />
                                         </Box>
                                     </Grid>
                                 )}
-
                             </>
                         )}
                     </Grid>
-                    <DialogActions sx={{ justifyContent: 'center', gap: 2 }}>
-                        {/* {isYoutube && ( */}
-                        <Button
-                            type="submit"
-                            variant="contained"
-                            disabled={loading}
-                            sx={{ blockSize: 40, position: 'relative' }}
-                        >
+
+                    <DialogActions sx={{ justifyContent: 'center', gap: 2, mt: 4 }}>
+                        <Button type="submit" variant="contained" disabled={loading} sx={{ height: 40, position: 'relative' }}>
                             {loading ? (
-                                <CircularProgress
-                                    size={24}
-                                    sx={{
-                                        color: 'white',
-                                        position: 'absolute',
-                                        top: '50%',
-                                        left: '50%',
-                                        marginTop: '-12px',
-                                        marginLeft: '-12px'
-                                    }}
-                                />
-                            ) : (
-                                'Submit'
-                            )}
+                                <CircularProgress size={24} sx={{
+                                    color: 'white', position: 'absolute', top: '50%', left: '50%',
+                                    mt: '-12px', ml: '-12px'
+                                }} />
+                            ) : 'Submit'}
                         </Button>
-                        {/* )} */}
-                        <Button variant="tonal" color="error" onClick={() => {
-                            setISOpen(false)
-                        }
-                        }>
-                            Cancel
-                        </Button>
+                        <Button variant="tonal" color="error" onClick={handleClose}>Cancel</Button>
                     </DialogActions>
                 </DialogContent>
             </form>
