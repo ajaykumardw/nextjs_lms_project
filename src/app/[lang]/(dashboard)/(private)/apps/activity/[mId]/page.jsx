@@ -273,8 +273,10 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
 
                     if (!manifestFile) {
                         const msg = "SCORM zip must include 'imsmanifest.xml' at the root level."
+                        
                         toast.error(msg)
                         setImageError(msg)
+
                         return
                     }
 
@@ -284,15 +286,20 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
 
                     if (!manifest?.manifest) {
                         const msg = "'imsmanifest.xml' is not a valid SCORM manifest file."
+                        
                         toast.error(msg)
                         setImageError(msg)
+                        
                         return
                     }
                 } catch (err) {
                     console.error(err)
                     const msg = "Invalid SCORM zip. Could not parse 'imsmanifest.xml'."
+                    
                     toast.error(msg)
+                    
                     setImageError(msg)
+                    
                     return
                 }
             }
@@ -307,6 +314,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
             rejectedFiles.forEach(file => {
                 file.errors.forEach(error => {
                     let msg = ''
+                    
                     switch (error.code) {
                         case 'file-invalid-type':
                             msg = `Invalid file type for ${fileConfig.type}.`
@@ -342,6 +350,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
 
         if (requiresFile) {
             setImageError(`Please upload a ${fileConfig.type.toLowerCase()}.`);
+            
             return;
         }
 
@@ -350,6 +359,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
 
         try {
             const formData = new FormData();
+            
             formData.append('title', data.title);
             formData.append('file_type', fileConfig.type);
 
