@@ -12,7 +12,11 @@ import ReactPlayer from 'react-player'
 
 import JSZip from 'jszip'
 
+import { rankItem } from '@tanstack/match-sorter-utils'
+
 import { XMLParser } from 'fast-xml-parser'
+
+import classnames from 'classnames'
 
 import {
     Box,
@@ -22,9 +26,12 @@ import {
     Dialog,
     DialogActions,
     CardContent,
+    List,
+    ListItem,
     Avatar,
     FormControlLabel,
     Radio,
+    LinearProgress,
     RadioGroup,
     Checkbox,
     Typography,
@@ -33,6 +40,7 @@ import {
     DialogTitle,
     MenuItem,
     Switch,
+    Alert,
     InputAdornment,
     Tab,
     DialogContent,
@@ -54,11 +62,27 @@ import {
     regex
 } from 'valibot'
 
+import {
+    createColumnHelper,
+    flexRender,
+    getCoreRowModel,
+    useReactTable,
+    getFilteredRowModel,
+    getPaginationRowModel,
+    getSortedRowModel
+} from '@tanstack/react-table'
+
 import { useForm, Controller } from 'react-hook-form'
 
 import { TabContext, TabList, TabPanel } from "@mui/lab"
 
 import { toast } from "react-toastify"
+
+import * as XLSX from 'xlsx';
+
+import tableStyles from '@core/styles/table.module.css'
+
+import TablePaginationComponent from '@components/TablePaginationComponent'
 
 import PermissionGuard from "@/hocs/PermissionClientGuard"
 
@@ -67,6 +91,475 @@ import AppReactDropzone from '@/libs/styles/AppReactDropzone'
 import DialogCloseButton from "@/components/dialogs/DialogCloseButton"
 
 import CustomTextField from "@/@core/components/mui/TextField"
+
+const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
+
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+    const { data: session } = useSession();
+    const token = session?.user?.token;
+
+    const router = useRouter()
+
+    const [missingHeaders, setMissingHeaders] = useState([])
+    const [validationErrors, setValidationErrors] = useState([])
+
+    const [fileInput, setFileInput] = useState();
+    const [progress, setProgress] = useState(0);
+    const [uploadData, setUploadData] = useState();
+    const [loading, setLoading] = useState(false);
+    const [data, setData] = useState([]);
+    const [srNoArr, setSRNOArr] = useState([])
+    const [rowSelection, setRowSelection] = useState({})
+    const [globalFilter, setGlobalFilter] = useState('')
+    const { mId: mId, lang: lang } = useParams();
+
+    const columnHelper = createColumnHelper()
+
+    const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...props }) => {
+        const [value, setValue] = useState(initialValue)
+        
+
+        useEffect(() => { setValue(initialValue) }, [initialValue])
+        useEffect(() => {
+            const timeout = setTimeout(() => { onChange(value) }, debounce)
+            
+            return () => clearTimeout(timeout)
+        }, [value])
+        
+        return <CustomTextField {...props} value={value} onChange={e => setValue(e.target.value)} />
+    }
+
+    const fuzzyFilter = (row, columnId, value, addMeta) => {
+        const itemRank = rankItem(row.getValue(columnId), value)
+        
+        addMeta({ itemRank })
+        
+        return itemRank.passed
+    }
+
+    const handleRemoveFile = () => {
+        setData([]);
+        setFileInput(null)
+        setUploadData([]);
+        setValidationErrors([])
+        setMissingHeaders([])
+        setLoading(false);
+    }
+
+    const { getRootProps, getInputProps } = useDropzone({
+        multiple: false,
+        maxSize: 2000000,
+        accept: {
+            'application/vnd.ms-excel': ['.xls'],
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
+        },
+        onDrop: (acceptedFiles) => {
+
+            setFileInput(null);
+            setMissingHeaders([]);
+            setValidationErrors([]);
+            setLoading(true);
+            setProgress(0);
+            setData([]);
+            setUploadData([]); // reset previous data on new upload
+
+            const reader = new FileReader();
+
+            reader.onload = async (e) => {
+                if (e.target?.result) {
+                    try {
+                        const arrayBuffer = e.target.result;
+                        const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+                        const sheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[sheetName];
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                        //Validate header
+                        const headers = XLSX.utils.sheet_to_json(worksheet, { header: 1 })[0];
+                        const requiredHeaders = ['Sno', 'Question', 'Option 1', 'Option 2', 'Option 3', 'Option 4', 'Option 5', 'Option 6', 'Correct Answer', 'Difficulty Level', 'Section', 'Answer Explanation'];
+                        const missingHeadersList = requiredHeaders.filter(h => !headers.includes(h));
+
+                        if (missingHeadersList.length > 0) {
+                            setMissingHeaders(missingHeadersList);
+                            setLoading(false);
+                            
+                            return;
+                        }
+
+                        //Validate difficulty level, correct answer, and length constraints
+                        let difficultyErrors = [];
+                        let correctAnswerErrors = [];
+                        let lengthErrors = [];
+
+                        jsonData.forEach((row, index) => {
+                            const rowNum = index + 2;
+                            const difficulty = row['Difficulty Level']?.toString().trim();
+                            const correctAnswer = row['Correct Answer']?.toString().trim();
+                            const section = row['Section']?.toString().trim() || '';
+                            const answerExplanation = row['Answer Explanation']?.toString().trim() || '';
+                            const question = row['Question']?.toString().trim() || '';
+
+                            // Difficulty level check
+                            if (!['1', '2', '3'].includes(difficulty)) {
+                                difficultyErrors.push(`Row ${rowNum}: Difficulty Level must be 1, 2, or 3`);
+                            }
+
+                            //Correct answer check
+                            if (!['1', '2', '3', '4', '5', '6'].includes(correctAnswer)) {
+                                correctAnswerErrors.push(`Row ${rowNum}: Correct Answer must be 1–6`);
+                            }
+
+                            //Section length check
+                            if (section.length > 10) {
+                                lengthErrors.push(`Row ${rowNum}: Section length must not exceed 10 characters`);
+                            }
+
+                            //Answer Explanation length check
+                            if (answerExplanation.length > 500) {
+                                lengthErrors.push(`Row ${rowNum}: Answer Explanation length must not exceed 500 characters`);
+                            }
+
+                            //Question length check
+                            if (question.length > 500) {
+                                lengthErrors.push(`Row ${rowNum}: Question length must not exceed 500 characters`);
+                            }
+                        });
+
+                        if (difficultyErrors.length > 0 || correctAnswerErrors.length > 0 || lengthErrors.length > 0) {
+                            const allErrors = [...difficultyErrors, ...correctAnswerErrors, ...lengthErrors];
+                            
+                            setValidationErrors(allErrors);
+                            setLoading(false);
+                            
+                            return;
+                        }
+
+                        const seen = new Set();
+                        const duplicates = new Set();
+                        
+                        for (const row of jsonData) {
+                            const email = (row.Email || '').toLowerCase().trim();
+                            
+                            if (!email) continue;
+                            
+                            if (seen.has(email)) {
+                                duplicates.add(email);
+                            } else {
+                                seen.add(email);
+                            }
+                        
+                        }
+                        
+                        if (duplicates.size > 0) {
+                            toast.error(`Duplicate emails found in Excel: ${Array.from(duplicates).join(', ')}`);
+                            setLoading(false);
+                            
+                            return;
+                        }
+
+                        setData([]);
+                        setUploadData(jsonData);
+                        setFileInput(acceptedFiles[0]);
+                    } catch (error) {
+                        console.error('Error processing the Excel file:', error);
+                        toast.error('Error in processing the Excel file.', { hideProgressBar: false });
+                    }
+                }
+            };
+
+            reader.onerror = (error) => {
+                console.error('Error reading the file:', error);
+                setLoading(false);
+                setProgress(0);
+                setUploadData([]);
+                setData([]);
+            };
+
+            if (acceptedFiles[0]) {
+                reader.readAsArrayBuffer(acceptedFiles[0]);
+            }
+        },
+        onDropRejected: (rejectedFiles) => {
+            setLoading(false);
+            setProgress(0);
+            setUploadData([]);
+            setData([]);
+            rejectedFiles.forEach(file => {
+                file.errors.forEach(error => {
+                    switch (error.code) {
+                        case 'file-invalid-type':
+                            toast.error(`Invalid file type for ${file.file.name}`);
+                            break;
+                        case 'file-too-large':
+                            toast.error(`File ${file.file.name} is too large.`);
+                            break;
+                        default:
+                            toast.error(`Error with file ${file.file.name}`);
+                    }
+                });
+            });
+        }
+    });
+
+    const handleDialogClose = () => {
+        onClose();
+    }
+
+    const submitAnswer = async (data) => {
+        try {
+            const response = await fetch(
+                `${API_URL}/company/quiz/question/${mId}/${activityId}`,
+                {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(data)
+                }
+            );
+
+            // Try to parse JSON only if there is content
+            let datas = null;
+            const text = await response.text();
+            
+            if (text) {
+                try {
+                    datas = JSON.parse(text);
+                } catch (err) {
+                    console.error("Invalid JSON from server:", text);
+                    throw err;
+                }
+            }
+
+            if (response.ok) {
+                router.replace(`/${lang}/apps/quiz/${mId}/${activityId}`)
+                toast.success(`Quiz has been imported`, {
+                    autoClose: 900
+                })
+                onClose()
+                handleClose()
+            } else {
+                console.error("Error:", datas || response.statusText);
+            }
+
+        } catch (error) {
+            console.error("Submit answer error:", error);
+            throw error;
+        }
+    };
+
+    const handleUploadData = () => {
+        if (uploadData.length > 0) {
+            submitAnswer(uploadData).then(() => {
+                // Clear everything after save
+                setData([]);
+                setFileInput(null);
+                setUploadData([]);
+                setValidationErrors([]);
+                setMissingHeaders([]);
+                setLoading(false);
+                setProgress(0);
+                setRowSelection({});
+                setGlobalFilter('');
+            });
+        }
+    };
+
+    const columns = useMemo(() => [
+        columnHelper.accessor('Sno', { header: 'Sno', cell: info => <Typography>{info.getValue()}</Typography> }),
+        columnHelper.accessor('Question', { header: 'Question', cell: info => <Typography>{info.getValue()}</Typography> }),
+        columnHelper.accessor('Option 1', { header: 'Option 1', cell: info => <Typography>{info.getValue()}</Typography> }),
+        columnHelper.accessor('Option 2', { header: 'Option 2', cell: info => <Typography>{info.getValue()}</Typography> }),
+        columnHelper.accessor('Option 3', { header: 'Option 3', cell: info => <Typography>{info.getValue()}</Typography> }),
+        columnHelper.accessor('Option 4', { header: 'Option 4', cell: info => <Typography>{info.getValue()}</Typography> }),
+        columnHelper.accessor('Option 5', { header: 'Option 5', cell: info => <Typography>{info.getValue()}</Typography> }),
+        columnHelper.accessor('Option 6', { header: 'Option 6', cell: info => <Typography>{info.getValue()}</Typography> }),
+        columnHelper.accessor('Difficulty Level', { header: 'Difficulty Level', cell: info => <Typography>{info.getValue()}</Typography> }),
+        columnHelper.accessor('Correct Answer', { header: 'Correct Answer', cell: info => <Typography>{info.getValue()}</Typography> }),
+        columnHelper.accessor('Section', { header: 'Section', cell: info => <Typography>{info.getValue()}</Typography> }),
+        columnHelper.accessor('Answer Explanation', { header: 'Answer Explanation', cell: info => <Typography>{info.getValue()}</Typography> }),
+    ], [srNoArr]);
+
+    const table = useReactTable({
+        data: uploadData || [],
+        columns,
+        state: { rowSelection, globalFilter },
+        filterFns: { fuzzy: fuzzyFilter },
+        globalFilterFn: fuzzyFilter,
+        onRowSelectionChange: setRowSelection,
+        onGlobalFilterChange: setGlobalFilter,
+        getCoreRowModel: getCoreRowModel(),
+        getFilteredRowModel: getFilteredRowModel(),
+        getSortedRowModel: getSortedRowModel(),
+        getPaginationRowModel: getPaginationRowModel()
+    })
+
+    const TableImportComponent = () => (
+        <Card className='mt-4'>
+            <CardContent className='flex justify-between flex-col gap-4 items-start sm:flex-row sm:items-center'>
+                <div className='flex items-center gap-2'>
+                    <Typography>Show</Typography>
+                    <CustomTextField
+                        select
+                        value={table.getState().pagination.pageSize}
+                        onChange={e => table.setPageSize(Number(e.target.value))}
+                        className='max-sm:is-full sm:is-[70px]'
+                    >
+                        <MenuItem value={10}>10</MenuItem>
+                        <MenuItem value={25}>25</MenuItem>
+                        <MenuItem value={50}>50</MenuItem>
+                        <MenuItem value={200}>200</MenuItem>
+                    </CustomTextField>
+                </div>
+                <DebouncedInput
+                    value={globalFilter ?? ''}
+                    className='max-sm:is-full min-is-[250px]'
+                    onChange={value => setGlobalFilter(String(value))}
+                    placeholder='Search Question'
+                />
+            </CardContent>
+            <div className='overflow-x-auto'>
+                <table className={tableStyles.table}>
+                    <thead>
+                        {table.getHeaderGroups().map(headerGroup => (
+                            <tr key={headerGroup.id}>
+                                {headerGroup.headers.map(header => (
+                                    <th key={header.id}>
+                                        <div
+                                            className={classnames({
+                                                'flex items-center': true,
+                                                'cursor-pointer': header.column.getCanSort()
+                                            })}
+                                            onClick={header.column.getToggleSortingHandler()}
+                                        >
+                                            {flexRender(header.column.columnDef.header, header.getContext())}
+                                            {header.column.getIsSorted() === 'asc' && <i className='tabler-chevron-up text-xl' />}
+                                            {header.column.getIsSorted() === 'desc' && <i className='tabler-chevron-down text-xl' />}
+                                        </div>
+                                    </th>
+                                ))}
+                            </tr>
+                        ))}
+                    </thead>
+                    <tbody>
+                        {table.getRowModel().rows.length === 0 ? (
+                            <tr>
+                                <td colSpan={columns.length} className='text-center'>No data available</td>
+                            </tr>
+                        ) : (
+                            table.getRowModel().rows.map(row => (
+                                <tr key={row.id}>
+                                    {row.getVisibleCells().map(cell => (
+                                        <td key={cell.id}>
+                                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
+            </div>
+            <TablePaginationComponent table={table} />
+        </Card>
+    )
+
+    return (
+        <Dialog fullWidth maxWidth='md' scroll='body' open={open} onClose={onClose} sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}>
+            <DialogCloseButton onClick={onClose}><i className="tabler-x" /></DialogCloseButton>
+            <DialogTitle variant='h4' className='text-center'>Import Users</DialogTitle>
+
+            <Card>
+                <CardContent>
+                    <Alert severity='info'>Note: Allowed only Excel files with *.xls or *.xlsx extension.</Alert>
+                    {missingHeaders.length > 0 && (
+                        <Alert severity='error'>Missing Headers: {missingHeaders.join(', ')}</Alert>
+                    )}
+                    {validationErrors.length > 0 && (
+                        <Alert severity='error' className='mt-2'>
+                            {validationErrors.map((err, idx) => <div key={idx}>{err}</div>)}
+                        </Alert>
+                    )}
+                    <Typography className='mt-3'>
+                        Use this format:
+                        <span style={{ marginLeft: '0.5rem' }}>
+                            <Button variant='outlined' href="/sample/QuizSection.xlsx" download>Download sample file</Button>
+                        </span>
+                    </Typography>
+                </CardContent>
+
+                <CardContent>
+                    <AppReactDropzone>
+                        <div {...getRootProps()} className='dropzone'>
+                            <input {...getInputProps()} />
+                            <div className='flex items-center flex-col'>
+                                <Avatar variant='rounded' className='bs-12 is-12 mbe-9'><i className='tabler-upload' /></Avatar>
+                                <Typography variant='h4'>Drop files here or click to upload</Typography>
+                                <Typography>Allowed *.xls, *.xlsx – Max 2 MB</Typography>
+                            </div>
+                        </div>
+
+                        {loading && <LinearProgress variant='determinate' color='success' value={progress} />}
+
+                        {fileInput && (
+                            <List className='mt-3'>
+                                <ListItem>
+                                    <div className='file-details'>
+                                        <div className='file-preview'><i className='vscode-icons-file-type-excel w-6 h-6' /></div>
+                                        <Typography>{fileInput.name}</Typography>
+                                    </div>
+                                    <IconButton onClick={handleRemoveFile}><i className='tabler-x text-xl' /></IconButton>
+                                </ListItem>
+                            </List>
+                        )}
+
+                        {uploadData && uploadData.length > 0 && <TableImportComponent />}
+                    </AppReactDropzone>
+                </CardContent>
+            </Card>
+
+            <DialogActions className='justify-center'>
+                {uploadData && uploadData.length > 0 && missingHeaders.length === 0 && validationErrors.length === 0 && (
+                    <Button variant='contained' onClick={handleUploadData}>Start Import</Button>
+                )}
+                <Button variant='tonal' type='button' color='secondary' onClick={handleDialogClose}>Close</Button>
+            </DialogActions>
+        </Dialog>
+    )
+}
+
+const QuizCard = ({ title, onClick, badge }) => {
+    return (
+        <div
+            className="relative bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition cursor-pointer w-64 text-center"
+            onClick={onClick}
+        >
+            {badge && (
+                <span className="absolute top-3 right-3 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">
+                    {badge}
+                </span>
+            )}
+
+            {title === 'Import from Spreadsheet' && (
+                <svg xmlns="http://www.w3.org/2000/svg" fill="green" viewBox="0 0 24 24" width="40" height="40">
+                    <path d="M6 2h9l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" fill="#34a853" />
+                    <path d="M14 2v6h6" fill="#2c7" />
+                    <path fill="#fff" d="M8 10h8v2H8zm0 3h8v2H8z" />
+                </svg>
+            )}
+
+            {title === 'Create Manually' && (
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="dodgerblue" strokeWidth="2" viewBox="0 0 24 24" width="40" height="40">
+                    <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+                </svg>
+            )}
+
+            <p className="text-sm font-semibold text-gray-800">{title}</p>
+        </div>
+    );
+};
+
 
 const ShowFileModal = ({ open, setOpen, docURL }) => {
 
@@ -143,14 +636,21 @@ const ShowFileModal = ({ open, setOpen, docURL }) => {
 
 const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, activityId, fetchActivities }) => {
 
+    const { lang } = useParams();
+
     const [preview, setPreview] = useState()
     const [imageError, setImageError] = useState()
     const [loading, setLoading] = useState(false)
     const [file, setFile] = useState()
 
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
     const isYoutube = id == '688723af5dd97f4ccae68836'
     const isVideo = id == '688723af5dd97f4ccae68835'
     const isScrom = id == '688723af5dd97f4ccae68837'
+    const isQuiz = id == '68886902954c4d9dc7a379bd';
+
+    const router = useRouter();
 
     const schema = object({
         title: pipe(
@@ -209,12 +709,6 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
         }
     }, [editData, id, open, isYoutube, isVideo, reset])
 
-    useEffect(() => {
-        if (errors) {
-            console.log("Error", errors);
-        }
-    }, [errors])
-
     const getFileConfig = () => {
         if (id === '688723af5dd97f4ccae68834') {
             return {
@@ -249,6 +743,14 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
             return { type: 'Youtube videos' }
         }
 
+        if (isQuiz) {
+            return {
+                accept: { 'application/zip': ['.zip'] },
+                maxSize: 500 * 1024 * 1024,
+                type: 'Objective Quiz'
+            }
+        }
+
         return { accept: {}, maxSize: 0, type: '' }
     }
 
@@ -259,7 +761,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
         maxSize: fileConfig.maxSize,
         accept: fileConfig.accept,
         onDrop: async (acceptedFiles) => {
-            if (!acceptedFiles.length) return
+            if (acceptedFiles && !acceptedFiles.length) return
             const selectedFile = acceptedFiles[0]
 
             setFile(null)
@@ -273,7 +775,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
 
                     if (!manifestFile) {
                         const msg = "SCORM zip must include 'imsmanifest.xml' at the root level."
-                        
+
                         toast.error(msg)
                         setImageError(msg)
 
@@ -286,20 +788,20 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
 
                     if (!manifest?.manifest) {
                         const msg = "'imsmanifest.xml' is not a valid SCORM manifest file."
-                        
+
                         toast.error(msg)
                         setImageError(msg)
-                        
+
                         return
                     }
                 } catch (err) {
                     console.error(err)
                     const msg = "Invalid SCORM zip. Could not parse 'imsmanifest.xml'."
-                    
+
                     toast.error(msg)
-                    
+
                     setImageError(msg)
-                    
+
                     return
                 }
             }
@@ -314,7 +816,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
             rejectedFiles.forEach(file => {
                 file.errors.forEach(error => {
                     let msg = ''
-                    
+
                     switch (error.code) {
                         case 'file-invalid-type':
                             msg = `Invalid file type for ${fileConfig.type}.`
@@ -337,7 +839,6 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
     })
 
     const handleDataSave = async (data) => {
-        console.log("Data", data);
 
         const isEdit = !!editData;
 
@@ -350,16 +851,15 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
 
         if (requiresFile) {
             setImageError(`Please upload a ${fileConfig.type.toLowerCase()}.`);
-            
+
             return;
         }
 
-        console.log(imageError);
         setLoading(true);
 
         try {
             const formData = new FormData();
-            
+
             formData.append('title', data.title);
             formData.append('file_type', fileConfig.type);
 
@@ -393,6 +893,10 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
         setISOpen(false)
     }
 
+    const onClose = () => {
+        setIsModalOpen(false);
+    }
+
     return (
         <Dialog open={open} fullWidth maxWidth="md" sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}>
             <DialogCloseButton onClick={handleClose} disableRipple>
@@ -404,24 +908,48 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
             <form onSubmit={handleSubmit(handleDataSave)} noValidate>
                 <DialogContent sx={{ maxHeight: '80vh', overflowY: 'auto' }}>
                     <Grid container spacing={5}>
-                        <Grid item size={{ xs: 12 }}>
-                            <Controller
-                                name="title"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomTextField
-                                        {...field}
-                                        fullWidth
-                                        label="Title*"
-                                        placeholder="Enter title"
-                                        error={!!errors.title}
-                                        helperText={errors.title?.message}
-                                    />
-                                )}
-                            />
-                        </Grid>
 
-                        {!isYoutube && (
+                        {isQuiz && (
+                            <Box py={4} sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+                                <Grid container spacing={4} justifyContent="center" alignItems="center">
+
+                                    <QuizCard
+                                        title="Import from Spreadsheet"
+                                        onClick={() => {
+                                            setIsModalOpen(true)
+                                        }}
+                                    />
+                                    <QuizCard
+                                        title="Create Manually"
+                                        onClick={() => {
+                                            router.replace(`/${lang}/apps/quiz/${mId}/${activityId}`)
+                                        }}
+                                    />
+
+                                </Grid>
+                            </Box>
+                        )}
+
+                        {!isQuiz && (
+                            <Grid item size={{ xs: 12 }}>
+                                <Controller
+                                    name="title"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <CustomTextField
+                                            {...field}
+                                            fullWidth
+                                            label="Title*"
+                                            placeholder="Enter title"
+                                            error={!!errors.title}
+                                            helperText={errors.title?.message}
+                                        />
+                                    )}
+                                />
+                            </Grid>
+                        )}
+
+                        {!isYoutube && !isQuiz && (
                             <Grid item size={{ xs: 12 }}>
                                 <Typography variant="body1" fontWeight={500} gutterBottom>
                                     {fileConfig.type} <span>*</span>
@@ -530,6 +1058,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
                     </DialogActions>
                 </DialogContent>
             </form>
+            <ImportQuizModal open={isModalOpen} onClose={onClose} activityId={activityId} handleClose={handleClose} />
         </Dialog>
     )
 }
@@ -545,6 +1074,10 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
     const [docURL, setDocURL] = useState();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [logData, setLogData] = useState();
+
+    const { lang } = useParams()
+
+    const router = useRouter();
 
     const handleChangeName = async (id) => {
         const data = { title: editingTitle };
@@ -623,23 +1156,32 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
     const handleCardClick = (activity) => {
         const isDocumentType = activity.module_type_id === "688723af5dd97f4ccae68834";
 
-        // Close modals first to force re-render
-        setISOpen(false);
-        setIsModalOpen(false);
+        const quesLength = activity?.questions?.length
 
-        // Delay to ensure proper re-opening
-        setTimeout(() => {
-            setLogData(activity);
-            setActivityId(activity._id);
-            setSelectedId(activity.module_type_id);
+        if (quesLength > 0) {
 
-            if (isDocumentType && activity.document_data?.image_url) {
-                setDocURL(activity.document_data.image_url);
-                setIsModalOpen(true);
-            } else {
-                setISOpen(true);
-            }
-        }, 10);
+            router.replace(`/${lang}/apps/quiz/${mId}/${activity?._id}`)
+
+        } else {
+
+            // Close modals first to force re-render
+            setISOpen(false);
+            setIsModalOpen(false);
+
+            // Delay to ensure proper re-opening
+            setTimeout(() => {
+                setLogData(activity);
+                setActivityId(activity._id);
+                setSelectedId(activity.module_type_id);
+
+                if (isDocumentType && activity.document_data?.image_url) {
+                    setDocURL(activity.document_data.image_url);
+                    setIsModalOpen(true);
+                } else {
+                    setISOpen(true);
+                }
+            }, 10);
+        }
     };
 
     return (
@@ -848,7 +1390,7 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
 
             <ActivityModal
                 fetchActivities={fetchActivities}
-                key={activityId} // 👈 this forces remount when activity changes
+                key={activityId}
                 open={isOpen}
                 id={selectedId}
                 setISOpen={setISOpen}
