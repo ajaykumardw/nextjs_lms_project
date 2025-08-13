@@ -45,7 +45,7 @@ const QueastionQuizPage = () => {
         setLoading(true);
 
         try {
-        
+
             const res = await fetch(`${API_URL}/company/quiz/question/${mId}/${aId}`, {
                 method: "GET",
                 headers: { Authorization: `Bearer ${token}` }
@@ -59,10 +59,26 @@ const QueastionQuizPage = () => {
                         id: Date.now(),
                         title: "Section A",
                         questions: json.data.map((q) => {
-                            const options = [
-                                q.option1, q.option2, q.option3,
-                                q.option4, q.option5, q.option6
-                            ].filter(opt => opt && opt.trim() !== "");
+
+
+                            const rawOptions = [
+                                q.option1 ?? "",
+                                q.option2 ?? "",
+                                q.option3 ?? "",
+                                q.option4 ?? "",
+                                q.option5 ?? "",
+                                q.option6 ?? ""
+                            ];
+
+                            const options = rawOptions.filter(opt => {
+                                if (!opt) return false;
+                                const val = opt.toString().trim();
+                                
+                                if (!val) return false;
+                                if (val.toUpperCase() === "NULL") return false;
+                                
+                                return true;
+                            });
 
                             let correctIndex = null;
                             let correctIndices = [];
@@ -194,10 +210,23 @@ const QueastionQuizPage = () => {
     };
 
     const handleAddOption = () => {
-        updateQuestion(selected.sectionId, selected.questionId, q => ({
-            ...q, options: [...q.options, ""]
-        }));
+        updateQuestion(selected.sectionId, selected.questionId, q => {
+            if (q.options.length >= 6) {
+                return q; // Don't modify if already at limit
+            }
+            
+            return { ...q, options: [...q.options, ""] };
+        });
     };
+
+    useEffect(() => {
+        if (sections.length && selected.sectionId === null) {
+            setSelected({
+                sectionId: sections[0].id,
+                questionId: sections[0].questions[0]?.id ?? null
+            });
+        }
+    }, [sections]);
 
     const handleRemoveOption = (idx) => {
         updateQuestion(selected.sectionId, selected.questionId, q => {
@@ -443,7 +472,7 @@ const QueastionQuizPage = () => {
                                         <Typography variant="caption" sx={{ userSelect: "none" }}>
                                             {q.type} {difficultyIcons[q.difficulty]} {q.difficulty}
                                         </Typography>
-                                        <Typography>{`${idx + 1}. ${q.text || ""}`}</Typography>
+                                        <Typography>{`${idx + 1}. ${q.text || ""}`} </Typography>
                                     </Paper>
                                 ))}
                                 <Button size="small" onClick={() => handleAddQuestion(section.id)} sx={{ mt: 1 }} variant="outlined">
