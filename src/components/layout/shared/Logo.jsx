@@ -32,6 +32,7 @@ const LogoText = styled.span`
 `
 
 const Logo = ({ color }) => {
+  
   // Refs
   const logoTextRef = useRef(null)
 

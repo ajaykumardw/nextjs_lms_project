@@ -80,6 +80,10 @@ import { toast } from "react-toastify"
 
 import * as XLSX from 'xlsx';
 
+import DatePicker from "react-datepicker";
+
+import "react-datepicker/dist/react-datepicker.css";
+
 import tableStyles from '@core/styles/table.module.css'
 
 import TablePaginationComponent from '@components/TablePaginationComponent'
@@ -117,23 +121,23 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
 
     const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...props }) => {
         const [value, setValue] = useState(initialValue)
-        
+
 
         useEffect(() => { setValue(initialValue) }, [initialValue])
         useEffect(() => {
             const timeout = setTimeout(() => { onChange(value) }, debounce)
-            
+
             return () => clearTimeout(timeout)
         }, [value])
-        
+
         return <CustomTextField {...props} value={value} onChange={e => setValue(e.target.value)} />
     }
 
     const fuzzyFilter = (row, columnId, value, addMeta) => {
         const itemRank = rankItem(row.getValue(columnId), value)
-        
+
         addMeta({ itemRank })
-        
+
         return itemRank.passed
     }
 
@@ -182,7 +186,7 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
                         if (missingHeadersList.length > 0) {
                             setMissingHeaders(missingHeadersList);
                             setLoading(false);
-                            
+
                             return;
                         }
 
@@ -227,33 +231,33 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
 
                         if (difficultyErrors.length > 0 || correctAnswerErrors.length > 0 || lengthErrors.length > 0) {
                             const allErrors = [...difficultyErrors, ...correctAnswerErrors, ...lengthErrors];
-                            
+
                             setValidationErrors(allErrors);
                             setLoading(false);
-                            
+
                             return;
                         }
 
                         const seen = new Set();
                         const duplicates = new Set();
-                        
+
                         for (const row of jsonData) {
                             const email = (row.Email || '').toLowerCase().trim();
-                            
+
                             if (!email) continue;
-                            
+
                             if (seen.has(email)) {
                                 duplicates.add(email);
                             } else {
                                 seen.add(email);
                             }
-                        
+
                         }
-                        
+
                         if (duplicates.size > 0) {
                             toast.error(`Duplicate emails found in Excel: ${Array.from(duplicates).join(', ')}`);
                             setLoading(false);
-                            
+
                             return;
                         }
 
@@ -322,7 +326,7 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
             // Try to parse JSON only if there is content
             let datas = null;
             const text = await response.text();
-            
+
             if (text) {
                 try {
                     datas = JSON.parse(text);
@@ -559,7 +563,6 @@ const QuizCard = ({ title, onClick, badge }) => {
         </div>
     );
 };
-
 
 const ShowFileModal = ({ open, setOpen, docURL }) => {
 
@@ -1404,131 +1407,672 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
     );
 };
 
-const SettingComponent = () => {
-    return (
-        <Grid container spacing={4}>
-            <Grid item size={{ xs: 12, md: 9 }}>
-                <Typography variant="h6" gutterBottom>Push Enrollment Settings</Typography>
-                <RadioGroup defaultValue="select_learners" sx={{ mb: 3 }}>
-                    <FormControlLabel
-                        value="all_existing_new"
-                        control={<Radio />}
-                        label="To all existing & new Learners on this Content Folder"
-                    />
-                    <FormControlLabel
-                        value="all_with_criteria"
-                        control={<Radio />}
-                        label="To all existing & new Learners under this Content Folder who meet Target audience criteria"
-                    />
-                    <FormControlLabel
-                        value="select_learners"
-                        control={<Radio />}
-                        label="Let me select Learners while publishing"
-                    />
-                </RadioGroup>
+const ImportUserModal = ({
+    open, handleClose, API_URL, mId, id, activityId, token,
+    fetchActivities, users, setAllData
+}) => {
+    const { control, handleSubmit } = useForm();
+    const [file, setFile] = useState(null);
+    const [imageError, setImageError] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [excelData, setExcelData] = useState([]);
+    const [rowErrors, setRowErrors] = useState({});
+    const [matchedUsers, setMatchedUsers] = useState([]);
 
-                <Typography variant="h6" gutterBottom>Self-Enrollment Settings</Typography>
-                <RadioGroup defaultValue="no_self_enroll" sx={{ mb: 3 }}>
-                    <FormControlLabel
-                        value="no_self_enroll"
-                        control={<Radio />}
-                        label="Do not allow self enrollment"
-                    />
-                    <FormControlLabel
-                        value="anyone"
-                        control={<Radio />}
-                        label="Allow any Learner to self-enrol"
-                    />
-                    <FormControlLabel
-                        value="target_criteria"
-                        control={<Radio />}
-                        label='Allow Learners who meet the "target audience" criteria below to self-enrol'
-                    />
-                </RadioGroup>
+    // Save uploaded data
+    // Save uploaded data
+    const handleDataSave = async () => {
+        if (Object.keys(rowErrors).length > 0) {
+            toast.error("Please fix the errors in the table before submitting.");
+            return;
+        }
 
-                <Typography variant="h6" gutterBottom>This Module Is Targeted At</Typography>
-                <Grid container spacing={2} alignItems="center" mb={3}>
-                    <Grid item size={{ xs: 8 }}>
-                        <TextField select label="Designation" fullWidth size="small" defaultValue="">
-                            <MenuItem value="" disabled>Select Designation</MenuItem>
-                            <MenuItem value="Manager">Manager</MenuItem>
-                            <MenuItem value="Trainer">Trainer</MenuItem>
-                        </TextField>
-                    </Grid>
-                    <Grid item size={{ xs: 4 }}>
-                        <Button variant="contained" fullWidth>+ Add</Button>
-                    </Grid>
-                </Grid>
+        if (!file) {
+            setImageError("Please upload a valid .xlsx file.");
+            return;
+        }
 
-                <Typography variant="h6" gutterBottom>Due Date Settings</Typography>
-                <FormControlLabel
-                    control={<Checkbox />}
-                    label="Lock Module Post Due Date"
-                />
-                <RadioGroup defaultValue="relative" sx={{ mt: 1, mb: 2 }}>
-                    <FormControlLabel value="fixed" control={<Radio />} label="Fixed due date" />
-                    <FormControlLabel
-                        value="relative"
-                        control={<Radio />}
-                        label={
-                            <Box display="flex" alignItems="center">
-                                Learners need to complete the Module within&nbsp;
-                                <TextField
-                                    size="small"
-                                    type="number"
-                                    defaultValue={5}
-                                    sx={{ width: 80 }}
-                                />
-                                &nbsp;days post enrollment
-                            </Box>
+        setAllData(matchedUsers);
+
+        // Close after state update to allow parent effect to run
+        setTimeout(() => {
+            handleClose();
+        }, 0);
+    };
+
+
+    const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...props }) => {
+        const [value, setValue] = useState(initialValue);
+        useEffect(() => { setValue(initialValue) }, [initialValue]);
+        useEffect(() => {
+            const timeout = setTimeout(() => { onChange(value) }, debounce);
+            return () => clearTimeout(timeout);
+        }, [value]);
+        return <CustomTextField {...props} value={value} onChange={e => setValue(e.target.value)} />;
+    };
+
+    const validateExcelHeaders = (headers) => {
+        const requiredHeaders = ["sno", "empid/email"];
+        for (let req of requiredHeaders) {
+            if (!headers.includes(req.toLowerCase())) {
+                throw new Error(`Missing required column: ${req}`);
+            }
+        }
+    };
+
+    const { getRootProps, getInputProps } = useDropzone({
+        multiple: false,
+        maxSize: 5 * 1024 * 1024,
+        accept: {
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"]
+        },
+        onDrop: async (acceptedFiles) => {
+            if (!acceptedFiles.length) return;
+            const selectedFile = acceptedFiles[0];
+            try {
+                const data = await selectedFile.arrayBuffer();
+                const workbook = XLSX.read(data, { type: "array" });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+                if (!jsonData.length) {
+                    throw new Error("Excel file is empty.");
+                }
+
+                const headerRow = jsonData[0].map(h => String(h || "").trim());
+                const cleanHeaders = headerRow.map((h, idx) => h || `Column${idx + 1}`);
+                validateExcelHeaders(cleanHeaders.map(h => h.toLowerCase()));
+
+                const rows = XLSX.utils.sheet_to_json(firstSheet, {
+                    header: cleanHeaders,
+                    range: 1,
+                    defval: ""
+                });
+
+                const errors = {};
+                const matchedUsersArray = [];
+
+                rows.forEach((row, index) => {
+                    const snoVal = String(row["Sno"] || "").trim();
+                    const empVal = String(row["EmpId/Email"] || "").trim();
+
+                    const snoFilled = snoVal !== "";
+                    const empFilled = empVal !== "";
+
+                    if (snoFilled != empFilled) {
+                        errors[index] = "Sno and EmpId/Email must both be filled or both be empty.";
+                        return;
+                    }
+
+                    if (empFilled) {
+                        const matchedUser = users.find(user =>
+                            (Array.isArray(user.codes) &&
+                                user.codes.some(c => String(c.code).trim().toLowerCase() === empVal.trim().toLowerCase())) ||
+                            (String(user.email).trim().toLowerCase() === empVal.trim().toLowerCase())
+                        );
+
+                        if (matchedUser) {
+                            matchedUsersArray.push(matchedUser._id);
+                        } else {
+                            errors[index] = `${empVal} does not exist`;
                         }
-                    />
-                </RadioGroup>
-                <Typography variant="caption" color="text.secondary" sx={{ mb: 4, display: 'block' }}>
-                    Changing the due date updates it for all Learners, including those who were added earlier.
-                </Typography>
+                    }
+                });
 
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                    <Typography variant="h6">Communication Settings</Typography>
-                    <Switch defaultChecked />
-                </Box>
-                <Button variant="outlined" sx={{ mt: 1 }}>
-                    Set completion reminder emails
-                </Button>
+                setRowErrors(errors);
+                setExcelData(rows);
+                setFile(selectedFile);
+                setImageError("");
+                setMatchedUsers(matchedUsersArray);
+
+            } catch (err) {
+                setFile(null);
+                setExcelData([]);
+                setRowErrors({});
+                setMatchedUsers([]); // reset
+                setImageError(err.message);
+                toast.error(err.message);
+            }
+        },
+        onDropRejected: (rejectedFiles) => {
+            rejectedFiles.forEach(file => {
+                file.errors.forEach(error => {
+                    let msg = "";
+                    switch (error.code) {
+                        case "file-invalid-type":
+                            msg = `Invalid file type. Only .xlsx files are allowed.`;
+                            break;
+                        case "file-too-large":
+                            msg = `File is too large. Max allowed size is 5MB.`;
+                            break;
+                        case "too-many-files":
+                            msg = `Only one file can be uploaded.`;
+                            break;
+                        default:
+                            msg = `There was an issue with the uploaded file.`;
+                    }
+                    toast.error(msg);
+                    setImageError(msg);
+                });
+            });
+        }
+    });
+
+    const columns = useMemo(() => {
+        if (!excelData.length) return [];
+        return Object.keys(excelData[0]).map(key => ({
+            header: key,
+            accessorKey: key,
+            cell: ({ row, getValue }) => {
+                const value = getValue();
+                const error = rowErrors[row.index];
+                return (
+                    <div>
+                        {value}
+                        {key === "EmpId/Email" && (
+                            <div>
+                                {error && (
+                                    <Typography variant="caption" color="var(--mui-palette-error-main)">
+                                        {error}
+                                    </Typography>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                );
+            }
+        }));
+    }, [excelData, rowErrors]);
+
+    const table = useReactTable({
+        data: excelData,
+        columns,
+        getCoreRowModel: getCoreRowModel(),
+        getPaginationRowModel: getPaginationRowModel(),
+        getFilteredRowModel: getFilteredRowModel(),
+        getSortedRowModel: getSortedRowModel()
+    });
+
+    const TableImportComponent = () => (
+        <Card className="mt-4">
+            <CardContent className="flex justify-between flex-col gap-4 items-start sm:flex-row sm:items-center">
+                <div className="flex items-center gap-2">
+                    <Typography>Show</Typography>
+                    <CustomTextField
+                        select
+                        value={table.getState().pagination.pageSize}
+                        onChange={e => table.setPageSize(Number(e.target.value))}
+                        className="max-sm:is-full sm:is-[70px]"
+                    >
+                        <MenuItem value={10}>10</MenuItem>
+                        <MenuItem value={25}>25</MenuItem>
+                        <MenuItem value={50}>50</MenuItem>
+                        <MenuItem value={200}>200</MenuItem>
+                    </CustomTextField>
+                </div>
+                <DebouncedInput
+                    value={table.getState().globalFilter ?? ""}
+                    className="max-sm:is-full min-is-[250px]"
+                    onChange={value => table.setGlobalFilter(String(value))}
+                    placeholder="Search"
+                />
+            </CardContent>
+            <div className="overflow-x-auto">
+                <table className={tableStyles.table}>
+                    <thead>
+                        {table.getHeaderGroups().map(headerGroup => (
+                            <tr key={headerGroup.id}>
+                                {headerGroup.headers.map(header => (
+                                    <th key={header.id}>
+                                        <div
+                                            className={classnames({
+                                                "flex items-center": true,
+                                                "cursor-pointer": header.column.getCanSort()
+                                            })}
+                                            onClick={header.column.getToggleSortingHandler()}
+                                        >
+                                            {flexRender(header.column.columnDef.header, header.getContext())}
+                                            {header.column.getIsSorted() === "asc" && <i className="tabler-chevron-up text-xl" />}
+                                            {header.column.getIsSorted() === "desc" && <i className="tabler-chevron-down text-xl" />}
+                                        </div>
+                                    </th>
+                                ))}
+                            </tr>
+                        ))}
+                    </thead>
+                    <tbody>
+                        {table.getRowModel().rows.length === 0 ? (
+                            <tr>
+                                <td colSpan={columns.length} className="text-center">No data available</td>
+                            </tr>
+                        ) : (
+                            table.getRowModel().rows.map(row => (
+                                <tr key={row.id}>
+                                    {row.getVisibleCells().map(cell => (
+                                        <td key={cell.id}>
+                                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
+            </div>
+            <TablePaginationComponent table={table} />
+        </Card>
+    );
+
+    return (
+        <Dialog open={open} fullWidth maxWidth="md" sx={{ "& .MuiDialog-paper": { overflow: "visible" } }}>
+            <DialogTitle>Import User</DialogTitle>
+            <form onSubmit={handleSubmit(handleDataSave)} noValidate>
+                <DialogContent sx={{ maxHeight: "80vh", overflowY: "auto" }}>
+                    <Grid container spacing={5}>
+                        <Grid item size={{ xs: 12 }}>
+                            <Typography variant="body1" fontWeight={500} gutterBottom>
+                                XLSX <span>*</span>
+                                <Button variant="contained" href="/sample/import_user_sample.xlsx" sx={{ ml: 2 }}>
+                                    Download sample file
+                                </Button>
+                            </Typography>
+                            <div
+                                {...getRootProps()}
+                                style={{
+                                    minHeight: "150px",
+                                    border: "2px dashed #ccc",
+                                    padding: "1rem",
+                                    borderRadius: "8px",
+                                    textAlign: "center",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    gap: "1rem"
+                                }}
+                            >
+                                <input {...getInputProps()} />
+                                <Avatar variant="rounded" sx={{ bgcolor: "#f5f5f5", width: 48, height: 48 }}>
+                                    <i className="tabler-upload" />
+                                </Avatar>
+                                <Typography variant="body2">Allowed: *.xlsx, Max 5MB</Typography>
+
+                                {file && (
+                                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
+                                        <Avatar variant="rounded" sx={{ bgcolor: "#f5f5f5", color: "#0A2E73", width: 48, height: 48 }}>
+                                            <i className="tabler-file" />
+                                        </Avatar>
+                                        <Typography variant="body2" fontWeight={500}>{file.name}</Typography>
+                                        <Typography variant="caption" color="textSecondary">
+                                            {(file.size / 1024 / 1024).toFixed(2)} MB
+                                        </Typography>
+                                    </div>
+                                )}
+
+                                {imageError && (
+                                    <Typography variant="caption" color="var(--mui-palette-error-main)" sx={{ mt: 1 }}>
+                                        {imageError}
+                                    </Typography>
+                                )}
+                            </div>
+                        </Grid>
+                    </Grid>
+
+                    {excelData.length > 0 && <TableImportComponent />}
+
+                    <DialogActions sx={{ justifyContent: "center", gap: 2, mt: 4 }}>
+                        {excelData.length > 0 && Object.keys(rowErrors).length === 0 && (
+                            <Button
+                                onClick={handleSubmit(handleDataSave)}
+                                variant="contained"
+                                sx={{ height: 40 }}
+                                disabled={loading}
+                            >
+                                {loading ? "Uploading..." : "Submit"}
+                            </Button>
+                        )}
+
+                        <Button
+                            type="button"
+                            variant="contained"
+                            color="secondary"
+                            onClick={() => {
+                                setFile(null);
+                                setExcelData([]);
+                                setRowErrors({});
+                                handleClose();
+                            }}
+                        >
+                            Close
+                        </Button>
+                    </DialogActions>
+                </DialogContent>
+            </form>
+        </Dialog>
+    );
+};
+
+const SettingComponent = () => {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
+    const { data: session } = useSession();
+    const token = session?.user?.token;
+
+    const [pushEnrollmentSetting, setPushEnrollmentSetting] = useState("3");
+    const [selfEnrollmentSetting, setSelfEnrollmentSetting] = useState("3");
+    const [dueDate, setDueDate] = useState(new Date());
+    const [dueType, setDueType] = useState("relative");
+    const [selectedPairIndex, setSelectedPairIndex] = useState(null);
+
+    const [allData, setAllData] = useState([]);
+    const [isOpen, setIsOpen] = useState(false);
+
+    const [createData, setCreateData] = useState({
+        designation: [],
+        department: [],
+        group: [],
+        region: [],
+        user: []
+    });
+
+    const [targetOptionPairs, setTargetOptionPairs] = useState([
+        { target: "", options: [], secondOptions: [] }
+    ]);
+
+    // Fetch create data
+    const fetchCreateData = async () => {
+        try {
+            const response = await fetch(
+                `${API_URL}/company/program/schedule/create`,
+                {
+                    method: "GET",
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+            const result = await response.json();
+            if (response.ok) {
+                setCreateData(result?.data);
+            }
+        } catch (error) {
+            console.error("Error fetching create data:", error);
+        }
+    };
+
+    useEffect(() => {
+        if (API_URL && token) {
+            fetchCreateData();
+        }
+    }, [API_URL, token]);
+
+    // Auto-select matching users from ImportUserModal
+    useEffect(() => {
+        if (
+            allData.length > 0 &&
+            selectedPairIndex !== null &&
+            targetOptionPairs[selectedPairIndex]?.target === "5"
+        ) {
+
+            console.log("All data of Id", allData);
+            
+
+            setTargetOptionPairs(prevPairs => {
+                const updatedPairs = [...prevPairs];
+
+                const selectedUsers = updatedPairs[selectedPairIndex]?.secondOptions
+                    ?.filter(user => allData.includes(user._id))
+                    .map(user => user._id) || [];
+
+                const alreadySame =
+                    JSON.stringify(updatedPairs[selectedPairIndex].options) ===
+                    JSON.stringify(selectedUsers);
+
+                if (!alreadySame) {
+                    updatedPairs[selectedPairIndex].options = selectedUsers;
+                    return updatedPairs;
+                }
+                return prevPairs;
+            });
+        }
+    }, [allData, selectedPairIndex]);
+
+    const handleFirstChange = (index, value) => {
+        if (value === "5") {
+            setTargetOptionPairs([
+                {
+                    target: "5",
+                    options: [],
+                    secondOptions: createData.user || []
+                }
+            ]);
+            return;
+        }
+        const updatedPairs = [...targetOptionPairs];
+        updatedPairs[index].target = value;
+        updatedPairs[index].options = [];
+        switch (value) {
+            case "1":
+                updatedPairs[index].secondOptions = createData.designation || [];
+                break;
+            case "2":
+                updatedPairs[index].secondOptions = createData.department || [];
+                break;
+            case "3":
+                updatedPairs[index].secondOptions = createData.group || [];
+                break;
+            case "4":
+                updatedPairs[index].secondOptions = createData.region || [];
+                break;
+            default:
+                updatedPairs[index].secondOptions = [];
+        }
+        setTargetOptionPairs(updatedPairs);
+    };
+
+    const handleSecondChange = (index, value) => {
+        const updatedPairs = [...targetOptionPairs];
+        if (updatedPairs[index].target === "5") {
+            updatedPairs[index].options =
+                typeof value === "string" ? value.split(",") : value;
+        } else {
+            updatedPairs[index].options = value;
+        }
+        setTargetOptionPairs(updatedPairs);
+    };
+
+    const handleAddClick = () => {
+        if (targetOptionPairs.length < 5) {
+            setTargetOptionPairs([
+                ...targetOptionPairs,
+                { target: "", options: [], secondOptions: [] }
+            ]);
+        }
+    };
+
+    const handleRemoveClick = (index) => {
+        const updatedPairs = [...targetOptionPairs];
+        updatedPairs.splice(index, 1);
+        setTargetOptionPairs(updatedPairs);
+    };
+
+    const handleImportUser = (index) => {
+        setSelectedPairIndex(index);
+        setIsOpen(true);
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        const formData = {
+            pushEnrollmentSetting,
+            selfEnrollmentSetting,
+            targetPairs: targetOptionPairs,
+            dueType,
+            dueDate: dueType === "fixed" ? dueDate : null
+        };
+        console.log("Form Submit Data:", formData);
+        // API call here...
+    };
+
+    const handleClose = () => {
+        setIsOpen(false);
+        setSelectedPairIndex(null);
+    };
+
+    return (
+        <form onSubmit={handleSubmit}>
+            <Grid container spacing={4}>
+                <Grid item size={{ xs: 12, md: 9 }}>
+                    {/* Push Enrollment Settings */}
+                    <Typography variant="h6" gutterBottom>
+                        Push Enrollment Settings
+                    </Typography>
+                    <RadioGroup
+                        value={pushEnrollmentSetting}
+                        onChange={(e) => setPushEnrollmentSetting(e.target.value)}
+                        sx={{ mb: 3 }}
+                    >
+                        <FormControlLabel value="1" control={<Radio />} label="To all existing & new Learners on this Content Folder" />
+                        <FormControlLabel value="2" control={<Radio />} label="To all existing & new Learners under this Content Folder who meet Target audience criteria" />
+                        <FormControlLabel value="3" control={<Radio />} label="Let me select Learners while publishing" />
+                    </RadioGroup>
+
+                    {/* Self Enrollment Settings */}
+                    <Typography variant="h6" gutterBottom>
+                        Self-Enrollment Settings
+                    </Typography>
+                    <RadioGroup
+                        value={selfEnrollmentSetting}
+                        onChange={(e) => setSelfEnrollmentSetting(e.target.value)}
+                        sx={{ mb: 3 }}
+                    >
+                        <FormControlLabel value="1" control={<Radio />} label="Do not allow self enrollment" />
+                        <FormControlLabel value="2" control={<Radio />} label="Allow any Learner to self-enrol" />
+                        <FormControlLabel value="3" control={<Radio />} label='Allow Learners who meet the "target audience" criteria below to self-enrol' />
+                    </RadioGroup>
+
+                    <Typography variant="h6" gutterBottom>
+                        This Module Is Targeted At
+                    </Typography>
+
+                    {targetOptionPairs.map((pair, idx) => (
+                        <Grid container spacing={2} alignItems="center" mb={3} key={idx}>
+                            <Grid item size={{ xs: pair.target === "5" ? 3 : 5 }}>
+                                <TextField
+                                    select
+                                    label="Select module targets"
+                                    fullWidth
+                                    size="small"
+                                    value={pair.target}
+                                    onChange={(e) => handleFirstChange(idx, e.target.value)}
+                                >
+                                    <MenuItem value="" disabled>Select Module Target</MenuItem>
+                                    <MenuItem value="1">Designation</MenuItem>
+                                    <MenuItem value="2">Department</MenuItem>
+                                    <MenuItem value="3">Group</MenuItem>
+                                    <MenuItem value="4">Region</MenuItem>
+                                    <MenuItem value="5">User</MenuItem>
+                                </TextField>
+                            </Grid>
+
+                            <Grid item size={{ xs: pair.target === "5" ? 5 : 5 }}>
+                                <TextField
+                                    select
+                                    label="Select option"
+                                    fullWidth
+                                    size="small"
+                                    value={pair.options}
+                                    onChange={(e) => handleSecondChange(idx, e.target.value)}
+                                    SelectProps={{
+                                        multiple: pair.target === "5"
+                                    }}
+                                >
+                                    {pair.target !== "5" &&
+                                        pair.secondOptions.map((item, i) => (
+                                            <MenuItem key={i} value={item._id}>
+                                                {item.name}
+                                            </MenuItem>
+                                        ))}
+                                    {pair.target === "5" &&
+                                        pair.secondOptions.map((item, i) => (
+                                            <MenuItem key={i} value={item._id}>
+                                                {item.first_name} {item.last_name}
+                                            </MenuItem>
+                                        ))}
+                                </TextField>
+                            </Grid>
+
+                            {pair.target === "5" && (
+                                <Grid item size={{ xs: 2 }}>
+                                    <Button variant="outlined" onClick={() => handleImportUser(idx)}>Import User</Button>
+                                </Grid>
+                            )}
+
+                            <Grid item size={{ xs: 2 }} display="flex" justifyContent="center">
+                                {pair.target === "5" ? null : idx === 0 ? (
+                                    <Button variant="contained" onClick={handleAddClick} disabled={targetOptionPairs.length >= 5}>+ Add</Button>
+                                ) : (
+                                    <IconButton color="error" onClick={() => handleRemoveClick(idx)}>Delete</IconButton>
+                                )}
+                            </Grid>
+                        </Grid>
+                    ))}
+
+                    {/* Due Date Settings */}
+                    <Typography variant="h6" gutterBottom>
+                        Due Date Settings
+                    </Typography>
+                    <FormControlLabel control={<Checkbox />} label="Lock Module Post Due Date" />
+
+                    <RadioGroup
+                        value={dueType}
+                        onChange={(e) => setDueType(e.target.value)}
+                        sx={{ mt: 1, mb: 2 }}
+                    >
+                        <FormControlLabel
+                            value="fixed"
+                            control={<Radio />}
+                            label={
+                                <Box display="flex" alignItems="center" gap={2}>
+                                    Fixed due date
+                                    {dueType === "fixed" && (
+                                        <DatePicker
+                                            selected={dueDate}
+                                            onChange={(date) => setDueDate(date)}
+                                            showTimeSelect
+                                            dateFormat="MMMM d, yyyy h:mm aa"
+                                            customInput={<TextField size="small" />}
+                                        />
+                                    )}
+                                </Box>
+                            }
+                        />
+                        <FormControlLabel
+                            value="relative"
+                            control={<Radio />}
+                            label={
+                                <Box display="flex" alignItems="center">
+                                    Learners need to complete the Module within&nbsp;
+                                    <TextField size="small" type="number" defaultValue={5} sx={{ width: 80 }} />
+                                    &nbsp;days post enrollment
+                                </Box>
+                            }
+                        />
+                    </RadioGroup>
+
+                    <Button type="submit" variant="contained">Publish</Button>
+                </Grid>
             </Grid>
 
-            <Grid item size={{ xs: 12, md: 3 }}>
-                <Box
-                    sx={{
-                        border: '1px solid #ccc',
-                        borderRadius: 2,
-                        p: 2,
-                        height: 'fit-content',
-                    }}
-                >
-                    <Typography variant="subtitle2" fontWeight={600}>
-                        Leaderboard Points
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                        Completing this Module
-                    </Typography>
-                    <TextField
-                        type="number"
-                        defaultValue={5}
-                        size="small"
-                        fullWidth
-                        sx={{ mt: 1 }}
-                        InputProps={{
-                            endAdornment: (
-                                <InputAdornment position="end">🏆</InputAdornment>
-                            ),
-                        }}
-                    />
-                </Box>
-            </Grid>
-        </Grid>
-    )
-}
+            {selectedPairIndex !== null && (
+                <ImportUserModal
+                    open={isOpen}
+                    setAllData={setAllData}
+                    handleClose={handleClose}
+                    users={targetOptionPairs[selectedPairIndex]?.secondOptions || []}
+                />
+            )}
+        </form>
+    );
+};
+
 
 const ContentFlowModal = ({ open, data, setOpen, setSelected, selected, setNext, API_URL, token, mId, fetchActivities }) => {
 

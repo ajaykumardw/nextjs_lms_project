@@ -17,7 +17,7 @@ import ActivityTimeline from '@views/dashboards/crm/ActivityTimeline'
 // Permission Guard
 import PermissionGuard from '@/hocs/PermissionGuard'
 
-export default function DashboardCRM() {
+export default function DashboardCRM({ params }) {
   const locale = 'en';
 
   return (
