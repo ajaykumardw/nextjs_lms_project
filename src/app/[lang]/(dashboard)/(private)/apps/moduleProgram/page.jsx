@@ -3,6 +3,8 @@
 
 import { useState } from 'react'
 
+import { useParams } from 'next/navigation'
+
 import Tab from '@mui/material/Tab'
 import TabContext from '@mui/lab/TabContext'
 import TabList from '@mui/lab/TabList'
@@ -108,11 +110,13 @@ const FormLayoutsWithTabs = () => {
         setValue(newValue)
     }
 
-    const lang = 'en';
+    const { lang: locale } = useParams();
+
+    // const lang = 'en';
 
 
     return (
-        <PermissionGuard locale={lang} element='isUser'>
+        <PermissionGuard locale={locale} element='isUser'>
             <TabContext value={value}>
                 <TabList variant='scrollable' onChange={handleTabChange} className='border-b px-0 pt-0'>
                     <Tab key={1} label='Micro learning module' value='micro_learning_module' />
