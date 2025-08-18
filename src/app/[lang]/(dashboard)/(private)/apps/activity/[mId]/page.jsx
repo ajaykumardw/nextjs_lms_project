@@ -1,10 +1,14 @@
 'use client'
 
+import crypto from "crypto";
+
 import { useEffect, useState, useMemo } from "react"
 
 import { useRouter } from "next/navigation"
 
 import { useParams } from "next/navigation"
+
+import Error from "next/error"
 
 import { useSession } from "next-auth/react"
 
@@ -95,6 +99,18 @@ import AppReactDropzone from '@/libs/styles/AppReactDropzone'
 import DialogCloseButton from "@/components/dialogs/DialogCloseButton"
 
 import CustomTextField from "@/@core/components/mui/TextField"
+
+
+
+const ENCRYPTION_KEY = Buffer.from(process.env.NEXT_PUBLIC_ENCRYPTION_KEY, "base64");
+
+function normalizeEmail(email) {
+    return email.trim().toLowerCase();
+}
+
+function hash(text) {
+    return crypto.createHash("sha256").update(text).digest("hex");
+}
 
 const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
 
@@ -1420,39 +1436,45 @@ const ImportUserModal = ({
     const [matchedUsers, setMatchedUsers] = useState([]);
 
     // Save uploaded data
-    // Save uploaded data
     const handleDataSave = async () => {
         if (Object.keys(rowErrors).length > 0) {
             toast.error("Please fix the errors in the table before submitting.");
+            
             return;
         }
 
         if (!file) {
             setImageError("Please upload a valid .xlsx file.");
+            
             return;
         }
 
         setAllData(matchedUsers);
 
-        // Close after state update to allow parent effect to run
+        // Close after state update
         setTimeout(() => {
             handleClose();
         }, 0);
     };
 
-
     const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...props }) => {
         const [value, setValue] = useState(initialValue);
-        useEffect(() => { setValue(initialValue) }, [initialValue]);
+
+        useEffect(() => { setValue(initialValue); }, [initialValue]);
         useEffect(() => {
-            const timeout = setTimeout(() => { onChange(value) }, debounce);
+            
+            const timeout = setTimeout(() => { onChange(value); }, debounce);
+
+            
             return () => clearTimeout(timeout);
         }, [value]);
+        
         return <CustomTextField {...props} value={value} onChange={e => setValue(e.target.value)} />;
     };
 
     const validateExcelHeaders = (headers) => {
         const requiredHeaders = ["sno", "empid/email"];
+        
         for (let req of requiredHeaders) {
             if (!headers.includes(req.toLowerCase())) {
                 throw new Error(`Missing required column: ${req}`);
@@ -1469,6 +1491,7 @@ const ImportUserModal = ({
         onDrop: async (acceptedFiles) => {
             if (!acceptedFiles.length) return;
             const selectedFile = acceptedFiles[0];
+
             try {
                 const data = await selectedFile.arrayBuffer();
                 const workbook = XLSX.read(data, { type: "array" });
@@ -1481,6 +1504,7 @@ const ImportUserModal = ({
 
                 const headerRow = jsonData[0].map(h => String(h || "").trim());
                 const cleanHeaders = headerRow.map((h, idx) => h || `Column${idx + 1}`);
+                
                 validateExcelHeaders(cleanHeaders.map(h => h.toLowerCase()));
 
                 const rows = XLSX.utils.sheet_to_json(firstSheet, {
@@ -1499,17 +1523,27 @@ const ImportUserModal = ({
                     const snoFilled = snoVal !== "";
                     const empFilled = empVal !== "";
 
-                    if (snoFilled != empFilled) {
+                    if (snoFilled !== empFilled) {
                         errors[index] = "Sno and EmpId/Email must both be filled or both be empty.";
+
                         return;
                     }
 
                     if (empFilled) {
-                        const matchedUser = users.find(user =>
-                            (Array.isArray(user.codes) &&
-                                user.codes.some(c => String(c.code).trim().toLowerCase() === empVal.trim().toLowerCase())) ||
-                            (String(user.email).trim().toLowerCase() === empVal.trim().toLowerCase())
-                        );
+                        const isEmail = empVal.includes("@");
+                        let matchedUser = null;
+
+                        if (isEmail) {
+                            const norm = normalizeEmail(empVal);
+                            const hashed = hash(norm);
+                            
+                            matchedUser = users.find(user => user.email_hash === hashed);
+                        } else {
+                            matchedUser = users.find(user =>
+                                user.codes.some(c => String(c.code).trim().toLowerCase() === empVal.trim().toLowerCase())
+                            );
+                        }
+
 
                         if (matchedUser) {
                             matchedUsersArray.push(matchedUser._id);
@@ -1529,15 +1563,17 @@ const ImportUserModal = ({
                 setFile(null);
                 setExcelData([]);
                 setRowErrors({});
-                setMatchedUsers([]); // reset
+                setMatchedUsers([]);
                 setImageError(err.message);
                 toast.error(err.message);
             }
         },
         onDropRejected: (rejectedFiles) => {
             rejectedFiles.forEach(file => {
+                
                 file.errors.forEach(error => {
                     let msg = "";
+                    
                     switch (error.code) {
                         case "file-invalid-type":
                             msg = `Invalid file type. Only .xlsx files are allowed.`;
@@ -1551,6 +1587,7 @@ const ImportUserModal = ({
                         default:
                             msg = `There was an issue with the uploaded file.`;
                     }
+                    
                     toast.error(msg);
                     setImageError(msg);
                 });
@@ -1560,12 +1597,15 @@ const ImportUserModal = ({
 
     const columns = useMemo(() => {
         if (!excelData.length) return [];
+        
         return Object.keys(excelData[0]).map(key => ({
             header: key,
             accessorKey: key,
             cell: ({ row, getValue }) => {
                 const value = getValue();
+                
                 const error = rowErrors[row.index];
+                
                 return (
                     <div>
                         {value}
@@ -1669,7 +1709,7 @@ const ImportUserModal = ({
             <form onSubmit={handleSubmit(handleDataSave)} noValidate>
                 <DialogContent sx={{ maxHeight: "80vh", overflowY: "auto" }}>
                     <Grid container spacing={5}>
-                        <Grid item size={{ xs: 12 }}>
+                        <Grid size={{ xs: 12 }} item>
                             <Typography variant="body1" fontWeight={500} gutterBottom>
                                 XLSX <span>*</span>
                                 <Button variant="contained" href="/sample/import_user_sample.xlsx" sx={{ ml: 2 }}>
@@ -1757,12 +1797,17 @@ const SettingComponent = () => {
     const { data: session } = useSession();
     const token = session?.user?.token;
 
+    const { mId } = useParams()
+
     const [pushEnrollmentSetting, setPushEnrollmentSetting] = useState("3");
     const [selfEnrollmentSetting, setSelfEnrollmentSetting] = useState("3");
-    const [dueDate, setDueDate] = useState(new Date());
-    const [dueType, setDueType] = useState("relative");
-    const [selectedPairIndex, setSelectedPairIndex] = useState(null);
 
+    const [dueType, setDueType] = useState("relative");
+    const [dueDate, setDueDate] = useState(new Date());
+    const [dueDays, setDueDays] = useState(5);
+    const [lockModule, setLockModule] = useState(false);
+
+    const [selectedPairIndex, setSelectedPairIndex] = useState(null);
     const [allData, setAllData] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
 
@@ -1788,7 +1833,9 @@ const SettingComponent = () => {
                     headers: { Authorization: `Bearer ${token}` }
                 }
             );
+
             const result = await response.json();
+            
             if (response.ok) {
                 setCreateData(result?.data);
             }
@@ -1797,8 +1844,82 @@ const SettingComponent = () => {
         }
     };
 
+    const fetchProgramSchedule = async () => {
+        try {
+            const response = await fetch(
+                `${API_URL}/company/program/schedule/data/${mId}`,
+                {
+                    method: "GET",
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+
+            const data = await response.json();
+
+            if (response.ok) {
+                const result = data?.data;
+
+                if (result) {
+                    // ✅ populate all states
+                    setPushEnrollmentSetting(result.pushEnrollmentSetting?.toString() || "3");
+                    setSelfEnrollmentSetting(result.selfEnrollmentSetting?.toString() || "3");
+                    setLockModule(result.lockModule ?? false);
+
+                    if (result.dueDate) {
+                        setDueType("fixed");
+                        setDueDate(new Date(result.dueDate));
+                    } else if (result.dueDays) {
+                        setDueType("relative");
+                        setDueDays(result.dueDays);
+                    }
+
+                    if (result.targetPairs && Array.isArray(result.targetPairs)) {
+                        const enrichedPairs = result.targetPairs.map((pair) => {
+                            let secondOptions = [];
+                            
+                            switch (pair.target) {
+                                case "1":
+                                    secondOptions = createData.designation || [];
+                                    break;
+                                case "2":
+                                    secondOptions = createData.department || [];
+                                    break;
+                                case "3":
+                                    secondOptions = createData.group || [];
+                                    break;
+                                case "4":
+                                    secondOptions = createData.region || [];
+                                    break;
+                                case "5":
+                                    secondOptions = createData.user || [];
+                                    break;
+                                default:
+                                    secondOptions = [];
+                            }
+                            
+                            return {
+                                ...pair,
+                                secondOptions
+                            };
+                        });
+                        
+                        setTargetOptionPairs(enrichedPairs);
+                    }
+
+                    // if your API also sends create data, set it here
+                    if (result.createData) {
+                        setCreateData(result.createData);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching program schedule:", error);
+        }
+    };
+
     useEffect(() => {
         if (API_URL && token) {
+            fetchProgramSchedule();
             fetchCreateData();
         }
     }, [API_URL, token]);
@@ -1810,16 +1931,13 @@ const SettingComponent = () => {
             selectedPairIndex !== null &&
             targetOptionPairs[selectedPairIndex]?.target === "5"
         ) {
-
-            console.log("All data of Id", allData);
-            
-
-            setTargetOptionPairs(prevPairs => {
+            setTargetOptionPairs((prevPairs) => {
                 const updatedPairs = [...prevPairs];
 
-                const selectedUsers = updatedPairs[selectedPairIndex]?.secondOptions
-                    ?.filter(user => allData.includes(user._id))
-                    .map(user => user._id) || [];
+                const selectedUsers =
+                    updatedPairs[selectedPairIndex]?.secondOptions
+                        ?.filter((user) => allData.includes(user._id))
+                        .map((user) => user._id) || [];
 
                 const alreadySame =
                     JSON.stringify(updatedPairs[selectedPairIndex].options) ===
@@ -1827,27 +1945,21 @@ const SettingComponent = () => {
 
                 if (!alreadySame) {
                     updatedPairs[selectedPairIndex].options = selectedUsers;
+                    
                     return updatedPairs;
                 }
+
                 return prevPairs;
             });
         }
     }, [allData, selectedPairIndex]);
 
     const handleFirstChange = (index, value) => {
-        if (value === "5") {
-            setTargetOptionPairs([
-                {
-                    target: "5",
-                    options: [],
-                    secondOptions: createData.user || []
-                }
-            ]);
-            return;
-        }
         const updatedPairs = [...targetOptionPairs];
+        
         updatedPairs[index].target = value;
         updatedPairs[index].options = [];
+
         switch (value) {
             case "1":
                 updatedPairs[index].secondOptions = createData.designation || [];
@@ -1861,20 +1973,21 @@ const SettingComponent = () => {
             case "4":
                 updatedPairs[index].secondOptions = createData.region || [];
                 break;
+            case "5":
+                updatedPairs[index].secondOptions = createData.user || [];
+                break;
             default:
                 updatedPairs[index].secondOptions = [];
         }
+
         setTargetOptionPairs(updatedPairs);
     };
 
     const handleSecondChange = (index, value) => {
         const updatedPairs = [...targetOptionPairs];
-        if (updatedPairs[index].target === "5") {
-            updatedPairs[index].options =
-                typeof value === "string" ? value.split(",") : value;
-        } else {
-            updatedPairs[index].options = value;
-        }
+        
+        updatedPairs[index].options =
+            typeof value === "string" ? value.split(",") : value;
         setTargetOptionPairs(updatedPairs);
     };
 
@@ -1888,7 +2001,9 @@ const SettingComponent = () => {
     };
 
     const handleRemoveClick = (index) => {
+        if (targetOptionPairs.length === 1) return; // prevent removing last row
         const updatedPairs = [...targetOptionPairs];
+        
         updatedPairs.splice(index, 1);
         setTargetOptionPairs(updatedPairs);
     };
@@ -1898,26 +2013,78 @@ const SettingComponent = () => {
         setIsOpen(true);
     };
 
-    const handleSubmit = (e) => {
+    const handleDataSave = async (value) => {
+        try {
+            const response = await fetch(`${API_URL}/company/program/schedule/${mId}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json", // ✅ missing
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(value),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                toast.success(data?.message || "Setting saved successfully", {
+                    autoClose: 1000,
+                });
+            } else {
+                toast.error(data?.message || "Failed to save settings");
+            }
+        } catch (error) {
+            console.error("Error saving settings:", error);
+            toast.error("Something went wrong!");
+        }
+    };
+
+    const onSubmit = (e) => {
         e.preventDefault();
+        
         const formData = {
             pushEnrollmentSetting,
             selfEnrollmentSetting,
             targetPairs: targetOptionPairs,
+            lockModule,
             dueType,
-            dueDate: dueType === "fixed" ? dueDate : null
+            dueDate: dueType === "fixed" ? dueDate : null,
+            dueDays: dueType === "relative" ? dueDays : null,
         };
-        console.log("Form Submit Data:", formData);
-        // API call here...
+        
+        handleDataSave(formData);
     };
+
 
     const handleClose = () => {
         setIsOpen(false);
         setSelectedPairIndex(null);
     };
 
+    useEffect(() => {
+        if (targetOptionPairs.length > 0) {
+            const enriched = targetOptionPairs.map((pair) => {
+                let secondOptions = [];
+                
+                switch (pair.target) {
+                    case "1": secondOptions = createData.designation || []; break;
+                    case "2": secondOptions = createData.department || []; break;
+                    case "3": secondOptions = createData.group || []; break;
+                    case "4": secondOptions = createData.region || []; break;
+                    case "5": secondOptions = createData.user || []; break;
+                    default: secondOptions = [];
+                }
+                
+                return { ...pair, secondOptions };
+            });
+            
+            setTargetOptionPairs(enriched);
+        }
+    }, [createData]);
+
+
     return (
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={onSubmit}>
             <Grid container spacing={4}>
                 <Grid item size={{ xs: 12, md: 9 }}>
                     {/* Push Enrollment Settings */}
@@ -1929,9 +2096,21 @@ const SettingComponent = () => {
                         onChange={(e) => setPushEnrollmentSetting(e.target.value)}
                         sx={{ mb: 3 }}
                     >
-                        <FormControlLabel value="1" control={<Radio />} label="To all existing & new Learners on this Content Folder" />
-                        <FormControlLabel value="2" control={<Radio />} label="To all existing & new Learners under this Content Folder who meet Target audience criteria" />
-                        <FormControlLabel value="3" control={<Radio />} label="Let me select Learners while publishing" />
+                        <FormControlLabel
+                            value="1"
+                            control={<Radio />}
+                            label="To all existing & new Learners on this Content Folder"
+                        />
+                        <FormControlLabel
+                            value="2"
+                            control={<Radio />}
+                            label="To all existing & new Learners under this Content Folder who meet Target audience criteria"
+                        />
+                        <FormControlLabel
+                            value="3"
+                            control={<Radio />}
+                            label="Let me select Learners while publishing"
+                        />
                     </RadioGroup>
 
                     {/* Self Enrollment Settings */}
@@ -1943,9 +2122,21 @@ const SettingComponent = () => {
                         onChange={(e) => setSelfEnrollmentSetting(e.target.value)}
                         sx={{ mb: 3 }}
                     >
-                        <FormControlLabel value="1" control={<Radio />} label="Do not allow self enrollment" />
-                        <FormControlLabel value="2" control={<Radio />} label="Allow any Learner to self-enrol" />
-                        <FormControlLabel value="3" control={<Radio />} label='Allow Learners who meet the "target audience" criteria below to self-enrol' />
+                        <FormControlLabel
+                            value="1"
+                            control={<Radio />}
+                            label="Do not allow self enrollment"
+                        />
+                        <FormControlLabel
+                            value="2"
+                            control={<Radio />}
+                            label="Allow any Learner to self-enrol"
+                        />
+                        <FormControlLabel
+                            value="3"
+                            control={<Radio />}
+                            label='Allow Learners who meet the "target audience" criteria below to self-enrol'
+                        />
                     </RadioGroup>
 
                     <Typography variant="h6" gutterBottom>
@@ -1953,7 +2144,13 @@ const SettingComponent = () => {
                     </Typography>
 
                     {targetOptionPairs.map((pair, idx) => (
-                        <Grid container spacing={2} alignItems="center" mb={3} key={idx}>
+                        <Grid
+                            container
+                            spacing={2}
+                            alignItems="center"
+                            mb={3}
+                            key={idx}
+                        >
                             <Grid item size={{ xs: pair.target === "5" ? 3 : 5 }}>
                                 <TextField
                                     select
@@ -1963,12 +2160,49 @@ const SettingComponent = () => {
                                     value={pair.target}
                                     onChange={(e) => handleFirstChange(idx, e.target.value)}
                                 >
-                                    <MenuItem value="" disabled>Select Module Target</MenuItem>
-                                    <MenuItem value="1">Designation</MenuItem>
-                                    <MenuItem value="2">Department</MenuItem>
-                                    <MenuItem value="3">Group</MenuItem>
-                                    <MenuItem value="4">Region</MenuItem>
-                                    <MenuItem value="5">User</MenuItem>
+                                    <MenuItem value="" disabled>
+                                        Select Module Target
+                                    </MenuItem>
+                                    <MenuItem
+                                        value="1"
+                                        disabled={targetOptionPairs.some(
+                                            (p, i) => p.target === "1" && i !== idx
+                                        )}
+                                    >
+                                        Designation
+                                    </MenuItem>
+                                    <MenuItem
+                                        value="2"
+                                        disabled={targetOptionPairs.some(
+                                            (p, i) => p.target === "2" && i !== idx
+                                        )}
+                                    >
+                                        Department
+                                    </MenuItem>
+                                    <MenuItem
+                                        value="3"
+                                        disabled={targetOptionPairs.some(
+                                            (p, i) => p.target === "3" && i !== idx
+                                        )}
+                                    >
+                                        Group
+                                    </MenuItem>
+                                    <MenuItem
+                                        value="4"
+                                        disabled={targetOptionPairs.some(
+                                            (p, i) => p.target === "4" && i !== idx
+                                        )}
+                                    >
+                                        Region
+                                    </MenuItem>
+                                    <MenuItem
+                                        value="5"
+                                        disabled={targetOptionPairs.some(
+                                            (p, i) => p.target === "5" && i !== idx
+                                        )}
+                                    >
+                                        User
+                                    </MenuItem>
                                 </TextField>
                             </Grid>
 
@@ -1981,7 +2215,7 @@ const SettingComponent = () => {
                                     value={pair.options}
                                     onChange={(e) => handleSecondChange(idx, e.target.value)}
                                     SelectProps={{
-                                        multiple: pair.target === "5"
+                                        multiple: true
                                     }}
                                 >
                                     {pair.target !== "5" &&
@@ -2001,15 +2235,36 @@ const SettingComponent = () => {
 
                             {pair.target === "5" && (
                                 <Grid item size={{ xs: 2 }}>
-                                    <Button variant="outlined" onClick={() => handleImportUser(idx)}>Import User</Button>
+                                    <Button
+                                        variant="outlined"
+                                        onClick={() => handleImportUser(idx)}
+                                    >
+                                        Import User
+                                    </Button>
                                 </Grid>
                             )}
 
-                            <Grid item size={{ xs: 2 }} display="flex" justifyContent="center">
-                                {pair.target === "5" ? null : idx === 0 ? (
-                                    <Button variant="contained" onClick={handleAddClick} disabled={targetOptionPairs.length >= 5}>+ Add</Button>
+                            <Grid
+                                item
+                                size={{ xs: 2 }}
+                                display="flex"
+                                justifyContent="center"
+                            >
+                                {idx === 0 ? (
+                                    <Button
+                                        variant="contained"
+                                        onClick={handleAddClick}
+                                        disabled={targetOptionPairs.length >= 5}
+                                    >
+                                        + Add
+                                    </Button>
                                 ) : (
-                                    <IconButton color="error" onClick={() => handleRemoveClick(idx)}>Delete</IconButton>
+                                    <IconButton
+                                        color="error"
+                                        onClick={() => handleRemoveClick(idx)}
+                                    >
+                                        Delete
+                                    </IconButton>
                                 )}
                             </Grid>
                         </Grid>
@@ -2019,7 +2274,15 @@ const SettingComponent = () => {
                     <Typography variant="h6" gutterBottom>
                         Due Date Settings
                     </Typography>
-                    <FormControlLabel control={<Checkbox />} label="Lock Module Post Due Date" />
+                    <FormControlLabel
+                        control={
+                            <Checkbox
+                                checked={lockModule}
+                                onChange={(e) => setLockModule(e.target.checked)}
+                            />
+                        }
+                        label="Lock Module Post Due Date"
+                    />
 
                     <RadioGroup
                         value={dueType}
@@ -2050,14 +2313,22 @@ const SettingComponent = () => {
                             label={
                                 <Box display="flex" alignItems="center">
                                     Learners need to complete the Module within&nbsp;
-                                    <TextField size="small" type="number" defaultValue={5} sx={{ width: 80 }} />
+                                    <TextField
+                                        size="small"
+                                        type="number"
+                                        value={dueDays}
+                                        onChange={(e) => setDueDays(Number(e.target.value))}
+                                        sx={{ inlineSize: 80 }}
+                                    />
                                     &nbsp;days post enrollment
                                 </Box>
                             }
                         />
                     </RadioGroup>
 
-                    <Button type="submit" variant="contained">Publish</Button>
+                    <Button type="submit" variant="contained">
+                        Publish
+                    </Button>
                 </Grid>
             </Grid>
 
@@ -2072,7 +2343,6 @@ const SettingComponent = () => {
         </form>
     );
 };
-
 
 const ContentFlowModal = ({ open, data, setOpen, setSelected, selected, setNext, API_URL, token, mId, fetchActivities }) => {
 
