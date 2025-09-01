@@ -1439,13 +1439,13 @@ const ImportUserModal = ({
     const handleDataSave = async () => {
         if (Object.keys(rowErrors).length > 0) {
             toast.error("Please fix the errors in the table before submitting.");
-            
+
             return;
         }
 
         if (!file) {
             setImageError("Please upload a valid .xlsx file.");
-            
+
             return;
         }
 
@@ -1462,19 +1462,19 @@ const ImportUserModal = ({
 
         useEffect(() => { setValue(initialValue); }, [initialValue]);
         useEffect(() => {
-            
+
             const timeout = setTimeout(() => { onChange(value); }, debounce);
 
-            
+
             return () => clearTimeout(timeout);
         }, [value]);
-        
+
         return <CustomTextField {...props} value={value} onChange={e => setValue(e.target.value)} />;
     };
 
     const validateExcelHeaders = (headers) => {
         const requiredHeaders = ["sno", "empid/email"];
-        
+
         for (let req of requiredHeaders) {
             if (!headers.includes(req.toLowerCase())) {
                 throw new Error(`Missing required column: ${req}`);
@@ -1504,7 +1504,7 @@ const ImportUserModal = ({
 
                 const headerRow = jsonData[0].map(h => String(h || "").trim());
                 const cleanHeaders = headerRow.map((h, idx) => h || `Column${idx + 1}`);
-                
+
                 validateExcelHeaders(cleanHeaders.map(h => h.toLowerCase()));
 
                 const rows = XLSX.utils.sheet_to_json(firstSheet, {
@@ -1536,7 +1536,7 @@ const ImportUserModal = ({
                         if (isEmail) {
                             const norm = normalizeEmail(empVal);
                             const hashed = hash(norm);
-                            
+
                             matchedUser = users.find(user => user.email_hash === hashed);
                         } else {
                             matchedUser = users.find(user =>
@@ -1570,10 +1570,10 @@ const ImportUserModal = ({
         },
         onDropRejected: (rejectedFiles) => {
             rejectedFiles.forEach(file => {
-                
+
                 file.errors.forEach(error => {
                     let msg = "";
-                    
+
                     switch (error.code) {
                         case "file-invalid-type":
                             msg = `Invalid file type. Only .xlsx files are allowed.`;
@@ -1587,7 +1587,7 @@ const ImportUserModal = ({
                         default:
                             msg = `There was an issue with the uploaded file.`;
                     }
-                    
+
                     toast.error(msg);
                     setImageError(msg);
                 });
@@ -1597,15 +1597,15 @@ const ImportUserModal = ({
 
     const columns = useMemo(() => {
         if (!excelData.length) return [];
-        
+
         return Object.keys(excelData[0]).map(key => ({
             header: key,
             accessorKey: key,
             cell: ({ row, getValue }) => {
                 const value = getValue();
-                
+
                 const error = rowErrors[row.index];
-                
+
                 return (
                     <div>
                         {value}
@@ -1797,7 +1797,7 @@ const SettingComponent = () => {
     const { data: session } = useSession();
     const token = session?.user?.token;
 
-    const { mId } = useParams()
+    const { mId } = useParams();
 
     const [pushEnrollmentSetting, setPushEnrollmentSetting] = useState("3");
     const [selfEnrollmentSetting, setSelfEnrollmentSetting] = useState("3");
@@ -1823,6 +1823,14 @@ const SettingComponent = () => {
         { target: "", options: [], secondOptions: [] }
     ]);
 
+    // Ensure options is always an array
+    const normalizeOptions = (val) => {
+        if (Array.isArray(val)) return val;
+        if (typeof val === "string") return val.split(",").filter(Boolean);
+        
+        return [];
+    };
+
     // Fetch create data
     const fetchCreateData = async () => {
         try {
@@ -1835,7 +1843,7 @@ const SettingComponent = () => {
             );
 
             const result = await response.json();
-            
+
             if (response.ok) {
                 setCreateData(result?.data);
             }
@@ -1860,7 +1868,6 @@ const SettingComponent = () => {
                 const result = data?.data;
 
                 if (result) {
-                    // ✅ populate all states
                     setPushEnrollmentSetting(result.pushEnrollmentSetting?.toString() || "3");
                     setSelfEnrollmentSetting(result.selfEnrollmentSetting?.toString() || "3");
                     setLockModule(result.lockModule ?? false);
@@ -1878,27 +1885,17 @@ const SettingComponent = () => {
                             let secondOptions = [];
                             
                             switch (pair.target) {
-                                case "1":
-                                    secondOptions = createData.designation || [];
-                                    break;
-                                case "2":
-                                    secondOptions = createData.department || [];
-                                    break;
-                                case "3":
-                                    secondOptions = createData.group || [];
-                                    break;
-                                case "4":
-                                    secondOptions = createData.region || [];
-                                    break;
-                                case "5":
-                                    secondOptions = createData.user || [];
-                                    break;
-                                default:
-                                    secondOptions = [];
+                                case "1": secondOptions = createData.designation || []; break;
+                                case "2": secondOptions = createData.department || []; break;
+                                case "3": secondOptions = createData.group || []; break;
+                                case "4": secondOptions = createData.region || []; break;
+                                case "5": secondOptions = createData.user || []; break;
+                                default: secondOptions = [];
                             }
-                            
+
                             return {
                                 ...pair,
+                                options: normalizeOptions(pair.options),
                                 secondOptions
                             };
                         });
@@ -1906,7 +1903,6 @@ const SettingComponent = () => {
                         setTargetOptionPairs(enrichedPairs);
                     }
 
-                    // if your API also sends create data, set it here
                     if (result.createData) {
                         setCreateData(result.createData);
                     }
@@ -1933,23 +1929,15 @@ const SettingComponent = () => {
         ) {
             setTargetOptionPairs((prevPairs) => {
                 const updatedPairs = [...prevPairs];
-
+                
                 const selectedUsers =
                     updatedPairs[selectedPairIndex]?.secondOptions
                         ?.filter((user) => allData.includes(user._id))
                         .map((user) => user._id) || [];
 
-                const alreadySame =
-                    JSON.stringify(updatedPairs[selectedPairIndex].options) ===
-                    JSON.stringify(selectedUsers);
-
-                if (!alreadySame) {
-                    updatedPairs[selectedPairIndex].options = selectedUsers;
-                    
-                    return updatedPairs;
-                }
-
-                return prevPairs;
+                updatedPairs[selectedPairIndex].options = normalizeOptions(selectedUsers);
+                
+                return updatedPairs;
             });
         }
     }, [allData, selectedPairIndex]);
@@ -1961,33 +1949,21 @@ const SettingComponent = () => {
         updatedPairs[index].options = [];
 
         switch (value) {
-            case "1":
-                updatedPairs[index].secondOptions = createData.designation || [];
-                break;
-            case "2":
-                updatedPairs[index].secondOptions = createData.department || [];
-                break;
-            case "3":
-                updatedPairs[index].secondOptions = createData.group || [];
-                break;
-            case "4":
-                updatedPairs[index].secondOptions = createData.region || [];
-                break;
-            case "5":
-                updatedPairs[index].secondOptions = createData.user || [];
-                break;
-            default:
-                updatedPairs[index].secondOptions = [];
+            case "1": updatedPairs[index].secondOptions = createData.designation || []; break;
+            case "2": updatedPairs[index].secondOptions = createData.department || []; break;
+            case "3": updatedPairs[index].secondOptions = createData.group || []; break;
+            case "4": updatedPairs[index].secondOptions = createData.region || []; break;
+            case "5": updatedPairs[index].secondOptions = createData.user || []; break;
+            default: updatedPairs[index].secondOptions = [];
         }
-
+        
         setTargetOptionPairs(updatedPairs);
     };
 
     const handleSecondChange = (index, value) => {
         const updatedPairs = [...targetOptionPairs];
         
-        updatedPairs[index].options =
-            typeof value === "string" ? value.split(",") : value;
+        updatedPairs[index].options = normalizeOptions(value);
         setTargetOptionPairs(updatedPairs);
     };
 
@@ -2001,7 +1977,7 @@ const SettingComponent = () => {
     };
 
     const handleRemoveClick = (index) => {
-        if (targetOptionPairs.length === 1) return; // prevent removing last row
+        if (targetOptionPairs.length === 1) return;
         const updatedPairs = [...targetOptionPairs];
         
         updatedPairs.splice(index, 1);
@@ -2018,7 +1994,7 @@ const SettingComponent = () => {
             const response = await fetch(`${API_URL}/company/program/schedule/${mId}`, {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json", // ✅ missing
+                    "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify(value),
@@ -2055,7 +2031,6 @@ const SettingComponent = () => {
         handleDataSave(formData);
     };
 
-
     const handleClose = () => {
         setIsOpen(false);
         setSelectedPairIndex(null);
@@ -2075,13 +2050,12 @@ const SettingComponent = () => {
                     default: secondOptions = [];
                 }
                 
-                return { ...pair, secondOptions };
+                return { ...pair, secondOptions, options: normalizeOptions(pair.options) };
             });
             
             setTargetOptionPairs(enriched);
         }
     }, [createData]);
-
 
     return (
         <form onSubmit={onSubmit}>
