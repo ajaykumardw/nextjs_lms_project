@@ -2,7 +2,7 @@
 
 import crypto from "crypto";
 
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState, useMemo, useCallback } from "react"
 
 import { useRouter } from "next/navigation"
 
@@ -99,7 +99,6 @@ import AppReactDropzone from '@/libs/styles/AppReactDropzone'
 import DialogCloseButton from "@/components/dialogs/DialogCloseButton"
 
 import CustomTextField from "@/@core/components/mui/TextField"
-
 
 
 const ENCRYPTION_KEY = Buffer.from(process.env.NEXT_PUBLIC_ENCRYPTION_KEY, "base64");
@@ -1792,6 +1791,16 @@ const ImportUserModal = ({
     );
 };
 
+const MAX_PAIRS = 5;
+
+// Helper to normalize values into strings
+const normalizeOptions = (val) => {
+    if (!val) return [];
+    if (Array.isArray(val)) return val.map((v) => String(v));
+    
+    return [String(val)];
+};
+
 const SettingComponent = () => {
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
     const { data: session } = useSession();
@@ -1816,111 +1825,168 @@ const SettingComponent = () => {
         department: [],
         group: [],
         region: [],
-        user: []
+        user: [],
     });
 
     const [targetOptionPairs, setTargetOptionPairs] = useState([
-        { target: "", options: [], secondOptions: [] }
+        { target: "", options: [], secondOptions: [] },
     ]);
 
-    // Ensure options is always an array
-    const normalizeOptions = (val) => {
-        if (Array.isArray(val)) return val;
-        if (typeof val === "string") return val.split(",").filter(Boolean);
+    // Fetch available designations, departments, groups, etc.
+    const fetchCreateData = useCallback(async () => {
+        if (!API_URL || !token) return;
         
-        return [];
-    };
-
-    // Fetch create data
-    const fetchCreateData = async () => {
         try {
-            const response = await fetch(
-                `${API_URL}/company/program/schedule/create`,
-                {
-                    method: "GET",
-                    headers: { Authorization: `Bearer ${token}` }
-                }
-            );
+            const res = await fetch(`${API_URL}/company/program/schedule/create`, {
+                method: "GET",
+                headers: { Authorization: `Bearer ${token}` },
+            });
 
-            const result = await response.json();
-
-            if (response.ok) {
-                setCreateData(result?.data);
+            const body = await res.json();
+            
+            if (res.ok) {
+                const cd = {
+                    designation: body?.data?.designation || [],
+                    department: body?.data?.department || [],
+                    group: body?.data?.group || [],
+                    region: body?.data?.region || [],
+                    user: body?.data?.user || [],
+                };
+                
+                setCreateData(cd);
+                
+                return cd;
+            } else {
+                console.error("Error fetching create data:", body);
             }
-        } catch (error) {
-            console.error("Error fetching create data:", error);
+        } catch (err) {
+            console.error("Error fetching create data:", err);
         }
-    };
-
-    const fetchProgramSchedule = async () => {
-        try {
-            const response = await fetch(
-                `${API_URL}/company/program/schedule/data/${mId}`,
-                {
-                    method: "GET",
-                    headers: { Authorization: `Bearer ${token}` }
-                }
-            );
-
-            const data = await response.json();
-
-            if (response.ok) {
-                const result = data?.data;
-
-                if (result) {
-                    setPushEnrollmentSetting(result.pushEnrollmentSetting?.toString() || "3");
-                    setSelfEnrollmentSetting(result.selfEnrollmentSetting?.toString() || "3");
-                    setLockModule(result.lockModule ?? false);
-
-                    if (result.dueDate) {
-                        setDueType("fixed");
-                        setDueDate(new Date(result.dueDate));
-                    } else if (result.dueDays) {
-                        setDueType("relative");
-                        setDueDays(result.dueDays);
-                    }
-
-                    if (result.targetPairs && Array.isArray(result.targetPairs)) {
-                        const enrichedPairs = result.targetPairs.map((pair) => {
-                            let secondOptions = [];
-                            
-                            switch (pair.target) {
-                                case "1": secondOptions = createData.designation || []; break;
-                                case "2": secondOptions = createData.department || []; break;
-                                case "3": secondOptions = createData.group || []; break;
-                                case "4": secondOptions = createData.region || []; break;
-                                case "5": secondOptions = createData.user || []; break;
-                                default: secondOptions = [];
-                            }
-
-                            return {
-                                ...pair,
-                                options: normalizeOptions(pair.options),
-                                secondOptions
-                            };
-                        });
-                        
-                        setTargetOptionPairs(enrichedPairs);
-                    }
-
-                    if (result.createData) {
-                        setCreateData(result.createData);
-                    }
-                }
-            }
-        } catch (error) {
-            console.error("Error fetching program schedule:", error);
-        }
-    };
+        
+        return null;
+    }, [API_URL, token]);
 
     useEffect(() => {
         if (API_URL && token) {
-            fetchProgramSchedule();
-            fetchCreateData();
+            fetchCreateData()
         }
-    }, [API_URL, token]);
+    }, [API_URL, token])
 
-    // Auto-select matching users from ImportUserModal
+    // Fetch program schedule
+    useEffect(() => {
+        const fetchProgramSchedule = async () => {
+            try {
+                if (!token || !mId) {
+                    return;
+                }
+
+                const res = await fetch(`${API_URL}/company/program/schedule/data/${mId}`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                if (!res.ok) {
+                    const errText = await res.text();
+                    
+                    throw new Error(
+                        `Request failed with ${res.status} ${res.statusText}: ${errText}`
+                    );
+                }
+
+                const body = await res.json();
+
+                const result = body?.data || {};
+
+                // Update states with backend values
+                setPushEnrollmentSetting((result.pushEnrollmentSetting ?? "3").toString());
+                setSelfEnrollmentSetting((result.selfEnrollmentSetting ?? "3").toString());
+                setLockModule(result.lockModule ?? false);
+
+                if (result.dueDate) {
+                    setDueType("fixed");
+                    setDueDate(new Date(result.dueDate));
+                } else if (result.dueDays != null) {
+                    setDueType("relative");
+                    setDueDays(result.dueDays);
+                }
+
+                // Map targetPairs
+                if (Array.isArray(result.targetPairs) && result.targetPairs.length > 0) {
+                    const enriched = result.targetPairs.map((pair) => {
+                        let secondOptions = [];
+                        
+                        switch (pair.target) {
+                            case "1":
+                                secondOptions = createData.designation || [];
+                                break;
+                            case "2":
+                                secondOptions = createData.department || [];
+                                break;
+                            case "3":
+                                secondOptions = createData.group || [];
+                                break;
+                            case "4":
+                                secondOptions = createData.region || [];
+                                break;
+                            case "5":
+                                secondOptions = createData.user || [];
+                                break;
+                            default:
+                                secondOptions = [];
+                        }
+
+                        return {
+                            target: pair.target ?? "",
+                            options: normalizeOptions(pair.options ?? []),
+                            secondOptions,
+                        };
+                    });
+
+                    setTargetOptionPairs(enriched);
+                } else {
+                    setTargetOptionPairs([{ target: "", options: [], secondOptions: [] }]);
+                }
+            } catch (err) {
+                console.error("Error fetching program schedule:", err);
+            }
+        };
+
+        fetchProgramSchedule();
+    }, [API_URL, token, mId, createData]);
+
+    // When createData changes, re-enrich secondOptions
+    useEffect(() => {
+        setTargetOptionPairs((prev) =>
+            prev.map((pair) => {
+                let secondOptions = [];
+                
+                switch (pair.target) {
+                    case "1":
+                        secondOptions = createData.designation || [];
+                        break;
+                    case "2":
+                        secondOptions = createData.department || [];
+                        break;
+                    case "3":
+                        secondOptions = createData.group || [];
+                        break;
+                    case "4":
+                        secondOptions = createData.region || [];
+                        break;
+                    case "5":
+                        secondOptions = createData.user || [];
+                        break;
+                    default:
+                        secondOptions = [];
+                }
+                
+                return { ...pair, secondOptions, options: normalizeOptions(pair.options) };
+            })
+        );
+    }, [createData]);
+
+    // Auto-select users imported from modal
     useEffect(() => {
         if (
             allData.length > 0 &&
@@ -1928,60 +1994,79 @@ const SettingComponent = () => {
             targetOptionPairs[selectedPairIndex]?.target === "5"
         ) {
             setTargetOptionPairs((prevPairs) => {
-                const updatedPairs = [...prevPairs];
+                const updatedPairs = prevPairs.map((p, i) => ({ ...p }));
+                const users = updatedPairs[selectedPairIndex]?.secondOptions || [];
                 
-                const selectedUsers =
-                    updatedPairs[selectedPairIndex]?.secondOptions
-                        ?.filter((user) => allData.includes(user._id))
-                        .map((user) => user._id) || [];
-
-                updatedPairs[selectedPairIndex].options = normalizeOptions(selectedUsers);
+                const selectedUsers = users
+                    .filter((u) => allData.includes(String(u._id)))
+                    .map((u) => String(u._id));
+                
+                    updatedPairs[selectedPairIndex].options = normalizeOptions(selectedUsers);
                 
                 return updatedPairs;
             });
         }
-    }, [allData, selectedPairIndex]);
+    }, [allData, selectedPairIndex, targetOptionPairs]);
 
+    // Handlers for UI interactions
     const handleFirstChange = (index, value) => {
-        const updatedPairs = [...targetOptionPairs];
-        
-        updatedPairs[index].target = value;
-        updatedPairs[index].options = [];
+        setTargetOptionPairs((prev) => {
+            const updated = prev.map((p) => ({ ...p }));
+            
+            updated[index].target = value;
+            updated[index].options = [];
 
-        switch (value) {
-            case "1": updatedPairs[index].secondOptions = createData.designation || []; break;
-            case "2": updatedPairs[index].secondOptions = createData.department || []; break;
-            case "3": updatedPairs[index].secondOptions = createData.group || []; break;
-            case "4": updatedPairs[index].secondOptions = createData.region || []; break;
-            case "5": updatedPairs[index].secondOptions = createData.user || []; break;
-            default: updatedPairs[index].secondOptions = [];
-        }
-        
-        setTargetOptionPairs(updatedPairs);
+            switch (value) {
+                case "1":
+                    updated[index].secondOptions = createData.designation || [];
+                    break;
+                case "2":
+                    updated[index].secondOptions = createData.department || [];
+                    break;
+                case "3":
+                    updated[index].secondOptions = createData.group || [];
+                    break;
+                case "4":
+                    updated[index].secondOptions = createData.region || [];
+                    break;
+                case "5":
+                    updated[index].secondOptions = createData.user || [];
+                    break;
+                default:
+                    updated[index].secondOptions = [];
+            }
+
+            return updated;
+        });
     };
 
     const handleSecondChange = (index, value) => {
-        const updatedPairs = [...targetOptionPairs];
-        
-        updatedPairs[index].options = normalizeOptions(value);
-        setTargetOptionPairs(updatedPairs);
+        setTargetOptionPairs((prev) => {
+            const updated = prev.map((p) => ({ ...p }));
+            
+            updated[index].options = normalizeOptions(value);
+            
+            return updated;
+        });
     };
 
     const handleAddClick = () => {
-        if (targetOptionPairs.length < 5) {
-            setTargetOptionPairs([
-                ...targetOptionPairs,
-                { target: "", options: [], secondOptions: [] }
-            ]);
-        }
+        setTargetOptionPairs((prev) => {
+            if (prev.length >= MAX_PAIRS) return prev;
+            
+            return [...prev, { target: "", options: [], secondOptions: [] }];
+        });
     };
 
     const handleRemoveClick = (index) => {
-        if (targetOptionPairs.length === 1) return;
-        const updatedPairs = [...targetOptionPairs];
-        
-        updatedPairs.splice(index, 1);
-        setTargetOptionPairs(updatedPairs);
+        setTargetOptionPairs((prev) => {
+            if (prev.length === 1) return prev;
+            const copy = [...prev];
+            
+            copy.splice(index, 1);
+            
+            return copy;
+        });
     };
 
     const handleImportUser = (index) => {
@@ -1990,8 +2075,10 @@ const SettingComponent = () => {
     };
 
     const handleDataSave = async (value) => {
+        if (!API_URL || !token || !mId) return;
+        
         try {
-            const response = await fetch(`${API_URL}/company/program/schedule/${mId}`, {
+            const res = await fetch(`${API_URL}/company/program/schedule/${mId}`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -1999,69 +2086,51 @@ const SettingComponent = () => {
                 },
                 body: JSON.stringify(value),
             });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                toast.success(data?.message || "Setting saved successfully", {
+            
+            const body = await res.json();
+            
+            if (res.ok) {
+                toast.success(body?.message || "Setting saved successfully", {
                     autoClose: 1000,
                 });
             } else {
-                toast.error(data?.message || "Failed to save settings");
+                toast.error(body?.message || "Failed to save settings");
             }
-        } catch (error) {
-            console.error("Error saving settings:", error);
+        } catch (err) {
+            console.error("❌ Error saving settings:", err?.message || err);
             toast.error("Something went wrong!");
         }
     };
 
     const onSubmit = (e) => {
         e.preventDefault();
-        
-        const formData = {
+
+        const payload = {
             pushEnrollmentSetting,
             selfEnrollmentSetting,
-            targetPairs: targetOptionPairs,
+            targetPairs: targetOptionPairs.map((p) => ({
+                target: p.target,
+                options: p.options,
+            })),
             lockModule,
             dueType,
-            dueDate: dueType === "fixed" ? dueDate : null,
-            dueDays: dueType === "relative" ? dueDays : null,
+            dueDate: dueType === "fixed" ? dueDate.toISOString() : null,
+            dueDays: dueType === "relative" ? Number(dueDays) : null,
         };
-        
-        handleDataSave(formData);
+
+        handleDataSave(payload);
     };
 
     const handleClose = () => {
         setIsOpen(false);
         setSelectedPairIndex(null);
+        setAllData([]);
     };
-
-    useEffect(() => {
-        if (targetOptionPairs.length > 0) {
-            const enriched = targetOptionPairs.map((pair) => {
-                let secondOptions = [];
-                
-                switch (pair.target) {
-                    case "1": secondOptions = createData.designation || []; break;
-                    case "2": secondOptions = createData.department || []; break;
-                    case "3": secondOptions = createData.group || []; break;
-                    case "4": secondOptions = createData.region || []; break;
-                    case "5": secondOptions = createData.user || []; break;
-                    default: secondOptions = [];
-                }
-                
-                return { ...pair, secondOptions, options: normalizeOptions(pair.options) };
-            });
-            
-            setTargetOptionPairs(enriched);
-        }
-    }, [createData]);
 
     return (
         <form onSubmit={onSubmit}>
             <Grid container spacing={4}>
                 <Grid item size={{ xs: 12, md: 9 }}>
-                    {/* Push Enrollment Settings */}
                     <Typography variant="h6" gutterBottom>
                         Push Enrollment Settings
                     </Typography>
@@ -2087,7 +2156,6 @@ const SettingComponent = () => {
                         />
                     </RadioGroup>
 
-                    {/* Self Enrollment Settings */}
                     <Typography variant="h6" gutterBottom>
                         Self-Enrollment Settings
                     </Typography>
@@ -2118,14 +2186,8 @@ const SettingComponent = () => {
                     </Typography>
 
                     {targetOptionPairs.map((pair, idx) => (
-                        <Grid
-                            container
-                            spacing={2}
-                            alignItems="center"
-                            mb={3}
-                            key={idx}
-                        >
-                            <Grid item size={{ xs: pair.target === "5" ? 3 : 5 }}>
+                        <Grid container spacing={2} alignItems="center" mb={3} key={idx}>
+                            <Grid item size={{ xs: 12, md: 3 }} >
                                 <TextField
                                     select
                                     label="Select module targets"
@@ -2134,9 +2196,7 @@ const SettingComponent = () => {
                                     value={pair.target}
                                     onChange={(e) => handleFirstChange(idx, e.target.value)}
                                 >
-                                    <MenuItem value="" disabled>
-                                        Select Module Target
-                                    </MenuItem>
+                                    <MenuItem value="">Select Module Target</MenuItem>
                                     <MenuItem
                                         value="1"
                                         disabled={targetOptionPairs.some(
@@ -2180,7 +2240,7 @@ const SettingComponent = () => {
                                 </TextField>
                             </Grid>
 
-                            <Grid item size={{ xs: pair.target === "5" ? 5 : 5 }}>
+                            <Grid item size={{ xs: 12, md: 6 }} >
                                 <TextField
                                     select
                                     label="Select option"
@@ -2188,19 +2248,23 @@ const SettingComponent = () => {
                                     size="small"
                                     value={pair.options}
                                     onChange={(e) => handleSecondChange(idx, e.target.value)}
-                                    SelectProps={{
-                                        multiple: true
-                                    }}
+                                    SelectProps={{ multiple: true }}
                                 >
                                     {pair.target !== "5" &&
-                                        pair.secondOptions.map((item, i) => (
-                                            <MenuItem key={i} value={item._id}>
-                                                {item.name}
+                                        (pair.secondOptions || []).map((item, i) => (
+                                            <MenuItem
+                                                key={String(item._id ?? i)}
+                                                value={String(item._id ?? item.id ?? item)}
+                                            >
+                                                {item.name || item.title || item.label || item._id}
                                             </MenuItem>
                                         ))}
                                     {pair.target === "5" &&
-                                        pair.secondOptions.map((item, i) => (
-                                            <MenuItem key={i} value={item._id}>
+                                        (pair.secondOptions || []).map((item, i) => (
+                                            <MenuItem
+                                                key={String(item._id ?? i)}
+                                                value={String(item._id ?? item.id ?? item)}
+                                            >
                                                 {item.first_name} {item.last_name}
                                             </MenuItem>
                                         ))}
@@ -2208,11 +2272,8 @@ const SettingComponent = () => {
                             </Grid>
 
                             {pair.target === "5" && (
-                                <Grid item size={{ xs: 2 }}>
-                                    <Button
-                                        variant="outlined"
-                                        onClick={() => handleImportUser(idx)}
-                                    >
+                                <Grid item size={{ xs: 12, md: 2 }} >
+                                    <Button variant="outlined" onClick={() => handleImportUser(idx)}>
                                         Import User
                                     </Button>
                                 </Grid>
@@ -2220,7 +2281,7 @@ const SettingComponent = () => {
 
                             <Grid
                                 item
-                                size={{ xs: 2 }}
+                                size={{ xs: 12, md: 1 }}
                                 display="flex"
                                 justifyContent="center"
                             >
@@ -2228,15 +2289,12 @@ const SettingComponent = () => {
                                     <Button
                                         variant="contained"
                                         onClick={handleAddClick}
-                                        disabled={targetOptionPairs.length >= 5}
+                                        disabled={targetOptionPairs.length >= MAX_PAIRS}
                                     >
                                         + Add
                                     </Button>
                                 ) : (
-                                    <IconButton
-                                        color="error"
-                                        onClick={() => handleRemoveClick(idx)}
-                                    >
+                                    <IconButton color="error" onClick={() => handleRemoveClick(idx)}>
                                         Delete
                                     </IconButton>
                                 )}
@@ -2244,7 +2302,6 @@ const SettingComponent = () => {
                         </Grid>
                     ))}
 
-                    {/* Due Date Settings */}
                     <Typography variant="h6" gutterBottom>
                         Due Date Settings
                     </Typography>
@@ -2274,8 +2331,7 @@ const SettingComponent = () => {
                                             selected={dueDate}
                                             onChange={(date) => setDueDate(date)}
                                             showTimeSelect
-                                            dateFormat="MMMM d, yyyy h:mm aa"
-                                            customInput={<TextField size="small" />}
+                                            dateFormat="Pp" // e.g. 09/01/2025, 3:30 PM
                                         />
                                     )}
                                 </Box>
@@ -2292,7 +2348,7 @@ const SettingComponent = () => {
                                         type="number"
                                         value={dueDays}
                                         onChange={(e) => setDueDays(Number(e.target.value))}
-                                        sx={{ inlineSize: 80 }}
+                                        sx={{ width: 100 }}
                                     />
                                     &nbsp;days post enrollment
                                 </Box>
