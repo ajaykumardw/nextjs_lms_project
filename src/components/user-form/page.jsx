@@ -70,7 +70,10 @@ const UserFormLayout = () => {
     const [stateId, setStateId] = useState();
     const [cityData, setCityData] = useState();
     const [editData, setEditData] = useState();
-    const [selectedRoles, setSelectedRoles] = useState([]);
+    const [selectZone, setSelectZone] = useState();
+    const [selectRegion, setSelectRegion] = useState();
+    const [selectedRegion, setSelectedRegion] = useState();
+    const [selectedBranch, setSelectedBranch] = useState();
     const [userRoles, setUserRoles] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const { doGet, doPost } = useApi();
@@ -151,12 +154,18 @@ const UserFormLayout = () => {
         photo: optional(string()), // Optional field or could validate file type
         status: boolean(), // or optional(boolean()) if not required
         designation_id: optional(string()), // or optional(boolean()) if not required
+        department_id: optional(string()),
         urn_no: optional(string()),
         idfa_code: optional(string()),
         application_no: optional(string()),
         licence_no: optional(string()),
         zone_id: optional(string()),
-        participation_type_id: optional(string()),
+        region_id: optional(string()),
+        branch_id: optional(string()),
+        participation_type_id: pipe(
+            string(),
+            minLength(1, 'Participation type is required')
+        ),
         employee_type: optional(string()),
         dob: optional(
             pipe(
@@ -176,7 +185,6 @@ const UserFormLayout = () => {
             minLength(1, 'User code is required'),
             maxLength(10, 'User code can be a maximum of 10 characters')
         ),
-
     });
 
     // States
@@ -189,6 +197,8 @@ const UserFormLayout = () => {
         country_id: '',
         state_id: '',
         city_id: '',
+        region_id: '',
+        branch_id: "",
         address: '',
         pincode: '',
         dob: '',
@@ -224,6 +234,7 @@ const UserFormLayout = () => {
             email: '',
             password: '',
             country_id: '',
+            branch_id: "",
             state_id: '',
             city_id: '',
             address: '',
@@ -242,7 +253,10 @@ const UserFormLayout = () => {
             employee_type: '',
             participation_type_id: '',
             zone_id: '',
+            region_id: '',
+            branch_id: '',
             designation_id: '',
+            department_id: '',
             alternative_email: ''
 
         }
@@ -311,6 +325,8 @@ const UserFormLayout = () => {
             const countryData = await doGet(`admin/countries`);
             const designationData = await doGet(`admin/designations?status=true`);
             const zoneData = await doGet(`company/zone`);
+            const branchData = await doGet('company/branch')
+            const departmentData = await doGet('company/department')
             const participationTypesData = await doGet(`admin/participation_types?status=true`);
             const roleData = await doGet(`company/role`);
 
@@ -318,7 +334,9 @@ const UserFormLayout = () => {
                 ...prevData,
                 country: countryData.country,         // assuming your API returns data inside `.data`
                 designations: designationData, // same here
+                department: departmentData,
                 zones: zoneData, // same here
+                branch: branchData,
                 participation_types: participationTypesData, // same here
                 roles: roleData, // same here
             }));
@@ -328,7 +346,6 @@ const UserFormLayout = () => {
             console.error('Error loading data:', error.message);
         }
     };
-
 
     useEffect(() => {
         if (URL && token) {
@@ -341,49 +358,70 @@ const UserFormLayout = () => {
 
     }, [URL, token, id])
 
+
     useEffect(() => {
         if (id && editData) {
             reset({
-                first_name: editData.first_name,
-                last_name: editData.last_name,
-                email: editData.email,
-                alternative_email: editData?.alternative_email || '',
-                phone: editData.phone,
-                address: editData.address,
-                pincode: editData.pincode,
-                country_id: editData.country_id,
-                state_id: editData.state_id,
-                city_id: editData.city_id,
-                status: editData.status,
-                website: editData?.website || '',
-                urn_no: editData?.urn_no || '',
-                idfa_code: editData?.idfa_code || '',
-                application_no: editData?.application_no || '',
-                licence_no: editData?.licence_no || '',
-                zone_id: editData?.zone_id || '',
-                participation_type_id: editData?.participation_type_id || '',
-                employee_type: editData?.employee_type || '',
-                user_code: editData?.emp_id || '',
-                dob: editData.dob ? new Date(editData.dob).toISOString().split('T')[0] : '',
-                designation_id: editData?.designation_id || '',
+                first_name: editData.first_name ?? '',
+                last_name: editData.last_name ?? '',
+                email: editData.email ?? '',
+                alternative_email: editData.alternative_email ?? '',
+                phone: editData.phone ?? '',
+                address: editData.address ?? '',
+                pincode: editData.pincode ?? '',
+                country_id: editData.country_id ?? '',
+                state_id: editData.state_id ?? '',
+                city_id: editData.city_id ?? '',
+                status: editData.status ?? '',
+                website: editData.website ?? '',
+                urn_no: editData.urn_no ?? '',
+                idfa_code: editData.idfa_code ?? '',
+                application_no: editData.application_no ?? '',
+                licence_no: editData.licence_no ?? '',
+                participation_type_id: editData.participation_type_id ?? '',
+                department_id: editData.department_id ?? '',
+                employee_type: editData.employee_type ?? '',
+                user_code: editData.emp_id ?? '',
+                zone_id: editData.zone_id ?? '',
+                region_id: editData.region_id ?? '',
+                branch_id: editData.branch_id ?? '',
+                dob: editData.dob
+                    ? new Date(editData.dob).toISOString().split('T')[0]
+                    : '',
+                designation_id: editData.designation_id ?? '',
             });
 
             if (editData.photo) {
                 setImgSrc(`${public_url}${editData.photo}`);
             }
 
-            setCountryId(editData.country_id);
-            setStateId(editData.state_id);
+            if (editData.country_id) setCountryId(editData.country_id);
+            if (editData.state_id) setStateId(editData.state_id);
 
-
-            if (editData?.roles.length > 0) {
-                const rolesIds = editData.roles.map(role => role.role_id);
-
+            if (editData.roles?.length > 0) {
+                const rolesIds = editData.roles.map((role) => role.role_id);
+                
                 setUserRoles(rolesIds);
                 setValue('roles', rolesIds);
             }
+
+            if (editData.zone_id) {
+                setSelectZone(editData.zone_id);
+            }
+            
+            if (editData.region_id) {
+                setSelectedRegion(editData.region_id);
+            }
+
+            if (editData.branch_id && createData?.branch) {
+                const branchData = createData?.branch.filter((b) => b.regionId == editData.region_id) || [];
+                
+                setSelectedBranch(branchData);
+                console.log("Branch", branchData);
+            }
         }
-    }, [id, editData, setValue])
+    }, [id, editData, reset, setValue, createData]);
+
 
     useEffect(() => {
         if (countryId && createData?.country.length > 0) {
@@ -479,11 +517,6 @@ const UserFormLayout = () => {
         submitFormData(newUser);
     };
 
-    const handleReset = () => {
-        handleClose()
-        setFormData(initialData)
-    }
-
     const [file, setFile] = useState(null);
 
     const handleFileInputChange = (event) => {
@@ -532,6 +565,28 @@ const UserFormLayout = () => {
             setCityData(city);
         }
     }, [stateId, stateData])
+
+    useEffect(() => {
+        if (selectZone && createData) {
+            const selectRegions = createData?.zones?.find((item) => item._id === selectZone);
+
+            // Reset when zone changes
+            // setSelectedBranch([]);
+            // setSelectedRegion('');
+            setSelectRegion(selectRegions?.region || []);
+        }
+    }, [selectZone, createData, setValue]);
+
+    useEffect(() => {
+        if (selectedRegion && createData) {
+
+            const branchData =
+                createData?.branch?.filter((item) => item.regionId === selectedRegion) || [];
+
+            setSelectedBranch(branchData);
+
+        }
+    }, [selectedRegion, createData, setValue]);
 
     if (!createData || isLoading) {
         return (
@@ -967,6 +1022,39 @@ const UserFormLayout = () => {
                             />
 
                         </Grid>
+
+                        <Grid size={{ xs: 12, sm: 4 }}>
+                            <Controller
+                                name="department_id"
+                                control={control}
+                                render={({ field }) => (
+                                    <CustomTextField
+                                        {...field}
+                                        select
+                                        fullWidth
+                                        label="Department"
+                                        value={field.value ?? ''} // ✅ ensure controlled
+                                        onChange={(e) => {
+                                            field.onChange(e.target.value); // ✅ update RHF state
+                                        }}
+                                        error={!!errors.department_id}
+                                        helperText={errors.department_id?.message}
+                                    >
+                                        {createData?.department?.length > 0 ? (
+                                            createData.department.map((item) => (
+                                                <MenuItem key={item._id} value={item._id}>
+                                                    {item.name}
+                                                </MenuItem>
+                                            ))
+                                        ) : (
+                                            <MenuItem disabled>No Designations</MenuItem>
+                                        )}
+                                    </CustomTextField>
+                                )}
+                            />
+
+                        </Grid>
+
                         <Grid size={{ xs: 12, sm: 4 }}>
                             <Controller
                                 name="participation_type_id"
@@ -976,7 +1064,7 @@ const UserFormLayout = () => {
                                         {...field}
                                         select
                                         fullWidth
-                                        label="Participation Type"
+                                        label="Participation Type *"
                                         value={field.value ?? ''} // ✅ ensure controlled
                                         onChange={(e) => {
                                             field.onChange(e.target.value); // ✅ update RHF state
@@ -1025,6 +1113,8 @@ const UserFormLayout = () => {
                             />
 
                         </Grid>
+
+                        {/* Zone */}
                         <Grid size={{ xs: 12, sm: 4 }}>
                             <Controller
                                 name="zone_id"
@@ -1035,11 +1125,14 @@ const UserFormLayout = () => {
                                         select
                                         fullWidth
                                         label="Zone"
-                                        value={field.value ?? ''} // ✅ fallback to empty string
+                                        value={field.value ?? ""}
                                         onChange={(e) => {
                                             const rawValue = e.target.value;
-                                            const value = rawValue === 'undefined' || !rawValue ? '' : rawValue;
+                                            const value = rawValue === "undefined" || !rawValue ? "" : rawValue;
 
+                                            setSelectZone(value);
+                                            setSelectedRegion("");   // reset region
+                                            setSelectedBranch([]);   // reset branch
                                             field.onChange(value);
                                         }}
                                         error={!!errors.zone_id}
@@ -1057,8 +1150,86 @@ const UserFormLayout = () => {
                                     </CustomTextField>
                                 )}
                             />
-
                         </Grid>
+
+                        {/* Region */}
+                        {selectRegion?.length > 0 && (
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                                <Controller
+                                    name="region_id"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <CustomTextField
+                                            {...field}
+                                            select
+                                            fullWidth
+                                            label="Region"
+                                            value={field.value ?? ""}
+                                            onChange={(e) => {
+                                                const rawValue = e.target.value;
+                                                
+                                                const value =
+                                                    rawValue === "undefined" || !rawValue ? "" : rawValue;
+
+                                                setSelectedRegion(value); // store selected region ID
+                                                setSelectedBranch([]);    // reset branch
+                                                field.onChange(value);
+                                            }}
+                                            error={!!errors.region_id}
+                                            helperText={errors.region_id?.message}
+                                        >
+                                            {selectRegion.length > 0 ? (
+                                                selectRegion.map((item) => (
+                                                    <MenuItem key={item._id} value={item._id}>
+                                                        {item.name}
+                                                    </MenuItem>
+                                                ))
+                                            ) : (
+                                                <MenuItem disabled>No Regions</MenuItem>
+                                            )}
+                                        </CustomTextField>
+                                    )}
+                                />
+                            </Grid>
+                        )}
+
+                        {/* Branch */}
+                        {selectedBranch?.length > 0 && (
+                            <Grid size={{ xs: 12, sm: 4 }}>
+                                <Controller
+                                    name="branch_id"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <CustomTextField
+                                            {...field}
+                                            select
+                                            fullWidth
+                                            label="Branch"
+                                            value={field.value ?? ""}
+                                            onChange={(e) => {
+                                                const rawValue = e.target.value;
+                                                const value = rawValue === "undefined" || !rawValue ? "" : rawValue;
+                                                
+                                                field.onChange(value);
+                                            }}
+                                            error={!!errors.branch_id}
+                                            helperText={errors.branch_id?.message}
+                                        >
+                                            {selectedBranch.length > 0 ? (
+                                                selectedBranch.map((item) => (
+                                                    <MenuItem key={item.data._id} value={item.data._id}>
+                                                        {item.data.name}
+                                                    </MenuItem>
+                                                ))
+                                            ) : (
+                                                <MenuItem disabled>No Branches</MenuItem>
+                                            )}
+                                        </CustomTextField>
+                                    )}
+                                />
+                            </Grid>
+                        )}
+
                         <Grid size={{ xs: 12, sm: 4 }}>
                             <Controller
                                 name="website"

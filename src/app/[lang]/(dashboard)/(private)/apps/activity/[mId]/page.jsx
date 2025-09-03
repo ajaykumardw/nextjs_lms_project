@@ -1802,7 +1802,9 @@ const normalizeOptions = (val) => {
 };
 
 const SettingComponent = () => {
+
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
+    
     const { data: session } = useSession();
     const token = session?.user?.token;
 
