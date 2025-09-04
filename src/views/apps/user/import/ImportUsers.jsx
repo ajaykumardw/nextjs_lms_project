@@ -99,6 +99,7 @@ const ImportUsers = ({ batch, onBack }) => {
   const { data: session } = useSession();
   const { doGet, doPost } = useApi();
   const [selectedRoles, setSelectedRoles] = useState([]);
+  const [showError, setShowError] = useState();
   const [userRoles, setUserRoles] = useState([]);
 
   const token = session?.user?.token;
@@ -114,6 +115,7 @@ const ImportUsers = ({ batch, onBack }) => {
   });
 
   const { getRootProps, getInputProps } = useDropzone({
+
     // maxFiles: 1,
     multiple: false,
     maxSize: 2000000,
@@ -121,6 +123,7 @@ const ImportUsers = ({ batch, onBack }) => {
       'application/vnd.ms-excel': ['.xls'],
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
     },
+
     onDrop: (acceptedFiles) => {
 
       setFileInput(null);
@@ -141,18 +144,58 @@ const ImportUsers = ({ batch, onBack }) => {
             const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
             // Validate header
+            const requiredHeaders = [
+              'SRNO', 'Email', 'FirstName', 'LastName', 'PhoneNo', 'Password', 'ParticipationType',
+              'EmpID', 'Address', 'Country', 'State', 'City', 'PinCode', 'LicenseNo', 'Status'
+            ];
+
+            // const optionalHeaders = [
+            //   'URNNumber', 'ApplicationNo', 'Designation', 'Department',
+            //   'EmployeeType', '', 'Zone', 'Region', 'Branch', 'Website'
+            // ];
+
+            // Now only validate required headers
             const headers = XLSX.utils.sheet_to_json(worksheet, { header: 1 })[0];
-            const requiredHeaders = ['SRNO', 'Email', 'FirstName', 'LastName', 'PhoneNo', 'Password', 'EmpID', 'Address', 'Country', 'State', 'City', 'PinCode', 'URNNumber', 'ApplicationNo', 'LicenseNo', 'Status', 'Designation', 'EmployeeType', 'ParticipationType', 'Zone']; // customize
             const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
 
+            // After checking for missingHeaders
             if (missingHeaders.length > 0) {
-
               setMissingHeaders(missingHeaders);
-
-              //toast.error(`Missing headers: ${missingHeaders.join(', ')}`);
               setLoading(false);
-
+              
               return;
+            }
+
+            // Validate required header values
+            const rowsWithMissingValues = [];
+
+            jsonData.forEach((row, rowIndex) => {
+              requiredHeaders.forEach((header) => {
+                const value = row[header];
+                
+                if (value === undefined || value === null || value.toString().trim() === '') {
+                  rowsWithMissingValues.push({ row: rowIndex + 2, header });
+                  
+                  // +2 because Excel rowIndex starts from 0, and row 1 is the header
+                }
+              });
+            });
+
+            if (rowsWithMissingValues.length > 0) {
+
+              const errorMsg = rowsWithMissingValues
+                .map(r => `"${r.header}"`)
+                .join(', ');
+
+              const msgError = "Missing value in row: " + errorMsg
+
+              setShowError(msgError)
+
+              setLoading(false);
+              
+              return;
+            } else {
+              setShowError()
             }
 
             // Validate Excel duplicate emails
@@ -247,10 +290,9 @@ const ImportUsers = ({ batch, onBack }) => {
     }
   });
 
-
   const getRoles = async () => {
     const roleData = await doGet(`company/role`);
-
+    
     setRoles(roleData);
   }
 
@@ -270,10 +312,13 @@ const ImportUsers = ({ batch, onBack }) => {
 
       if (userRoles.length == 0) {
 
-        toast.error(`Please choose the role first`);
+        setShowError(`Please choose the role first`)
         setLoading(false);
 
         return;
+
+      } else {
+        setShowError()
       }
 
       setIsProgress(true);
@@ -289,13 +334,21 @@ const ImportUsers = ({ batch, onBack }) => {
 
         const res = await fetch(final_url, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
           body: JSON.stringify({ chunk, roles: userRoles }),
         });
 
         const result = await res.json();
 
-        if (!res.ok) throw new Error(result.message || 'Import failed');
+        if (!res.ok) {
+
+          console.log("Result error", result?.message);
+
+          throw new Error(result.message || 'Import failed');
+        }
 
         const percent = Math.round(((i + 1) / totalChunks) * 100);
 
@@ -335,18 +388,19 @@ const ImportUsers = ({ batch, onBack }) => {
       },
       columnHelper.accessor('Import Status', {
         header: 'Imported',
-        cell: ({ row }) => (
+        cell: ({ row }) => {
+          const hasErrors = row.original?.errors && Object.keys(row.original.errors).length > 0;
 
-          <Typography color='text.primary' >
-
-            <CustomAvatar skin='light' color={row.original?.errors.length == 0 ? 'success' : 'error'}>
-              <i className={row.original?.errors.length == 0 ? 'tabler-circle-check' : 'tabler-circle-x'} />
-            </CustomAvatar>
-
-          </Typography>
-
-        )
+          return (
+            <Typography color='text.primary'>
+              <CustomAvatar skin='light' color={!hasErrors ? 'success' : 'error'}>
+                <i className={!hasErrors ? 'tabler-circle-check' : 'tabler-circle-x'} />
+              </CustomAvatar>
+            </Typography>
+          );
+        }
       }),
+
       columnHelper.accessor('FirstName', {
         header: 'First Name',
         cell: ({ row }) => (
@@ -457,6 +511,18 @@ const ImportUsers = ({ batch, onBack }) => {
         )
       }),
 
+      columnHelper.accessor('Department', {
+        header: 'Designation',
+        cell: ({ row }) => (
+          <div className="flex flex-col">
+            <Typography color='text.primary' >
+              {row.original.Department}
+            </Typography>
+            <Typography variant='body2' color="#FF0000">{row.original?.errors?.department}</Typography>
+          </div>
+        )
+      }),
+
       columnHelper.accessor('ParticipationType', {
         header: 'ParticipationType',
         cell: ({ row }) => (
@@ -493,6 +559,30 @@ const ImportUsers = ({ batch, onBack }) => {
         )
       }),
 
+      columnHelper.accessor('Region', {
+        header: 'Region',
+        cell: ({ row }) => (
+          <div className="flex flex-col">
+            <Typography color='text.primary' >
+              {row.original.Region}
+            </Typography>
+            <Typography variant='body2' color="#FF0000">{row.original?.errors?.zone}</Typography>
+          </div>
+        )
+      }),
+
+      columnHelper.accessor('Branch', {
+        header: 'Branch',
+        cell: ({ row }) => (
+          <div className="flex flex-col">
+            <Typography color='text.primary' >
+              {row.original.Branch}
+            </Typography>
+            <Typography variant='body2' color="#FF0000">{row.original?.errors?.zone}</Typography>
+          </div>
+        )
+      }),
+
       columnHelper.accessor('Status', {
         header: 'Status',
         cell: ({ row }) => (
@@ -508,7 +598,6 @@ const ImportUsers = ({ batch, onBack }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   )
-
 
   const table = useReactTable({
     data: data,
@@ -618,9 +707,16 @@ const ImportUsers = ({ batch, onBack }) => {
         />
         <CardContent>
           <div className="flex gap-2 flex-col">
-            <Alert severity='info'>
-              Note: Allowed only Excel files with *.xls or *.xlsx extension.
-            </Alert>
+            {showError ? (
+              <Alert severity='error'>
+                {showError}
+              </Alert>
+            ) : (
+
+              <Alert severity='info'>
+                Note: Allowed only Excel files with *.xls or *.xlsx extension.
+              </Alert>
+            )}
 
             {missingHeadersData.length > 0 &&
               <Alert severity='error'
@@ -746,10 +842,11 @@ const ImportUsers = ({ batch, onBack }) => {
                     </IconButton>
                   </ListItem>
                 </List>
-                <div className='flex gap-4'>
+                <div className='flex gap-4 mt-4'>
                   <Button variant='contained' color='warning' onClick={handleRemoveFile} endIcon={<i className='tabler-trash' />}>
                     Remove
                   </Button>
+
                   <Button variant='contained' onClick={handleUploadData} disabled={uploadData.length === 0 || isProgress} startIcon={<i className='tabler-send' />}>
                     {isProgress ? (
                       <CircularProgress
@@ -777,7 +874,7 @@ const ImportUsers = ({ batch, onBack }) => {
           </AppReactDropzone>
         </CardContent>
         {data.length > 0 ? tableItems : ''}
-      </Card>
+      </Card >
       <ImportSuccessDialog open={openSuccessDialog} setOpen={setOpenSuccessDialog} />
     </>
 
