@@ -17,6 +17,9 @@ import Chip from '@mui/material/Chip'
 import { getLocalizedUrl } from '@/utils/i18n'
 
 const Courses = ({ searchValue, type }) => {
+
+  const assert_url = process.env.NEXT_PUBLIC_ASSETS_URL;
+
   const [filteredCourses, setFilteredCourses] = useState([])
   const { lang: locale } = useParams()
 
@@ -53,7 +56,7 @@ const Courses = ({ searchValue, type }) => {
           >
             <Link href={getLocalizedUrl(`/apps/moduleProgram/detail/${slugify(course.courseTitle)}`, locale)}>
               <img
-                src={course.tutorImg}
+                src={`${assert_url}/program_module/${course.tutorImg}`}
                 alt={course.courseTitle}
                 className='w-full object-cover'
                 style={{ blockSize: 120 }}
