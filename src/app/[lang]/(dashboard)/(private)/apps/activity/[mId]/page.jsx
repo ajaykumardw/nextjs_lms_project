@@ -1805,19 +1805,17 @@ const normalizeOptions = (val) => {
 };
 
 const SettingComponent = ({ activities }) => {
-
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
     const { data: session } = useSession();
     const token = session?.user?.token;
-
     const { mId } = useParams();
 
     const [pushEnrollmentSetting, setPushEnrollmentSetting] = useState("3");
     const [selfEnrollmentSetting, setSelfEnrollmentSetting] = useState("3");
 
     const [dueType, setDueType] = useState("relative");
-    const [dueDate, setDueDate] = useState(new Date());
+    const [startDate, setStartDate] = useState(new Date());
+    const [endDate, setEndDate] = useState(new Date());
     const [dueDays, setDueDays] = useState(5);
     const [lockModule, setLockModule] = useState(false);
 
@@ -1840,13 +1838,11 @@ const SettingComponent = ({ activities }) => {
     // Fetch available designations, departments, groups, etc.
     const fetchCreateData = useCallback(async () => {
         if (!API_URL || !token) return;
-
         try {
             const res = await fetch(`${API_URL}/company/program/schedule/create`, {
                 method: "GET",
                 headers: { Authorization: `Bearer ${token}` },
             });
-
             const body = await res.json();
 
             if (res.ok) {
@@ -1857,9 +1853,7 @@ const SettingComponent = ({ activities }) => {
                     region: body?.data?.region || [],
                     user: body?.data?.user || [],
                 };
-
                 setCreateData(cd);
-
                 return cd;
             } else {
                 console.error("Error fetching create data:", body);
@@ -1867,60 +1861,58 @@ const SettingComponent = ({ activities }) => {
         } catch (err) {
             console.error("Error fetching create data:", err);
         }
-
         return null;
     }, [API_URL, token]);
 
     useEffect(() => {
         if (API_URL && token) {
-            fetchCreateData()
+            fetchCreateData();
         }
-    }, [API_URL, token])
+    }, [API_URL, token, fetchCreateData]);
 
     // Fetch program schedule
     useEffect(() => {
         const fetchProgramSchedule = async () => {
             try {
-                if (!token || !mId) {
-                    return;
-                }
+                if (!token || !mId) return;
 
-                const res = await fetch(`${API_URL}/company/program/schedule/data/${mId}`, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
+                const res = await fetch(
+                    `${API_URL}/company/program/schedule/data/${mId}`,
+                    {
+                        headers: { Authorization: `Bearer ${token}` },
+                    }
+                );
 
                 if (!res.ok) {
                     const errText = await res.text();
-
                     throw new Error(
                         `Request failed with ${res.status} ${res.statusText}: ${errText}`
                     );
                 }
 
                 const body = await res.json();
-
                 const result = body?.data || {};
 
-                // Update states with backend values
-                setPushEnrollmentSetting((result.pushEnrollmentSetting ?? "3").toString());
-                setSelfEnrollmentSetting((result.selfEnrollmentSetting ?? "3").toString());
+                setPushEnrollmentSetting(
+                    (result.pushEnrollmentSetting ?? "3").toString()
+                );
+                setSelfEnrollmentSetting(
+                    (result.selfEnrollmentSetting ?? "3").toString()
+                );
                 setLockModule(result.lockModule ?? false);
 
-                if (result.dueDate) {
+                if (result.start_date && result.end_date) {
                     setDueType("fixed");
-                    setDueDate(new Date(result.dueDate));
+                    setStartDate(new Date(result.start_date));
+                    setEndDate(new Date(result.end_date));
                 } else if (result.dueDays != null) {
                     setDueType("relative");
                     setDueDays(result.dueDays);
                 }
 
-                // Map targetPairs
                 if (Array.isArray(result.targetPairs) && result.targetPairs.length > 0) {
                     const enriched = result.targetPairs.map((pair) => {
                         let secondOptions = [];
-
                         switch (pair.target) {
                             case "1":
                                 secondOptions = createData.designation || [];
@@ -1960,12 +1952,11 @@ const SettingComponent = ({ activities }) => {
         fetchProgramSchedule();
     }, [API_URL, token, mId, createData]);
 
-    // When createData changes, re-enrich secondOptions
+    // Re-enrich secondOptions when createData changes
     useEffect(() => {
         setTargetOptionPairs((prev) =>
             prev.map((pair) => {
                 let secondOptions = [];
-
                 switch (pair.target) {
                     case "1":
                         secondOptions = createData.designation || [];
@@ -1985,13 +1976,12 @@ const SettingComponent = ({ activities }) => {
                     default:
                         secondOptions = [];
                 }
-
                 return { ...pair, secondOptions, options: normalizeOptions(pair.options) };
             })
         );
     }, [createData]);
 
-    // Auto-select users imported from modal
+    // Auto-select users from modal
     useEffect(() => {
         if (
             allData.length > 0 &&
@@ -2001,23 +1991,19 @@ const SettingComponent = ({ activities }) => {
             setTargetOptionPairs((prevPairs) => {
                 const updatedPairs = prevPairs.map((p, i) => ({ ...p }));
                 const users = updatedPairs[selectedPairIndex]?.secondOptions || [];
-
                 const selectedUsers = users
                     .filter((u) => allData.includes(String(u._id)))
                     .map((u) => String(u._id));
-
                 updatedPairs[selectedPairIndex].options = normalizeOptions(selectedUsers);
-
                 return updatedPairs;
             });
         }
     }, [allData, selectedPairIndex, targetOptionPairs]);
 
-    // Handlers for UI interactions
+    // Handlers
     const handleFirstChange = (index, value) => {
         setTargetOptionPairs((prev) => {
             const updated = prev.map((p) => ({ ...p }));
-
             updated[index].target = value;
             updated[index].options = [];
 
@@ -2040,7 +2026,6 @@ const SettingComponent = ({ activities }) => {
                 default:
                     updated[index].secondOptions = [];
             }
-
             return updated;
         });
     };
@@ -2048,9 +2033,7 @@ const SettingComponent = ({ activities }) => {
     const handleSecondChange = (index, value) => {
         setTargetOptionPairs((prev) => {
             const updated = prev.map((p) => ({ ...p }));
-
             updated[index].options = normalizeOptions(value);
-
             return updated;
         });
     };
@@ -2058,7 +2041,6 @@ const SettingComponent = ({ activities }) => {
     const handleAddClick = () => {
         setTargetOptionPairs((prev) => {
             if (prev.length >= MAX_PAIRS) return prev;
-
             return [...prev, { target: "", options: [], secondOptions: [] }];
         });
     };
@@ -2067,9 +2049,7 @@ const SettingComponent = ({ activities }) => {
         setTargetOptionPairs((prev) => {
             if (prev.length === 1) return prev;
             const copy = [...prev];
-
             copy.splice(index, 1);
-
             return copy;
         });
     };
@@ -2081,7 +2061,6 @@ const SettingComponent = ({ activities }) => {
 
     const handleDataSave = async (value) => {
         if (!API_URL || !token || !mId) return;
-
         try {
             const res = await fetch(`${API_URL}/company/program/schedule/${mId}`, {
                 method: "POST",
@@ -2091,7 +2070,6 @@ const SettingComponent = ({ activities }) => {
                 },
                 body: JSON.stringify(value),
             });
-
             const body = await res.json();
 
             if (res.ok) {
@@ -2110,6 +2088,11 @@ const SettingComponent = ({ activities }) => {
     const onSubmit = (e) => {
         e.preventDefault();
 
+        if (dueType === "fixed" && startDate > endDate) {
+            toast.error("Start date cannot be later than end date");
+            return;
+        }
+
         const payload = {
             pushEnrollmentSetting,
             selfEnrollmentSetting,
@@ -2119,7 +2102,8 @@ const SettingComponent = ({ activities }) => {
             })),
             lockModule,
             dueType,
-            dueDate: dueType === "fixed" ? dueDate.toISOString() : null,
+            start_date: dueType === "fixed" ? startDate.toISOString() : null,
+            end_date: dueType === "fixed" ? endDate.toISOString() : null,
             dueDays: dueType === "relative" ? Number(dueDays) : null,
         };
 
@@ -2132,10 +2116,23 @@ const SettingComponent = ({ activities }) => {
         setAllData([]);
     };
 
+    const dateInputStyle = {
+        width: "200px",
+        padding: "10px 12px",
+        borderRadius: "8px",
+        border: "1px solid #ccc",
+        fontSize: "14px",
+        fontFamily: "Roboto, sans-serif",
+        outline: "none",
+        boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+        cursor: "pointer",
+    };
+
     return (
         <form onSubmit={onSubmit}>
             <Grid container spacing={4}>
                 <Grid item size={{ xs: 12, md: 9 }}>
+                    {/* Push Enrollment */}
                     <Typography variant="h6" gutterBottom>
                         Push Enrollment Settings
                     </Typography>
@@ -2161,6 +2158,7 @@ const SettingComponent = ({ activities }) => {
                         />
                     </RadioGroup>
 
+                    {/* Self Enrollment */}
                     <Typography variant="h6" gutterBottom>
                         Self-Enrollment Settings
                     </Typography>
@@ -2186,13 +2184,13 @@ const SettingComponent = ({ activities }) => {
                         />
                     </RadioGroup>
 
+                    {/* Target Audience */}
                     <Typography variant="h6" gutterBottom>
                         This Module Is Targeted At
                     </Typography>
-
                     {targetOptionPairs.map((pair, idx) => (
                         <Grid container spacing={2} alignItems="center" mb={3} key={idx}>
-                            <Grid item size={{ xs: 12, md: 3 }} >
+                            <Grid item size={{ xs: 12, md: 3 }}>
                                 <TextField
                                     select
                                     label="Select module targets"
@@ -2245,7 +2243,7 @@ const SettingComponent = ({ activities }) => {
                                 </TextField>
                             </Grid>
 
-                            <Grid item size={{ xs: 12, md: 6 }} >
+                            <Grid item size={{ xs: 12, md: 6 }}>
                                 <TextField
                                     select
                                     label="Select option"
@@ -2277,8 +2275,11 @@ const SettingComponent = ({ activities }) => {
                             </Grid>
 
                             {pair.target === "5" && (
-                                <Grid item size={{ xs: 12, md: 2 }} >
-                                    <Button variant="outlined" onClick={() => handleImportUser(idx)}>
+                                <Grid item size={{ xs: 12, md: 2 }}>
+                                    <Button
+                                        variant="outlined"
+                                        onClick={() => handleImportUser(idx)}
+                                    >
                                         Import User
                                     </Button>
                                 </Grid>
@@ -2299,7 +2300,10 @@ const SettingComponent = ({ activities }) => {
                                         + Add
                                     </Button>
                                 ) : (
-                                    <IconButton color="error" onClick={() => handleRemoveClick(idx)}>
+                                    <IconButton
+                                        color="error"
+                                        onClick={() => handleRemoveClick(idx)}
+                                    >
                                         <i className="tabler-trash" />
                                     </IconButton>
                                 )}
@@ -2307,6 +2311,7 @@ const SettingComponent = ({ activities }) => {
                         </Grid>
                     ))}
 
+                    {/* Due Date Settings */}
                     <Typography variant="h6" gutterBottom>
                         Due Date Settings
                     </Typography>
@@ -2325,61 +2330,111 @@ const SettingComponent = ({ activities }) => {
                         onChange={(e) => setDueType(e.target.value)}
                         sx={{ mt: 1, mb: 2 }}
                     >
+                        {/* Fixed Due Date */}
                         <FormControlLabel
                             value="fixed"
                             control={<Radio />}
                             label={
+                                <Box
+                                    display="flex"
+                                    flexDirection="column"
+                                    alignItems="flex-start"
+                                    gap={2}
+                                >
+                                    <Typography variant="subtitle1">Fixed due date</Typography>
+
+                                    <Box display="flex" flexDirection="row" gap={4}>
+                                        {/* Start Time */}
+                                        {dueType === "fixed" && (
+                                            <Box>
+                                                <Typography variant="body2" gutterBottom>
+                                                    Start time
+                                                </Typography>
+                                                <DatePicker
+                                                    selected={startDate}
+                                                    onChange={(date) => setStartDate(date)}
+                                                    showTimeSelect
+                                                    dateFormat="Pp"
+                                                    placeholderText="Select start time"
+                                                    customInput={
+                                                        <input
+                                                            style={dateInputStyle}
+                                                            placeholder="Select start time"
+                                                        />
+                                                    }
+                                                />
+                                            </Box>
+                                        )}
+
+                                        {/* End Date */}
+                                        {dueType === "fixed" && (
+                                            <Box>
+                                                <Typography variant="body2" gutterBottom>
+                                                    End date
+                                                </Typography>
+                                                <DatePicker
+                                                    selected={endDate}
+                                                    onChange={(date) => setEndDate(date)}
+                                                    showTimeSelect
+                                                    dateFormat="Pp"
+                                                    placeholderText="Select end date"
+                                                    customInput={
+                                                        <input
+                                                            style={dateInputStyle}
+                                                            placeholder="Select end date"
+                                                        />
+                                                    }
+                                                />
+                                            </Box>
+                                        )}
+                                    </Box>
+                                </Box>
+                            }
+                        />
+
+                        {/* Relative Due Date */}
+                        <FormControlLabel
+                            value="relative"
+                            control={<Radio />}
+                            label={
                                 <Box display="flex" alignItems="center" gap={2}>
-                                    Fixed due date
-                                    {dueType === "fixed" && (
-                                        <DatePicker
-                                            selected={dueDate}
-                                            onChange={(date) => setDueDate(date)}
-                                            showTimeSelect
-                                            dateFormat="Pp" // e.g. 09/01/2025, 3:30 PM
+                                    <Typography variant="subtitle1">
+                                        Relative due date (days)
+                                    </Typography>
+                                    {dueType === "relative" && (
+                                        <TextField
+                                            type="number"
+                                            size="small"
+                                            value={dueDays}
+                                            onChange={(e) => setDueDays(Number(e.target.value))}
+                                            inputProps={{ min: 1 }}
                                         />
                                     )}
                                 </Box>
                             }
                         />
-                        <FormControlLabel
-                            value="relative"
-                            control={<Radio />}
-                            label={
-                                <Box display="flex" alignItems="center">
-                                    Learners need to complete the Module within&nbsp;
-                                    <TextField
-                                        size="small"
-                                        type="number"
-                                        value={dueDays}
-                                        onChange={(e) => setDueDays(Number(e.target.value))}
-                                        sx={{ width: 100 }}
-                                    />
-                                    &nbsp;days post enrollment
-                                </Box>
-                            }
-                        />
                     </RadioGroup>
 
+                    {/* Save Button */}
                     <Button
                         type="submit"
-                        disabled={!activities || activities.length === 0}
                         variant="contained"
+                        color="primary"
+                        sx={{ mt: 3 }}
+                        disabled={!activities || activities.length === 0}
                     >
                         Publish
                     </Button>
-
                 </Grid>
             </Grid>
 
-            {selectedPairIndex !== null && (
-                <ImportUserModal
-                    open={isOpen}
-                    setAllData={setAllData}
-                    handleClose={handleClose}
-                    users={targetOptionPairs[selectedPairIndex]?.secondOptions || []}
-                />
-            )}
+            {/* Import User Modal */}
+            <ImportUserModal
+                open={isOpen}
+                handleClose={handleClose}
+                allData={allData}
+                setAllData={setAllData}
+            />
         </form>
     );
 };
