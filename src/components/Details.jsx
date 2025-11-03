@@ -2,122 +2,174 @@
 
 import { useParams } from 'next/navigation'
 
-// MUI Imports
+// MUI
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
-import Chip from '@mui/material/Chip'
 import Typography from '@mui/material/Typography'
-import useMediaQuery from '@mui/material/useMediaQuery'
-import { useTheme } from '@mui/material/styles'
-import Button from '@mui/material/Button'
-import Stack from '@mui/material/Stack'
 import Box from '@mui/material/Box'
+import Stack from '@mui/material/Stack'
+import LinearProgress from '@mui/material/LinearProgress'
+import Chip from '@mui/material/Chip'
+import IconButton from '@mui/material/IconButton'
 
-// Third-party Imports
-import ReactPlayer from '@/libs/ReactPlayer'
+// import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos'
 
-// Components Imports
-import CustomAvatar from '@core/components/mui/Avatar'
+// ⭐ Mock Data
+const programData = {
+  image: '/images/apps/academy/1.png',
+  title: 'Employee Training Program',
+  modulesEnrolled: 5,
+  learners: 291,
+  progress: 20,
+}
 
-import CustomIconButton from '@core/components/mui/IconButton'
+const modules = [
+  {
+    thumbnail: '/images/apps/academy/2.png',
+    title: 'Objective Assessment',
+    subtitle: 'Objective Assessment',
+    type: 'Quiz',
+    moduleType: 'Micro-learning module',
+    completedCount: 56,
+    enrolledDate: '11th Jul, 2024',
+    status: 'In Progress',
+    progress: 40
+  },
+  {
+    thumbnail: '/images/apps/academy/4.png',
+    title: 'Subjective Assessment',
+    subtitle: 'Subjective Assessment',
+    type: 'Assignment',
+    moduleType: 'Micro-learning module',
+    completedCount: 27,
+    enrolledDate: '11th Jul, 2024',
+    status: 'Not Started'
+  }
+]
 
-const Details = ({ data }) => {
-  const theme = useTheme()
-  const smallScreen = useMediaQuery(theme.breakpoints.down('sm'))
+// ⭐ Status Color Helper
+const getChipColor = status => {
+  switch (status) {
+    case 'In Progress': return 'warning'
+    case 'Completed': return 'success'
+    default: return 'default'
+  }
+}
+
+export default function ProgramPage() {
   const { slug } = useParams()
 
-  const unslugify = str =>
-    str.replace(/-/g, ' ').replace(/\b\w/g, char => char.toUpperCase())
-
   return (
-    <Card>
-      {/* Header */}
-      <CardContent className='flex flex-wrap items-center justify-between gap-4'>
-        <div>
-          <Typography variant='h5'>{unslugify(slug)}</Typography>
-        </div>
-      </CardContent>
+    <Box className="p-6 space-y-5">
 
-      {/* Player + About Section */}
-      <CardContent>
-        <div className='border rounded'>
-          <div className='mli-2 mbs-2 overflow-hidden rounded'>
-            <ReactPlayer
-              playing
-              controls
-              url='https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-576p.mp4'
-              height={smallScreen ? 280 : 440}
-              className='bg-black !is-full'
-              light={
-                <img
-                  src='/images/apps/academy/4.png'
-                  alt='Thumbnail'
-                  className='is-full bs-full object-cover bg-backgroundPaper'
-                />
-              }
-              playIcon={
-                <CustomIconButton variant='contained' color='error' className='absolute rounded-full'>
-                  <i className='tabler-player-play text-2xl' />
-                </CustomIconButton>
-              }
-            />
-          </div>
+      {/* Program Header */}
+      <Card>
+        <CardContent className="flex flex-col sm:flex-row gap-5">
 
-          {/* About this Module */}
-          <div className='flex flex-col gap-6 p-5'>
-            <div className='flex flex-col gap-4'>
-              <Typography variant='h5'>About this Module</Typography>
-              <Typography>
-                In this module the sales team members will learn about Important Qualities for sales professionals
+          {/* Thumbnail */}
+          <Box
+            component="img"
+            src={programData.image}
+            sx={{ width: 260, height: 230, borderRadius: 2, objectFit: 'cover' }}
+          />
+
+          {/* Program Info */}
+          <Box className='flex flex-col justify-between'>
+            <div>
+              <Typography variant='h6'>Program:</Typography>
+              <Typography fontWeight={600} variant='h5'>
+                {programData.title}
               </Typography>
             </div>
 
-            {/* Full-Width Activity Card */}
-            <Box width='100%'>
-              <Card
-                variant='outlined'
-                className='rounded-lg'
-                sx={{
-                  width: '100%',
-                  transition: 'all 0.3s ease',
-                  boxShadow: 'none',
-                  '&:hover': {
-                    boxShadow: 3,
-                    transform: 'translateY(-2px)',
-                    cursor: 'pointer',
-                  },
-                }}
-              >
-                <CardContent className='flex items-center justify-between gap-4 flex-wrap'>
-                  {/* Icon + Info */}
-                  <Stack direction='row' spacing={3} alignItems='center' className='flex-1'>
-                    <Box
-                      component='img'
-                      src='/images/pages/yt_logo.png' // ✅ Make sure this path is correct
-                      alt='YouTube'
-                      sx={{ width: 50, height: 50, borderRadius: 1, objectFit: 'contain' }}
-                    />
-                    <Box>
-                      <Typography fontWeight={600}>YouTube Videos</Typography>
-                      <Stack direction='row' spacing={1} alignItems='center' mt={0.5}>
-                        <Chip label='Required' size='small' color='success' variant='filled' />
-                        <Typography variant='body2' color='text.secondary'>
-                          05:19 Runtime
-                        </Typography>
-                        <Typography variant='body2' color='text.secondary'>
-                          | 6 Minutes
-                        </Typography>
-                      </Stack>
-                    </Box>
-                  </Stack>
-                </CardContent>
-              </Card>
+            <Box className='flex gap-10 mt-3'>
+              <div>
+                <Typography variant='body2' color='text.secondary'>Modules Enrolled</Typography>
+                <Typography fontWeight={600}>{programData.modulesEnrolled}</Typography>
+              </div>
+              <div>
+                <Typography variant='body2' color='text.secondary'>Learners Enrolled</Typography>
+                <Typography fontWeight={600}>{programData.learners}</Typography>
+              </div>
             </Box>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+
+            <Box mt={2}>
+              <Typography variant='body2'>{programData.progress}% Completed</Typography>
+              <LinearProgress variant='determinate' value={programData.progress} sx={{ mt: 1, height: 8, borderRadius: 2 }} />
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+
+      <Typography variant="h6" className="mt-2">Enrolled Modules</Typography>
+
+      {/* Modules List */}
+      {modules.map((item, index) => (
+        <Card key={index} className="rounded-lg hover:shadow-sm transition-all">
+          <CardContent className="flex items-start justify-between gap-4">
+            <Stack direction="row" spacing={2}>
+              <Box
+                component="img"
+                src={item.thumbnail}
+                sx={{ width: 75, height: 75, borderRadius: 1, objectFit: 'cover' }}
+              />
+
+              <Box>
+                <Typography fontWeight={600}>{item.title}</Typography>
+                <Typography variant="body2" color="text.secondary">{item.subtitle}</Typography>
+
+                {/* Icons Row */}
+                <Stack direction="row" spacing={1} alignItems="center" mt={1}>
+                  <i className="tabler-file-description text-sm" />
+                  <Typography variant="caption">{item.type}</Typography>
+                  <Typography variant="caption">•</Typography>
+
+                  <i className="tabler-device-laptop text-sm" />
+                  <i className="tabler-device-mobile text-sm" />
+                  <Typography variant="caption">•</Typography>
+
+                  <Typography variant="caption">{item.moduleType}</Typography>
+                  <Typography variant="caption">•</Typography>
+
+                  <i className="tabler-users text-sm" />
+                  <Typography variant="caption">{item.completedCount} people completed</Typography>
+                </Stack>
+              </Box>
+            </Stack>
+
+            {/* Right */}
+            <Box textAlign="right">
+              <Typography variant="body2" color="text.secondary">
+                Enrolled on {item.enrolledDate}
+              </Typography>
+
+              <Chip
+                label={item.status}
+                size="small"
+                color={getChipColor(item.status)}
+                sx={{ mt: 1 }}
+              />
+
+              <IconButton size="small">
+                {">"}
+              </IconButton>
+            </Box>
+          </CardContent>
+
+          {/* Bottom Progress */}
+          {item.status === "In Progress" && (
+            <LinearProgress
+              variant="determinate"
+              value={item.progress}
+              sx={{
+                height: 3,
+                borderRadius: 0,
+                '& .MuiLinearProgress-bar': { backgroundColor: '#fbbc04' }
+              }}
+            />
+          )}
+        </Card>
+      ))}
+    </Box>
   )
 }
-
-export default Details
