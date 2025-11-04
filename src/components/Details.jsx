@@ -1,6 +1,6 @@
 'use client'
 
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 
 // MUI
 import Card from '@mui/material/Card'
@@ -11,6 +11,7 @@ import Stack from '@mui/material/Stack'
 import LinearProgress from '@mui/material/LinearProgress'
 import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
+
 
 // import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos'
 
@@ -57,7 +58,9 @@ const getChipColor = status => {
 }
 
 export default function ProgramPage() {
-  const { slug } = useParams()
+  const { slug, lang } = useParams()
+
+  const router = useRouter()
 
   return (
     <Box className="p-6 space-y-5">
@@ -101,11 +104,13 @@ export default function ProgramPage() {
         </CardContent>
       </Card>
 
-      <Typography variant="h6" className="mt-2">Enrolled Modules</Typography>
+      <Typography variant="h6" className="mt-2">Enr(status)lled Modules</Typography>
 
       {/* Modules List */}
       {modules.map((item, index) => (
-        <Card key={index} className="rounded-lg hover:shadow-sm transition-all">
+        <Card key={index} className="rounded-lg hover:shadow-sm transition-all" onClick={() => {
+          router.push(`/${lang}/apps/content`)
+        }}>
           <CardContent className="flex items-start justify-between gap-4">
             <Stack direction="row" spacing={2}>
               <Box
