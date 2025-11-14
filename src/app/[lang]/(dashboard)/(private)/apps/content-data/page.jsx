@@ -24,6 +24,8 @@ import QuizQuestionComponent from "@/components/Content-data/quiz-qyestion/page"
 
 const ContentData = () => {
 
+  const ASSET_URL = process.env.NEXT_PUBLIC_ASSETS_URL
+
   const searchParams = useSearchParams()
   const [types, setTypes] = useState(null)
   const [pageInfo, setPageInfo] = useState({ current: 1, total: 0 });
@@ -35,11 +37,11 @@ const ContentData = () => {
 
   if (!types) return null  // Prevent SSR mismatch
 
-  const pdfUrl = "http://localhost:5000/public/activity/1753943817117-DWE_AML.pdf";
+  const pdfUrl = `${ASSET_URL}/activity/1753943817117-DWE_AML.pdf`;
 
-  const videoUrl = "http://localhost:5000/public/sample/sample_video.mp4";
+  const videoUrl = `${ASSET_URL}/sample/sample_video.mp4`;
 
-  const youtubeUrl = "https://www.youtube.com/watch?v=Lt1HGm6dWUw"
+  const youtubeUrl = `https://www.youtube.com/watch?v=Lt1HGm6dWUw`
 
   const handlePageChange = (current, total) => {
     setPageInfo({ current, total });
