@@ -159,7 +159,7 @@ const QuizStaticLayout = () => {
               Previous
             </Button>
 
-            <Stack direction="row" spacing={2}>
+            <Stack direction="row" spacing={2} mb={"5px"}>
               <Button
                 variant="contained"
                 color="primary"
