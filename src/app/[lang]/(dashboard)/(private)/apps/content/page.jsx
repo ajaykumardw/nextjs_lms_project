@@ -1,5 +1,7 @@
 'use client'
 
+import { useParams } from 'next/navigation'
+
 import { Box, Card, CardContent, Typography, Stack, Chip, Button, LinearProgress } from '@mui/material'
 
 // Mock Data
@@ -12,28 +14,55 @@ const moduleInfo = {
   progress: 60,
 }
 
-const activities = [
-  {
-    title: 'Documents and Slides',
-    details: '2 Pages | 4 Minutes',
-    required: true,
-    completedOn: "04 Jul'2024",
-    buttonLabel: 'View',
-    buttonColor: 'primary',
-    status: 'Completed'
-  },
-  {
-    title: 'Objective-Type Quizzes',
-    details: '5 Questions | 10 Minutes',
-    required: true,
-    completedOn: null,
-    buttonLabel: 'Continue',
-    buttonColor: 'primary',
-    status: 'In Progress'
-  }
-]
-
 export default function ProgramPage() {
+
+  const params = useParams()
+
+  const locale = params.lang;
+
+  const activities = [
+    {
+      title: 'Documents and Slides',
+      details: '2 Pages | 4 Minutes',
+      required: true,
+      url: `/${locale}/apps/content-data?type=pdf`,
+      completedOn: "04 Jul'2024",
+      buttonLabel: 'View',
+      buttonColor: 'primary',
+      status: 'Completed'
+    },
+    {
+      title: 'Objective-Type Quizzes',
+      details: '5 Questions | 10 Minutes',
+      required: true,
+      url: `/${locale}/apps/content-data?type=quiz`,
+      completedOn: null,
+      buttonLabel: 'Continue',
+      buttonColor: 'primary',
+      status: 'In Progress'
+    },
+    {
+      title: 'Youtube videos',
+      details: '22 Minutes | 4 Minutes',
+      required: true,
+      url: `/${locale}/apps/content-data?type=youtube-video`,
+      completedOn: "04 Jul'2024",
+      buttonLabel: 'View',
+      buttonColor: 'primary',
+      status: 'Completed'
+    },
+    {
+      title: 'Videos',
+      details: '5 Minutes | 4 Minutes',
+      required: true,
+      url: `/${locale}/apps/content-data?type=video`,
+      completedOn: "04 Jul'2024",
+      buttonLabel: 'View',
+      buttonColor: 'primary',
+      status: 'Completed'
+    },
+  ]
+
   return (
     <Box className="p-6 space-y-6">
 
@@ -94,6 +123,7 @@ export default function ProgramPage() {
                 <Button
                   variant="contained"
                   color={activity.buttonColor}
+                  href={activity.url}
                   sx={{ borderRadius: 2, textTransform: 'none', px: 3 }}
                 >
                   {activity.buttonLabel}

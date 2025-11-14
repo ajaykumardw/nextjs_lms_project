@@ -1083,9 +1083,6 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
 
 const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivities, mId }) => {
 
-    console.log('Activity', activities);
-
-
     const [editingId, setEditingId] = useState(null);
     const [editingTitle, setEditingTitle] = useState("");
     const [editingError, setEditingError] = useState("");
@@ -1865,7 +1862,7 @@ const SettingComponent = ({ activities }) => {
         } catch (err) {
             console.error("Error fetching create data:", err);
         }
-        
+
         return null;
     }, [API_URL, token]);
 
