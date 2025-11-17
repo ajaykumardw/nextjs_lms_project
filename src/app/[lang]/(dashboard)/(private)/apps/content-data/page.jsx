@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 
 import { useSearchParams } from "next/navigation";
-
 import dynamic from "next/dynamic";
 
 import {
@@ -14,50 +13,47 @@ import {
   Divider,
 } from "@mui/material";
 
-
-// ✅ Import PDFViewer dynamically (no SSR)
-const PDFViewer = dynamic(() => import("@/components/Content-data/PdfViewer/index"), { ssr: false });
+const PDFViewer = dynamic(
+  () => import("@/components/Content-data/PdfViewer/index"),
+  { ssr: false }
+);
 
 import YouTubePlayerComponent from "@/components/Content-data/youtube-player/page";
-
 import QuizQuestionComponent from "@/components/Content-data/quiz-qyestion/page";
+import ScromContentComponent from "@/components/Content-data/scrom-content/page";
 
 const ContentData = () => {
+  const ASSET_URL = process.env.NEXT_PUBLIC_ASSETS_URL;
 
-  const ASSET_URL = process.env.NEXT_PUBLIC_ASSETS_URL
-
-  const searchParams = useSearchParams()
-  const [types, setTypes] = useState(null)
+  const searchParams = useSearchParams();
+  const [types, setTypes] = useState(null);
   const [pageInfo, setPageInfo] = useState({ current: 1, total: 0 });
 
-  // Ensure params load on client only
   useEffect(() => {
-    setTypes(searchParams.get("type"))
-  }, [searchParams])
+    setTypes(searchParams.get("type"));
+  }, [searchParams]);
 
-  if (!types) return null  // Prevent SSR mismatch
+  if (!types) return null;
 
   const pdfUrl = `${ASSET_URL}/activity/1753943817117-DWE_AML.pdf`;
-
   const videoUrl = `${ASSET_URL}/sample/sample_video.mp4`;
-
-  const youtubeUrl = `https://www.youtube.com/watch?v=Lt1HGm6dWUw`
+  const youtubeUrl = `https://www.youtube.com/watch?v=Lt1HGm6dWUw`;
 
   const handlePageChange = (current, total) => {
     setPageInfo({ current, total });
   };
 
   return (
-    <Box>
+    <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
       <Card>
         <CardContent>
-          {/* Title */}
           <Typography
             variant="h4"
             component="h1"
             fontWeight="bold"
             gutterBottom
             color="primary"
+            sx={{ fontSize: { xs: "1.6rem", sm: "2rem" } }}
           >
             3.1 HR One Attendance Guidelines
           </Typography>
@@ -65,14 +61,14 @@ const ContentData = () => {
           <Typography
             variant="h6"
             component="h2"
-            fontWeight="600"
+            fontWeight={600}
             gutterBottom
+            sx={{ fontSize: { xs: "1.1rem", sm: "1.25rem" } }}
           >
             Policy Document
           </Typography>
 
-          {/* ✅ Page number directly below Policy Document */}
-          {types == "pdf" && pageInfo.total > 0 && (
+          {types === "pdf" && pageInfo.total > 0 && (
             <Typography
               variant="body2"
               sx={{
@@ -87,24 +83,31 @@ const ContentData = () => {
 
           <Divider sx={{ my: 2 }} />
 
-          {/* PDF Viewer */}
-          <Box sx={{ height: "80vh", p: 1, border: "1px solid #eee", borderRadius: 2 }}>
-            {
-              types == "pdf" && (
-
-                <PDFViewer pdfUrl={pdfUrl} onPageChange={handlePageChange} />
-
-              )
-            }
-
-            {(types == "youtube-video" || types == "video") && (
-              <YouTubePlayerComponent url={types == "video" ? videoUrl : youtubeUrl} />
+          {/* Responsive Content Container */}
+          <Box
+            sx={{
+              height: { xs: "60vh", sm: "70vh", md: "80vh" },
+              p: { xs: 0.5, sm: 1 },
+              border: "1px solid #eee",
+              borderRadius: 2,
+              overflow: "hidden",
+            }}
+          >
+            {types === "pdf" && (
+              <PDFViewer pdfUrl={pdfUrl} onPageChange={handlePageChange} />
             )}
 
-            {types == "quiz" && (
-              <QuizQuestionComponent data={{}} />
+            {(types === "youtube-video" || types === "video") && (
+              <YouTubePlayerComponent
+                url={types === "video" ? videoUrl : youtubeUrl}
+              />
             )}
 
+            {types === "quiz" && <QuizQuestionComponent data={{}} />}
+
+            {types === "scrom-content" && (
+              <ScromContentComponent url={"/sample/coach/story.html"} />
+            )}
           </Box>
         </CardContent>
       </Card>
