@@ -61,6 +61,16 @@ export default function ProgramPage() {
       buttonColor: 'primary',
       status: 'Completed'
     },
+    {
+      title: 'Scrom content',
+      details: '5 Minutes | 4 Minutes',
+      required: true,
+      url: `/${locale}/apps/content-data?type=scrom-content`,
+      completedOn: "14 Jul'2024",
+      buttonLabel: 'View',
+      buttonColor: 'primary',
+      status: 'Completed'
+    },
   ]
 
   return (
