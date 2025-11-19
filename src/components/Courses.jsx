@@ -54,7 +54,7 @@ const Courses = ({ searchValue, type }) => {
               }
             }}
           >
-            <Link href={getLocalizedUrl(`/apps/moduleProgram/detail/${slugify(course.courseTitle)}`, locale)}>
+            <Link href={getLocalizedUrl(`/apps/moduleProgram/detail/${(course._id)}`, locale)}>
               <img
                 src={`${assert_url}/program_module/${course.tutorImg}`}
                 alt={course.courseTitle}
@@ -77,7 +77,7 @@ const Courses = ({ searchValue, type }) => {
                   variant='subtitle1'
                   fontWeight={600}
                   component={Link}
-                  href={getLocalizedUrl(`/apps/moduleProgram/detail/${slugify(course.courseTitle)}`, locale)}
+                  href={getLocalizedUrl(`/apps/moduleProgram/detail/${course._id}`, locale)}
                   className='line-clamp-2 hover:text-primary'
                 >
                   {course.courseTitle}
