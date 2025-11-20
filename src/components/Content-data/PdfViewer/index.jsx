@@ -1,83 +1,89 @@
 'use client';
 
-import { useState } from 'react';
-
 import { Viewer, Worker } from '@react-pdf-viewer/core';
-import '@react-pdf-viewer/core/lib/styles/index.css';
-
-import { pageNavigationPlugin } from '@react-pdf-viewer/page-navigation';
-import '@react-pdf-viewer/page-navigation/lib/styles/index.css';
-
 import { zoomPlugin } from '@react-pdf-viewer/zoom';
+import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/zoom/lib/styles/index.css';
 
 export default function PdfViewer({ pdfUrl, onPageChange }) {
-  const [page, setPage] = useState(1);
-
-  const pageNavPlugin = pageNavigationPlugin();
-  const zoom = zoomPlugin();
-
-  const { ZoomInButton, ZoomOutButton } = zoom;
+  const zoomPluginInstance = zoomPlugin();
+  const { ZoomInButton, ZoomOutButton } = zoomPluginInstance;
 
   const handlePageChange = (e) => {
-    setPage(e.currentPage + 1);
     onPageChange && onPageChange(e.currentPage + 1, e.doc.numPages);
   };
 
   return (
-    <div style={{ height: '80vh', position: 'relative' }}>
-      {/* Zoom Toolbar */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '10px',
-          padding: '8px 12px',
-          background: '#f7f7f7',
-          borderBottom: '1px solid #ddd',
-          position: 'sticky',
-          top: 0,
-          zIndex: 20,
-          alignItems: 'center',
-        }}
-      >
-        <button
-          style={{
-            padding: '6px 12px',
-            background: '#e8e8e8',
-            border: '1px solid #ccc',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: 'bold',
-            transition: '0.2s',
-          }}
-          onClick={() => document.querySelector('button[aria-label="Zoom out"]').click()}
-        >
-          − Zoom Out </button>
+    <div style={{ height: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      {/* Custom Zoom Toolbar */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+        <ZoomOutButton>
+          {({ onClick }) => (
+            <button
+              onClick={onClick}
+              style={{
+                padding: '6px 16px',
+                backgroundColor: '#1976d2',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '6px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                transition: '0.2s',
+              }}
+            >
+              − Zoom Out
+            </button>
+          )}
+        </ZoomOutButton>
 
-        <button
-          style={{
-            padding: '6px 12px',
-            background: '#e8e8e8',
-            border: '1px solid #ccc',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: 'bold',
-            transition: '0.2s',
-          }}
-          onClick={() => document.querySelector('button[aria-label="Zoom in"]').click()}
-        >
-          + Zoom In
-        </button>
+        <ZoomInButton>
+          {({ onClick }) => (
+            <button
+              onClick={onClick}
+              style={{
+                padding: '6px 16px',
+                backgroundColor: '#1976d2',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '6px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                transition: '0.2s',
+              }}
+            >
+              + Zoom In
+            </button>
+          )}
+        </ZoomInButton>
       </div>
 
-      <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-        <Viewer
-          fileUrl={pdfUrl}
-          plugins={[pageNavPlugin, zoom]}
-          onPageChange={handlePageChange}
-        />
-      </Worker>
+      {/* PDF Viewer */}
+      <div
+        style={{
+          flex: 1,
+          width: '100%',
+          display: 'flex',
+          justifyContent: 'center', // Center PDF horizontally
+          overflow: 'auto',
+        }}
+      >
+        <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+          <Viewer
+            fileUrl={pdfUrl}
+            plugins={[zoomPluginInstance]}
+            onPageChange={handlePageChange}
+            theme={{
+              // optional: center PDF pages
+              themeColors: {
+                primary: '#1976d2',
+              },
+            }}
+          />
+        </Worker>
+      </div>
     </div>
-
   );
 }
