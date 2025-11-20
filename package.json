@@ -73,6 +73,7 @@
     "negotiator": "1.0.0",
     "next": "15.1.2",
     "next-auth": "4.24.11",
+    "pptxgenjs": "^4.0.1",
     "pptxjs": "^0.0.0",
     "react": "18.3.1",
     "react-apexcharts": "1.4.1",
