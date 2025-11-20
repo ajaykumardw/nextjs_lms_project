@@ -116,6 +116,9 @@ const ContentData = () => {
   const isOfficeDoc =
     ['ppt', 'pptx', 'doc', 'docx'].includes(extension);
 
+    console.log("Extension", extension);
+
+
   return (
     <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
       <Card>
