@@ -55,9 +55,6 @@ const ContentFolderForm = () => {
         }
     }, [API_URL, token, id, cid])
 
-    console.log(API_URL, token, id, cid);
-
-
     return (
         <>
             <ContentFolderFormComponent
