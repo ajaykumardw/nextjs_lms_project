@@ -6,32 +6,58 @@ import { renderAsync } from 'docx-preview';
 
 export default function DocxViewer({ fileUrl, onPageLoad }) {
   const [zoom, setZoom] = useState(1);
+  const pageHeightPx = 1122; // Approx 1 Word A4 page @96DPI
 
-  const zoomIn = () => setZoom((z) => Math.min(z + 0.1, 3));
-  const zoomOut = () => setZoom((z) => Math.max(z - 0.1, 0.3));
+  const zoomIn = () => setZoom(z => Math.min(z + 0.1, 3));
+  const zoomOut = () => setZoom(z => Math.max(z - 0.1, 0.3));
 
   useEffect(() => {
     const container = document.getElementById('docx-container');
 
     if (!container) return;
 
+
     container.innerHTML = '';
 
     fetch(fileUrl)
-      .then((res) => res.arrayBuffer())
-      .then((buffer) =>
-        renderAsync(buffer, container).then((viewer) => {
-          const totalPages = viewer?.pages?.length || 1;
-          
-          onPageLoad && onPageLoad(1, totalPages);
+      .then(res => res.arrayBuffer())
+      .then(buffer =>
+        renderAsync(buffer, container).then(() => {
+          // Delay so browser paints first
+          setTimeout(() => {
+            const totalHeight = container.scrollHeight;
+
+            const totalPages = Math.max(
+              1,
+              Math.ceil((totalHeight / zoom) / pageHeightPx)
+            );
+
+            // Initial
+            onPageLoad && onPageLoad(1, totalPages);
+
+            const handleScroll = () => {
+              const scrollTop = container.scrollTop / zoom;
+
+              const currentPage =
+                Math.min(
+                  totalPages,
+                  Math.floor(scrollTop / pageHeightPx) + 1
+                );
+
+              onPageLoad && onPageLoad(currentPage, totalPages);
+            };
+
+            container.addEventListener('scroll', handleScroll);
+
+            return () => container.removeEventListener('scroll', handleScroll);
+          }, 200);
         })
       );
 
-  }, [fileUrl]);
+  }, [fileUrl, zoom]);
 
   return (
     <div style={{ height: '100%', width: '100%', position: 'relative' }}>
-      {/* Zoom Toolbar */}
       <div
         style={{
           display: 'flex',
@@ -43,39 +69,9 @@ export default function DocxViewer({ fileUrl, onPageLoad }) {
           top: 0,
           zIndex: 20,
         }}
-      >
-        <button
-          onClick={zoomOut}
-          style={{
-            padding: '6px 12px',
-            background: '#e8e8e8',
-            border: '1px solid #ccc',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: 'bold',
-            transition: '0.2s',
-          }}
-        >
-          − Zoom Out </button>
+      > <button onClick={zoomOut}>− Zoom Out</button> <button onClick={zoomIn}>+ Zoom In</button> </div>
 
 
-        <button
-          onClick={zoomIn}
-          style={{
-            padding: '6px 12px',
-            background: '#e8e8e8',
-            border: '1px solid #ccc',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: 'bold',
-            transition: '0.2s',
-          }}
-        >
-          + Zoom In
-        </button>
-      </div>
-
-      {/* Document Container */}
       <div
         id="docx-container"
         style={{
@@ -85,7 +81,7 @@ export default function DocxViewer({ fileUrl, onPageLoad }) {
           background: '#fff',
           padding: 10,
           transform: `scale(${zoom})`,
-          transformOrigin: 'top left',
+          transformOrigin: 'top left'
         }}
       />
     </div>
