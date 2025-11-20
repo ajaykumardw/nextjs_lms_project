@@ -68,6 +68,7 @@
     "jspdf": "^3.0.1",
     "jszip": "^3.10.1",
     "keen-slider": "6.8.6",
+    "libreoffice-convert": "^1.7.0",
     "mapbox-gl": "3.9.0",
     "negotiator": "1.0.0",
     "next": "15.1.2",
