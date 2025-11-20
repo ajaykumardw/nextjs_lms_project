@@ -157,13 +157,6 @@ const FormComponent = ({
   })
 
   useEffect(() => {
-    if (errors) {
-      console.log("Err", errors);
-
-    }
-  }, [errors]);
-
-  useEffect(() => {
     if (editData) {
       setValue('title', editData?.title)
       setValue('description', editData?.description)
@@ -188,11 +181,6 @@ const FormComponent = ({
     formData.append('title', value.title)
     formData.append('description', value.description)
     formData.append('live_session_type', value?.live_session_type)
-
-    console.log("Form", formData);
-
-    return;
-
 
     try {
       const response = await fetch(id ? `${editURL}/${id}` : `${addURL}`, {
