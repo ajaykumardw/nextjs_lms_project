@@ -2,11 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 
-import { useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
+
 import dynamic from 'next/dynamic';
 
 import { useSession } from 'next-auth/react';
-import { Box, Card, CardContent, Typography, Divider, Skeleton } from '@mui/material';
+
+import { Box, Card, CardContent, Button, Typography, Divider, Skeleton } from '@mui/material';
+
+import { toast } from 'react-toastify';
+
 
 const PDFViewer = dynamic(() => import('@/components/Content-data/PdfViewer/index'), { ssr: false });
 const DocViewer = dynamic(() => import('@/components/Content-data/DocViewer/index'), { ssr: false });
@@ -16,9 +21,18 @@ const QuizQuestionComponent = dynamic(() => import('@/components/Content-data/qu
 const ScromContentComponent = dynamic(() => import('@/components/Content-data/scrom-content/page'), { ssr: false });
 
 const ContentData = () => {
+
+  const { lang: locale } = useParams()
+
+  const router = useRouter()
+
   const searchParams = useSearchParams();
   const activityId = searchParams.get('activityId');
   const types = searchParams.get('type');
+
+  const moduleId = searchParams.get('moduleId')
+  const contentFolderId = searchParams.get('contentFolderId')
+  const moduleTypeId = searchParams.get('moduleTypeId')
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
   const ASSET_URL = process.env.NEXT_PUBLIC_ASSETS_URL;
@@ -28,6 +42,8 @@ const ContentData = () => {
   const [data, setData] = useState(null);
   const [pageInfo, setPageInfo] = useState({ current: 1, total: 0 });
   const [loading, setLoading] = useState(true);
+
+  const [fieldData, setFieldData] = useState({})
 
   const fetchActivity = async () => {
     try {
@@ -49,6 +65,33 @@ const ContentData = () => {
     if (API_URL && token && activityId) fetchActivity();
   }, [API_URL, token, activityId]);
 
+  const handleReportSave = async () => {
+    try {
+      const response = await fetch(
+        `${API_URL}/user/activity/set/report/data/${moduleId}/${contentFolderId}/${activityId}/${moduleTypeId}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(fieldData),
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok) {
+        router.push(`/${locale}/apps/content?id=${moduleId}&content-folder-id=${contentFolderId}`)
+        toast.success("Activity completed successfully", { autoClose: 1000 });
+      }
+
+    } catch (error) {
+      console.error("Save failed:", error);
+      throw new Error(error);
+    }
+  };
+
   if (!types || !data) return null;
 
   const fileUrl = `${ASSET_URL}/activity/${data?.document_data?.image_url}`;
@@ -57,7 +100,6 @@ const ContentData = () => {
   const isOfficeDoc = ['ppt', 'pptx', 'doc', 'docx'].includes(extension);
 
   const handlePageChange = (current, total) => {
-    // Only update if page changed
     if (current !== pageInfo.current || total !== pageInfo.total) {
       setPageInfo({ current, total });
     }
@@ -82,13 +124,19 @@ const ContentData = () => {
           {loading ? (
             <Skeleton width="60%" height={40} />
           ) : (
-            <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom color="primary"
-              sx={{ fontSize: { xs: '1.6rem', sm: '2rem' } }}>
+            <Typography
+              variant="h4"
+              component="h1"
+              fontWeight="bold"
+              gutterBottom
+              color="primary"
+              sx={{ fontSize: { xs: '1.6rem', sm: '2rem' } }}
+            >
               {moduleTypeLabel?.[data?.module_type_id] || 'Content Module'}
             </Typography>
           )}
 
-          {/* Page number & fraction */}
+          {/* Page number */}
           {!loading && pageInfo.total > 0 && (isPDF || isOfficeDoc) && (
             <Typography variant="body2" sx={{ color: 'primary.main', fontWeight: 500, mb: 1 }}>
               Page {pageInfo.current} of {pageInfo.total}
@@ -97,14 +145,16 @@ const ContentData = () => {
 
           <Divider sx={{ my: 2 }} />
 
-          {/* CONTENT */}
-          <Box sx={{
-            height: { xs: '60vh', sm: '70vh', md: '80vh' },
-            p: { xs: 0.5, sm: 1 },
-            border: '1px solid #eee',
-            borderRadius: 2,
-            overflow: 'hidden',
-          }}>
+          {/* CONTENT BOX */}
+          <Box
+            sx={{
+              height: { xs: '45vh', sm: '50vh', md: '55vh' },  // smaller height
+              p: { xs: 0.5, sm: 1 },
+              border: '1px solid #eee',
+              borderRadius: 2,
+              overflow: 'auto',  // scroll inside
+            }}
+          >
             {loading ? (
               <>
                 <Skeleton height={200} />
@@ -112,40 +162,61 @@ const ContentData = () => {
               </>
             ) : (
               <>
-                {/* DOCUMENT VIEWERS */}
                 {types === 'pdf' && isPDF && (
-                  <PDFViewer pdfUrl={fileUrl} onPageChange={handlePageChange} />
+                  <PDFViewer pdfUrl={fileUrl} onPageChange={handlePageChange} setFieldData={setFieldData} />
                 )}
 
-                {(extension === "doc" || extension === "docx") && (
-                  <DocViewer fileUrl={fileUrl} onPageLoad={handlePageChange} />
+                {(extension === 'doc' || extension === 'docx') && (
+                  <DocViewer fileUrl={fileUrl} onPageLoad={handlePageChange} setFieldData={setFieldData} />
                 )}
 
-                {(extension === "ppt" || extension === "pptx") && (
-                  <PptViewer fileUrl={fileUrl} onPageLoad={handlePageChange} />
+                {(extension === 'ppt' || extension === 'pptx') && (
+                  <PptViewer fileUrl={fileUrl} onPageLoad={handlePageChange} setFieldData={setFieldData} />
                 )}
 
-                {/* VIDEO / YOUTUBE */}
                 {(types === 'youtube-video' || types === 'video') && (
                   <YouTubePlayerComponent
                     url={types === 'video' ? data?.video_url : data?.youtube_url}
                   />
                 )}
 
-                {/* QUIZ */}
-                {types === 'quiz' && (
-                  <QuizQuestionComponent data={data || {}} />
-                )}
+                {types === 'quiz' && <QuizQuestionComponent data={data || {}} />}
 
-                {/* SCORM */}
                 {types === 'scrom-content' && (
-                  <ScromContentComponent
-                    url={data?.scrom_url || '/sample/coach/story.html'}
-                  />
+                  <ScromContentComponent url={data?.scrom_url || '/sample/coach/story.html'} />
                 )}
               </>
             )}
           </Box>
+
+          {/* BUTTONS */}
+          {!loading && (
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                gap: 2,
+                mt: 3,
+              }}
+            >
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => handleReportSave()}
+              >
+                Submit
+              </Button>
+
+              <Button
+                variant="outlined"
+                color="secondary"
+                href={`/${locale}/apps/content?id=${moduleId}&content-folder-id=${contentFolderId}`}
+                onClick={() => console.log('Cancel Clicked')}
+              >
+                Cancel
+              </Button>
+            </Box>
+          )}
         </CardContent>
       </Card>
     </Box>
