@@ -9,6 +9,8 @@ import { useSession } from 'next-auth/react'
 import {
   Box,
   Card,
+  Breadcrumbs,
+  Link,
   CardContent,
   Typography,
   Stack,
@@ -18,8 +20,11 @@ import {
 } from '@mui/material'
 
 export default function ProgramPage() {
+
   const paramData = useSearchParams()
+
   const moduleId = paramData.get('id')
+  const content_folder_id = paramData.get('content-folder-id')
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL
   const ASSET_URL = process.env.NEXT_PUBLIC_ASSETS_URL
@@ -82,56 +87,123 @@ export default function ProgramPage() {
     '68886902954c4d9dc7a379bd': "quiz"
   }
 
+  // -----------------------------------------------------
+  // FULL PAGE SKELETON
+  // -----------------------------------------------------
+  if (loading) {
+    return (
+      <Box className="p-6 space-y-6">
+        {/* Header Skeleton */}
+        <Card>
+          <Skeleton variant="rectangular" height={60} />
+
+          <CardContent className="flex flex-col sm:flex-row gap-5 items-center">
+            <Skeleton variant="rectangular" width={260} height={230} />
+
+            <Box className="flex flex-col gap-3 flex-1">
+              <Skeleton width="50%" />
+              <Skeleton width="70%" />
+            </Box>
+          </CardContent>
+        </Card>
+
+        {/* Description Skeleton */}
+        <Card>
+          <CardContent>
+            <Skeleton width="100%" />
+            <Skeleton width="90%" />
+          </CardContent>
+        </Card>
+
+        {/* Activities Skeleton */}
+        <Typography variant="h6" mb={2}>Activities</Typography>
+
+        {[...Array(3)].map((_, i) => (
+          <Card key={i} className="mb-3">
+            <CardContent>
+              <Skeleton width="60%" />
+              <Skeleton width="40%" />
+            </CardContent>
+          </Card>
+        ))}
+      </Box>
+    )
+  }
+
+  // -----------------------------------------------------
+  // REAL PAGE RENDER
+  // -----------------------------------------------------
   return (
     <Box className="p-6 space-y-6">
 
       {/* HEADER */}
       <Card>
+        <Breadcrumbs
+          px={5}
+          aria-label="breadcrumb"
+          separator="›"
+          sx={{
+            py: 2,
+            backgroundColor: '#FFFFFF',
+            borderBottom: '1px solid #ECECEC',
+            '& a, & span': {
+              fontSize: '0.875rem',
+              fontWeight: 500
+            },
+            '& a': {
+              color: '#1976d2',
+              textDecoration: 'none',
+              '&:hover': {
+                textDecoration: 'underline'
+              }
+            }
+          }}
+        >
+          <Link href={`/${locale}/apps/my-courses`}>
+            <Typography component="span">Home</Typography>
+          </Link>
+
+          {content_folder_id && (
+            <Link href={`/${locale}/apps/moduleProgram/detail/${content_folder_id}`}>
+              <Typography component="span" color="text.primary">
+                Program
+              </Typography>
+            </Link>
+          )}
+        </Breadcrumbs>
+
         <CardContent className="flex flex-col sm:flex-row gap-5 items-center">
 
           {/* Image */}
-          {loading ? (
-            <Skeleton variant="rectangular" width={260} height={230} />
-          ) : (
-            <Box
-              component="img"
-              src={
-                data?.moduleInfo?.image_url
-                  ? `${ASSET_URL}/program_module/${data?.moduleInfo?.image_url}`
-                  : '/placeholder.png'
-              }
-              sx={{
-                width: 260,
-                height: 230,
-                borderRadius: 2,
-                objectFit: 'cover'
-              }}
-            />
-          )}
+          <Box
+            component="img"
+            src={
+              data?.moduleInfo?.image_url
+                ? `${ASSET_URL}/program_module/${data?.moduleInfo?.image_url}`
+                : '/placeholder.png'
+            }
+            sx={{
+              width: 260,
+              height: 230,
+              borderRadius: 2,
+              objectFit: 'cover'
+            }}
+          />
 
           {/* Header Info */}
           <Box className="flex flex-col gap-3">
-            {loading ? (
-              <>
-                <Skeleton width={120} />
-                <Skeleton width={200} />
-              </>
-            ) : (
-              <>
-                <Stack direction="row" spacing={2}>
-                  <Typography variant="body1" color="text.secondary">
-                    In Progress
-                  </Typography>
-                  <Typography variant="body1" color="error">
-                    {data?.moduleInfo?.status}
-                  </Typography>
-                </Stack>
+            <Stack direction="row" spacing={2}>
+              <Typography variant="body1" color="text.secondary">
+                In Progress
+              </Typography>
+              <Typography variant="body1" color="error">
+                {data?.moduleInfo?.status}
+              </Typography>
+            </Stack>
 
-                <Typography variant="h6" fontWeight={600}>
-                  {data?.moduleInfo?.title}
-                </Typography>
-              </>
-            )}
+            <Typography variant="h6" fontWeight={600}>
+              {data?.moduleInfo?.title}
+            </Typography>
           </Box>
         </CardContent>
       </Card>
@@ -139,16 +211,9 @@ export default function ProgramPage() {
       {/* DESCRIPTION */}
       <Card>
         <CardContent>
-          {loading ? (
-            <>
-              <Skeleton width="100%" />
-              <Skeleton width="80%" />
-            </>
-          ) : (
-            <Typography variant="body1">
-              {data?.moduleInfo?.description}
-            </Typography>
-          )}
+          <Typography variant="body1">
+            {data?.moduleInfo?.description}
+          </Typography>
         </CardContent>
       </Card>
 
@@ -156,68 +221,55 @@ export default function ProgramPage() {
       <Box>
         <Typography variant="h6" mb={2}>Activities</Typography>
 
-        {/* Skeleton List */}
-        {loading &&
-          [...Array(3)].map((_, i) => (
-            <Card key={i} className="mb-3">
-              <CardContent>
-                <Skeleton width="60%" />
-                <Skeleton width="30%" />
-              </CardContent>
-            </Card>
-          ))}
+        {data?.activities?.map((activity, index) => {
+          const label =
+            activity?.name ||
+            moduleTypeLabel[activity?.module_type_id] ||
+            'Objective Quiz'
 
-        {/* Actual Activity List */}
-        {!loading &&
-          data?.activities?.map((activity, index) => {
-            const label =
-              activity?.name ||
-              moduleTypeLabel[activity?.module_type_id] ||
-              'Objective Quiz'
+          return (
+            <Card key={index} className="mb-3 hover:shadow-sm transition-all">
+              <CardContent className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
 
-            return (
-              <Card key={index} className="mb-3 hover:shadow-sm transition-all">
-                <CardContent className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                {/* Left */}
+                <Box>
+                  <Typography fontWeight={600}>{label}</Typography>
 
-                  {/* Left Side */}
-                  <Box>
-                    <Typography fontWeight={600}>{label}</Typography>
-
-                    <Stack direction="row" spacing={1} alignItems="center" mt={1}>
-                      {activity.required && (
-                        <Chip
-                          label="⭐ Required"
-                          color="success"
-                          size="small"
-                        />
-                      )}
-                    </Stack>
-                  </Box>
-
-                  {/* Right Side */}
-                  <Stack direction="row" spacing={2} alignItems="center">
-                    {activity?.status === 'Completed' && (
+                  <Stack direction="row" spacing={1} alignItems="center" mt={1}>
+                    {activity.required && (
                       <Chip
-                        label={`Completed On : ${activity.completedOn}`}
-                        variant="outlined"
+                        label="⭐ Required"
                         color="success"
                         size="small"
                       />
                     )}
-
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      href={`/${locale}/apps/content-data?type=${docType?.[activity?.module_type_id]}&activityId=${activity?._id}`}
-                      sx={{ borderRadius: 2, textTransform: 'none', px: 3 }}
-                    >
-                      {activity?.buttonLabel || 'Open'}
-                    </Button>
                   </Stack>
-                </CardContent>
-              </Card>
-            )
-          })}
+                </Box>
+
+                {/* Right */}
+                <Stack direction="row" spacing={2} alignItems="center">
+                  {activity?.status === 'Completed' && (
+                    <Chip
+                      label={`Completed On : ${activity.completedOn}`}
+                      variant="outlined"
+                      color="success"
+                      size="small"
+                    />
+                  )}
+
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    href={`/${locale}/apps/content-data?type=${docType?.[activity?.module_type_id]}&activityId=${activity?._id}&moduleId=${moduleId}&contentFolderId=${content_folder_id}&moduleTypeId=${activity?.module_type_id}`}
+                    sx={{ borderRadius: 2, textTransform: 'none', px: 3 }}
+                  >
+                    {activity?.buttonLabel || 'In progress'}
+                  </Button>
+                </Stack>
+              </CardContent>
+            </Card>
+          )
+        })}
       </Box>
     </Box>
   )

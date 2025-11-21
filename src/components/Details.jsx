@@ -3,7 +3,7 @@
 import { useParams, useRouter } from 'next/navigation'
 
 // MUI
-import Card from '@mui/material/Card'
+import { Card, Breadcrumbs, Link, Skeleton } from '@mui/material'
 import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
@@ -11,42 +11,6 @@ import Stack from '@mui/material/Stack'
 import LinearProgress from '@mui/material/LinearProgress'
 import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
-
-
-// import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos'
-
-// ⭐ Mock Data
-const programData = {
-  image: '/images/apps/academy/1.png',
-  title: 'Employee Training Program',
-  modulesEnrolled: 5,
-  learners: 291,
-  progress: 20,
-}
-
-const modules = [
-  {
-    thumbnail: '/images/apps/academy/2.png',
-    title: 'Objective Assessment',
-    subtitle: 'Objective Assessment',
-    type: 'Quiz',
-    moduleType: 'Micro-learning module',
-    completedCount: 56,
-    enrolledDate: '11th Jul, 2024',
-    status: 'In Progress',
-    progress: 40
-  },
-  {
-    thumbnail: '/images/apps/academy/4.png',
-    title: 'Subjective Assessment',
-    subtitle: 'Subjective Assessment',
-    type: 'Assignment',
-    moduleType: 'Micro-learning module',
-    completedCount: 27,
-    enrolledDate: '11th Jul, 2024',
-    status: 'Not Started'
-  }
-]
 
 // ⭐ Status Color Helper
 const getChipColor = status => {
@@ -60,27 +24,115 @@ const getChipColor = status => {
 export default function ProgramPage({ data }) {
 
   const { lang } = useParams()
-
   const router = useRouter()
 
-  const assert_url = process.env.NEXT_PUBLIC_ASSETS_URL;
+  const assert_url = process.env.NEXT_PUBLIC_ASSETS_URL
 
   function formatEnrollDate(dateString) {
-    const date = new Date(dateString);
+    const date = new Date(dateString)
 
-    let day = String(date.getDate()).padStart(2, '0');
-    let month = String(date.getMonth() + 1).padStart(2, '0');
-    let year = date.getFullYear();
-
-    return `${day} ${month} ${year}`;
+    return `${String(date.getDate()).padStart(2, '0')} ${String(date.getMonth() + 1).padStart(2, '0')} ${date.getFullYear()}`
   }
 
+  // ======================================================
+  // 🔷 SHOW SKELETON WHILE WAITING FOR DATA
+  // ======================================================
+  const isLoading = !data
 
+  if (isLoading) {
+    return (
+      <Box className="p-6 space-y-5">
+
+        {/* Skeleton Header */}
+        <Card>
+          <Box px={5} py={2}>
+            <Skeleton width={120} height={20} />
+          </Box>
+
+          <CardContent className="flex flex-col sm:flex-row gap-5">
+            <Skeleton variant="rectangular" width={260} height={230} />
+
+            <Box flex={1} className='flex flex-col justify-between gap-3'>
+              <Skeleton width="50%" height={32} />
+              <Skeleton width="70%" height={28} />
+
+              <Stack direction="row" spacing={4}>
+                <Skeleton width={80} height={20} />
+                <Skeleton width={80} height={20} />
+              </Stack>
+
+              <Skeleton variant="rectangular" width="100%" height={10} />
+            </Box>
+          </CardContent>
+        </Card>
+
+        <Skeleton width={200} height={28} />
+
+        {/* Skeleton list */}
+        {[1, 2, 3].map(i => (
+          <Card key={i}>
+            <CardContent className="flex items-start gap-4">
+              <Skeleton variant="rectangular" width={75} height={75} />
+              <Box flex={1}>
+                <Skeleton width="60%" height={24} />
+                <Skeleton width="90%" height={20} />
+                <Skeleton width="40%" height={20} sx={{ mt: 1 }} />
+              </Box>
+              <Box textAlign="right">
+                <Skeleton width={100} height={18} />
+                <Skeleton width={60} height={24} sx={{ mt: 1 }} />
+              </Box>
+            </CardContent>
+            <Skeleton variant="rectangular" height={4} />
+          </Card>
+        ))}
+
+      </Box>
+    )
+  }
+
+  const logs = data?.courseDetails?.activity_logs || [];
+
+  const avgCompletion =
+    logs.length > 0
+      ? logs.reduce((sum, item) => sum + Number(item.completion_percentage || 0), 0) / logs.length
+      : 0;
+
+
+  // ======================================================
+  // 🔷 MAIN PAGE RENDER WHEN DATA EXISTS
+  // ======================================================
   return (
     <Box className="p-6 space-y-5">
 
       {/* Program Header */}
       <Card>
+        <Breadcrumbs
+          px={5}
+          aria-label="breadcrumb"
+          separator="›"
+          sx={{
+            py: 2,
+            backgroundColor: 'rgba(0,0,0,0.03)',
+            borderBottom: '1px solid #e0e0e0',
+            '& a, & span': {
+              fontSize: '0.875rem',
+              fontWeight: 500,
+            },
+            '& a': {
+              color: '#1976d2',
+              textDecoration: 'none',
+              '&:hover': {
+                textDecoration: 'underline'
+              }
+            }
+          }}
+        >
+          <Link href={`/${lang}/apps/my-courses`}>
+            <Typography component="span">Home</Typography>
+          </Link>
+        </Breadcrumbs>
+
         <CardContent className="flex flex-col sm:flex-row gap-5">
 
           {/* Thumbnail */}
@@ -104,91 +156,109 @@ export default function ProgramPage({ data }) {
                 <Typography variant='body2' color='text.secondary'>Modules Enrolled</Typography>
                 <Typography fontWeight={600}>{data?.courses?.length}</Typography>
               </div>
-              <div>
+              {/* <div>
                 <Typography variant='body2' color='text.secondary'>Learners Enrolled</Typography>
-                <Typography fontWeight={600}>{programData.learners}</Typography>
-              </div>
+                <Typography fontWeight={600}>291</Typography>
+              </div> */}
             </Box>
 
             <Box mt={2}>
-              <Typography variant='body2'>{programData.progress}% Completed</Typography>
-              <LinearProgress variant='determinate' value={programData.progress} sx={{ mt: 1, height: 8, borderRadius: 2 }} />
+              <Typography variant='body2'>{avgCompletion}% Completed</Typography>
+              <LinearProgress variant='determinate' value={avgCompletion} sx={{ mt: 1, height: 8, borderRadius: 2 }} />
             </Box>
           </Box>
         </CardContent>
       </Card>
 
-      <Typography variant="h6" className="mt-2">Enr(status)lled Modules</Typography>
+      <Typography variant="h6" className="mt-2">Enrolled Modules</Typography>
 
       {/* Modules List */}
-      {data?.courses?.map((item, index) => (
-        <Card key={index} className="rounded-lg hover:shadow-sm transition-all" onClick={() => {
-          router.push(`/${lang}/apps/content?id=${item._id}&content-folder-id=${data?.courseDetails?._id}`);
-        }}>
-          <CardContent className="flex items-start justify-between gap-4">
-            <Stack direction="row" spacing={2}>
-              <Box
-                component="img"
-                src={`${assert_url}/program_module/${item.image_url}`}
-                sx={{ width: 75, height: 75, borderRadius: 1, objectFit: 'cover' }}
-              />
+      {data?.courses?.map((item, index) => {
 
-              <Box>
-                <Typography fontWeight={600}>{item.title}</Typography>
-                <Typography variant="body2" color="text.secondary">{item.description}</Typography>
+        // Calculate average completion
+        const logs = item?.activity_logs || [];
 
-                {/* Icons Row */}
-                <Stack direction="row" spacing={1} alignItems="center" mt={1}>
-                  <i className="tabler-file-description text-sm" />
-                  <Typography variant="caption">{"type"}</Typography>
-                  <Typography variant="caption">•</Typography>
+        const avgCompletion = logs.length
+          ? logs.reduce((sum, l) => sum + Number(l.completion_percentage || 0), 0) / logs.length
+          : 0;
 
-                  <i className="tabler-device-laptop text-sm" />
-                  <i className="tabler-device-mobile text-sm" />
-                  <Typography variant="caption">•</Typography>
+        // Determine status
+        let status = "Pending";
 
-                  <Typography variant="caption">{data?.courseDetails?.title}</Typography>
-                  {/* <Typography variant="caption">•</Typography> */}
+        if (avgCompletion === 100) status = "Completed";
+        else if (avgCompletion > 0) status = "In Progress";
 
-                  {/* <i className="tabler-users text-sm" />
-                  <Typography variant="caption">{item.completedCount} people completed</Typography> */}
-                </Stack>
+        return (
+          <Card
+            key={index}
+            className="rounded-lg hover:shadow-sm transition-all"
+            onClick={() => {
+              router.push(`/${lang}/apps/content?id=${item._id}&content-folder-id=${data?.courseDetails?._id}`);
+            }}
+          >
+            <CardContent className="flex items-start justify-between gap-4">
+              <Stack direction="row" spacing={2}>
+                <Box
+                  component="img"
+                  src={`${assert_url}/program_module/${item.image_url}`}
+                  sx={{ width: 75, height: 75, borderRadius: 1, objectFit: 'cover' }}
+                />
+
+                <Box>
+                  <Typography fontWeight={600}>{item.title}</Typography>
+                  <Typography variant="body2" color="text.secondary">{item.description}</Typography>
+
+                  <Stack direction="row" spacing={1} alignItems="center" mt={1}>
+                    <i className="tabler-file-description text-sm" />
+                    <Typography variant="caption">{"type"}</Typography>
+                    <Typography variant="caption">•</Typography>
+
+                    <i className="tabler-device-laptop text-sm" />
+                    <i className="tabler-device-mobile text-sm" />
+                    <Typography variant="caption">•</Typography>
+
+                    <Typography variant="caption">{data?.courseDetails?.title}</Typography>
+                  </Stack>
+                </Box>
+              </Stack>
+
+              <Box textAlign="right">
+                <Typography variant="body2" color="text.secondary">
+                  Enrolled on {formatEnrollDate(item?.created_at)}
+                </Typography>
+
+                <Chip
+                  label={status}
+                  size="small"
+                  color={
+                    status === "Completed"
+                      ? "success"
+                      : status === "In Progress"
+                        ? "warning"
+                        : "default"
+                  }
+                  sx={{ mt: 1 }}
+                />
+
+                <IconButton size="small">{">"}</IconButton>
               </Box>
-            </Stack>
+            </CardContent>
 
-            {/* Right */}
-            <Box textAlign="right">
-              <Typography variant="body2" color="text.secondary">
-                Enrolled on {formatEnrollDate(item?.created_at)}
-              </Typography>
-
-              <Chip
-                label={item.status}
-                size="small"
-                color={getChipColor("In Progress")}
-                sx={{ mt: 1 }}
+            {status !== "Pending" && (
+              <LinearProgress
+                variant="determinate"
+                value={avgCompletion}
+                sx={{
+                  height: 3,
+                  borderRadius: 0,
+                  '& .MuiLinearProgress-bar': { backgroundColor: '#fbbc04' }
+                }}
               />
+            )}
+          </Card>
+        );
+      })}
 
-              <IconButton size="small">
-                {">"}
-              </IconButton>
-            </Box>
-          </CardContent>
-
-          {/* Bottom Progress */}
-          {item.status === "In Progress" && (
-            <LinearProgress
-              variant="determinate"
-              value={item.progress}
-              sx={{
-                height: 3,
-                borderRadius: 0,
-                '& .MuiLinearProgress-bar': { backgroundColor: '#fbbc04' }
-              }}
-            />
-          )}
-        </Card>
-      ))}
     </Box>
   )
 }
