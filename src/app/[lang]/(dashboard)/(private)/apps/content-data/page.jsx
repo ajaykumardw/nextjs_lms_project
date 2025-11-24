@@ -115,13 +115,10 @@ const ContentData = () => {
   };
 
   useEffect(() => {
-    if (fieldData?.currentPage) {
-
-      console.log("Ho");
-
+    if (Object.keys(fieldData).length > 0) {
       handlePageChangeSave();
     }
-  }, [fieldData?.currentPage]);
+  }, [fieldData]); // Trigger save on ANY change
 
   if (!types || !data) return null;
 
