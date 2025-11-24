@@ -88,7 +88,6 @@ export default function PdfViewer({ pdfUrl, onPageChange, setFieldData, pageData
       {/* Viewer */}
       <div style={{ flex: 1, width: '100%', overflowY: 'auto' }}>
         <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-          {currentPage}
           <Viewer
             fileUrl={pdfUrl}
             initialPage={(currentPage || 1)}
