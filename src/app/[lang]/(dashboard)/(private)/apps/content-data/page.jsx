@@ -117,6 +117,8 @@ const ContentData = () => {
   useEffect(() => {
     if (fieldData?.currentPage) {
 
+      console.log("Ho");
+
       handlePageChangeSave();
     }
   }, [fieldData?.currentPage]);
