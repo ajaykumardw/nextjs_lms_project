@@ -13,7 +13,7 @@ export default function PdfViewer({ pdfUrl, onPageChange, setFieldData, pageData
   const { ZoomInButton, ZoomOutButton } = zoomPluginInstance;
 
   const initializedFromParent = useRef(false);
-  const ignoreNextPageEvent = useRef(true); // <── Blocks the auto page = 1 event
+  const ignoreNextPageEvent = useRef(true);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(null);
@@ -22,13 +22,16 @@ export default function PdfViewer({ pdfUrl, onPageChange, setFieldData, pageData
   // ---------------- INITIAL LOAD FROM PARENT ----------------
   useEffect(() => {
     if (!initializedFromParent.current && pageData) {
-      setCurrentPage(Number(pageData?.current_page_no) || 1);
+      const initialPage = Number(pageData?.current_page_no) || 1;
 
-      setViewedPages(
-        Array.isArray(pageData?.view_page_no)
-          ? pageData.view_page_no.map((p) => Number(p))
-          : []
-      );
+      setCurrentPage(initialPage);
+
+      let pages = Array.isArray(pageData?.view_page_no)
+        ? pageData.view_page_no.map(Number)
+        : [];
+
+      if (!pages.includes(1)) pages.unshift(1); // ensure page 1
+      setViewedPages(pages);
 
       initializedFromParent.current = true;
     }
@@ -39,23 +42,22 @@ export default function PdfViewer({ pdfUrl, onPageChange, setFieldData, pageData
     const newCurrentPage = Number(e.currentPage + 1);
     const newTotalPages = Number(e.doc.numPages);
 
-    // BLOCK FIRST FAKE EVENT (usually page=1)
     if (ignoreNextPageEvent.current) {
       ignoreNextPageEvent.current = false;
 
       return;
     }
 
-    // Ignore duplicate events
     if (newCurrentPage === currentPage) return;
 
     setCurrentPage(newCurrentPage);
     setTotalPages(newTotalPages);
 
-    setViewedPages((prev) => {
-      const arr = prev.map((p) => Number(p));
+    setViewedPages(prev => {
+      const arr = [...new Set(prev)];
 
       if (!arr.includes(newCurrentPage)) arr.push(newCurrentPage);
+      if (!arr.includes(1)) arr.unshift(1); // always include page 1
 
       return arr;
     });
@@ -66,35 +68,29 @@ export default function PdfViewer({ pdfUrl, onPageChange, setFieldData, pageData
   // ---------------- SEND TO PARENT ----------------
   useEffect(() => {
     if (!initializedFromParent.current) return;
-    setFieldData?.((p) => ({ ...p, currentPage }));
+    setFieldData?.(p => ({ ...p, currentPage }));
   }, [currentPage]);
 
   useEffect(() => {
     if (!initializedFromParent.current) return;
-    setFieldData?.((p) => ({ ...p, totalPages }));
+    setFieldData?.(p => ({ ...p, totalPages }));
   }, [totalPages]);
 
   useEffect(() => {
     if (!initializedFromParent.current) return;
-    setFieldData?.((p) => ({ ...p, viewedPages }));
+    setFieldData?.(p => ({ ...p, viewedPages }));
   }, [viewedPages]);
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-
-      {/* Toolbar */}
       <div style={{ display: 'flex', gap: '10px', padding: '8px' }}>
         <ZoomOutButton>
           {({ onClick }) => <button onClick={onClick}>− Zoom Out</button>}
         </ZoomOutButton>
-
         <ZoomInButton>
           {({ onClick }) => <button onClick={onClick}>+ Zoom In</button>}
         </ZoomInButton>
       </div>
-
-      {/* PDF Viewer */}
-
       <div style={{ flex: 1, width: '100%', overflowY: 'auto' }}>
         <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
           <Viewer
@@ -102,12 +98,10 @@ export default function PdfViewer({ pdfUrl, onPageChange, setFieldData, pageData
             initialPage={Number(currentPage || 1)}
             plugins={[zoomPluginInstance]}
             onPageChange={handlePageChange}
-            onDocumentLoad={(e) => {
-              setTotalPages(e.doc.numPages);
-            }}
+            onDocumentLoad={(e) => setTotalPages(e.doc.numPages)}
           />
         </Worker>
       </div>
-    </div >
+    </div>
   );
 }
