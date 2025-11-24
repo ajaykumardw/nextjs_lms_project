@@ -8,88 +8,77 @@ import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/zoom/lib/styles/index.css';
 
 export default function PdfViewer({ pdfUrl, onPageChange, setFieldData, pageData }) {
-  const zoomPluginInstance = zoomPlugin();
-  const { ZoomInButton, ZoomOutButton } = zoomPluginInstance;
+    const zoomPluginInstance = zoomPlugin();
+    const { ZoomInButton, ZoomOutButton } = zoomPluginInstance;
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(null);
-  const [viewedPages, setViewedPages] = useState([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(null);
+    const [viewedPages, setViewedPages] = useState([]);
 
-  // Update from parent pageData
-  useEffect(() => {
-    if (pageData) {
-      setCurrentPage(pageData.current_page_no || 1);
-      setViewedPages(Array.isArray(pageData.view_page_no) ? [...pageData.view_page_no] : []);
-    }
-  }, [pageData]);
+    // Update from parent pageData
+    useEffect(() => {
+        if (pageData) {
+            setCurrentPage(pageData.current_page_no || 1);
 
-  const handlePageChange = useCallback((e) => {
-    const newCurrentPage = e.currentPage + 1;
-    const newTotalPages = e.doc.numPages;
+            const uniquePages = Array.isArray(pageData.view_page_no)
+                ? Array.from(new Set(pageData.view_page_no))
+                : [];
 
-    setCurrentPage(newCurrentPage);
-    setTotalPages(newTotalPages);
+                setViewedPages(uniquePages);
+        }
+    }, [pageData]);
 
-    setViewedPages(prev => {
-      const arr = Array.isArray(prev) ? [...prev] : [];
+    const handlePageChange = useCallback((e) => {
+        const newCurrentPage = e.currentPage + 1;
+        const newTotalPages = e.doc.numPages;
 
-      if (!arr.includes(newCurrentPage)) arr.push(newCurrentPage);
+        setCurrentPage(newCurrentPage);
+        setTotalPages(newTotalPages);
 
-      return arr;
-    });
+        setViewedPages(prev => {
+            const updated = new Set(prev.map(String)); // convert everything to string for uniqueness
 
-    onPageChange?.(newCurrentPage, newTotalPages);
-  }, [onPageChange]);
+            updated.add(String(newCurrentPage));
 
-  // Sync state to parent
-  useEffect(() => {
-    setFieldData?.(prev => ({ ...prev, currentPage }));
-  }, [currentPage]);
+            return Array.from(updated).map(v => Number(v)); // store as numbers
+        });
 
-  useEffect(() => {
-    setFieldData?.(prev => ({ ...prev, totalPages }));
-  }, [totalPages]);
+        onPageChange?.(newCurrentPage, newTotalPages);
+    }, [onPageChange]);
 
-  useEffect(() => {
-    setFieldData?.(prev => ({ ...prev, viewedPages }));
-  }, [viewedPages]);
+    // Sync state to parent
+    useEffect(() => {
+        setFieldData?.(prev => ({ ...prev, currentPage }));
+    }, [currentPage]);
 
-  return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* Toolbar */}
-      <div style={{ display: 'flex', gap: '10px', padding: '8px' }}>
-        <ZoomOutButton>{({ onClick }) => <button onClick={onClick}>− Zoom Out</button>}</ZoomOutButton>
-        <ZoomInButton>{({ onClick }) => <button onClick={onClick}>+ Zoom In</button>}</ZoomInButton>
-      </div>
+    useEffect(() => {
+        setFieldData?.(prev => ({ ...prev, totalPages }));
+    }, [totalPages]);
 
-      {/* Viewer */}
-      <div style={{ flex: 1, width: '100%', overflowY: 'auto' }}>
-        <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-          <Viewer
-            fileUrl={pdfUrl}
-            initialPage={currentPage ? currentPage - 1 : 1} // zero-based
-            plugins={[zoomPluginInstance]}
-            onPageChange={handlePageChange}
-            onDocumentLoad={e => {
-              setTotalPages(e.doc.numPages);
-            }}
+    useEffect(() => {
+        setFieldData?.(prev => ({ ...prev, viewedPages }));
+    }, [viewedPages]);
 
-            // Optional: listen to scroll and update currentPage dynamically
-            defaultScale={1}
-            renderPage={(props) => {
-              // This ensures viewedPages updates when pages appear
-              const pageNumber = props.pageIndex + 1;
+    return (
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            {/* Toolbar */}
+            <div style={{ display: 'flex', gap: '10px', padding: '8px' }}>
+                <ZoomOutButton>{({ onClick }) => <button onClick={onClick}>− Zoom Out</button>}</ZoomOutButton>
+                <ZoomInButton>{({ onClick }) => <button onClick={onClick}>+ Zoom In</button>}</ZoomInButton>
+            </div>
 
-              if (!viewedPages.includes(pageNumber)) {
-                setViewedPages(prev => [...prev, pageNumber]);
-                setCurrentPage(pageNumber);
-              }
-
-              return props.canvasLayer.children;
-            }}
-          />
-        </Worker>
-      </div>
-    </div>
-  );
+            {/* Viewer */}
+            <div style={{ flex: 1, width: '100%', overflowY: 'auto' }}>
+                <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+                    <Viewer
+                        fileUrl={pdfUrl}
+                        initialPage={currentPage || 1}
+                        plugins={[zoomPluginInstance]}
+                        onPageChange={handlePageChange}
+                        onDocumentLoad={e => setTotalPages(e.doc.numPages)}
+                    />
+                </Worker>
+            </div>
+        </div>
+    );
 }
