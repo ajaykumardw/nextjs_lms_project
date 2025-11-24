@@ -29,7 +29,7 @@ export default function PdfViewer({ pdfUrl, onPageChange, setFieldData, pageData
     }, [pageData]);
 
     const handlePageChange = useCallback((e) => {
-        const newCurrentPage = e.currentPage + 1;
+        const newCurrentPage = Number(e.currentPage) + 1;
         const newTotalPages = e.doc.numPages;
 
         setCurrentPage(newCurrentPage);
