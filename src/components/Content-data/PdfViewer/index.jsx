@@ -18,29 +18,40 @@ export default function PdfViewer({ pdfUrl, onPageChange, setFieldData, pageData
     // Update from parent pageData
     useEffect(() => {
         if (pageData) {
-            setCurrentPage(pageData.current_page_no || 1);
-
-            const uniquePages = Array.isArray(pageData.view_page_no)
+            let newCurrent = pageData.current_page_no || 1;
+            let newViewedPages = Array.isArray(pageData.view_page_no)
                 ? Array.from(new Set(pageData.view_page_no))
                 : [];
 
-                setViewedPages(uniquePages);
+            // Ensure currentPage is within totalPages
+            if (totalPages && newCurrent > totalPages) {
+                newCurrent = totalPages;
+            }
+
+            setCurrentPage(newCurrent);
+            setViewedPages(newViewedPages);
         }
-    }, [pageData]);
+    }, [pageData, totalPages]);
 
     const handlePageChange = useCallback((e) => {
-        const newCurrentPage = Number(e.currentPage) + 1;
+        let newCurrentPage = Number(e.currentPage) + 1;
         const newTotalPages = e.doc.numPages;
+
+        // Ensure currentPage is within totalPages
+        if (newCurrentPage > newTotalPages) {
+            newCurrentPage = newTotalPages;
+        }
 
         setCurrentPage(newCurrentPage);
         setTotalPages(newTotalPages);
 
+        // Update viewedPages uniquely
         setViewedPages(prev => {
-            const updated = new Set(prev.map(String)); // convert everything to string for uniqueness
+            const updated = new Set(prev.map(Number));
 
-            updated.add(String(newCurrentPage));
+            updated.add(newCurrentPage);
 
-            return Array.from(updated).map(v => Number(v)); // store as numbers
+            return Array.from(updated).sort((a, b) => a - b);
         });
 
         onPageChange?.(newCurrentPage, newTotalPages);
@@ -72,10 +83,17 @@ export default function PdfViewer({ pdfUrl, onPageChange, setFieldData, pageData
                 <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
                     <Viewer
                         fileUrl={pdfUrl}
-                        initialPage={currentPage || 1}
+                        initialPage={currentPage - 1} // zero-based
                         plugins={[zoomPluginInstance]}
                         onPageChange={handlePageChange}
-                        onDocumentLoad={e => setTotalPages(e.doc.numPages)}
+                        onDocumentLoad={e => {
+                            setTotalPages(e.doc.numPages);
+
+                            // Ensure currentPage is within totalPages on load
+                            if (currentPage > e.doc.numPages) {
+                                setCurrentPage(e.doc.numPages);
+                            }
+                        }}
                     />
                 </Worker>
             </div>
