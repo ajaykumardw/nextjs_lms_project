@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Viewer, Worker } from '@react-pdf-viewer/core';
 import { zoomPlugin } from '@react-pdf-viewer/zoom';
@@ -12,48 +12,33 @@ export default function PdfViewer({ pdfUrl, onPageChange, setFieldData, pageData
   const zoomPluginInstance = zoomPlugin();
   const { ZoomInButton, ZoomOutButton } = zoomPluginInstance;
 
-  const initializedFromParent = useRef(false);
-  const ignoreNextPageEvent = useRef(true); // <── Blocks the auto page = 1 event
+
+  // Initialize viewedPages from parent
+  const [viewedPages, setViewedPages] = useState(
+    []
+  );
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(null);
-  const [viewedPages, setViewedPages] = useState([]);
 
-  // ---------------- INITIAL LOAD FROM PARENT ----------------
   useEffect(() => {
-    if (!initializedFromParent.current && pageData) {
-      setCurrentPage(Number(pageData?.current_page_no) || 1);
-
-      setViewedPages(
-        Array.isArray(pageData?.view_page_no)
-          ? pageData.view_page_no.map((p) => Number(p))
-          : []
-      );
-
-      initializedFromParent.current = true;
+    if (pageData) {
+      setCurrentPage(pageData?.current_page_no)
+      setViewedPages(Array.isArray(pageData?.view_page_no) ? [...pageData.view_page_no] : [] )
     }
+
   }, [pageData]);
 
-  // ---------------- PAGE CHANGE HANDLER ----------------
   const handlePageChange = (e) => {
-    const newCurrentPage = Number(e.currentPage + 1);
-    const newTotalPages = Number(e.doc.numPages);
-
-    // BLOCK FIRST FAKE EVENT (usually page=1)
-    if (ignoreNextPageEvent.current) {
-      ignoreNextPageEvent.current = false;
-
-      return;
-    }
-
-    // Ignore duplicate events
-    if (newCurrentPage === currentPage) return;
+    const newCurrentPage = e.currentPage + 1;
+    const newTotalPages = e.doc.numPages;
 
     setCurrentPage(newCurrentPage);
     setTotalPages(newTotalPages);
 
+    // Add to viewed pages if new
     setViewedPages((prev) => {
-      const arr = prev.map((p) => Number(p));
+      const arr = Array.isArray(prev) ? [...prev] : [];
 
       if (!arr.includes(newCurrentPage)) arr.push(newCurrentPage);
 
@@ -63,25 +48,32 @@ export default function PdfViewer({ pdfUrl, onPageChange, setFieldData, pageData
     onPageChange?.(newCurrentPage, newTotalPages);
   };
 
-  // ---------------- SEND TO PARENT ----------------
+  // Save currentPage to parent
   useEffect(() => {
-    if (!initializedFromParent.current) return;
-    setFieldData?.((p) => ({ ...p, currentPage }));
+    setFieldData?.((prev) => ({
+      ...prev,
+      currentPage,
+    }));
   }, [currentPage]);
 
+  // Save totalPages
   useEffect(() => {
-    if (!initializedFromParent.current) return;
-    setFieldData?.((p) => ({ ...p, totalPages }));
+    setFieldData?.((prev) => ({
+      ...prev,
+      totalPages,
+    }));
   }, [totalPages]);
 
+  // Save viewedPages
   useEffect(() => {
-    if (!initializedFromParent.current) return;
-    setFieldData?.((p) => ({ ...p, viewedPages }));
+    setFieldData?.((prev) => ({
+      ...prev,
+      viewedPages,
+    }));
   }, [viewedPages]);
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-
       {/* Toolbar */}
       <div style={{ display: 'flex', gap: '10px', padding: '8px' }}>
         <ZoomOutButton>
@@ -93,10 +85,10 @@ export default function PdfViewer({ pdfUrl, onPageChange, setFieldData, pageData
         </ZoomInButton>
       </div>
 
-      {/* PDF Viewer */}
-
+      {/* Viewer */}
       <div style={{ flex: 1, width: '100%', overflowY: 'auto' }}>
         <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+          {currentPage}
           <Viewer
             fileUrl={pdfUrl}
             initialPage={(currentPage || 1)}
@@ -108,6 +100,6 @@ export default function PdfViewer({ pdfUrl, onPageChange, setFieldData, pageData
           />
         </Worker>
       </div>
-    </div >
+    </div>
   );
 }
