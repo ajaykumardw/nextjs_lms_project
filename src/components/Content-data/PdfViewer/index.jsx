@@ -64,6 +64,7 @@ export default function PdfViewer({ pdfUrl, onPageChange, setFieldData, pageData
     }));
   }, [totalPages]);
 
+  
   // Save viewedPages
   useEffect(() => {
     setFieldData?.((prev) => ({
