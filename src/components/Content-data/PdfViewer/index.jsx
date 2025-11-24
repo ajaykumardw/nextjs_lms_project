@@ -13,13 +13,11 @@ export default function PdfViewer({ pdfUrl, onPageChange, setFieldData, pageData
   const { ZoomInButton, ZoomOutButton } = zoomPluginInstance;
 
   const initializedFromParent = useRef(false);
-  const ignoreNextPageEvent = useRef(true);
+  const ignoreNextPageEvent = useRef(true); // <── Blocks the auto page = 1 event
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(null);
   const [viewedPages, setViewedPages] = useState([]);
-
-  const viewerRef = useRef(null);
 
   // ---------------- INITIAL LOAD FROM PARENT ----------------
   useEffect(() => {
@@ -41,12 +39,14 @@ export default function PdfViewer({ pdfUrl, onPageChange, setFieldData, pageData
     const newCurrentPage = Number(e.currentPage + 1);
     const newTotalPages = Number(e.doc.numPages);
 
+    // BLOCK FIRST FAKE EVENT (usually page=1)
     if (ignoreNextPageEvent.current) {
       ignoreNextPageEvent.current = false;
 
       return;
     }
 
+    // Ignore duplicate events
     if (newCurrentPage === currentPage) return;
 
     setCurrentPage(newCurrentPage);
@@ -62,46 +62,6 @@ export default function PdfViewer({ pdfUrl, onPageChange, setFieldData, pageData
 
     onPageChange?.(newCurrentPage, newTotalPages);
   };
-
-  // ---------------- SCROLL DETECTION ----------------
-  const handleScroll = () => {
-    if (!viewerRef.current) return;
-
-    const viewerEl = viewerRef.current;
-    const pages = viewerEl.querySelectorAll('.rpv-core__page');
-    let newCurrent = currentPage;
-
-    pages.forEach((pageEl, index) => {
-      const rect = pageEl.getBoundingClientRect();
-
-      if (rect.top < window.innerHeight / 2 && rect.bottom > 0) {
-        newCurrent = index + 1;
-      }
-    });
-
-    if (newCurrent !== currentPage) {
-      setCurrentPage(newCurrent);
-      setViewedPages((prev) => {
-        const arr = prev.map((p) => Number(p));
-
-        if (!arr.includes(newCurrent)) arr.push(newCurrent);
-
-        return arr;
-      });
-
-      onPageChange?.(newCurrent, totalPages);
-    }
-  };
-
-  useEffect(() => {
-    const container = viewerRef.current;
-
-    if (!container) return;
-
-    container.addEventListener('scroll', handleScroll, { passive: true });
-
-    return () => container.removeEventListener('scroll', handleScroll);
-  }, [currentPage, totalPages]);
 
   // ---------------- SEND TO PARENT ----------------
   useEffect(() => {
@@ -121,6 +81,7 @@ export default function PdfViewer({ pdfUrl, onPageChange, setFieldData, pageData
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+
       {/* Toolbar */}
       <div style={{ display: 'flex', gap: '10px', padding: '8px' }}>
         <ZoomOutButton>
@@ -133,14 +94,12 @@ export default function PdfViewer({ pdfUrl, onPageChange, setFieldData, pageData
       </div>
 
       {/* PDF Viewer */}
-      <div
-        ref={viewerRef}
-        style={{ flex: 1, width: '100%', overflowY: 'auto' }}
-      >
+
+      <div style={{ flex: 1, width: '100%', overflowY: 'auto' }}>
         <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
           <Viewer
             fileUrl={pdfUrl}
-            initialPage={Number(currentPage || 1)}
+            initialPage={(currentPage || 1)}
             plugins={[zoomPluginInstance]}
             onPageChange={handlePageChange}
             onDocumentLoad={(e) => {
@@ -149,6 +108,6 @@ export default function PdfViewer({ pdfUrl, onPageChange, setFieldData, pageData
           />
         </Worker>
       </div>
-    </div>
+    </div >
   );
 }
