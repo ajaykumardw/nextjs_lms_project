@@ -92,6 +92,35 @@ const ContentData = () => {
     }
   };
 
+  const handlePageChangeSave = async () => {
+    try {
+      const response = await fetch(
+        `${API_URL}/user/activity/set/report/data/${moduleId}/${contentFolderId}/${activityId}/${moduleTypeId}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(fieldData),
+        }
+      );
+
+      const result = await response.json();
+
+    } catch (error) {
+      console.error("Save failed:", error);
+      throw new Error(error);
+    }
+  };
+
+  useEffect(() => {
+    if (fieldData?.currentPage) {
+
+      handlePageChangeSave();
+    }
+  }, [fieldData?.currentPage]);
+
   if (!types || !data) return null;
 
   const fileUrl = `${ASSET_URL}/activity/${data?.document_data?.image_url}`;
@@ -132,9 +161,11 @@ const ContentData = () => {
               color="primary"
               sx={{ fontSize: { xs: '1.6rem', sm: '2rem' } }}
             >
-              {moduleTypeLabel?.[data?.module_type_id] || 'Content Module'}
+              {data?.name || moduleTypeLabel?.[data?.module_type_id]}
             </Typography>
           )}
+
+
 
           {/* Page number */}
           {!loading && pageInfo.total > 0 && (isPDF || isOfficeDoc) && (
@@ -163,15 +194,15 @@ const ContentData = () => {
             ) : (
               <>
                 {types === 'pdf' && isPDF && (
-                  <PDFViewer pdfUrl={fileUrl} onPageChange={handlePageChange} setFieldData={setFieldData} />
+                  <PDFViewer pdfUrl={fileUrl} onPageChange={handlePageChange} setFieldData={setFieldData} pageData={data?.logs?.[0]} />
                 )}
 
                 {(extension === 'doc' || extension === 'docx') && (
-                  <DocViewer fileUrl={fileUrl} onPageLoad={handlePageChange} setFieldData={setFieldData} />
+                  <DocViewer fileUrl={fileUrl} onPageLoad={handlePageChange} setFieldData={setFieldData} pageData={data?.logs?.[0]} />
                 )}
 
                 {(extension === 'ppt' || extension === 'pptx') && (
-                  <PptViewer fileUrl={fileUrl} onPageLoad={handlePageChange} setFieldData={setFieldData} />
+                  <PptViewer fileUrl={fileUrl} onPageLoad={handlePageChange} setFieldData={setFieldData} pageData={data?.logs?.[0]} />
                 )}
 
                 {(types === 'youtube-video' || types === 'video') && (
@@ -199,21 +230,25 @@ const ContentData = () => {
                 mt: 3,
               }}
             >
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={() => handleReportSave()}
-              >
-                Submit
-              </Button>
 
+              {fieldData?.viewedPages?.length == fieldData?.totalPages && (
+
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => handleReportSave()}
+                >
+                  Mark as complete
+                </Button>
+
+              )}
               <Button
                 variant="outlined"
                 color="secondary"
                 href={`/${locale}/apps/content?id=${moduleId}&content-folder-id=${contentFolderId}`}
                 onClick={() => console.log('Cancel Clicked')}
               >
-                Cancel
+                Exit
               </Button>
             </Box>
           )}

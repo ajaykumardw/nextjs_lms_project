@@ -1863,6 +1863,10 @@ const SettingComponent = ({ activities }) => {
       const body = await res.json();
 
       if (res.ok) {
+
+        console.log("Data", body);
+
+
         const cd = {
           designation: body?.data?.designation || [],
           department: body?.data?.department || [],
