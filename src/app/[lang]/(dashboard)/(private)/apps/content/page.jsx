@@ -194,7 +194,7 @@ export default function ProgramPage() {
           <Box className="flex flex-col gap-3">
             <Stack direction="row" spacing={2}>
               <Typography variant="body1" color="text.secondary">
-                In Progress
+                {Number(data?.completion_percentage) >= 100 ? "Completed" : "In progress"}
               </Typography>
               <Typography variant="body1" color="error">
                 {data?.moduleInfo?.status}
