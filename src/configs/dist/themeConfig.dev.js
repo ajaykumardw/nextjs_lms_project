@@ -1,3 +1,10 @@
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports["default"] = void 0;
+
 /*
  * If you change the following items in the config object, you will not see any effect in the local development server
  * as these are stored in the cookie (cookie has the highest priority over the themeConfig):
@@ -15,31 +22,63 @@
  *
  * Another way is to clear the cookie from the browser's Application/Storage tab and then reload the page.
  */
-const themeConfig = {
+var themeConfig = {
   templateName: 'DW LMS',
   homePageUrl: '/dashboards/crm',
   settingsCookieName: 'vuexy-mui-next-demo-1',
-  mode: 'light', // 'system', 'light', 'dark'
-  skin: 'default', // 'default', 'bordered'
-  semiDark: false, // true, false
-  layout: 'collapsed', // 'vertical', 'collapsed', 'horizontal'
-  layoutPadding: 24, // Common padding for header, content, footer layout components (in px)
-  compactContentWidth: 1440, // in px
-  navbar: {
-    type: 'fixed', // 'fixed', 'static'
-    contentWidth: 'wide', // 'compact', 'wide'
-    floating: true, //! true, false (This will not work in the Horizontal Layout)
-    detached: true, //! true, false (This will not work in the Horizontal Layout or floating navbar is enabled)
-    blur: true // true, false
-  },
-  contentWidth: 'wide', // 'compact', 'wide'
-  footer: {
-    type: 'static', // 'fixed', 'static'
-    contentWidth: 'wide', // 'compact', 'wide'
-    detached: true //! true, false (This will not work in the Horizontal Layout)
-  },
-  disableRipple: false, // true, false
-  toastPosition: 'top-right' // 'top-right', 'top-center', 'top-left', 'bottom-right', 'bottom-center', 'bottom-left'
-}
+  mode: 'light',
 
-export default themeConfig
+  // 'system', 'light', 'dark'
+  skin: 'default',
+
+  // 'default', 'bordered'
+  semiDark: false,
+
+  // true, false
+  layout: 'collapsed',
+
+  // 'vertical', 'collapsed', 'horizontal'
+  layoutPadding: 24,
+
+  // Common padding for header, content, footer layout components (in px)
+  compactContentWidth: 1440,
+
+  // in px
+  navbar: {
+    type: 'fixed',
+
+    // 'fixed', 'static'
+    contentWidth: 'wide',
+
+    // 'compact', 'wide'
+    floating: true,
+
+    //! true, false (This will not work in the Horizontal Layout)
+    detached: true,
+
+    //! true, false (This will not work in the Horizontal Layout or floating navbar is enabled)
+    blur: true // true, false
+
+  },
+  contentWidth: 'wide',
+
+  // 'compact', 'wide'
+  footer: {
+    type: 'static',
+
+    // 'fixed', 'static'
+    contentWidth: 'wide',
+
+    // 'compact', 'wide'
+    detached: true //! true, false (This will not work in the Horizontal Layout)
+
+  },
+  disableRipple: false,
+
+  // true, false
+  toastPosition: 'top-right' // 'top-right', 'top-center', 'top-left', 'bottom-right', 'bottom-center', 'bottom-left'
+
+};
+var _default = themeConfig;
+
+exports["default"] = _default;
