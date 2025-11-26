@@ -87,6 +87,12 @@ export default function ProgramPage() {
     '68886902954c4d9dc7a379bd': "quiz"
   }
 
+  function formatEnrollDate(dateString) {
+    const date = new Date(dateString)
+
+    return `${String(date.getDate()).padStart(2, '0')} ${String(date.getMonth() + 1).padStart(2, '0')} ${date.getFullYear()}`
+  }
+
   // -----------------------------------------------------
   // FULL PAGE SKELETON
   // -----------------------------------------------------
@@ -194,9 +200,6 @@ export default function ProgramPage() {
           <Box className="flex flex-col gap-3">
             <Stack direction="row" spacing={2}>
               <Typography variant="body1" color="text.secondary">
-                {Number(data?.completion_percentage) >= 100 ? "Completed" : "In progress"}
-              </Typography>
-              <Typography variant="body1" color="error">
                 {data?.moduleInfo?.status}
               </Typography>
             </Stack>
@@ -248,9 +251,9 @@ export default function ProgramPage() {
 
                 {/* Right */}
                 <Stack direction="row" spacing={2} alignItems="center">
-                  {activity?.status === 'Completed' && (
+                  {Number(activity?.logs[0]?.completion_percentage) >= 100 && (
                     <Chip
-                      label={`Completed On : ${activity.completedOn}`}
+                      label={`Completed On : ${formatEnrollDate(activity?.logs[0]?.created_at)}`}
                       variant="outlined"
                       color="success"
                       size="small"
@@ -263,7 +266,7 @@ export default function ProgramPage() {
                     href={`/${locale}/apps/content-data?type=${docType?.[activity?.module_type_id]}&activityId=${activity?._id}&moduleId=${moduleId}&contentFolderId=${content_folder_id}&moduleTypeId=${activity?.module_type_id}`}
                     sx={{ borderRadius: 2, textTransform: 'none', px: 3 }}
                   >
-                    {activity?.buttonLabel || 'In progress'}
+                    {Number(activity?.logs[0]?.completion_percentage) >= 100 ? "Completed" : 'In progress'}
                   </Button>
                 </Stack>
               </CardContent>
