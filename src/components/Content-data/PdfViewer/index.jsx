@@ -1,5 +1,4 @@
 'use client';
-
 import { useEffect, useState, useCallback } from 'react';
 
 import { Viewer, Worker } from '@react-pdf-viewer/core';
@@ -9,6 +8,19 @@ import { fullScreenPlugin } from '@react-pdf-viewer/full-screen';
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/zoom/lib/styles/index.css';
 import '@react-pdf-viewer/full-screen/lib/styles/index.css';
+
+// MUI imports
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  IconButton,
+  Typography
+} from '@mui/material';
+
+import DialogCloseButton from '@/components/dialogs/DialogCloseButton';
 
 export default function PdfViewer({ pdfUrl, onPageChange, setFieldData, pageData }) {
   const zoomPluginInstance = zoomPlugin();
@@ -21,6 +33,10 @@ export default function PdfViewer({ pdfUrl, onPageChange, setFieldData, pageData
   const [totalPages, setTotalPages] = useState(null);
   const [viewedPages, setViewedPages] = useState([]);
 
+  // Dialog State
+  const [openDialog, setOpenDialog] = useState(false);
+
+  // Load saved data
   useEffect(() => {
     if (pageData) {
       let newCurrent = pageData.current_page_no || 1;
@@ -37,14 +53,13 @@ export default function PdfViewer({ pdfUrl, onPageChange, setFieldData, pageData
     }
   }, [pageData, totalPages]);
 
+  // Handle page change
   const handlePageChange = useCallback(
     (e) => {
       let newCurrentPage = Number(e.currentPage) + 1;
       const newTotal = e.doc.numPages;
 
-      if (newCurrentPage > newTotal) {
-        newCurrentPage = newTotal;
-      }
+      if (newCurrentPage > newTotal) newCurrentPage = newTotal;
 
       setCurrentPage(newCurrentPage);
       setTotalPages(newTotal);
@@ -62,6 +77,7 @@ export default function PdfViewer({ pdfUrl, onPageChange, setFieldData, pageData
     [onPageChange]
   );
 
+  // Push change to parent
   useEffect(() => {
     setFieldData?.((prev) => ({ ...prev, currentPage }));
   }, [currentPage]);
@@ -74,21 +90,30 @@ export default function PdfViewer({ pdfUrl, onPageChange, setFieldData, pageData
     setFieldData?.((prev) => ({ ...prev, viewedPages }));
   }, [viewedPages]);
 
+  // Compute unread pages
+  const unreadPages =
+    totalPages !== null
+      ? Array.from({ length: totalPages }, (_, i) => i + 1).filter(
+        (p) => !viewedPages.includes(p)
+      )
+      : [];
+
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Toolbar */}
-      <div style={{ display: 'flex', gap: '10px', padding: '8px' }}>
-        <ZoomOutButton>
-          {({ onClick }) => <button onClick={onClick}>− Zoom Out</button>}
-        </ZoomOutButton>
-        <ZoomInButton>
-          {({ onClick }) => <button onClick={onClick}>+ Zoom In</button>}
-        </ZoomInButton>
+      <div style={{ display: 'flex', gap: '10px', padding: '8px', alignItems: 'center' }}>
+        <ZoomOutButton>{({ onClick }) => <button onClick={onClick}>− Zoom Out</button>}</ZoomOutButton>
+        <ZoomInButton>{({ onClick }) => <button onClick={onClick}>+ Zoom In</button>}</ZoomInButton>
+
+        {/* Info Icon opens Dialog */}
+        <IconButton color="primary" onClick={() => setOpenDialog(true)}>
+          <i className='tabler-menu'></i>
+        </IconButton>
 
         <EnterFullScreenButton />
       </div>
 
-      {/* Viewer */}
+      {/* PDF Viewer */}
       <div style={{ flex: 1, width: '100%', overflowY: 'auto' }}>
         <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
           <Viewer
@@ -100,12 +125,44 @@ export default function PdfViewer({ pdfUrl, onPageChange, setFieldData, pageData
               setTotalPages(e.doc.numPages);
 
               if (currentPage > e.doc.numPages) {
+
                 setCurrentPage(e.doc.numPages);
               }
             }}
           />
         </Worker>
       </div>
+
+      {/* ----------------- MUI DIALOG ----------------- */}
+      <Dialog
+        open={openDialog}
+        onClose={() => setOpenDialog(false)}
+        fullWidth
+        maxWidth="sm"
+        sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}
+      >
+        <DialogTitle sx={{ m: 0, p: 2 }}>
+          Page Information
+        </DialogTitle>
+
+        <DialogCloseButton onClick={() => {
+          setOpenDialog(false)
+        }} disableRipple>
+          <i className="tabler-x" />
+        </DialogCloseButton>
+
+        <DialogContent dividers>
+          <Typography variant="h6" gutterBottom>Read Pages</Typography>
+          <Typography mb={2}>
+            {viewedPages.length ? viewedPages.join(', ') : 'No pages viewed yet'}
+          </Typography>
+
+          <Typography variant="h6" gutterBottom>Unread Pages</Typography>
+          <Typography>
+            {unreadPages.length ? unreadPages.join(', ') : 'All pages read 🎉'}
+          </Typography>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
