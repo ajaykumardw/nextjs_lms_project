@@ -117,14 +117,25 @@ const ContentData = () => {
   useEffect(() => {
     if (fieldData?.currentPage) {
 
-
       handlePageChangeSave();
     }
   }, [fieldData?.currentPage]);
 
+  useEffect(() => {
+    if (fieldData?.currentVideoTime) {
+
+      handlePageChangeSave();
+    }
+  }, [fieldData?.currentVideoTime]);
+
   if (!types || !data) return null;
 
   const fileUrl = `${ASSET_URL}/activity/${data?.document_data?.image_url}`;
+
+  const videoURL = `${ASSET_URL}/activity/${data?.video_data?.video_url}`
+
+  const youtubeVideoURL = `${data?.video_data?.video_url}`
+
   const extension = data?.document_data?.image_url?.split('.').pop()?.toLowerCase();
   const isPDF = extension === 'pdf';
   const isOfficeDoc = ['ppt', 'pptx', 'doc', 'docx'].includes(extension);
@@ -208,7 +219,9 @@ const ContentData = () => {
 
                 {(types === 'youtube-video' || types === 'video') && (
                   <YouTubePlayerComponent
-                    url={types === 'video' ? data?.video_url : data?.youtube_url}
+                    pageData={data?.logs?.[0]}
+                    setFieldData={setFieldData}
+                    url={types === 'video' ? videoURL : youtubeVideoURL}
                   />
                 )}
 
@@ -232,7 +245,7 @@ const ContentData = () => {
               }}
             >
 
-              {fieldData?.viewedPages?.length == fieldData?.totalPages && (
+              {(fieldData?.viewedPages?.length == fieldData?.totalPages) || (Number(fieldData?.totalVideoTime) == Number(fieldData?.currentVideoTime)) && (
 
                 <Button
                   variant="contained"
