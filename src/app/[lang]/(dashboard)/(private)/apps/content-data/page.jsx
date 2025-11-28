@@ -7,11 +7,8 @@ import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
 import { useSession } from 'next-auth/react';
-
 import { Box, Card, CardContent, Button, Typography, Divider, Skeleton } from '@mui/material';
-
 import { toast } from 'react-toastify';
-
 
 const PDFViewer = dynamic(() => import('@/components/Content-data/PdfViewer/index'), { ssr: false });
 const DocViewer = dynamic(() => import('@/components/Content-data/DocViewer/index'), { ssr: false });
@@ -22,17 +19,15 @@ const ScromContentComponent = dynamic(() => import('@/components/Content-data/sc
 
 const ContentData = () => {
 
-  const { lang: locale } = useParams()
-
-  const router = useRouter()
+  const { lang: locale } = useParams();
+  const router = useRouter();
 
   const searchParams = useSearchParams();
   const activityId = searchParams.get('activityId');
   const types = searchParams.get('type');
-
-  const moduleId = searchParams.get('moduleId')
-  const contentFolderId = searchParams.get('contentFolderId')
-  const moduleTypeId = searchParams.get('moduleTypeId')
+  const moduleId = searchParams.get('moduleId');
+  const contentFolderId = searchParams.get('contentFolderId');
+  const moduleTypeId = searchParams.get('moduleTypeId');
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
   const ASSET_URL = process.env.NEXT_PUBLIC_ASSETS_URL;
@@ -43,7 +38,7 @@ const ContentData = () => {
   const [pageInfo, setPageInfo] = useState({ current: 1, total: 0 });
   const [loading, setLoading] = useState(true);
 
-  const [fieldData, setFieldData] = useState({})
+  const [fieldData, setFieldData] = useState({});
 
   const fetchActivity = async () => {
     try {
@@ -53,7 +48,7 @@ const ContentData = () => {
       });
 
       const result = await response.json();
-
+      
       if (response.ok) setData(result?.data);
       setLoading(false);
     } catch (error) {
@@ -65,9 +60,9 @@ const ContentData = () => {
     if (API_URL && token && activityId) fetchActivity();
   }, [API_URL, token, activityId]);
 
-  const handleReportSave = async () => {
+  const saveFieldData = async () => {
     try {
-      const response = await fetch(
+      await fetch(
         `${API_URL}/user/activity/set/report/data/${moduleId}/${contentFolderId}/${activityId}/${moduleTypeId}`,
         {
           method: "POST",
@@ -78,64 +73,24 @@ const ContentData = () => {
           body: JSON.stringify(fieldData),
         }
       );
-
-      const result = await response.json();
-
-      if (response.ok) {
-        router.push(`/${locale}/apps/content?id=${moduleId}&content-folder-id=${contentFolderId}`)
-        toast.success("Activity completed successfully", { autoClose: 1000 });
-      }
-
     } catch (error) {
       console.error("Save failed:", error);
-      throw new Error(error);
     }
   };
 
-  const handlePageChangeSave = async () => {
-    try {
-      const response = await fetch(
-        `${API_URL}/user/activity/set/report/data/${moduleId}/${contentFolderId}/${activityId}/${moduleTypeId}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(fieldData),
-        }
-      );
-
-      const result = await response.json();
-
-    } catch (error) {
-      console.error("Save failed:", error);
-      throw new Error(error);
-    }
-  };
-
+  // Auto save when page or video time changes
   useEffect(() => {
-    if (fieldData?.currentPage) {
-
-      handlePageChangeSave();
+    if (fieldData?.currentPage || fieldData?.currentVideoTime) {
+      saveFieldData();
     }
-  }, [fieldData?.currentPage]);
+  }, [fieldData?.currentPage, fieldData?.currentVideoTime]);
 
-  useEffect(() => {
-    if (fieldData?.currentVideoTime) {
-
-      handlePageChangeSave();
-    }
-  }, [fieldData?.currentVideoTime]);
 
   if (!types || !data) return null;
 
   const fileUrl = `${ASSET_URL}/activity/${data?.document_data?.image_url}`;
-
-  const videoURL = `${ASSET_URL}/activity/${data?.video_data?.video_url}`
-
-  const youtubeVideoURL = `${data?.video_data?.video_url}`
-
+  const videoURL = `${ASSET_URL}/activity/${data?.video_data?.video_url}`;
+  const youtubeVideoURL = `${data?.video_data?.video_url}`;
   const extension = data?.document_data?.image_url?.split('.').pop()?.toLowerCase();
   const isPDF = extension === 'pdf';
   const isOfficeDoc = ['ppt', 'pptx', 'doc', 'docx'].includes(extension);
@@ -146,40 +101,21 @@ const ContentData = () => {
     }
   };
 
-  const moduleTypeLabel = {
-    '688723af5dd97f4ccae68834': 'Documents & Slides',
-    '688723af5dd97f4ccae68835': 'Video',
-    '688723af5dd97f4ccae68836': 'YouTube Video',
-    '688723af5dd97f4ccae68837': 'Scrom Content',
-    '688723af5dd97f4ccae68838': 'Web Link',
-    '688723af5dd97f4ccae68839': 'Subjective Assessment',
-    '688723af5dd97f4ccae6883a': 'Flash Card',
-    '68886902954c4d9dc7a379bd': 'Quiz',
-  };
-
   return (
     <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
       <Card>
         <CardContent>
+
           {/* TITLE */}
           {loading ? (
             <Skeleton width="60%" height={40} />
           ) : (
-            <Typography
-              variant="h4"
-              component="h1"
-              fontWeight="bold"
-              gutterBottom
-              color="primary"
-              sx={{ fontSize: { xs: '1.6rem', sm: '2rem' } }}
-            >
-              {data?.name || moduleTypeLabel?.[data?.module_type_id]}
+            <Typography variant="h4" fontWeight="bold" gutterBottom color="primary">
+              {data?.name}
             </Typography>
           )}
 
-
-
-          {/* Page number */}
+          {/* PAGE NUMBER */}
           {!loading && pageInfo.total > 0 && (isPDF || isOfficeDoc) && (
             <Typography variant="body2" sx={{ color: 'primary.main', fontWeight: 500, mb: 1 }}>
               Page {pageInfo.current} of {pageInfo.total}
@@ -188,16 +124,17 @@ const ContentData = () => {
 
           <Divider sx={{ my: 2 }} />
 
-          {/* CONTENT BOX */}
+          {/* CONTENT VIEWER */}
           <Box
             sx={{
-              height: { xs: '45vh', sm: '50vh', md: '55vh' },  // smaller height
+              height: { xs: '45vh', sm: '50vh', md: '55vh' },
               p: { xs: 0.5, sm: 1 },
               border: '1px solid #eee',
               borderRadius: 2,
-              overflow: 'auto',  // scroll inside
+              overflow: 'auto',
             }}
           >
+
             {loading ? (
               <>
                 <Skeleton height={200} />
@@ -206,77 +143,80 @@ const ContentData = () => {
             ) : (
               <>
                 {types === 'pdf' && isPDF && (
-                  <PDFViewer pdfUrl={fileUrl} onPageChange={handlePageChange} setFieldData={setFieldData} pageData={data?.logs?.[0]} />
-                )}
-
-                {(extension === 'doc' || extension === 'docx') && (
-                  <DocViewer fileUrl={fileUrl} onPageLoad={handlePageChange} setFieldData={setFieldData} pageData={data?.logs?.[0]} />
-                )}
-
-                {(extension === 'ppt' || extension === 'pptx') && (
-                  <PptViewer fileUrl={fileUrl} onPageLoad={handlePageChange} setFieldData={setFieldData} pageData={data?.logs?.[0]} />
-                )}
-
-                {(types === 'youtube-video' || types === 'video') && (
-                  <YouTubePlayerComponent
-                    pageData={data?.logs?.[0]}
+                  <PDFViewer
+                    pdfUrl={fileUrl}
+                    onPageChange={handlePageChange}
                     setFieldData={setFieldData}
-                    url={types === 'video' ? videoURL : youtubeVideoURL}
+                    pageData={data?.logs?.[0]}
                   />
                 )}
 
-                {types === 'quiz' && <QuizQuestionComponent data={data || {}} />}
-
-                {types === 'scrom-content' && (
-                  <ScromContentComponent url={data?.scrom_url || '/sample/coach/story.html'} />
+                {(extension === 'doc' || extension === 'docx') && (
+                  <DocViewer
+                    fileUrl={fileUrl}
+                    onPageLoad={handlePageChange}
+                    setFieldData={setFieldData}
+                    pageData={data?.logs?.[0]}
+                  />
                 )}
+
+                {(extension === 'ppt' || extension === 'pptx') && (
+                  <PptViewer
+                    fileUrl={fileUrl}
+                    onPageLoad={handlePageChange}
+                    setFieldData={setFieldData}
+                    pageData={data?.logs?.[0]}
+                  />
+                )}
+
+                {(types === 'video' || types === 'youtube-video') && (
+                  <YouTubePlayerComponent
+                    url={types === 'video' ? videoURL : youtubeVideoURL}
+                    setFieldData={setFieldData}
+                    pageData={data?.logs?.[0]}
+                  />
+                )}
+
+                {types === 'quiz' && <QuizQuestionComponent data={data} />}
+                {types === 'scrom-content' && <ScromContentComponent url={data?.scrom_url} />}
               </>
             )}
           </Box>
 
-          {/* BUTTONS */}
+          {/* ACTION BUTTONS */}
           {!loading && (
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'center',
-                gap: 2,
-                mt: 3,
-              }}
-            >
+            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 3 }}>
 
+              {/* MARK AS COMPLETE BUTTON */}
               {(
 
-                // All pages viewed
+                // Pages completed
                 (fieldData?.viewedPages &&
                   fieldData?.totalPages &&
-                  fieldData.viewedPages.length === fieldData.totalPages
-                )
+                  fieldData.viewedPages.length === fieldData.totalPages)
 
                 ||
 
-                // Video fully watched (rounded)
+                // Video completed (rounded)
                 (
                   fieldData?.totalVideoTime &&
                   fieldData?.viewedVideoTime &&
-                  Number(fieldData.totalVideoTime) === Math.round(Number(fieldData.viewedVideoTime))
+                  Number(fieldData.totalVideoTime) === Number(fieldData.viewedVideoTime)
                 )
               ) && (
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() => handleReportSave()}
-                  >
+                  <Button variant="contained" color="primary" onClick={() => {
+                    saveFieldData();
+                    router.push(`/${locale}/apps/content?id=${moduleId}&content-folder-id=${contentFolderId}`);
+                    toast.success("Activity completed successfully", { autoClose: 1000 });
+                  }}>
                     Mark as complete
                   </Button>
                 )}
-
 
               <Button
                 variant="outlined"
                 color="secondary"
                 href={`/${locale}/apps/content?id=${moduleId}&content-folder-id=${contentFolderId}`}
-                onClick={() => console.log('Cancel Clicked')}
               >
                 Exit
               </Button>
