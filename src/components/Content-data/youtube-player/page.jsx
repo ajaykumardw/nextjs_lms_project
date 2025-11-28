@@ -55,8 +55,10 @@ const YouTubePlayerComponent = ({ url, setFieldData, pageData }) => {
           setTotalVideoTime(duration)
         }}
         onProgress={(state) => {
-          setCurrentVideoTime(state.playedSeconds)
-          setViewedVideoTime(prev => Math.max(prev, state.playedSeconds))
+          const roundedTime = Math.round(state.playedSeconds)
+
+          setCurrentVideoTime(roundedTime)
+          setViewedVideoTime(prev => Math.max(prev, roundedTime))
         }}
       />
     </Box>

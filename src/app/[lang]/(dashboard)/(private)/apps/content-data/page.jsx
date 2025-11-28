@@ -245,7 +245,7 @@ const ContentData = () => {
               }}
             >
 
-              {(fieldData?.viewedPages?.length == fieldData?.totalPages) || (Number(fieldData?.totalVideoTime) == Number(fieldData?.currentVideoTime)) && (
+              {(fieldData?.viewedPages?.length == fieldData?.totalPages) || (Number(fieldData?.totalVideoTime) == Number(fieldData?.viewedVideoTime)) && (
 
                 <Button
                   variant="contained"
