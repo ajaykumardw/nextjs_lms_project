@@ -245,17 +245,22 @@ const ContentData = () => {
               }}
             >
 
-              {((fieldData?.viewedPages?.length == fieldData?.totalPages) || ((fieldData?.totalVideoTime && fieldData?.viewedVideoTime) && Number(fieldData?.totalVideoTime) == Number(fieldData?.viewedVideoTime))) && (
-
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={() => handleReportSave()}
-                >
-                  Mark as complete
-                </Button>
-
-              )}
+              {(
+                fieldData?.viewedPages?.length === fieldData?.totalPages ||
+                (
+                  fieldData?.totalVideoTime &&
+                  fieldData?.viewedVideoTime &&
+                  Number(fieldData?.totalVideoTime) === Math.round(Number(fieldData?.viewedVideoTime))
+                )
+              ) && (
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={() => handleReportSave()}
+                  >
+                    Mark as complete
+                  </Button>
+                )}
               <Button
                 variant="outlined"
                 color="secondary"
