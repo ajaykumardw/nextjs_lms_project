@@ -163,8 +163,8 @@ export default function ProgramPage({ data }) {
             </Box>
 
             <Box mt={2}>
-              <Typography variant='body2'>{avgCompletion}% Completed</Typography>
-              <LinearProgress variant='determinate' value={avgCompletion} sx={{ mt: 1, height: 8, borderRadius: 2 }} />
+              <Typography variant='body2'>{avgCompletion.toFixed(1)}% Completed</Typography>
+              <LinearProgress variant='determinate' value={avgCompletion.toFixed(1)} sx={{ mt: 1, height: 8, borderRadius: 2 }} />
             </Box>
           </Box>
         </CardContent>
