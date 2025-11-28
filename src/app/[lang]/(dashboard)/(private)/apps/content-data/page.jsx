@@ -246,15 +246,20 @@ const ContentData = () => {
             >
 
               {(
+
+                // All pages viewed
                 (fieldData?.viewedPages &&
                   fieldData?.totalPages &&
-                  fieldData?.viewedPages?.length === fieldData?.totalPages
+                  fieldData.viewedPages.length === fieldData.totalPages
                 )
+
                 ||
+
+                // Video fully watched (rounded)
                 (
                   fieldData?.totalVideoTime &&
                   fieldData?.viewedVideoTime &&
-                  Number(fieldData?.totalVideoTime) === Math.round(Number(fieldData?.viewedVideoTime))
+                  Number(fieldData.totalVideoTime) === Math.round(Number(fieldData.viewedVideoTime))
                 )
               ) && (
                   <Button
@@ -265,6 +270,8 @@ const ContentData = () => {
                     Mark as complete
                   </Button>
                 )}
+
+
               <Button
                 variant="outlined"
                 color="secondary"
