@@ -246,7 +246,11 @@ const ContentData = () => {
             >
 
               {(
-                fieldData?.viewedPages?.length === fieldData?.totalPages ||
+                (fieldData?.viewedPages &&
+                  fieldData?.totalPages &&
+                  fieldData?.viewedPages?.length === fieldData?.totalPages
+                )
+                ||
                 (
                   fieldData?.totalVideoTime &&
                   fieldData?.viewedVideoTime &&
