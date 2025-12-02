@@ -236,12 +236,12 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
               </MenuItem>
               <MenuItem key="module" href={`/${locale}/apps/moduleProgram`}>
                 <i className="tabler-puzzle" style={{ marginRight: 8 }} />
-                Module
+                My Module
               </MenuItem>
 
               <MenuItem key="courses" href={`/${locale}/apps/my-courses`}>
                 <i className="tabler-book" style={{ marginRight: 8 }} />
-                Course
+                My Course
               </MenuItem>
 
               <MenuItem key="certificates" href={`/${locale}/apps/my-certificates`}>
