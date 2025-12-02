@@ -18,7 +18,6 @@ const QuizQuestionComponent = dynamic(() => import('@/components/Content-data/qu
 const ScromContentComponent = dynamic(() => import('@/components/Content-data/scrom-content/page'), { ssr: false });
 
 const ContentData = () => {
-
   const { lang: locale } = useParams();
   const router = useRouter();
 
@@ -39,6 +38,7 @@ const ContentData = () => {
   const [loading, setLoading] = useState(true);
 
   const [fieldData, setFieldData] = useState({});
+  const [quizData, setQuizData] = useState([]); // receives attempted answers from child
 
   const fetchActivity = async () => {
     try {
@@ -48,19 +48,44 @@ const ContentData = () => {
       });
 
       const result = await response.json();
-      
-      if (response.ok) setData(result?.data);
-      setLoading(false);
+
+      if (response.ok) {
+
+        setData(result?.data);
+      } else {
+        console.error('Activity fetch failed', result);
+      }
     } catch (error) {
       console.error('Activity Fetch Error:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     if (API_URL && token && activityId) fetchActivity();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [API_URL, token, activityId]);
 
-  const saveFieldData = async () => {
+  const saveFieldData = async (payload = fieldData) => {
+    try {
+      await fetch(
+        `${API_URL}/user/activity/set/report/data/${moduleId}/${contentFolderId}/${activityId}/${moduleTypeId}`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+    } catch (error) {
+      console.error("Save failed:", error);
+    }
+  };
+
+  const saveQuizData = async (payload) => {
     try {
       await fetch(
         `${API_URL}/user/activity/set/report/data/${moduleId}/${contentFolderId}/${activityId}/${moduleTypeId}`,
@@ -70,7 +95,7 @@ const ContentData = () => {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(fieldData),
+          body: JSON.stringify(payload),
         }
       );
     } catch (error) {
@@ -78,13 +103,24 @@ const ContentData = () => {
     }
   };
 
+  // When quizData changes, persist to API (debounce could be added if needed)
+  useEffect(() => {
+    if (quizData && Array.isArray(quizData) && quizData.length > 0) {
+      saveQuizData(quizData);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quizData]);
+
   // Auto save when page or video time changes
   useEffect(() => {
-    if (fieldData?.currentPage || fieldData?.currentVideoTime) {
+    // only save when meaningful properties exist
+    const shouldSave = fieldData && (fieldData.currentPage || fieldData.currentVideoTime || (fieldData.viewedPages && fieldData.totalPages));
+
+    if (shouldSave) {
       saveFieldData();
     }
-  }, [fieldData?.currentPage, fieldData?.currentVideoTime]);
-
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fieldData?.currentPage, fieldData?.currentVideoTime, fieldData?.viewedPages]);
 
   if (!types || !data) return null;
 
@@ -96,16 +132,17 @@ const ContentData = () => {
   const isOfficeDoc = ['ppt', 'pptx', 'doc', 'docx'].includes(extension);
 
   const handlePageChange = (current, total) => {
-    if (current !== pageInfo.current || total !== pageInfo.total) {
-      setPageInfo({ current, total });
-    }
+    setPageInfo(prev => {
+      if (prev.current === current && prev.total === total) return prev;
+
+      return { current, total };
+    });
   };
 
   return (
     <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
       <Card>
         <CardContent>
-
           {/* TITLE */}
           {loading ? (
             <Skeleton width="60%" height={40} />
@@ -134,7 +171,6 @@ const ContentData = () => {
               overflow: 'auto',
             }}
           >
-
             {loading ? (
               <>
                 <Skeleton height={200} />
@@ -177,7 +213,19 @@ const ContentData = () => {
                   />
                 )}
 
-                {types === 'quiz' && <QuizQuestionComponent data={data} />}
+                {types === 'quiz' && (
+                  <QuizQuestionComponent
+                    status={(
+                      data?.questions?.length &&
+                      quizData?.length &&
+                      Number(data?.questions?.length) === Number(quizData?.length)
+                    )}
+                    data={data?.questions || []}
+                    report={data?.quiz_reports || []}
+                    setQuizData={setQuizData}
+                  />
+                )}
+
                 {types === 'scrom-content' && <ScromContentComponent url={data?.scrom_url} />}
               </>
             )}
@@ -186,26 +234,33 @@ const ContentData = () => {
           {/* ACTION BUTTONS */}
           {!loading && (
             <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 3 }}>
-
-              {/* MARK AS COMPLETE BUTTON */}
               {(
-
-                // Pages completed
                 (fieldData?.viewedPages &&
                   fieldData?.totalPages &&
                   fieldData.viewedPages.length === fieldData.totalPages)
-
                 ||
-
-                // Video completed (rounded)
                 (
                   fieldData?.totalVideoTime &&
                   fieldData?.viewedVideoTime &&
                   Number(fieldData.totalVideoTime) === Number(fieldData.viewedVideoTime)
                 )
+                ||
+                (
+                  data?.questions?.length &&
+                  quizData?.length &&
+                  Number(data?.questions?.length) === Number(quizData?.length)
+                )
               ) && (
                   <Button variant="contained" color="primary" onClick={() => {
-                    saveFieldData();
+                    if (quizData?.length > 0) {
+
+                      saveQuizData(quizData)
+
+                    } else {
+
+                      saveFieldData();
+                    }
+
                     router.push(`/${locale}/apps/content?id=${moduleId}&content-folder-id=${contentFolderId}`);
                     toast.success("Activity completed successfully", { autoClose: 1000 });
                   }}>
