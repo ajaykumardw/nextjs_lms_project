@@ -1,24 +1,25 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from "react";
-
 import {
   Box, Paper, Typography, Button, Checkbox,
-  TextField, Alert, Stack, Divider, Skeleton
+  Alert, Stack, Divider, Skeleton
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 
 const QuizStaticLayout = ({ data = [], report = [], setQuizData, status = false }) => {
+  const theme = useTheme();
+
   const [questions, setQuestions] = useState(null);
   const [index, setIndex] = useState(0);
   const [saved, setSaved] = useState(false);
   const [attempted, setAttempted] = useState([]);
   const lastSentRef = useRef(null);
 
-  /** Load Questions + Merge report */
+  /** Load Questions + Merge Report */
   useEffect(() => {
     if (!Array.isArray(data) || data.length === 0) {
       setQuestions(null);
-      
       return;
     }
 
@@ -38,8 +39,6 @@ const QuizStaticLayout = ({ data = [], report = [], setQuizData, status = false 
           q.option5,
           q.option6
         ].filter(Boolean),
-
-        // pre-selected option from report → MUI needs 0-based index
         selected: fromReport ? Number(fromReport.selected_option_no) - 1 : null
       };
     });
@@ -57,7 +56,7 @@ const QuizStaticLayout = ({ data = [], report = [], setQuizData, status = false 
     setAttempted(initialAttempts);
   }, [data, report]);
 
-  /** Send attempted to parent */
+  /** Keep Parent Updated */
   useEffect(() => {
     try {
       const serialized = JSON.stringify(attempted || []);
@@ -75,13 +74,12 @@ const QuizStaticLayout = ({ data = [], report = [], setQuizData, status = false 
   const next = () => setIndex(i => Math.min(i + 1, questions.length - 1));
   const prev = () => setIndex(i => Math.max(i - 1, 0));
 
-  /** Select Option (disabled if status=true) */
+  /** Select Option */
   const handleSelectOption = (optionIndex) => {
-    if (status) return; // ❗Block selection if quiz is locked
+    if (status) return;
 
     setQuestions(prev => {
       const updated = [...prev];
-
       updated[index].selected = optionIndex;
 
       const q = updated[index];
@@ -96,7 +94,6 @@ const QuizStaticLayout = ({ data = [], report = [], setQuizData, status = false 
 
       setAttempted(prevAtt => {
         const filtered = prevAtt.filter(a => a.question_id !== q.id);
-
         return [...filtered, attempt];
       });
 
@@ -105,19 +102,32 @@ const QuizStaticLayout = ({ data = [], report = [], setQuizData, status = false 
   };
 
   const handleSave = () => {
-    if (status) return; // ❗Save disabled when quiz is locked
-
+    if (status) return;
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
 
   const loading = !questions;
 
+  /** Theme-aware colors */
+  const bg = theme.palette.mode === "dark" ? "#121212" : "#fafafa";
+  const panelBg = theme.palette.mode === "dark" ? "#1e1e1e" : "#fff";
+  const borderColor = theme.palette.mode === "dark" ? "#333" : "#ddd";
+  const textSecondary = theme.palette.text.secondary;
+
   return (
-    <Box display="flex" height="100vh" bgcolor="#fafafa">
+    <Box display="flex" height="100vh" bgcolor={bg}>
 
       {/* LEFT SIDEBAR */}
-      <Box flex={1} p={2} borderRight="1px solid #ddd" sx={{ overflowY: "auto", backgroundColor: "#fff" }}>
+      <Box
+        flex={1}
+        p={2}
+        borderRight={`1px solid ${borderColor}`}
+        sx={{
+          overflowY: "auto",
+          backgroundColor: panelBg
+        }}
+      >
         <Typography variant="h6" sx={{ mb: 2, fontWeight: "bold" }}>
           Questions
         </Typography>
@@ -125,7 +135,10 @@ const QuizStaticLayout = ({ data = [], report = [], setQuizData, status = false 
         {loading ? (
           <Stack spacing={2}>
             {Array.from({ length: 5 }).map((_, i) => (
-              <Paper key={i} sx={{ p: 2, borderRadius: 2 }}>
+              <Paper
+                key={i}
+                sx={{ p: 2, borderRadius: 2, backgroundColor: panelBg }}
+              >
                 <Skeleton width="40%" height={25} />
                 <Skeleton width="90%" height={20} />
               </Paper>
@@ -135,17 +148,22 @@ const QuizStaticLayout = ({ data = [], report = [], setQuizData, status = false 
           questions.map((q, i) => (
             <Paper
               key={q.id}
-              elevation={i === index ? 4 : 1}
+              elevation={i === index ? 6 : 1}
               sx={{
-                p: 2, mb: 2,
+                p: 2,
+                mb: 2,
                 cursor: "pointer",
                 borderRadius: 2,
                 transition: "0.2s",
+                backgroundColor: i === index ? theme.palette.action.selected : panelBg,
+                "&:hover": {
+                  backgroundColor: theme.palette.action.hover
+                }
               }}
               onClick={() => setIndex(i)}
             >
               <Typography fontWeight="600">{`Q${i + 1}`}</Typography>
-              <Typography variant="body2" color="text.secondary" noWrap>
+              <Typography variant="body2" color={textSecondary} noWrap>
                 {q.text}
               </Typography>
             </Paper>
@@ -157,7 +175,8 @@ const QuizStaticLayout = ({ data = [], report = [], setQuizData, status = false 
       <Box flex={2} p={3} sx={{ overflowY: "auto" }}>
         {saved && <Alert severity="success" sx={{ mb: 2 }}>Saved successfully!</Alert>}
 
-        <Paper sx={{ p: 3, borderRadius: 3 }} elevation={4}>
+        <Box sx={{ p: 3 }}>
+
           {!loading && (
             <>
               <Typography variant="h5" fontWeight="bold">
@@ -170,28 +189,40 @@ const QuizStaticLayout = ({ data = [], report = [], setQuizData, status = false 
           {loading ? (
             <Skeleton height={90} />
           ) : (
-            <TextField
-              label="Question"
-              fullWidth
-              multiline
-              sx={{ mt: 1 }}
-              value={questions[index]?.text}
-              InputProps={{ readOnly: true }}
-            />
+            <Typography sx={{ fontSize: 18, mt: 1, whiteSpace: "pre-line" }}>
+              {questions[index]?.text}
+            </Typography>
           )}
 
           {!loading && (
             <>
               <Typography sx={{ mt: 3, fontWeight: "bold" }}>Options</Typography>
+
               <Stack spacing={2} mt={2}>
                 {questions[index].options.map((opt, i) => (
-                  <Box key={i} display="flex" alignItems="center" gap={2}>
+                  <Box
+                    key={i}
+                    display="flex"
+                    alignItems="center"
+                    gap={1}
+                    sx={{
+                      p: 1,
+                      borderRadius: 1,
+                      backgroundColor:
+                        questions[index].selected === i
+                          ? theme.palette.action.selected
+                          : "transparent",
+                      // ❌ Hover removed (no hover background)
+                    }}
+                  >
                     <Checkbox
                       checked={questions[index].selected === i}
-                      disabled={status}   // ❗ Disable checkbox when quiz submitted
+                      disabled={status}
                       onChange={() => handleSelectOption(i)}
                     />
-                    <TextField value={opt} fullWidth InputProps={{ readOnly: true }} />
+                    <Typography sx={{ fontSize: 16 }}>
+                      {opt}
+                    </Typography>
                   </Box>
                 ))}
               </Stack>
@@ -204,23 +235,27 @@ const QuizStaticLayout = ({ data = [], report = [], setQuizData, status = false 
             </Button>
 
             <Stack direction="row" spacing={2}>
-              <Button variant="contained" color="primary"
+              <Button
+                variant="contained"
+                color="primary"
                 disabled={loading || index === questions.length - 1}
-                onClick={next}>
+                onClick={next}
+              >
                 Next
               </Button>
 
               <Button
                 variant="contained"
                 color="success"
-                disabled={loading || status} // ❗Disable save when quiz locked
+                disabled={loading || status}
                 onClick={handleSave}
               >
                 Save
               </Button>
             </Stack>
           </Box>
-        </Paper>
+
+        </Box>
       </Box>
     </Box>
   );
