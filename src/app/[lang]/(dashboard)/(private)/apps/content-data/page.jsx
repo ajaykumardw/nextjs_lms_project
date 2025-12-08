@@ -1,9 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
+
 import dynamic from 'next/dynamic';
+
 import { useSession } from 'next-auth/react';
+
 import {
   Box,
   Dialog,
@@ -18,7 +22,9 @@ import {
   Divider,
   Skeleton
 } from '@mui/material';
+
 import { toast } from 'react-toastify';
+
 import DialogCloseButton from '@/components/dialogs/DialogCloseButton';
 
 const PDFViewer = dynamic(() => import('@/components/Content-data/PdfViewer/index'), { ssr: false });
@@ -119,6 +125,7 @@ const ContentData = () => {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+      
       const json = await res.json().catch(() => null);
     
       return { ok: res.ok, status: res.status, data: json };
@@ -154,6 +161,7 @@ const ContentData = () => {
 
   const saveInsertQuizData = async (payload) => {
     const url = `${API_URL}/user/activity/insert/report/data/${moduleId}/${contentFolderId}/${activityId}/${moduleTypeId}`;
+    
     return postJson(url, payload);
   };
 
@@ -216,6 +224,7 @@ const ContentData = () => {
     return () => {
       if (quizAutosaveTimer.current) clearTimeout(quizAutosaveTimer.current);
     };
+  
   }, [quizData, API_URL, token]);
 
   /** FILE AND VIDEO INFO */
@@ -257,12 +266,14 @@ const ContentData = () => {
     try {
       if (quizData.length > 0) {
         const res = await saveInsertQuizData(quizData);
+        
         if (!res.ok) {
           toast.error('Failed to save quiz before marking complete');
           console.warn('markComplete saveInsertQuizData failed', res);
         }
       } else {
         const res = await saveInsertFieldData(fieldData);
+
         if (!res.ok) {
           toast.error('Failed to save progress before marking complete');
           console.warn('markComplete saveInsertFieldData failed', res);
