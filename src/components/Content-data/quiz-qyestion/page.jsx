@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from "react";
+
 import {
   Box, Paper, Typography, Button, Checkbox,
   Alert, Stack, Divider, Skeleton
 } from "@mui/material";
+
 import { useTheme } from "@mui/material/styles";
 
 const QuizStaticLayout = ({ data = [], report = [], setQuizData, status = false }) => {
@@ -20,6 +22,7 @@ const QuizStaticLayout = ({ data = [], report = [], setQuizData, status = false 
   useEffect(() => {
     if (!Array.isArray(data) || data.length === 0) {
       setQuestions(null);
+
       return;
     }
 
@@ -68,6 +71,7 @@ const QuizStaticLayout = ({ data = [], report = [], setQuizData, status = false 
     } catch {
       setQuizData(attempted);
     }
+
   }, [attempted]);
 
   /** Navigation */
@@ -80,6 +84,7 @@ const QuizStaticLayout = ({ data = [], report = [], setQuizData, status = false 
 
     setQuestions(prev => {
       const updated = [...prev];
+
       updated[index].selected = optionIndex;
 
       const q = updated[index];
@@ -94,6 +99,7 @@ const QuizStaticLayout = ({ data = [], report = [], setQuizData, status = false 
 
       setAttempted(prevAtt => {
         const filtered = prevAtt.filter(a => a.question_id !== q.id);
+
         return [...filtered, attempt];
       });
 
@@ -212,7 +218,9 @@ const QuizStaticLayout = ({ data = [], report = [], setQuizData, status = false 
                         questions[index].selected === i
                           ? theme.palette.action.selected
                           : "transparent",
+
                       // ❌ Hover removed (no hover background)
+                   
                     }}
                   >
                     <Checkbox
