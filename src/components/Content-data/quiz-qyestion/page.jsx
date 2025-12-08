@@ -14,6 +14,8 @@ import { useTheme } from "@mui/material/styles";
 
 import { toast } from "react-toastify";
 
+import DialogCloseButton from '@/components/dialogs/DialogCloseButton';
+
 const QuizStaticLayout = ({ data = [], report = [], setQuizData = () => { }, status = false, saveInsertQuizData = async () => ({ ok: false }) }) => {
   const theme = useTheme();
 
@@ -41,7 +43,7 @@ const QuizStaticLayout = ({ data = [], report = [], setQuizData = () => { }, sta
   const isMountedRef = useRef(true);
 
   useEffect(() => {
-    
+
     return () => {
       isMountedRef.current = false;
       if (explicitSaveTimer.current) clearTimeout(explicitSaveTimer.current);
@@ -123,9 +125,9 @@ const QuizStaticLayout = ({ data = [], report = [], setQuizData = () => { }, sta
     if (status) return;
 
     setQuestions(prev => {
-      
+
       if (!prev) return prev;
-      
+
       const updated = [...prev];
 
       const safeIndex = Math.max(0, Math.min(index, updated.length - 1));
@@ -163,7 +165,7 @@ const QuizStaticLayout = ({ data = [], report = [], setQuizData = () => { }, sta
     explicitSaveTimer.current = setTimeout(async () => {
       try {
         const res = await saveInsertQuizData(attempted);
-        
+
         if (res && res.ok) {
 
           router.push(`/${locale}/apps/content?id=${moduleId}&content-folder-id=${contentFolderId}`)
