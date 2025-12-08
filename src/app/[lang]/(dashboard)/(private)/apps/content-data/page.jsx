@@ -103,6 +103,42 @@ const ContentData = () => {
     }
   };
 
+  const saveInsertFieldData = async (payload = fieldData) => {
+    try {
+      await fetch(
+        `${API_URL}/user/activity/insert/report/data/${moduleId}/${contentFolderId}/${activityId}/${moduleTypeId}`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+    } catch (error) {
+      console.error("Save failed:", error);
+    }
+  };
+
+  const saveInsertQuizData = async (payload) => {
+    try {
+      await fetch(
+        `${API_URL}/user/activity/insert/report/data/${moduleId}/${contentFolderId}/${activityId}/${moduleTypeId}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+    } catch (error) {
+      console.error("Save failed:", error);
+    }
+  };
+
   // When quizData changes, persist to API (debounce could be added if needed)
   useEffect(() => {
     if (quizData && Array.isArray(quizData) && quizData.length > 0) {
@@ -235,24 +271,40 @@ const ContentData = () => {
           {!loading && (
             <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 3 }}>
               {(types !== 'quiz') && (
-                <Button variant="contained" color="primary"
-                  disabled={Number(data?.logs?.[0]?.completion_percentage) >= 100}
-                  onClick={() => {
-                    if (quizData?.length > 0) {
+                (fieldData?.viewedPages &&
+                  fieldData?.totalPages &&
+                  fieldData.viewedPages.length === fieldData.totalPages)
+                ||
+                (
+                  fieldData?.totalVideoTime &&
+                  fieldData?.viewedVideoTime &&
+                  Number(fieldData.totalVideoTime) === Number(fieldData.viewedVideoTime)
+                )
+                ||
+                (
+                  data?.questions?.length &&
+                  quizData?.length &&
+                  Number(data?.questions?.length) === Number(quizData?.length)
+                )
+              ) && (
+                  <Button variant="contained" color="primary"
+                    disabled={data?.logs?.[0]?.is_completed}
+                    onClick={() => {
+                      if (quizData?.length > 0) {
 
-                      saveQuizData(quizData)
+                        saveInsertQuizData(quizData)
 
-                    } else {
+                      } else {
 
-                      saveFieldData();
-                    }
+                        saveInsertFieldData()
+                      }
 
-                    router.push(`/${locale}/apps/content?id=${moduleId}&content-folder-id=${contentFolderId}`);
-                    toast.success("Activity completed successfully", { autoClose: 1000 });
-                  }}>
-                  Mark as complete
-                </Button>
-              )}
+                      router.push(`/${locale}/apps/content?id=${moduleId}&content-folder-id=${contentFolderId}`);
+                      toast.success("Activity completed successfully", { autoClose: 1000 });
+                    }}>
+                    Mark as complete
+                  </Button>
+                )}
 
               <Button
                 variant="outlined"
