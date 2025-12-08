@@ -41,6 +41,7 @@ const QuizStaticLayout = ({ data = [], report = [], setQuizData = () => { }, sta
   const isMountedRef = useRef(true);
 
   useEffect(() => {
+    
     return () => {
       isMountedRef.current = false;
       if (explicitSaveTimer.current) clearTimeout(explicitSaveTimer.current);
@@ -53,6 +54,7 @@ const QuizStaticLayout = ({ data = [], report = [], setQuizData = () => { }, sta
       setQuestions(null);
       setIndex(0);
       setAttempted([]);
+
       return;
     }
 
@@ -92,8 +94,11 @@ const QuizStaticLayout = ({ data = [], report = [], setQuizData = () => { }, sta
   /** Keep Parent Updated */
   useEffect(() => {
     try {
+
       const serialized = JSON.stringify(attempted || []);
+
       if (lastSentRef.current !== serialized) {
+
         setQuizData(attempted);
         lastSentRef.current = serialized;
       }
@@ -118,10 +123,13 @@ const QuizStaticLayout = ({ data = [], report = [], setQuizData = () => { }, sta
     if (status) return;
 
     setQuestions(prev => {
+      
       if (!prev) return prev;
+      
       const updated = [...prev];
 
       const safeIndex = Math.max(0, Math.min(index, updated.length - 1));
+
       updated[safeIndex] = { ...updated[safeIndex], selected: optionIndex };
 
       const q = updated[safeIndex];
@@ -136,6 +144,7 @@ const QuizStaticLayout = ({ data = [], report = [], setQuizData = () => { }, sta
 
       setAttempted(prevAtt => {
         const filtered = prevAtt.filter(a => a.question_id !== q.id);
+
         return [...filtered, attempt];
       });
 
@@ -154,7 +163,9 @@ const QuizStaticLayout = ({ data = [], report = [], setQuizData = () => { }, sta
     explicitSaveTimer.current = setTimeout(async () => {
       try {
         const res = await saveInsertQuizData(attempted);
+        
         if (res && res.ok) {
+
           router.push(`/${locale}/apps/content?id=${moduleId}&content-folder-id=${contentFolderId}`)
           toast.success("Quiz completed successfully", { autoClose: 1000 });
         } else {
@@ -176,8 +187,11 @@ const QuizStaticLayout = ({ data = [], report = [], setQuizData = () => { }, sta
   return (
     <>
       {/* CONFIRM SAVE MODAL */}
+
       <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}>
+
         <DialogCloseButton onClick={() => setConfirmOpen(false)}><i className="tabler-x" /></DialogCloseButton>
+
         <DialogTitle>Confirm Save</DialogTitle>
 
         <DialogContent>

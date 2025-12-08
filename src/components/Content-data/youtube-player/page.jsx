@@ -1,7 +1,9 @@
 'use client'
 
 import { useRef, useState, useEffect } from 'react'
+
 import { Box } from "@mui/material"
+
 import ReactPlayer from 'react-player'
 
 const YouTubePlayerComponent = ({ url, setFieldData, pageData }) => {
@@ -30,6 +32,7 @@ const YouTubePlayerComponent = ({ url, setFieldData, pageData }) => {
   }, [pageData])
 
   // Push updated times upward (only increasing)
+
   useEffect(() => {
     if (!setFieldData) return;
 
@@ -60,19 +63,25 @@ const YouTubePlayerComponent = ({ url, setFieldData, pageData }) => {
         height="100%"
 
         // Total duration — always take the highest
+
         onDuration={(duration) => {
+          
           const rounded = Math.round(duration)
+
           setTotalVideoTime(prev => Math.max(prev, rounded))
         }}
 
         // Progress — never allow backward movement
+
         onProgress={(state) => {
           const rounded = Math.round(state.playedSeconds)
 
           // Prevent decreasing time
+
           setCurrentVideoTime(prev => Math.max(prev, rounded))
 
           // Viewed should always be maximum point reached
+          
           setViewedVideoTime(prev => Math.max(prev, rounded))
         }}
       />

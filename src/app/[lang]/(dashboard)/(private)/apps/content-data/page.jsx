@@ -52,8 +52,11 @@ const ContentData = () => {
   const [fieldData, setFieldData] = useState({
     currentPage: 0,
     totalPages: 0,
+    
     viewedPages: [],
+
     currentVideoTime: 0,
+    
     viewedVideoTime: 0,
     totalVideoTime: 0
   });
@@ -61,21 +64,29 @@ const ContentData = () => {
   const [quizData, setQuizData] = useState([]);
 
   // refs for debounced autosave
+  
   const fieldAutosaveTimer = useRef(null);
   const quizAutosaveTimer = useRef(null);
 
   /** FETCH ACTIVITY */
+
   useEffect(() => {
     const fetchActivity = async () => {
       setLoading(true);
+
       try {
+        
         if (!API_URL || !token || !activityId) return;
+
         const response = await fetch(`${API_URL}/user/activity/fetch/data/${activityId}`, {
           method: 'GET',
           headers: { Authorization: `Bearer ${token}` }
         });
+
         const result = await response.json();
+        
         if (response.ok) {
+
           setData(result?.data);
         } else {
           console.error('Activity Fetch Error response:', result);
@@ -91,38 +102,53 @@ const ContentData = () => {
   }, [API_URL, token, activityId]);
 
   /** SAFE FETCH HELPERS */
+  
   const postJson = async (url, payload) => {
     try {
+      
       if (!API_URL || !token) {
+
         console.warn('Missing API_URL or token for postJson', { url });
+        
         return { ok: false, error: 'missing credentials' };
+      
       }
+      
       const res = await fetch(url, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
       const json = await res.json().catch(() => null);
+    
       return { ok: res.ok, status: res.status, data: json };
     } catch (error) {
+    
       console.error('postJson error', error);
+      
       return { ok: false, error };
+    
     }
   };
 
   /** SAVE FUNCTIONS (set = update, insert = final/insert) */
   const saveFieldData = async (payload) => {
+    
     const url = `${API_URL}/user/activity/set/report/data/${moduleId}/${contentFolderId}/${activityId}/${moduleTypeId}`;
+    
     return postJson(url, payload);
   };
 
   const saveQuizData = async (payload) => {
     const url = `${API_URL}/user/activity/set/report/data/${moduleId}/${contentFolderId}/${activityId}/${moduleTypeId}`;
+    
     return postJson(url, payload);
   };
 
   const saveInsertFieldData = async (payload) => {
+
     const url = `${API_URL}/user/activity/insert/report/data/${moduleId}/${contentFolderId}/${activityId}/${moduleTypeId}`;
+
     return postJson(url, payload);
   };
 
@@ -135,8 +161,11 @@ const ContentData = () => {
   useEffect(() => {
     // only trigger when meaningful values change
     const changed =
-      fieldData.currentPage ||
+      
+    fieldData.currentPage ||
+
       fieldData.currentVideoTime ||
+      
       (fieldData.viewedPages && fieldData.viewedPages.length > 0);
 
     if (!changed) return;
@@ -153,7 +182,9 @@ const ContentData = () => {
 
     return () => {
       if (fieldAutosaveTimer.current) {
+      
         clearTimeout(fieldAutosaveTimer.current);
+      
       }
     };
   }, [
@@ -177,7 +208,9 @@ const ContentData = () => {
         if (!res.ok) {
           console.warn('Quiz autosave failed', res);
         }
+      
       });
+
     }, 1200);
 
     return () => {
@@ -186,6 +219,7 @@ const ContentData = () => {
   }, [quizData, API_URL, token]);
 
   /** FILE AND VIDEO INFO */
+
   const fileUrl = data?.document_data?.image_url ? `${ASSET_URL}/activity/${data.document_data.image_url}` : null;
   const videoURL = data?.video_data?.video_url ? `${ASSET_URL}/activity/${data.video_data.video_url}` : null;
   const youtubeVideoURL = data?.video_data?.video_url;
@@ -195,6 +229,7 @@ const ContentData = () => {
   const isOfficeDoc = ['ppt', 'pptx', 'doc', 'docx'].includes(extension);
 
   /** PAGE CHANGE HANDLER */
+
   const handlePageChange = (current, total) => {
     setPageInfo({ current, total });
     setFieldData(prev => ({
@@ -206,11 +241,13 @@ const ContentData = () => {
   };
 
   /** COMPLETION CHECK */
+
   const isCompletedCondition =
     (data?.logs?.[0]?.completion_percentage || 0) >= 100 || (
       (fieldData.totalPages > 0 && fieldData.viewedPages.length === fieldData.totalPages) ||
       (fieldData.totalVideoTime > 0 && fieldData.viewedVideoTime >= fieldData.totalVideoTime) ||
       (data?.questions?.length > 0 && quizData.length === data.questions.length)
+
     );
 
   /** MARK COMPLETE — uses insert endpoints */
@@ -350,4 +387,3 @@ const ContentData = () => {
 };
 
 export default ContentData;
-  

@@ -65,18 +65,22 @@ export default function ProgramPage() {
   }, [API_URL, token, moduleId])
 
   // Mapping module types
+  
   const moduleTypeLabel = {
     '688723af5dd97f4ccae68834': 'Documents & Slides',
     '688723af5dd97f4ccae68835': 'Video',
     '688723af5dd97f4ccae68836': 'YouTube Video',
+
     '688723af5dd97f4ccae68837': 'Scrom Content',
     '688723af5dd97f4ccae68838': 'Web Link',
     '688723af5dd97f4ccae68839': 'Subjective Assessment',
     '688723af5dd97f4ccae6883a': 'Flash Card',
     "68886902954c4d9dc7a379bd": "Quiz"
+  
   }
 
   const docType = {
+   
     '688723af5dd97f4ccae68834': 'pdf',
     '688723af5dd97f4ccae68835': 'video',
     '688723af5dd97f4ccae68836': 'youtube-video',
@@ -95,39 +99,58 @@ export default function ProgramPage() {
 
   // -----------------------------------------------------
   // FULL PAGE SKELETON
+
   // -----------------------------------------------------
+  
   if (loading) {
+
     return (
+
       <Box className="p-6 space-y-6">
+
         {/* Header Skeleton */}
+
         <Card>
+
           <Skeleton variant="rectangular" height={60} />
 
           <CardContent className="flex flex-col sm:flex-row gap-5 items-center">
+
             <Skeleton variant="rectangular" width={260} height={230} />
 
             <Box className="flex flex-col gap-3 flex-1">
+
               <Skeleton width="50%" />
+
               <Skeleton width="70%" />
             </Box>
           </CardContent>
         </Card>
 
         {/* Description Skeleton */}
+
         <Card>
+
           <CardContent>
+
             <Skeleton width="100%" />
             <Skeleton width="90%" />
+
           </CardContent>
+
         </Card>
 
         {/* Activities Skeleton */}
+
         <Typography variant="h6" mb={2}>Activities</Typography>
 
         {[...Array(3)].map((_, i) => (
+
           <Card key={i} className="mb-3">
             <CardContent>
+
               <Skeleton width="60%" />
+
               <Skeleton width="40%" />
             </CardContent>
           </Card>
@@ -221,11 +244,14 @@ export default function ProgramPage() {
       </Card>
 
       {/* ACTIVITIES */}
+
       <Box>
         <Typography variant="h6" mb={2}>Activities</Typography>
 
         {data?.activities?.map((activity, index) => {
+
           const label =
+
             activity?.name ||
             moduleTypeLabel[activity?.module_type_id] ||
             'Objective Quiz'
