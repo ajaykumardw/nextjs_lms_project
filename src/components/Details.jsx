@@ -163,8 +163,8 @@ export default function ProgramPage({ data }) {
             </Box>
 
             <Box mt={2}>
-              <Typography variant='body2'>{avgCompletion.toFixed(1)}% Completed</Typography>
-              <LinearProgress variant='determinate' value={avgCompletion.toFixed(1)} sx={{ mt: 1, height: 8, borderRadius: 2 }} />
+              <Typography variant='body2'>{avgCompletion.toFixed(1) > 100 ? 100 : avgCompletion.toFixed(1)}% Completed</Typography>
+              <LinearProgress variant='determinate' value={avgCompletion.toFixed(1) > 100 ? 100 : avgCompletion.toFixed(1)} sx={{ mt: 1, height: 8, borderRadius: 2 }} />
             </Box>
           </Box>
         </CardContent>
@@ -185,8 +185,8 @@ export default function ProgramPage({ data }) {
         // Determine status
         let status = "Pending";
 
-        if (avgCompletion === 100) status = "Completed";
-        else if (avgCompletion > 0) status = "In Progress";
+        if (avgCompletion.toFixed(1) >= 100) status = "Completed";
+        else if (avgCompletion.toFixed(1) > 0) status = "In Progress";
 
         return (
           <Card
@@ -247,7 +247,7 @@ export default function ProgramPage({ data }) {
             {status !== "Pending" && (
               <LinearProgress
                 variant="determinate"
-                value={avgCompletion}
+                value={avgCompletion.toFixed(1) > 100 ? 100 : avgCompletion.toFixed(1)}
                 sx={{
                   height: 3,
                   borderRadius: 0,

@@ -234,24 +234,10 @@ const ContentData = () => {
           {/* ACTION BUTTONS */}
           {!loading && (
             <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 3 }}>
-              {(
-                (fieldData?.viewedPages &&
-                  fieldData?.totalPages &&
-                  fieldData.viewedPages.length === fieldData.totalPages)
-                ||
-                (
-                  fieldData?.totalVideoTime &&
-                  fieldData?.viewedVideoTime &&
-                  Number(fieldData.totalVideoTime) === Number(fieldData.viewedVideoTime)
-                )
-                ||
-                (
-                  data?.questions?.length &&
-                  quizData?.length &&
-                  Number(data?.questions?.length) === Number(quizData?.length)
-                )
-              ) && (
-                  <Button variant="contained" color="primary" onClick={() => {
+              {(types !== 'quiz') && (
+                <Button variant="contained" color="primary"
+                  disabled={Number(data?.logs?.[0]?.completion_percentage) >= 100}
+                  onClick={() => {
                     if (quizData?.length > 0) {
 
                       saveQuizData(quizData)
@@ -264,9 +250,9 @@ const ContentData = () => {
                     router.push(`/${locale}/apps/content?id=${moduleId}&content-folder-id=${contentFolderId}`);
                     toast.success("Activity completed successfully", { autoClose: 1000 });
                   }}>
-                    Mark as complete
-                  </Button>
-                )}
+                  Mark as complete
+                </Button>
+              )}
 
               <Button
                 variant="outlined"
