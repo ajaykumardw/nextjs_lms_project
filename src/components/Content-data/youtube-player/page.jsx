@@ -1,7 +1,6 @@
 'use client'
 
 import { useRef, useState, useEffect } from 'react'
-
 import { Box } from "@mui/material"
 import ReactPlayer from 'react-player'
 
@@ -12,26 +11,33 @@ const YouTubePlayerComponent = ({ url, setFieldData, pageData }) => {
   const [currentVideoTime, setCurrentVideoTime] = useState(0)
   const [viewedVideoTime, setViewedVideoTime] = useState(0)
 
-  // Restore previously saved time
+  // Load DB values on mount (highest wins)
   useEffect(() => {
-    if (!playerRef.current || pageData?.current_video_time == null) return
+    if (!pageData) return;
 
-    const saved = Number(pageData.current_video_time)
+    const dbTotal = Number(pageData.total_video_time) || 0
+    const dbCurrent = Number(pageData.current_video_time) || 0
+    const dbViewed = Number(pageData.viewed_video_time) || 0
 
-    if (!isNaN(saved)) {
-      playerRef.current.seekTo(saved, 'seconds')
+    setTotalVideoTime(prev => Math.max(prev, dbTotal))
+    setCurrentVideoTime(prev => Math.max(prev, dbCurrent))
+    setViewedVideoTime(prev => Math.max(prev, dbViewed))
+
+    // Seek only to DB time, never lower
+    if (playerRef.current && dbCurrent > 0) {
+      playerRef.current.seekTo(dbCurrent, 'seconds')
     }
-  }, [pageData?.current_video_time])
+  }, [pageData])
 
-  // Push updated values upward (rounded)
+  // Push updated times upward (only increasing)
   useEffect(() => {
     if (!setFieldData) return;
 
     setFieldData(prev => ({
       ...prev,
-      totalVideoTime: Math.round(totalVideoTime),
-      currentVideoTime: Math.round(currentVideoTime),
-      viewedVideoTime: Math.round(viewedVideoTime),
+      totalVideoTime,
+      currentVideoTime,
+      viewedVideoTime,
     }))
   }, [totalVideoTime, currentVideoTime, viewedVideoTime])
 
@@ -53,16 +59,20 @@ const YouTubePlayerComponent = ({ url, setFieldData, pageData }) => {
         width="100%"
         height="100%"
 
-        // TOTAL DURATION
+        // Total duration — always take the highest
         onDuration={(duration) => {
-          setTotalVideoTime(Math.round(duration))
+          const rounded = Math.round(duration)
+          setTotalVideoTime(prev => Math.max(prev, rounded))
         }}
 
-        // PROGRESS
+        // Progress — never allow backward movement
         onProgress={(state) => {
           const rounded = Math.round(state.playedSeconds)
 
-          setCurrentVideoTime(rounded)
+          // Prevent decreasing time
+          setCurrentVideoTime(prev => Math.max(prev, rounded))
+
+          // Viewed should always be maximum point reached
           setViewedVideoTime(prev => Math.max(prev, rounded))
         }}
       />

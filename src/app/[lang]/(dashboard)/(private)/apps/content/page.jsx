@@ -251,9 +251,9 @@ export default function ProgramPage() {
 
                 {/* Right */}
                 <Stack direction="row" spacing={2} alignItems="center">
-                  {Number(activity?.logs[0]?.completion_percentage) >= 100 && (
+                  {(activity?.logs[0]?.is_completed && Number(activity?.logs[0]?.completion_percentage) >= 100) && (
                     <Chip
-                      label={`Completed On : ${formatEnrollDate(activity?.logs[0]?.created_at)}`}
+                      label={`Completed On : ${(activity?.logs[0]?.is_completed && activity?.logs[0]?.completed_at_time && activity?.logs[0]?.completed_at_time != null && activity?.logs[0]?.completed_at_time != "null") ? formatEnrollDate(activity?.logs[0]?.completed_at_time) : ""}`}
                       variant="outlined"
                       color="success"
                       size="small"
@@ -266,7 +266,7 @@ export default function ProgramPage() {
                     href={`/${locale}/apps/content-data?type=${docType?.[activity?.module_type_id]}&activityId=${activity?._id}&moduleId=${moduleId}&contentFolderId=${content_folder_id}&moduleTypeId=${activity?.module_type_id}`}
                     sx={{ borderRadius: 2, textTransform: 'none', px: 3 }}
                   >
-                    {Number(activity?.logs[0]?.completion_percentage) >= 100 ? "Completed" : 'In progress'}
+                    {Number(activity?.logs[0]?.is_completed) ? "Completed" : 'In progress'}
                   </Button>
                 </Stack>
               </CardContent>
