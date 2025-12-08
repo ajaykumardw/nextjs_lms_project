@@ -58,11 +58,11 @@ const ContentData = () => {
   const [fieldData, setFieldData] = useState({
     currentPage: 0,
     totalPages: 0,
-    
+
     viewedPages: [],
 
     currentVideoTime: 0,
-    
+
     viewedVideoTime: 0,
     totalVideoTime: 0
   });
@@ -70,7 +70,7 @@ const ContentData = () => {
   const [quizData, setQuizData] = useState([]);
 
   // refs for debounced autosave
-  
+
   const fieldAutosaveTimer = useRef(null);
   const quizAutosaveTimer = useRef(null);
 
@@ -81,7 +81,7 @@ const ContentData = () => {
       setLoading(true);
 
       try {
-        
+
         if (!API_URL || !token || !activityId) return;
 
         const response = await fetch(`${API_URL}/user/activity/fetch/data/${activityId}`, {
@@ -90,7 +90,7 @@ const ContentData = () => {
         });
 
         const result = await response.json();
-        
+
         if (response.ok) {
 
           setData(result?.data);
@@ -108,47 +108,47 @@ const ContentData = () => {
   }, [API_URL, token, activityId]);
 
   /** SAFE FETCH HELPERS */
-  
+
   const postJson = async (url, payload) => {
     try {
-      
+
       if (!API_URL || !token) {
 
         console.warn('Missing API_URL or token for postJson', { url });
-        
+
         return { ok: false, error: 'missing credentials' };
-      
+
       }
-      
+
       const res = await fetch(url, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      
+
       const json = await res.json().catch(() => null);
-    
+
       return { ok: res.ok, status: res.status, data: json };
     } catch (error) {
-    
+
       console.error('postJson error', error);
-      
+
       return { ok: false, error };
-    
+
     }
   };
 
   /** SAVE FUNCTIONS (set = update, insert = final/insert) */
   const saveFieldData = async (payload) => {
-    
+
     const url = `${API_URL}/user/activity/set/report/data/${moduleId}/${contentFolderId}/${activityId}/${moduleTypeId}`;
-    
+
     return postJson(url, payload);
   };
 
   const saveQuizData = async (payload) => {
     const url = `${API_URL}/user/activity/set/report/data/${moduleId}/${contentFolderId}/${activityId}/${moduleTypeId}`;
-    
+
     return postJson(url, payload);
   };
 
@@ -161,7 +161,7 @@ const ContentData = () => {
 
   const saveInsertQuizData = async (payload) => {
     const url = `${API_URL}/user/activity/insert/report/data/${moduleId}/${contentFolderId}/${activityId}/${moduleTypeId}`;
-    
+
     return postJson(url, payload);
   };
 
@@ -169,11 +169,11 @@ const ContentData = () => {
   useEffect(() => {
     // only trigger when meaningful values change
     const changed =
-      
-    fieldData.currentPage ||
+
+      fieldData.currentPage ||
 
       fieldData.currentVideoTime ||
-      
+
       (fieldData.viewedPages && fieldData.viewedPages.length > 0);
 
     if (!changed) return;
@@ -190,9 +190,9 @@ const ContentData = () => {
 
     return () => {
       if (fieldAutosaveTimer.current) {
-      
+
         clearTimeout(fieldAutosaveTimer.current);
-      
+
       }
     };
   }, [
@@ -216,7 +216,7 @@ const ContentData = () => {
         if (!res.ok) {
           console.warn('Quiz autosave failed', res);
         }
-      
+
       });
 
     }, 1200);
@@ -224,7 +224,7 @@ const ContentData = () => {
     return () => {
       if (quizAutosaveTimer.current) clearTimeout(quizAutosaveTimer.current);
     };
-  
+
   }, [quizData, API_URL, token]);
 
   /** FILE AND VIDEO INFO */
@@ -266,7 +266,7 @@ const ContentData = () => {
     try {
       if (quizData.length > 0) {
         const res = await saveInsertQuizData(quizData);
-        
+
         if (!res.ok) {
           toast.error('Failed to save quiz before marking complete');
           console.warn('markComplete saveInsertQuizData failed', res);
@@ -357,22 +357,46 @@ const ContentData = () => {
             </Box>
 
             {!loading && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 3 }}>
-                {types !== 'quiz' && isCompletedCondition && (
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    disabled={data.logs?.[0]?.is_completed}
-                    onClick={() => setOpenConfirm(true)}
-                  >
-                    Mark as complete
-                  </Button>
-                )}
+              <>
+                {/* NOTE BOX */}
+                <Box
+                  sx={{
+                    backgroundColor: '#e8f1ff',
+                    border: '1px solid #c5d7ff',
+                    padding: 2,
+                    borderRadius: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    mt: 2
+                  }}
+                >
+                  In order to complete the activity it is mandatory to click on
+                  <strong>" Mark As Complete "</strong> after you have finished.
+                </Box>
 
-                <Button variant="outlined" color="secondary" href={`/${locale}/apps/content?id=${moduleId}&content-folder-id=${contentFolderId}`}>
-                  Exit
-                </Button>
-              </Box>
+                {/* BUTTONS */}
+                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 3 }}>
+                  {types !== 'quiz' && isCompletedCondition && (
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      disabled={data.logs?.[0]?.is_completed}
+                      onClick={() => setOpenConfirm(true)}
+                    >
+                      Mark as complete
+                    </Button>
+                  )}
+
+                  <Button
+                    variant="outlined"
+                    color="secondary"
+                    href={`/${locale}/apps/content?id=${moduleId}&content-folder-id=${contentFolderId}`}
+                  >
+                    Exit
+                  </Button>
+                </Box>
+              </>
             )}
           </CardContent>
         </Card>
