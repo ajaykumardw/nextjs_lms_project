@@ -5,69 +5,234 @@ import React, { useEffect, useState, useRef } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 
 import {
-  Box, Paper, Typography, Button, Checkbox,
-  Alert, Stack, Divider, Skeleton,
-  Dialog, DialogTitle, DialogContent, DialogActions
+  CardContent, Box, Paper, Typography, Button, Checkbox,
+  Card, Stack, Divider, Skeleton, Dialog, DialogTitle,
+  DialogContent, DialogActions
 } from "@mui/material";
+
+import Grid from "@mui/material/Grid2";
 
 import { useTheme } from "@mui/material/styles";
 
 import { toast } from "react-toastify";
 
+import DefaultInstruction from "@/components/QuizInstruction/page";
 import DialogCloseButton from '@/components/dialogs/DialogCloseButton';
 
-const QuizStaticLayout = ({ data = [], report = [], setQuizData = () => { }, status = false, saveInsertQuizData = async () => ({ ok: false }) }) => {
+const formatDate = (date) => {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  
+  return `${year}-${month}-${day}`;
+};
+
+const QuizStaticLayout = ({
+  data = [],
+  report = [],
+  setQuizData = () => { },
+  status = false,
+  quizSetting,
+  isInstruction = false,
+  log,
+  saveInsertQuizData = async () => ({ ok: false })
+}) => {
   const theme = useTheme();
-
   const { lang: locale } = useParams();
-
+  const router = useRouter();
   const searchParams = useSearchParams();
 
-  const activityId = searchParams.get('activityId');
-  const types = searchParams.get('type');
+  const attemptedRef = useRef([]);
+
   const moduleId = searchParams.get('moduleId');
   const contentFolderId = searchParams.get('contentFolderId');
-  const moduleTypeId = searchParams.get('moduleTypeId');
 
-  const [questions, setQuestions] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(null);
+  const timerRef = useRef(null);
+
+  const [questions, setQuestions] = useState(null); // flattened questions (UI uses 0-based selected)
+  const [sections, setSections] = useState([]);
   const [index, setIndex] = useState(0);
-  const [saved, setSaved] = useState(false);
-  const [attempted, setAttempted] = useState([]);
+  const [attempted, setAttempted] = useState([]); // only attempted questions, used for backend
   const lastSentRef = useRef(null);
-
-  const [confirmOpen, setConfirmOpen] = useState(false); // ⬅️ Confirmation modal state
-
-  const router = useRouter()
-
   const explicitSaveTimer = useRef(null);
-  const isMountedRef = useRef(true);
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
+    attemptedRef.current = attempted;
+  }, [attempted]);
 
-    return () => {
-      isMountedRef.current = false;
-      if (explicitSaveTimer.current) clearTimeout(explicitSaveTimer.current);
-    };
-  }, []);
+  // Timer (overallTime)
+  useEffect(() => {
+    if (quizSetting?.timing?.type === "overallTime" && isInstruction) {
+      const durationInMs = quizSetting.timing.duration * 60 * 1000;
+      
+      setTimeLeft(durationInMs);
 
-  /** Load Questions + Merge Report */
+      timerRef.current = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1000) {
+            clearInterval(timerRef.current);
+            handleSave(); // now uses latest attemptedRef.current
+            
+            return 0;
+          }
+          
+          return prev - 1000;
+        });
+      }, 1000);
+    }
+    
+    return () => clearInterval(timerRef.current);
+  }, [quizSetting?.timing, isInstruction]);
+
+  const formatTimer = ms => {
+    if (ms === null) return "";
+    const totalSeconds = Math.floor(ms / 1000);
+    const m = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+    const s = String(totalSeconds % 60).padStart(2, "0");
+    
+
+    return `${m}:${s}`;
+  };
+
+  // Utility: build marks map (positive correct, negative wrong)
+  const buildMarks = () => ({
+    1: {
+      correct: quizSetting?.marking?.easy?.correct ?? 1,
+      wrong: -(quizSetting?.marking?.easy?.wrong ?? 0)
+    },
+    2: {
+      correct: quizSetting?.marking?.medium?.correct ?? 2,
+      wrong: -(quizSetting?.marking?.medium?.wrong ?? 0)
+    },
+    3: {
+      correct: quizSetting?.marking?.difficult?.correct ?? 3,
+      wrong: -(quizSetting?.marking?.difficult?.wrong ?? 0)
+    }
+  });
+
+  // SCORING FUNCTIONS (work with 1-based selected arrays and 1-based correct_answer)
+  const scoreSingleCorrect = (question, selectedOneBased, marks) => {
+    const difficulty = Number(question.difficulty) || 1;
+    const { correct, wrong } = marks[difficulty] || marks[1];
+    
+    if (!Array.isArray(selectedOneBased) || selectedOneBased.length === 0) return 0;
+    const correctAnswer = Number((question.correct_answer || [])[0]);
+    
+    return Number(selectedOneBased[0]) === correctAnswer ? correct : wrong;
+  };
+
+  const scoreMultipleCorrect = (question, selectedOneBased, marks) => {
+    const difficulty = Number(question.difficulty) || 1;
+    const { correct, wrong } = marks[difficulty] || marks[1];
+    const correctAnswers = (question.correct_answer || []).map(Number);
+    const selected = (selectedOneBased || []).map(Number);
+
+    // If any selected option is not in correctAnswers => negative
+    for (const s of selected) {
+      if (!correctAnswers.includes(s)) return wrong;
+    }
+
+    // If sizes match and all selected are correct -> full correct
+    const selectedSet = new Set(selected);
+    const correctSet = new Set(correctAnswers);
+    
+    const fullCorrect =
+      selectedSet.size === correctSet.size &&
+      [...correctSet].every(v => selectedSet.has(v));
+
+    if (fullCorrect) return correct;
+
+    // Partial (some correct but not all, and no wrong selected) => 0
+    return 0;
+  };
+
+  const calculateScore = (question, selectedOneBased, marks) => {
+    const type = (question.question_type || "Single Correct").toLowerCase();
+    
+    if (type.includes("multiple")) {
+      return scoreMultipleCorrect(question, selectedOneBased, marks);
+    }
+    
+    return scoreSingleCorrect(question, selectedOneBased, marks);
+  };
+
+  /** Load Questions + Merge Report (map, compute total_mark and initial attempted) */
+  /** Load Questions + Merge Report (map, compute total_mark and initial attempted) */
   useEffect(() => {
     if (!Array.isArray(data) || data.length === 0) {
       setQuestions(null);
-      setIndex(0);
+      setSections([]);
       setAttempted([]);
-
+      
       return;
     }
 
-    const mapped = data.map((q) => {
-      const fromReport = Array.isArray(report) ? report.find(r => r.question_id === q._id) : null;
+    const marks = buildMarks();
+
+    //  NEW — ORDER SETTING
+    let processed = [...data];
+
+    if (quizSetting?.orderSetting === "differentOrder") {
+      // shuffle questions
+      processed = processed.sort(() => Math.random() - 0.5);
+    }
+
+    // MAP QUESTIONS
+    const mapped = processed.map(q => {
+      const fromReport = Array.isArray(report)
+        ? report.find(r => r.question_id === q._id)
+        : null;
+
+      const correct_answer = Array.isArray(q.correct_answer)
+        ? q.correct_answer.map(n => Number(n)).filter(Number.isFinite)
+        : [Number(q.correct_answer)].filter(Number.isFinite);
+
+      const difficulty = Number(q.diffculty ?? q.difficulty ?? 1);
+
+      const total_mark =
+        (marks[difficulty] && marks[difficulty].correct) ??
+        marks[1].correct;
+
+      let selectedOne = [];
+      
+      if (fromReport) {
+        if (Array.isArray(fromReport.selected_option_no)) {
+          selectedOne = fromReport.selected_option_no
+            .map(n => Number(n))
+            .filter(Number.isFinite);
+        } else if (fromReport.selected_option_no != null) {
+          const num = Number(fromReport.selected_option_no);
+          
+          if (Number.isFinite(num)) selectedOne = [num];
+        }
+      }
+
+      const mark = calculateScore(
+        {
+          difficulty,
+          question_type: q.question_type,
+          correct_answer
+        },
+        selectedOne,
+        marks
+      );
+
+      const selectedZero = selectedOne
+        .map(n => n - 1)
+        .filter(n => Number.isFinite(n) && n >= 0);
 
       return {
         id: q._id,
         text: q.question,
-        score: Number(q.score) || 0,
-        correct_answer: Number(q.correct_answer) || 0,
+        section: q.section || "Misc",
+        question_type: q.question_type || "Single Correct",
+        difficulty,
+        total_mark,
+        correct_answer,
         options: [
           q.option1,
           q.option2,
@@ -76,144 +241,212 @@ const QuizStaticLayout = ({ data = [], report = [], setQuizData = () => { }, sta
           q.option5,
           q.option6
         ].filter(Boolean),
-        selected: fromReport ? (Number(fromReport.selected_option_no) - 1) : null
+        selected: selectedZero,
+        mark
       };
     });
 
-    setQuestions(mapped);
-    setIndex(0);
+    // GROUP BY SECTION
+    const groups = {};
+    
+    mapped.forEach(q => {
+      if (!groups[q.section]) groups[q.section] = [];
+      groups[q.section].push(q);
+    });
 
-    const initialAttempts = (Array.isArray(report) ? report : []).map(r => ({
-      question_id: r.question_id,
-      selected_option_no: Number(r.selected_option_no),
-      is_correct: !!r.is_correct,
-      mark: Number(r.mark) || 0
+    const sectionArr = Object.keys(groups).map(sec => ({
+      section: sec,
+      items: groups[sec]
     }));
 
-    setAttempted(initialAttempts);
-  }, [data, report]);
+    setSections(sectionArr);
 
-  /** Keep Parent Updated */
+    // FLATTEN
+    const flat = sectionArr.flatMap(s => s.items);
+    
+    setQuestions(flat);
+    setIndex(0);
+
+    // INITIAL ATTEMPTED (all questions)
+    const initialAttempts = mapped.map(q => {
+      const selected = Array.isArray(q.selected) ? q.selected : [];
+
+      const selectedOne = selected.map(n => String(n + 1));
+      const is_correct = q.mark > 0;
+      const mark = selectedOne.length > 0 ? q.mark : 0;
+
+      return {
+        question_id: q.id,
+        selected_option_no: selectedOne,
+        is_correct,
+        mark,
+        total_mark: q.total_mark
+      };
+    });
+
+    setAttempted(initialAttempts);
+  }, [
+    data,
+    report,
+    quizSetting?.orderSetting,
+    quizSetting?.marking
+  ]);
+
+  /** Keep Parent Synced with attempted */
   useEffect(() => {
     try {
-
       const serialized = JSON.stringify(attempted || []);
-
+      
       if (lastSentRef.current !== serialized) {
-
         setQuizData(attempted);
         lastSentRef.current = serialized;
       }
-    } catch (err) {
+    } catch {
       setQuizData(attempted);
     }
-  }, [attempted, setQuizData]);
+  }, [attempted]);
 
-  /** Navigation */
-  const next = () => {
-    if (!questions) return;
-    setIndex(i => Math.min(i + 1, questions.length - 1));
+  /** Helpers */
+  const isQuestionAttempted = (questionId) => {
+    const att = attempted.find(a => a.question_id === questionId);
+    
+    if (!att) return false;
+
+    return Array.isArray(att.selected_option_no) && att.selected_option_no.length > 0;
   };
 
-  const prev = () => {
-    if (!questions) return;
-    setIndex(i => Math.max(i - 1, 0));
+  const areAllQuestionsAttempted = () => {
+    if (!Array.isArray(questions)) return false;
+
+    return questions.every(q => isQuestionAttempted(q.id));
   };
 
   /** Select Option */
-  const handleSelectOption = (optionIndex) => {
+  const handleSelectOption = optionIndex => {
+
     if (status) return;
+
+    if (!questions) return;
 
     setQuestions(prev => {
 
       if (!prev) return prev;
 
       const updated = [...prev];
+      const q = updated[index];
 
-      const safeIndex = Math.max(0, Math.min(index, updated.length - 1));
+      if (!q) return updated;
 
-      updated[safeIndex] = { ...updated[safeIndex], selected: optionIndex };
+      let newSelectedZero = [];
 
-      const q = updated[safeIndex];
-      const correctIndex = Number(q.correct_answer) - 1;
+      if ((q.question_type || "").toLowerCase().includes("multiple")) {
+        const set = new Set(q.selected || []);
 
-      const attempt = {
-        question_id: q.id,
-        selected_option_no: optionIndex + 1,
-        is_correct: optionIndex === correctIndex,
-        mark: optionIndex === correctIndex ? Number(q.score) : 0,
+        if (set.has(optionIndex)) set.delete(optionIndex);
+        else set.add(optionIndex);
+        newSelectedZero = [...set].sort((a, b) => a - b);
+      } else {
+        newSelectedZero = [optionIndex];
+      }
+
+      // Update question.selected (0-based)
+      updated[index] = { ...q, selected: newSelectedZero };
+
+      // Prepare 1-based selected for scoring and backend
+      const selectedOne = newSelectedZero.map(n => n + 1);
+
+      // Recompute mark using current settings
+      const marks = buildMarks();
+
+      const scoringQuestion = {
+        difficulty: q.difficulty ?? 1,
+        question_type: q.question_type,
+        correct_answer: q.correct_answer
       };
 
+      const mark = calculateScore(scoringQuestion, selectedOne, marks);
+
+      // Update attempted: only keep questions with selection
       setAttempted(prevAtt => {
         const filtered = prevAtt.filter(a => a.question_id !== q.id);
 
-        return [...filtered, attempt];
+        if (selectedOne.length === 0) {
+
+          // user cleared selection -> remove from attempted
+
+          return filtered;
+        }
+
+        // push updated attempt with selected_option_no as array of strings
+        filtered.push({
+          question_id: q.id,
+          selected_option_no: selectedOne.map(String),
+          is_correct: mark > 0,
+          mark,
+          total_mark: q.total_mark
+        });
+
+        return filtered;
       });
 
       return updated;
     });
   };
 
-  /** Actual Save Function */
+  /** Save */
   const handleSave = async () => {
-    if (status) return;
-
-    if (explicitSaveTimer.current) {
-      clearTimeout(explicitSaveTimer.current);
-    }
+    if (explicitSaveTimer.current) clearTimeout(explicitSaveTimer.current);
 
     explicitSaveTimer.current = setTimeout(async () => {
-      try {
-        const res = await saveInsertQuizData(attempted);
+      const res = await saveInsertQuizData(attemptedRef.current); // use ref
 
-        if (res && res.ok) {
-
-          router.push(`/${locale}/apps/content?id=${moduleId}&content-folder-id=${contentFolderId}`)
-          toast.success("Quiz completed successfully", { autoClose: 1000 });
-        } else {
-          console.warn('saveInsertQuizData failed', res);
-        }
-      } catch (err) {
-        console.error('handleSave error', err);
+      if (res?.ok) {
+        toast.success("Quiz completed successfully!", { autoClose: 1000 });
+        router.push(`/${locale}/apps/content?id=${moduleId}&content-folder-id=${contentFolderId}`);
+      } else {
+        toast.error("Failed to save quiz. Please try again.");
       }
     }, 300);
   };
 
   const loading = !questions;
-
+  const colorTextSecondary = theme.palette.text.secondary;
   const bg = theme.palette.mode === "dark" ? "#121212" : "#fafafa";
   const panelBg = theme.palette.mode === "dark" ? "#1e1e1e" : "#fff";
   const borderColor = theme.palette.mode === "dark" ? "#333" : "#ddd";
-  const textSecondary = theme.palette.text.secondary;
+
+  // Defensive accessor for settings
+  const otherSettings = quizSetting?.otherSettings || {};
+  const allowSkipQuestions = otherSettings.allowSkipQuestions !== undefined ? otherSettings.allowSkipQuestions : true;
+  const isMandatory = otherSettings.isMandatory !== undefined ? otherSettings.isMandatory : false;
+
+  if (!isInstruction) {
+
+    return (
+      <IntroductionSet log={log} quizSetting={quizSetting} data={data} />
+    );
+  }
 
   return (
     <>
-      {/* CONFIRM SAVE MODAL */}
-
+      {/* SAVE CONFIRMATION */}
       <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}>
-
         <DialogCloseButton onClick={() => setConfirmOpen(false)}><i className="tabler-x" /></DialogCloseButton>
 
         <DialogTitle>Confirm Save</DialogTitle>
-
         <DialogContent>
-          <Typography>
-            Are you sure you want to save your quiz answers?
-          </Typography>
+          <Typography>Are you sure you want to save?</Typography>
         </DialogContent>
 
         <DialogActions>
-          <Button onClick={() => setConfirmOpen(false)} color="inherit">
-            Cancel
-          </Button>
-
+          <Button onClick={() => setConfirmOpen(false)}>Cancel</Button>
           <Button
             onClick={() => {
               setConfirmOpen(false);
               handleSave();
             }}
-            color="success"
             variant="contained"
+            color="success"
           >
             Confirm
           </Button>
@@ -221,147 +454,279 @@ const QuizStaticLayout = ({ data = [], report = [], setQuizData = () => { }, sta
       </Dialog>
 
       {/* MAIN LAYOUT */}
-      <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} height={{ md: '80vh' }} bgcolor={bg}>
+      <Box display="flex" flexDirection={{ xs: "column", md: "row" }} height="50vh" bgcolor={bg}>
 
         {/* LEFT SIDEBAR */}
         <Box
-          flex={{ xs: 'unset', md: 1 }}
+          flex={1}
           p={2}
-          borderRight={{ md: `1px solid ${borderColor}` }}
-          sx={{
-            overflowY: "auto",
-            backgroundColor: panelBg
-          }}
+          borderRight={`1px solid ${borderColor}`}
+          sx={{ overflowY: "auto", backgroundColor: panelBg }}
         >
-          <Typography variant="h6" sx={{ mb: 2, fontWeight: "bold" }}>
+          <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
             Questions
           </Typography>
 
           {loading ? (
-            <Stack spacing={2}>
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Paper
-                  key={i}
-                  sx={{ p: 2, borderRadius: 2, backgroundColor: panelBg }}
-                >
-                  <Skeleton width="40%" height={25} />
-                  <Skeleton width="90%" height={20} />
-                </Paper>
-              ))}
-            </Stack>
+            <Skeleton height={100} />
           ) : (
-            (questions || []).map((q, i) => (
-              <Paper
-                key={q.id}
-                elevation={i === index ? 6 : 1}
-                sx={{
-                  p: 2,
-                  mb: 2,
-                  cursor: "pointer",
-                  borderRadius: 2,
-                  transition: "0.2s",
-                  backgroundColor: i === index ? theme.palette.action.selected : panelBg,
-                  "&:hover": {
-                    backgroundColor: theme.palette.action.hover
-                  }
-                }}
-                onClick={() => setIndex(i)}
-              >
-                <Typography fontWeight="600">{`Q${i + 1}`}</Typography>
-                <Typography variant="body2" color={textSecondary} noWrap>
-                  {q.text}
+            sections.map(sec => (
+              <Box key={sec.section} sx={{ mb: 3 }}>
+                <Typography fontWeight="bold" sx={{ mb: 1 }}>
+                  {sec.section}
                 </Typography>
-              </Paper>
+
+                {sec.items.map(q => {
+                  const idx = questions.findIndex(qq => qq.id === q.id);
+
+                  const handleClickQuestion = () => {
+                    // If skipping is not allowed, prevent navigation to other question unless the target is already attempted
+                    if (!allowSkipQuestions) {
+                      // allow clicking the same index or a previously attempted question
+                      if (idx === index) {
+                        setIndex(idx);
+
+                        return;
+                      }
+
+                      const targetAttempted = isQuestionAttempted(q.id);
+
+                      if (!targetAttempted && !isQuestionAttempted(questions[index].id)) {
+                        toast.warn("Please attempt the current question before moving to another question.");
+
+                        return;
+                      }
+                    }
+
+                    setIndex(idx);
+                  };
+
+                  return (
+                    <Paper
+                      key={q.id}
+                      elevation={idx === index ? 6 : 1}
+                      sx={{
+                        p: 2,
+                        mb: 1,
+                        cursor: "pointer",
+                        borderRadius: 2,
+                        backgroundColor:
+                          idx === index
+                            ? theme.palette.action.selected
+                            : panelBg,
+                      }}
+                      onClick={handleClickQuestion}
+                    >
+                      <Typography fontWeight="600">{`Q${idx + 1}`}</Typography>
+                      <Typography variant="body2" color={colorTextSecondary} noWrap>
+                        {q.text}
+                      </Typography>
+                    </Paper>
+                  );
+                })}
+              </Box>
             ))
           )}
         </Box>
 
         {/* RIGHT CONTENT */}
-        <Box flex={{ xs: 'unset', md: 2 }} p={3} sx={{ overflowY: "auto" }}>
-          {saved && <Alert severity="success" sx={{ mb: 2 }}>Saved successfully!</Alert>}
-
-          <Box sx={{ p: 3 }}>
-            {!loading && (
-              <>
+        <Box flex={2} p={3} sx={{ overflowY: "auto" }}>
+          {!loading && (
+            <>
+              {/* HEADER WITH QUESTION + TIMER */}
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                sx={{ mb: 1 }}
+              >
                 <Typography variant="h5" fontWeight="bold">
                   Question {index + 1}
                 </Typography>
-                <Divider sx={{ my: 2 }} />
-              </>
-            )}
 
-            {loading ? (
-              <Skeleton height={90} />
-            ) : (
-              <Typography sx={{ fontSize: 18, mt: 1, whiteSpace: "pre-line" }}>
-                {questions[index]?.text}
-              </Typography>
-            )}
+                {/* TIMER (only when overallTime & not instruction page) */}
+                {isInstruction && quizSetting?.timing?.type === "overallTime" && (
+                  <Box
+                    sx={{
+                      px: 2,
+                      py: 1,
+                      borderRadius: "999px",
+                      fontWeight: "bold",
+                      fontSize: "1.1rem",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1.2,
+                      boxShadow: "0 0 8px rgba(0,0,0,0.15)",
+                      color: timeLeft < 30000 ? "#fff" : theme.palette.text.primary,
+                      backgroundColor:
+                        timeLeft < 30000 ? "#ff1744" : theme.palette.mode === "dark" ? "#333" : "#e0e0e0",
+                      transition: "all 0.3s ease",
+                      animation:
+                        timeLeft < 30000
+                          ? "pulse 1s infinite"
+                          : "none",
+                      "@keyframes pulse": {
+                        "0%": { transform: "scale(1)" },
+                        "50%": { transform: "scale(1.05)" },
+                        "100%": { transform: "scale(1)" }
+                      }
+                    }}
+                  >
+                    <i className="tabler-clock" style={{ fontSize: "20px" }} />
+                    {formatTimer(timeLeft)}
+                  </Box>
+                )}
+              </Box>
 
-            {!loading && (
-              <>
-                <Typography sx={{ mt: 3, fontWeight: "bold" }}>Options</Typography>
+              <Divider sx={{ my: 2 }} />
+            </>
+          )}
 
-                <Stack spacing={2} mt={2}>
-                  {questions[index].options.map((opt, i) => (
-                    <Box
-                      key={i}
-                      display="flex"
-                      alignItems="center"
-                      gap={1}
-                      sx={{
-                        p: 1,
-                        borderRadius: 1,
-                        backgroundColor:
-                          questions[index].selected === i
-                            ? theme.palette.action.selected
-                            : "transparent",
-                      }}
-                    >
-                      <Checkbox
-                        checked={questions[index].selected === i}
-                        disabled={status}
-                        onChange={() => handleSelectOption(i)}
-                      />
-                      <Typography sx={{ fontSize: 16 }}>
-                        {opt}
-                      </Typography>
-                    </Box>
-                  ))}
-                </Stack>
-              </>
-            )}
+          {!loading && (
+            <Typography sx={{ fontSize: 18, whiteSpace: "pre-line" }}>
+              {questions[index]?.text}
+            </Typography>
+          )}
 
-            <Box display="flex" justifyContent="space-between" mt={4}>
-              <Button variant="outlined" onClick={prev} disabled={loading || index === 0}>
-                Previous
+          <Typography sx={{ fontSize: 14, color: colorTextSecondary }}>
+            Type: <b>{questions?.[index]?.question_type}</b> &nbsp; | &nbsp;
+            Total Marks: <b>{questions?.[index]?.total_mark ?? "—"}</b>
+          </Typography>
+
+          {!loading && (
+            <>
+              <Typography sx={{ mt: 3, fontWeight: "bold" }}>Options</Typography>
+
+              <Stack spacing={2} mt={2}>
+                {questions[index].options.map((opt, i) => (
+                  <Box
+                    key={i}
+                    display="flex"
+                    alignItems="center"
+                    gap={1}
+                    sx={{
+                      p: 1,
+                      borderRadius: 1,
+                      backgroundColor: questions[index].selected.includes(i)
+                        ? theme.palette.action.selected
+                        : "transparent"
+                    }}
+                  >
+                    <Checkbox
+                      checked={questions[index].selected.includes(i)}
+                      onChange={() => handleSelectOption(i)}
+                      disabled={status}
+                    />
+                    <Typography>{opt}</Typography>
+                  </Box>
+                ))}
+              </Stack>
+            </>
+          )}
+
+          {/* NAVIGATION */}
+          <Box display="flex" justifyContent="space-between" mt={4}>
+            <Button
+              variant="outlined"
+              onClick={() => setIndex(i => Math.max(0, i - 1))}
+              disabled={index === 0}
+            >
+              Previous
+            </Button>
+
+            <Stack direction="row" spacing={2}>
+              <Button
+                variant="contained"
+                onClick={() => {
+                  if (!allowSkipQuestions) {
+                    const currentQ = questions?.[index];
+
+                    if (!currentQ) return;
+
+                    if (!isQuestionAttempted(currentQ.id)) {
+                      toast.warn("Please attempt the current question before moving to the next question.");
+
+                      return;
+                    }
+                  }
+
+                  setIndex(i => Math.min(questions?.length - 1, i + 1));
+                }}
+                disabled={index === questions?.length - 1}
+              >
+                Next
               </Button>
 
-              <Stack direction="row" spacing={2}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  disabled={loading || (questions && index === questions.length - 1)}
-                  onClick={next}
-                >
-                  Next
-                </Button>
+              <Button
+                variant="contained"
+                color="success"
+                onClick={() => {
+                  if (isMandatory && !areAllQuestionsAttempted()) {
+                    toast.warn("You must attempt all questions before saving this mandatory quiz.");
 
-                {/* OPEN CONFIRM MODAL INSTEAD OF DIRECT SAVE */}
-                <Button
-                  variant="contained"
-                  color="success"
-                  disabled={loading || status}
-                  onClick={() => setConfirmOpen(true)}
-                >
-                  Save
-                </Button>
-              </Stack>
-            </Box>
+                    return;
+                  }
+
+                  setConfirmOpen(true);
+                }}
+              >
+                Save
+              </Button>
+            </Stack>
           </Box>
         </Box>
       </Box>
     </>
+  );
+};
+
+const IntroductionSet = ({ log, quizSetting, data }) => {
+
+  return (
+    <Grid container spacing={6}>
+      <Grid item size={{ xs: 12 }}>
+        <Card>
+          <CardContent>
+            <Typography variant='h5' className='mbe-2'>
+              {log?.name}
+            </Typography>
+            <Grid container>
+              <Grid item size={{ xs: 12, sm: 6 }} className='flex flex-col pie-5 gap-[26px]'>
+                <div className='flex items-center gap-2.5'>
+                  <div className='flex'>
+                    <i className='tabler-clock text-xl text-textSecondary' />
+                  </div>
+                  <Typography color='text.secondary'>{quizSetting?.timing?.type === "overallTime" ? `Exam Duration: ${quizSetting?.timing?.duration} Minutes` : "Unlimited"}</Typography>
+                </div>
+                <div className='flex items-center gap-2.5'>
+                  <div className='flex'>
+                    <i className='tabler-calendar-time text-xl text-textSecondary' />
+                  </div>
+                  <Typography color='text.secondary'>Current Date Time: {formatDate(Date.now())}</Typography>
+                </div>
+              </Grid>
+              <Grid item size={{ xs: 12, sm: 6 }} className='flex flex-col max-sm:mbs-[26px] sm:pis-5 sm:border-is gap-[26px]'>
+                <div className='flex items-center gap-2.5'>
+                  <div className='flex'>
+                    <i className='tabler-align-left text-xl text-textSecondary' />
+                  </div>
+                  <Typography color='text.secondary'>Total Questions: {data?.length}</Typography>
+                </div>
+                <div className='flex items-center gap-2.5'>
+                  <div className='flex'>
+                    <i className='tabler-calendar-time text-xl text-textSecondary' />
+                  </div>
+                  <Typography color='text.secondary'>Remaining Attempts: {quizSetting?.reattempts == -1 ? "Unlimited" : (log?.logs?.length == 0 ? (quizSetting?.reattempts) : (log?.logs?.[0]?.attempt_left))}</Typography>
+                </div>
+              </Grid>
+            </Grid>
+            <Divider className='mbs-7 mbe-7' />
+            <Typography variant='h5' className='mbe-2'>Instructions</Typography>
+            <Grid item size={{ xs: 12 }}><DefaultInstruction /></Grid>
+          </CardContent>
+        </Card>
+      </Grid>
+    </Grid>
   );
 };
 

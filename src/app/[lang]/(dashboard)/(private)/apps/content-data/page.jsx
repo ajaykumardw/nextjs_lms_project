@@ -20,7 +20,9 @@ import {
   Button,
   Typography,
   Divider,
-  Skeleton
+  Skeleton,
+  CardActions,
+  CardHeader
 } from '@mui/material';
 
 import { toast } from 'react-toastify';
@@ -50,10 +52,16 @@ const ContentData = () => {
   const { data: session } = useSession();
   const token = session?.user?.token;
 
+  const saveTimeout = useRef(null);
+
   const [data, setData] = useState(null);
   const [pageInfo, setPageInfo] = useState({ current: 1, total: 0 });
   const [loading, setLoading] = useState(true);
   const [openConfirm, setOpenConfirm] = useState(false);
+
+  const [scormData, setScormData] = useState({});
+
+  const [isInstruction, setInstruction] = useState(false)
 
   const [fieldData, setFieldData] = useState({
     currentPage: 0,
@@ -76,33 +84,34 @@ const ContentData = () => {
 
   /** FETCH ACTIVITY */
 
-  useEffect(() => {
-    const fetchActivity = async () => {
-      setLoading(true);
+  const fetchActivity = async () => {
+    setLoading(true);
 
-      try {
+    try {
 
-        if (!API_URL || !token || !activityId) return;
+      if (!API_URL || !token || !activityId) return;
 
-        const response = await fetch(`${API_URL}/user/activity/fetch/data/${activityId}`, {
-          method: 'GET',
-          headers: { Authorization: `Bearer ${token}` }
-        });
+      const response = await fetch(`${API_URL}/user/activity/fetch/data/${activityId}`, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
-        const result = await response.json();
+      const result = await response.json();
 
-        if (response.ok) {
+      if (response.ok) {
 
-          setData(result?.data);
-        } else {
-          console.error('Activity Fetch Error response:', result);
-        }
-      } catch (error) {
-        console.error('Activity Fetch Error:', error);
-      } finally {
-        setLoading(false);
+        setData(result?.data);
+      } else {
+        console.error('Activity Fetch Error response:', result);
       }
-    };
+    } catch (error) {
+      console.error('Activity Fetch Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
 
     fetchActivity();
   }, [API_URL, token, activityId]);
@@ -137,6 +146,21 @@ const ContentData = () => {
 
     }
   };
+
+  const handleSaveScormData = async (data) => {
+    try {
+      const response = await fetch(`${API_URL}/user/activity/set/scorm/data/${moduleId}/${contentFolderId}/${activityId}/${moduleTypeId}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      const result = await response.json();
+
+    } catch (error) {
+      throw new Error(error)
+    }
+  }
 
   /** SAVE FUNCTIONS (set = update, insert = final/insert) */
   const saveFieldData = async (payload) => {
@@ -233,6 +257,7 @@ const ContentData = () => {
   const videoURL = data?.video_data?.video_url ? `${ASSET_URL}/activity/${data.video_data.video_url}` : null;
   const youtubeVideoURL = data?.video_data?.video_url;
   const extension = data?.document_data?.image_url?.split('.').pop()?.toLowerCase();
+  const scromLogData = data?.logs?.[0]?.scorm_data || {}
 
   const isPDF = extension === 'pdf';
   const isOfficeDoc = ['ppt', 'pptx', 'doc', 'docx'].includes(extension);
@@ -288,8 +313,53 @@ const ContentData = () => {
     }
   };
 
+  const saveAttempt = async () => {
+    try {
+
+      const response = await fetch(`${API_URL}/user/activity/attempt/check/${moduleId}/${contentFolderId}/${activityId}/${moduleTypeId}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      const value = await response.json();
+
+    } catch (error) {
+
+      throw new Error(error)
+    }
+  }
+
+  useEffect(() => {
+    if (Object.keys(scormData).length === 0) return;
+
+    // Clear previous timeout
+    if (saveTimeout.current) clearTimeout(saveTimeout.current);
+
+    // Set new timeout to delay API call
+    saveTimeout.current = setTimeout(() => {
+      handleSaveScormData(scormData);
+    }, 800); // ⬅ Save every 5 seconds
+
+    return () => clearTimeout(saveTimeout.current);
+  }, [scormData, moduleId, contentFolderId, activityId, moduleTypeId]);
+
+
   /** RENDER */
   const ready = types && data;
+
+  const moduleTypeLabel = {
+    '688723af5dd97f4ccae68834': 'Documents & Slides',
+    '688723af5dd97f4ccae68835': 'Video',
+    '688723af5dd97f4ccae68836': 'YouTube Video',
+    '688723af5dd97f4ccae68837': 'Scrom Content',
+    '688723af5dd97f4ccae68838': 'Web Link',
+    '688723af5dd97f4ccae68839': 'Subjective Assessment',
+    '688723af5dd97f4ccae6883a': 'Flash Card',
+    "68886902954c4d9dc7a379bd": "Quiz"
+
+  }
 
   return (
     <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
@@ -297,12 +367,12 @@ const ContentData = () => {
         <Skeleton height={200} />
       ) : (
         <Card>
-          <CardContent>
+          <CardHeader title={<>
             {loading ? (
               <Skeleton width="60%" height={40} />
             ) : (
               <Typography variant="h4" fontWeight="bold" gutterBottom color="primary">
-                {data.name}
+                {data.name || moduleTypeLabel?.[moduleTypeId] ? moduleTypeLabel?.[moduleTypeId] : 'Objective Quiz'}
               </Typography>
             )}
 
@@ -310,17 +380,16 @@ const ContentData = () => {
               <Typography variant="body2" sx={{ color: 'primary.main', fontWeight: 500, mb: 1 }}>
                 Page {pageInfo.current} of {pageInfo.total}
               </Typography>
-            )}
+            )}</>
+          } />
+          {/* <Divider sx={{ my: 2 }} /> */}
+          <CardContent>
 
-            <Divider sx={{ my: 2 }} />
 
             <Box
               sx={{
-                height: { xs: '45vh', sm: '50vh', md: '55vh' },
+                height: { xs: '45vh', sm: '50vh', md: '60vh' },
                 p: { xs: 0.5, sm: 1 },
-                border: '1px solid #eee',
-                borderRadius: 2,
-                overflow: 'auto'
               }}
             >
               {loading ? (
@@ -344,61 +413,99 @@ const ContentData = () => {
                   )}
                   {types === 'quiz' && (
                     <QuizQuestionComponent
-                      status={data?.logs?.[0]?.is_completed}
+                      log={data}
+                      isInstruction={isInstruction}
+                      setInstruction={setInstruction}
+                      status={data?.logs?.[0]?.is_completed || false}
+                      quizSetting={data?.QuizSetting?.[0] || {}}
                       data={data.questions || []}
                       report={data.quiz_reports || []}
                       setQuizData={setQuizData}
                       saveInsertQuizData={saveInsertQuizData} // pass actual fn
                     />
                   )}
-                  {types === 'scrom-content' && <ScromContentComponent url={data.scrom_url} />}
+                  {types === 'scrom-content' &&
+                    <ScromContentComponent
+                      data={data}
+                      scormData={scormData}
+                      scromLogData={scromLogData}
+                      setScormData={setScormData}
+                    />
+                  }
                 </>
               )}
             </Box>
 
             {!loading && (
               <>
-                {/* NOTE BOX */}
-                <Box
-                  sx={{
-                    backgroundColor: '#e8f1ff',
-                    border: '1px solid #c5d7ff',
-                    padding: 2,
-                    borderRadius: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    mt: 2
-                  }}
-                >
-                  In order to complete the activity it is mandatory to click on
-                  <strong>" Mark As Complete "</strong> after you have finished.
-                </Box>
 
-                {/* BUTTONS */}
-                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 3 }}>
-                  {types !== 'quiz' && isCompletedCondition && (
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      disabled={data.logs?.[0]?.is_completed}
-                      onClick={() => setOpenConfirm(true)}
-                    >
-                      Mark as complete
-                    </Button>
-                  )}
+                {types !== 'quiz' && types !== "scrom-content" && (
 
-                  <Button
-                    variant="outlined"
-                    color="secondary"
-                    href={`/${locale}/apps/content?id=${moduleId}&content-folder-id=${contentFolderId}`}
+                  <Box
+                    sx={{
+                      backgroundColor: '#e8f1ff',
+                      border: '1px solid #c5d7ff',
+                      padding: 2,
+                      borderRadius: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      mt: 2
+                    }}
                   >
-                    Exit
-                  </Button>
-                </Box>
+                    In order to complete the activity it is mandatory to click on
+                    <strong>Mark As Complete</strong> after you have finished.
+                  </Box>
+
+                )}
               </>
             )}
           </CardContent>
+          <CardActions sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 6 }}>
+            {(!isInstruction && types === 'quiz') && (
+
+              ((data?.QuizSetting?.[0]?.reattempts == -1) || (!(quizData?.length > 0 && (data?.logs?.[0] ? !data?.logs?.[0]?.is_reattempt_left : false)))) ? (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  disabled={data?.QuizSetting?.[0]?.reattempts != -1 && (quizData?.length > 0 && (data?.logs?.[0] ? !data?.logs?.[0]?.is_reattempt_left : false))}
+                  onClick={() => {
+
+                    setInstruction(true)
+                    saveAttempt()
+                  }}
+                >
+                  Start Exam
+                </Button>
+              ) : (
+                <>
+                  No attempt left
+                </>
+              ))
+            }
+
+            {types !== 'quiz' && isCompletedCondition && (
+              <Button
+                variant="contained"
+                color="primary"
+                disabled={data.logs?.[0]?.is_completed}
+                onClick={() => setOpenConfirm(true)}
+              >
+                Mark as complete
+              </Button>
+            )}
+
+            {(
+              <Button
+                variant="outlined"
+                color="secondary"
+                href={`/${locale}/apps/content?id=${moduleId}&content-folder-id=${contentFolderId}`}
+              >
+                Exit
+              </Button>
+            )}
+
+          </CardActions>
         </Card>
       )}
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { act, useEffect, useState } from 'react'
 
 import { useParams, useSearchParams } from 'next/navigation'
 
@@ -65,7 +65,7 @@ export default function ProgramPage() {
   }, [API_URL, token, moduleId])
 
   // Mapping module types
-  
+
   const moduleTypeLabel = {
     '688723af5dd97f4ccae68834': 'Documents & Slides',
     '688723af5dd97f4ccae68835': 'Video',
@@ -76,11 +76,11 @@ export default function ProgramPage() {
     '688723af5dd97f4ccae68839': 'Subjective Assessment',
     '688723af5dd97f4ccae6883a': 'Flash Card',
     "68886902954c4d9dc7a379bd": "Quiz"
-  
+
   }
 
   const docType = {
-   
+
     '688723af5dd97f4ccae68834': 'pdf',
     '688723af5dd97f4ccae68835': 'video',
     '688723af5dd97f4ccae68836': 'youtube-video',
@@ -101,7 +101,7 @@ export default function ProgramPage() {
   // FULL PAGE SKELETON
 
   // -----------------------------------------------------
-  
+
   if (loading) {
 
     return (
@@ -277,9 +277,9 @@ export default function ProgramPage() {
 
                 {/* Right */}
                 <Stack direction="row" spacing={2} alignItems="center">
-                  {(activity?.logs[0]?.is_completed && Number(activity?.logs[0]?.completion_percentage) >= 100) && (
+                  {((activity?.logs[0]?.is_completed && Number(activity?.logs[0]?.completion_percentage) >= 100) || activity?.logs?.[0]?.scorm_data?.lessonStatus == "passed") && (
                     <Chip
-                      label={`Completed On : ${(activity?.logs[0]?.is_completed && activity?.logs[0]?.completed_at_time && activity?.logs[0]?.completed_at_time != null && activity?.logs[0]?.completed_at_time != "null") ? formatEnrollDate(activity?.logs[0]?.completed_at_time) : ""}`}
+                      label={`Completed On : ${activity?.logs?.[0]?.scorm_data?.lessonStatus == "passed" ? formatEnrollDate(activity?.logs?.[0]?.scorm_data?.passed_at_time) : (activity?.logs[0]?.is_completed && activity?.logs[0]?.completed_at_time && activity?.logs[0]?.completed_at_time != null && activity?.logs[0]?.completed_at_time != "null") ? formatEnrollDate(activity?.logs[0]?.completed_at_time) : ""}`}
                       variant="outlined"
                       color="success"
                       size="small"
@@ -289,10 +289,11 @@ export default function ProgramPage() {
                   <Button
                     variant="contained"
                     color="primary"
+                    disabled={activity?.logs?.[0]?.scorm_data?.lessonStatus == "passed"}
                     href={`/${locale}/apps/content-data?type=${docType?.[activity?.module_type_id]}&activityId=${activity?._id}&moduleId=${moduleId}&contentFolderId=${content_folder_id}&moduleTypeId=${activity?.module_type_id}`}
                     sx={{ borderRadius: 2, textTransform: 'none', px: 3 }}
                   >
-                    {Number(activity?.logs[0]?.is_completed) ? "Completed" : 'In progress'}
+                    {Number(activity?.logs[0]?.is_completed || activity?.logs?.[0]?.scorm_data?.lessonStatus == "passed") ? "Completed" : 'In progress'}
                   </Button>
                 </Stack>
               </CardContent>

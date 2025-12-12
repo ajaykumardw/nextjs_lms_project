@@ -109,58 +109,57 @@ function hash(text) {
 }
 
 const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
-
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
   const { data: session } = useSession();
   const token = session?.user?.token;
 
-  const router = useRouter()
+  const router = useRouter();
+  const { mId: mId, lang: lang } = useParams();
 
-  const [missingHeaders, setMissingHeaders] = useState([])
-  const [validationErrors, setValidationErrors] = useState([])
+  const [missingHeaders, setMissingHeaders] = useState([]);
+  const [validationErrors, setValidationErrors] = useState([]);
 
   const [fileInput, setFileInput] = useState();
   const [progress, setProgress] = useState(0);
   const [uploadData, setUploadData] = useState();
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState([]);
-  const [srNoArr, setSRNOArr] = useState([])
-  const [rowSelection, setRowSelection] = useState({})
-  const [globalFilter, setGlobalFilter] = useState('')
-  const { mId: mId, lang: lang } = useParams();
+  const [srNoArr, setSRNOArr] = useState([]);
+  const [rowSelection, setRowSelection] = useState({});
+  const [globalFilter, setGlobalFilter] = useState('');
 
-  const columnHelper = createColumnHelper()
+  const columnHelper = createColumnHelper();
 
   const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...props }) => {
-    const [value, setValue] = useState(initialValue)
+    const [value, setValue] = useState(initialValue);
 
-
-    useEffect(() => { setValue(initialValue) }, [initialValue])
+    useEffect(() => { setValue(initialValue); }, [initialValue]);
     useEffect(() => {
-      const timeout = setTimeout(() => { onChange(value) }, debounce)
+      const timeout = setTimeout(() => { onChange(value); }, debounce);
 
-      return () => clearTimeout(timeout)
-    }, [value])
+      return () => clearTimeout(timeout);
+    }, [value]);
 
-    return <CustomTextField {...props} value={value} onChange={e => setValue(e.target.value)} />
-  }
+    return <CustomTextField {...props} value={value} onChange={e => setValue(e.target.value)} />;
+  };
 
   const fuzzyFilter = (row, columnId, value, addMeta) => {
-    const itemRank = rankItem(row.getValue(columnId), value)
+    const itemRank = rankItem(row.getValue(columnId), value);
 
-    addMeta({ itemRank })
+    addMeta({ itemRank });
 
-    return itemRank.passed
-  }
+    return itemRank.passed;
+  };
 
   const handleRemoveFile = () => {
     setData([]);
-    setFileInput(null)
+    setFileInput(null);
     setUploadData([]);
-    setValidationErrors([])
-    setMissingHeaders([])
+    setValidationErrors([]);
+    setMissingHeaders([]);
     setLoading(false);
-  }
+    setProgress(0);
+  };
 
   const { getRootProps, getInputProps } = useDropzone({
     multiple: false,
@@ -170,123 +169,228 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
     },
     onDrop: (acceptedFiles) => {
-
+      // reset
       setFileInput(null);
       setMissingHeaders([]);
       setValidationErrors([]);
       setLoading(true);
       setProgress(0);
       setData([]);
-      setUploadData([]); // reset previous data on new upload
+      setUploadData([]);
+
+      if (!acceptedFiles || !acceptedFiles.length) {
+        setLoading(false);
+        toast.error('No file selected.');
+
+        return;
+      }
+
+      const selectedFile = acceptedFiles[0];
+
+      if (!selectedFile) {
+        setLoading(false);
+        toast.error('File read failed.');
+
+        return;
+      }
 
       const reader = new FileReader();
 
+      // Robust parser for Correct Answer cell values
+      function parseCorrectAnswer(raw) {
+        if (raw === null || raw === undefined) return [];
+
+        if (Array.isArray(raw)) {
+
+          return raw
+            .map(v => (v === null || v === undefined ? '' : String(v)))
+            .map(s => s.replace(/[\[\]\(\)\{\}'"]/g, ' '))
+            .flatMap(s => s.split(/[^0-9]+/))
+            .map(s => s.trim())
+            .filter(Boolean);
+        }
+
+        let s = String(raw).trim();
+
+        s = s.replace(/[\[\]\(\)\{\}]/g, ' ').replace(/['"]/g, ' ');
+
+        return s.split(/[^0-9]+/).map(p => p.trim()).filter(Boolean);
+      }
+
       reader.onload = async (e) => {
-        if (e.target?.result) {
-          try {
-            const arrayBuffer = e.target.result;
-            const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
-            const sheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[sheetName];
-            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        if (!e.target?.result) {
+          setLoading(false);
+          toast.error('Unable to read file.');
 
-            //Validate header
-            const headers = XLSX.utils.sheet_to_json(worksheet, { header: 1 })[0];
-            const requiredHeaders = ['Sno', 'Question', 'Option 1', 'Option 2', 'Option 3', 'Option 4', 'Option 5', 'Option 6', 'Correct Answer', 'Difficulty Level', 'Section', 'Answer Explanation'];
-            const missingHeadersList = requiredHeaders.filter(h => !headers.includes(h));
+          return;
+        }
 
-            if (missingHeadersList.length > 0) {
-              setMissingHeaders(missingHeadersList);
-              setLoading(false);
+        try {
+          const arrayBuffer = e.target.result;
+          const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
 
-              return;
-            }
+          // Validate headers
+          const headers = XLSX.utils.sheet_to_json(worksheet, { header: 1 })[0] || [];
 
-            //Validate difficulty level, correct answer, and length constraints
-            let difficultyErrors = [];
-            let correctAnswerErrors = [];
-            let lengthErrors = [];
+          const requiredHeaders = [
+            'Sno', 'Question', 'Option 1', 'Option 2', 'Option 3', 'Option 4', 'Option 5', 'Option 6',
+            'Correct Answer', 'Difficulty Level', 'Section', 'Answer Explanation',
+            'Use Answer Explanation', 'Question Type'
+          ];
 
-            jsonData.forEach((row, index) => {
-              const rowNum = index + 2;
-              const difficulty = row['Difficulty Level']?.toString().trim();
-              const correctAnswer = row['Correct Answer']?.toString().trim();
-              const section = row['Section']?.toString().trim() || '';
-              const answerExplanation = row['Answer Explanation']?.toString().trim() || '';
-              const question = row['Question']?.toString().trim() || '';
+          const missingHeadersList = requiredHeaders.filter(h => !headers.includes(h));
 
-              // Difficulty level check
-              if (!['1', '2', '3'].includes(difficulty)) {
-                difficultyErrors.push(`Row ${rowNum}: Difficulty Level must be 1, 2, or 3`);
-              }
+          if (missingHeadersList.length > 0) {
+            setMissingHeaders(missingHeadersList);
+            setLoading(false);
+            setProgress(0);
 
-              //Correct answer check
-              if (!['1', '2', '3', '4', '5', '6'].includes(correctAnswer)) {
-                correctAnswerErrors.push(`Row ${rowNum}: Correct Answer must be 1–6`);
-              }
-
-              //Section length check
-              if (section.length > 10) {
-                lengthErrors.push(`Row ${rowNum}: Section length must not exceed 10 characters`);
-              }
-
-              //Answer Explanation length check
-              if (answerExplanation.length > 500) {
-                lengthErrors.push(`Row ${rowNum}: Answer Explanation length must not exceed 500 characters`);
-              }
-
-              //Question length check
-              if (question.length > 500) {
-                lengthErrors.push(`Row ${rowNum}: Question length must not exceed 500 characters`);
-              }
-            });
-
-            if (difficultyErrors.length > 0 || correctAnswerErrors.length > 0 || lengthErrors.length > 0) {
-              const allErrors = [...difficultyErrors, ...correctAnswerErrors, ...lengthErrors];
-
-              setValidationErrors(allErrors);
-              setLoading(false);
-
-              return;
-            }
-
-            const seen = new Set();
-            const duplicates = new Set();
-
-            for (const row of jsonData) {
-              const email = (row.Email || '').toLowerCase().trim();
-
-              if (!email) continue;
-
-              if (seen.has(email)) {
-                duplicates.add(email);
-              } else {
-                seen.add(email);
-              }
-
-            }
-
-            if (duplicates.size > 0) {
-              toast.error(`Duplicate emails found in Excel: ${Array.from(duplicates).join(', ')}`);
-              setLoading(false);
-
-              return;
-            }
-
-            setData([]);
-            setUploadData(jsonData);
-
-            if (!acceptedFiles || !acceptedFiles.length) {
-              setImageError("No file selected.");
-
-              return;
-            }
-
-            setFileInput(acceptedFiles[0]);
-          } catch (error) {
-            console.error('Error processing the Excel file:', error);
-            toast.error('Error in processing the Excel file.', { hideProgressBar: false });
+            return;
           }
+
+          // Validation
+          const seenSno = new Set();
+          const duplicateSno = [];
+          const errors = [];
+
+          jsonData.forEach((row, index) => {
+            const rowNum = index + 2;
+
+            const snoRaw = row['Sno'];
+            const sno = snoRaw !== undefined && snoRaw !== null ? String(snoRaw).trim() : '';
+            const question = (row['Question'] || '').toString().trim();
+            const difficulty = (row['Difficulty Level'] || '').toString().trim();
+            const questionType = (row['Question Type'] || '').toString().trim();
+            const section = (row['Section'] || '').toString().trim();
+            const answerExplanation = (row['Answer Explanation'] || '').toString().trim();
+            let useAnswerExplanationLower = (row['Use Answer Explanation'] || '').toString().trim().toLowerCase();
+
+            if (useAnswerExplanationLower === '') useAnswerExplanationLower = 'false';
+
+            // Options
+            const options = [
+              (row["Option 1"] || '').toString().trim(),
+              (row["Option 2"] || '').toString().trim(),
+              (row["Option 3"] || '').toString().trim(),
+              (row["Option 4"] || '').toString().trim(),
+              (row["Option 5"] || '').toString().trim(),
+              (row["Option 6"] || '').toString().trim()
+            ];
+
+            // Sno - required and duplicate
+            if (!sno) errors.push(`Row ${rowNum}: Sno is required.`);
+            else {
+              if (seenSno.has(sno)) duplicateSno.push(sno);
+              seenSno.add(sno);
+            }
+
+            // Question
+            if (!question) errors.push(`Row ${rowNum}: Question cannot be empty.`);
+            else if (question.length > 500) errors.push(`Row ${rowNum}: Question length must not exceed 500 characters.`);
+
+            // Options check
+            if (options.every(o => o === '')) errors.push(`Row ${rowNum}: At least one Option (1–6) must have a value.`);
+
+            // Difficulty
+            if (!['1', '2', '3'].includes(difficulty)) errors.push(`Row ${rowNum}: Difficulty Level must be 1, 2, or 3.`);
+
+            // Section
+            if (!section) errors.push(`Row ${rowNum}: Section cannot be empty.`);
+            else if (section.length > 10) errors.push(`Row ${rowNum}: Section length must not exceed 10 characters.`);
+
+            // Answer Explanation
+            if (answerExplanation.length > 500) errors.push(`Row ${rowNum}: Answer Explanation length must not exceed 500 characters.`);
+
+            // Use Answer Explanation
+            if (!["true", "false"].includes(useAnswerExplanationLower)) errors.push(`Row ${rowNum}: Use Answer Explanation must be TRUE or FALSE.`);
+
+            // Question Type
+            if (!['Single Correct', 'Multiple Correct'].includes(questionType)) errors.push(`Row ${rowNum}: Question Type must be 'Single Correct' or 'Multiple Correct'.`);
+
+            // Parse Correct Answer
+            const parsedAnswers = parseCorrectAnswer(row['Correct Answer'] || '');
+            const uniqueAnswers = [...new Set(parsedAnswers)];
+
+            if (uniqueAnswers.length === 0) errors.push(`Row ${rowNum}: Correct Answer must contain at least one option number (1–6).`);
+            else {
+              uniqueAnswers.forEach(ans => {
+                if (!/^[1-6]$/.test(ans)) errors.push(`Row ${rowNum}: Correct Answer contains invalid option number: ${ans}`);
+                else {
+                  const optIndex = Number(ans) - 1;
+
+                  if (!options[optIndex]) errors.push(`Row ${rowNum}: Correct Answer references Option ${ans} but that option is empty.`);
+                }
+              });
+            }
+
+            // Single / Multiple rules
+            if (questionType === 'Single Correct' && uniqueAnswers.length !== 1) errors.push(`Row ${rowNum}: For Single Correct, Correct Answer must contain exactly ONE option number.`);
+            if (questionType === 'Multiple Correct' && uniqueAnswers.length < 2) errors.push(`Row ${rowNum}: For Multiple Correct, Correct Answer must contain at least TWO option numbers.`);
+
+            // Explanation logic
+            if (useAnswerExplanationLower === 'true' && !answerExplanation) errors.push(`Row ${rowNum}: Answer Explanation cannot be empty when Use Answer Explanation is TRUE.`);
+            if (useAnswerExplanationLower === 'false' && answerExplanation) errors.push(`Row ${rowNum}: Answer Explanation must be empty when Use Answer Explanation is FALSE.`);
+          });
+
+          if (duplicateSno.length > 0) errors.unshift(`Duplicate Sno values found: ${[...new Set(duplicateSno)].join(', ')}`);
+
+          if (errors.length > 0) {
+            setValidationErrors(errors);
+            setLoading(false);
+            setProgress(0);
+
+            return;
+          }
+
+          // Normalize rows for upload
+          const normalized = jsonData.map((row) => {
+            const opts = [
+              (row['Option 1'] || '').toString().trim(),
+              (row['Option 2'] || '').toString().trim(),
+              (row['Option 3'] || '').toString().trim(),
+              (row['Option 4'] || '').toString().trim(),
+              (row['Option 5'] || '').toString().trim(),
+              (row['Option 6'] || '').toString().trim(),
+            ];
+
+            const parsed = parseCorrectAnswer(row['Correct Answer'] || '');
+            const unique = [...new Set(parsed)].filter(v => /^[1-6]$/.test(String(v)));
+            const filtered = unique.filter(ans => opts[Number(ans) - 1] !== '');
+
+            const useAnswerExplanationBool = (row['Use Answer Explanation'] || '').toString().trim().toLowerCase() === 'true';
+
+            return {
+              Sno: row['Sno'],
+              Question: (row['Question'] || '').toString().trim(),
+              Option1: opts[0],
+              Option2: opts[1],
+              Option3: opts[2],
+              Option4: opts[3],
+              Option5: opts[4],
+              Option6: opts[5],
+              DifficultyLevel: (row['Difficulty Level'] || '').toString().trim(),
+              CorrectAnswer: filtered.map(Number),
+              Section: (row['Section'] || '').toString().trim(),
+              AnswerExplanation: (row['Answer Explanation'] || '').toString().trim(),
+              UseAnswerExplanation: useAnswerExplanationBool,
+              QuestionType: (row['Question Type'] || '').toString().trim(),
+            };
+          });
+
+          setUploadData(normalized);
+          setFileInput(selectedFile);
+          setLoading(false);
+          setProgress(100);
+        } catch (err) {
+          console.error('Error processing the Excel file:', err);
+          toast.error('Error processing the Excel file. Check the file and headers.');
+          setLoading(false);
+          setProgress(0);
+          setUploadData([]);
+          setData([]);
         }
       };
 
@@ -296,25 +400,10 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
         setProgress(0);
         setUploadData([]);
         setData([]);
+        toast.error('Error reading file.');
       };
 
-      if (!acceptedFiles || !acceptedFiles.length) {
-        setImageError("No file selected.");
-
-        return;
-      }
-
-      const selectedFile = acceptedFiles[0];
-
-      if (!selectedFile) {
-        setImageError("File read failed.");
-
-        return;
-      }
-
-      if (acceptedFiles[0]) {
-        reader.readAsArrayBuffer(acceptedFiles[0]);
-      }
+      reader.readAsArrayBuffer(selectedFile);
     },
     onDropRejected: (rejectedFiles) => {
       setLoading(false);
@@ -340,9 +429,11 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
 
   const handleDialogClose = () => {
     onClose();
-  }
+  };
 
-  const submitAnswer = async (data) => {
+  const submitAnswer = async (dataToSend) => {
+
+
     try {
       const response = await fetch(
         `${API_URL}/company/quiz/question/${mId}/${activityId}`,
@@ -352,11 +443,10 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json"
           },
-          body: JSON.stringify(data)
+          body: JSON.stringify(dataToSend)
         }
       );
 
-      // Try to parse JSON only if there is content
       let datas = null;
       const text = await response.text();
 
@@ -370,24 +460,24 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
       }
 
       if (response.ok) {
-        router.replace(`/${lang}/apps/quiz/${mId}/${activityId}`)
-        toast.success(`Quiz has been imported`, {
-          autoClose: 900
-        })
-        onClose()
-        handleClose()
+        router.replace(`/${lang}/apps/quiz/${mId}/${activityId}`);
+        toast.success(`Quiz has been imported`, { autoClose: 900 });
+        onClose();
+        handleClose();
       } else {
         console.error("Error:", datas || response.statusText);
+        toast.error('Import failed. Check console for details.');
       }
-
     } catch (error) {
       console.error("Submit answer error:", error);
+      toast.error('Unexpected error when sending data.');
       throw error;
     }
   };
 
   const handleUploadData = () => {
-    if (uploadData.length > 0) {
+    if (uploadData && uploadData.length > 0) {
+      // For API expectation: adjust shape if required by backend; currently sending array of normalized objects
       submitAnswer(uploadData).then(() => {
         // Clear everything after save
         setData([]);
@@ -399,23 +489,30 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
         setProgress(0);
         setRowSelection({});
         setGlobalFilter('');
+      }).catch(() => {
+        // keep data so user can fix/resubmit
       });
+    } else {
+      toast.error('No data to upload.');
     }
   };
 
   const columns = useMemo(() => [
     columnHelper.accessor('Sno', { header: 'Sno', cell: info => <Typography>{info.getValue()}</Typography> }),
     columnHelper.accessor('Question', { header: 'Question', cell: info => <Typography>{info.getValue()}</Typography> }),
-    columnHelper.accessor('Option 1', { header: 'Option 1', cell: info => <Typography>{info.getValue()}</Typography> }),
-    columnHelper.accessor('Option 2', { header: 'Option 2', cell: info => <Typography>{info.getValue()}</Typography> }),
-    columnHelper.accessor('Option 3', { header: 'Option 3', cell: info => <Typography>{info.getValue()}</Typography> }),
-    columnHelper.accessor('Option 4', { header: 'Option 4', cell: info => <Typography>{info.getValue()}</Typography> }),
-    columnHelper.accessor('Option 5', { header: 'Option 5', cell: info => <Typography>{info.getValue()}</Typography> }),
-    columnHelper.accessor('Option 6', { header: 'Option 6', cell: info => <Typography>{info.getValue()}</Typography> }),
-    columnHelper.accessor('Difficulty Level', { header: 'Difficulty Level', cell: info => <Typography>{info.getValue()}</Typography> }),
-    columnHelper.accessor('Correct Answer', { header: 'Correct Answer', cell: info => <Typography>{info.getValue()}</Typography> }),
+    columnHelper.accessor('Option1', { header: 'Option 1', cell: info => <Typography>{info.getValue()}</Typography> }),
+    columnHelper.accessor('Option2', { header: 'Option 2', cell: info => <Typography>{info.getValue()}</Typography> }),
+    columnHelper.accessor('Option3', { header: 'Option 3', cell: info => <Typography>{info.getValue()}</Typography> }),
+    columnHelper.accessor('Option4', { header: 'Option 4', cell: info => <Typography>{info.getValue()}</Typography> }),
+    columnHelper.accessor('Option5', { header: 'Option 5', cell: info => <Typography>{info.getValue()}</Typography> }),
+    columnHelper.accessor('Option6', { header: 'Option 6', cell: info => <Typography>{info.getValue()}</Typography> }),
+    columnHelper.accessor('DifficultyLevel', { header: 'Difficulty Level', cell: info => <Typography>{info.getValue()}</Typography> }),
+    columnHelper.accessor('CorrectAnswer', { header: 'Correct Answer', cell: info => <Typography>{Array.isArray(info.getValue()) ? info.getValue().join(',') : String(info.getValue())}</Typography> }),
     columnHelper.accessor('Section', { header: 'Section', cell: info => <Typography>{info.getValue()}</Typography> }),
-    columnHelper.accessor('Answer Explanation', { header: 'Answer Explanation', cell: info => <Typography>{info.getValue()}</Typography> }),
+    columnHelper.accessor('AnswerExplanation', { header: 'Answer Explanation', cell: info => <Typography>{info.getValue()}</Typography> }),
+    columnHelper.accessor('UseAnswerExplanation', { header: 'Use Answer Explanation', cell: info => <Typography>{info.getValue() ? 'true' : 'false'}</Typography> }),
+    columnHelper.accessor('QuestionType', { header: 'Question Type', cell: info => <Typography>{info.getValue()}</Typography> }),
+
   ], [srNoArr]);
 
   const table = useReactTable({
@@ -430,7 +527,7 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel()
-  })
+  });
 
   const TableImportComponent = () => (
     <Card className='mt-4'>
@@ -500,12 +597,12 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
       </div>
       <TablePaginationComponent table={table} />
     </Card>
-  )
+  );
 
   return (
-    <Dialog fullWidth maxWidth='md' scroll='body' open={open} onClose={onClose} sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}>
+    <Dialog fullWidth maxWidth='lg' scroll='body' open={open} onClose={onClose} sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}>
       <DialogCloseButton onClick={onClose}><i className="tabler-x" /></DialogCloseButton>
-      <DialogTitle variant='h4' className='text-center'>Import Users</DialogTitle>
+      <DialogTitle variant='h4' className='text-center'>Import Quiz Question</DialogTitle>
 
       <Card>
         <CardContent>
@@ -563,8 +660,8 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
         <Button variant='tonal' type='button' color='secondary' onClick={handleDialogClose}>Close</Button>
       </DialogActions>
     </Dialog>
-  )
-}
+  );
+};
 
 const QuizCard = ({ title, onClick, badge }) => {
   return (
@@ -970,6 +1067,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
               <Grid item size={{ xs: 12 }}>
                 <Controller
                   name="title"
+                  defaultValue=""
                   control={control}
                   render={({ field }) => (
                     <CustomTextField
@@ -1190,6 +1288,7 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
   };
 
   const handleCardClick = (activity) => {
+
     const isDocumentType = activity.module_type_id === "688723af5dd97f4ccae68834";
 
     const quesLength = activity?.questions?.length
@@ -1863,9 +1962,6 @@ const SettingComponent = ({ activities }) => {
       const body = await res.json();
 
       if (res.ok) {
-
-        console.log("Data", body);
-
 
         const cd = {
           designation: body?.data?.designation || [],
