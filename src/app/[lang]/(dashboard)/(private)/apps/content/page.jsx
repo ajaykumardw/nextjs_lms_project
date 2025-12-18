@@ -246,60 +246,88 @@ export default function ProgramPage() {
       {/* ACTIVITIES */}
 
       <Box>
-        <Typography variant="h6" mb={2}>Activities</Typography>
+        <Typography variant="h6" mb={2}>
+          Activities
+        </Typography>
 
-        {data?.activities?.map((activity, index) => {
+        {data?.activities?.length > 0 ? (
+          data.activities.map((activity, index) => {
+            const label =
+              activity?.name ||
+              moduleTypeLabel[activity?.module_type_id] ||
+              "Objective Quiz";
 
-          const label =
+            const log = activity?.logs?.[0];
+            
+            const isCompleted =
+              (log?.is_completed && Number(log?.completion_percentage) >= 100) ||
+              log?.scorm_data?.lessonStatus === "passed";
 
-            activity?.name ||
-            moduleTypeLabel[activity?.module_type_id] ||
-            'Objective Quiz'
+            const completedDate = log?.scorm_data?.lessonStatus === "passed"
+              ? formatEnrollDate(log?.scorm_data?.passed_at_time)
+              : log?.is_completed && log?.completed_at_time && log?.completed_at_time !== "null"
+                ? formatEnrollDate(log?.completed_at_time)
+                : "";
 
-          return (
-            <Card key={index} className="mb-3 hover:shadow-sm transition-all">
-              <CardContent className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            return (
+              <Card key={index} className="mb-3 hover:shadow-sm transition-all">
+                <CardContent className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
 
-                {/* Left */}
-                <Box>
-                  <Typography fontWeight={600}>{label}</Typography>
+                  {/* Left Section */}
+                  <Box>
+                    <Typography fontWeight={600}>{label}</Typography>
 
-                  <Stack direction="row" spacing={1} alignItems="center" mt={1}>
-                    {activity.required && (
+                    <Stack direction="row" spacing={1} alignItems="center" mt={1}>
+                      {activity.required && (
+                        <Chip
+                          label="⭐ Required"
+                          color="success"
+                          size="small"
+                        />
+                      )}
+                    </Stack>
+                  </Box>
+
+                  {/* Right Section */}
+                  <Stack direction="row" spacing={2} alignItems="center">
+                    {isCompleted && (
                       <Chip
-                        label="⭐ Required"
+                        label={`Completed On : ${completedDate}`}
+                        variant="outlined"
                         color="success"
                         size="small"
                       />
                     )}
+
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      disabled={log?.scorm_data?.lessonStatus === "passed"}
+                      href={`/${locale}/apps/content-data?type=${docType?.[activity?.module_type_id]}&activityId=${activity?._id}&moduleId=${moduleId}&contentFolderId=${content_folder_id}&moduleTypeId=${activity?.module_type_id}`}
+                      sx={{ borderRadius: 2, textTransform: "none", px: 3 }}
+                    >
+                      {isCompleted ? "Completed" : "In progress"}
+                    </Button>
                   </Stack>
-                </Box>
-
-                {/* Right */}
-                <Stack direction="row" spacing={2} alignItems="center">
-                  {((activity?.logs[0]?.is_completed && Number(activity?.logs[0]?.completion_percentage) >= 100) || activity?.logs?.[0]?.scorm_data?.lessonStatus == "passed") && (
-                    <Chip
-                      label={`Completed On : ${activity?.logs?.[0]?.scorm_data?.lessonStatus == "passed" ? formatEnrollDate(activity?.logs?.[0]?.scorm_data?.passed_at_time) : (activity?.logs[0]?.is_completed && activity?.logs[0]?.completed_at_time && activity?.logs[0]?.completed_at_time != null && activity?.logs[0]?.completed_at_time != "null") ? formatEnrollDate(activity?.logs[0]?.completed_at_time) : ""}`}
-                      variant="outlined"
-                      color="success"
-                      size="small"
-                    />
-                  )}
-
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    disabled={activity?.logs?.[0]?.scorm_data?.lessonStatus == "passed"}
-                    href={`/${locale}/apps/content-data?type=${docType?.[activity?.module_type_id]}&activityId=${activity?._id}&moduleId=${moduleId}&contentFolderId=${content_folder_id}&moduleTypeId=${activity?.module_type_id}`}
-                    sx={{ borderRadius: 2, textTransform: 'none', px: 3 }}
-                  >
-                    {Number(activity?.logs[0]?.is_completed || activity?.logs?.[0]?.scorm_data?.lessonStatus == "passed") ? "Completed" : 'In progress'}
-                  </Button>
-                </Stack>
-              </CardContent>
-            </Card>
-          )
-        })}
+                </CardContent>
+              </Card>
+            );
+          })
+        ) : (
+          <Box
+            className="flex justify-center items-center"
+            sx={{
+              py: 6,
+              border: '1px solid #ECECEC',
+              borderRadius: 2,
+              backgroundColor: '#FAFAFA',
+            }}
+          >
+            <Typography variant="body1" color="text.secondary" fontStyle="italic">
+              No activities found.
+            </Typography>
+          </Box>
+        )}
       </Box>
     </Box>
   )

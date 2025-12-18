@@ -8,11 +8,11 @@ import { useSession } from 'next-auth/react'
 
 // MUI Imports
 import Grid from '@mui/material/Grid2'
-import Button from '@mui/material/Button'
-import Tab from '@mui/material/Tab'
+
+import { Tab, Box, Typography, Button } from '@mui/material'
+
 import TabContext from '@mui/lab/TabContext'
 import TabPanel from '@mui/lab/TabPanel'
-import Typography from '@mui/material/Typography'
 
 // Component Imports
 import Course from '@components/Courses'

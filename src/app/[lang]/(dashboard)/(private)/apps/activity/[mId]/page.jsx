@@ -4,9 +4,7 @@ import crypto from "crypto";
 
 import { useEffect, useState, useMemo, useCallback } from "react"
 
-import { useRouter } from "next/navigation"
-
-import { useParams } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 
 import Error from "next/error"
 
@@ -28,7 +26,11 @@ import {
   Card,
   InputBase,
   Dialog,
+  Skeleton,
+  useTheme,
+  useMediaQuery,
   DialogActions,
+  Select,
   CardContent,
   List,
   ListItem,
@@ -76,7 +78,7 @@ import {
   getSortedRowModel
 } from '@tanstack/react-table'
 
-import { useForm, Controller } from 'react-hook-form'
+import { useForm, Controller, set } from 'react-hook-form'
 
 import { TabContext, TabList, TabPanel } from "@mui/lab"
 
@@ -100,9 +102,19 @@ import DialogCloseButton from "@/components/dialogs/DialogCloseButton"
 
 import CustomTextField from "@/@core/components/mui/TextField"
 
+const assert_url = process.env.NEXT_PUBLIC_ASSETS_URL || ''
+
 function normalizeEmail(email) {
   return email.trim().toLowerCase();
 }
+
+const createEmptyQuestion = () => ({
+  id: Date.now() + Math.random(),
+  text: '',
+  type: '',
+  mandatory: false,
+  errors: { text: false, type: false }
+})
 
 function hash(text) {
   return crypto.createHash("sha256").update(text).digest("hex");
@@ -1197,11 +1209,334 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
   )
 }
 
+const QUESTION_TYPES = [
+  { label: 'Yes or No', value: '1' },
+  { label: 'Rating (1–5)', value: '2' },
+  { label: 'Rating (1–10)', value: '3' },
+  { label: 'Rating (1–5) - Emoji', value: '4' },
+  { label: 'Rating (1–5) - Star', value: '5' },
+  { label: 'Subjective Answer', value: '6' },
+  { label: 'Multiple Choice', value: '7' },
+  { label: 'MCQ with Image', value: '8' },
+  { label: 'Likert Scale', value: '9' },
+  { label: 'Satisfaction Scale', value: '10' },
+  { label: 'Quality Scale', value: '11' },
+  { label: 'Date', value: '12' }
+]
+
+const SurveySkeleton = ({ isTablet }) => (
+  <>
+    {[1, 2, 3].map(i => (
+      <Box
+        key={i}
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: isTablet
+            ? '40px 1fr auto'
+            : '30px 1fr 170px 140px 40px',
+          gap: 2,
+          mb: 4
+        }}
+      >
+        <Skeleton width={20} height={30} />
+        <Skeleton height={40} />
+        {!isTablet && <Skeleton height={40} />}
+        <Skeleton width={80} height={30} />
+        <Skeleton width={30} height={30} />
+      </Box>
+    ))}
+  </>
+)
+
+
+const SurveyModalComponent = ({ open, setISOpen, API_URL, token, mId, questions, setQuestions, handleFetchQuestion, fetching }) => {
+
+  const [loading, setLoading] = useState(false)
+
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'))
+
+  const { handleSubmit } = useForm()
+
+  const handleClose = () => {
+    setISOpen(false)
+    handleFetchQuestion()
+  }
+
+  const handleQuestionChange = (id, field, value) => {
+    setQuestions(prev =>
+      prev.map(q =>
+        q.id === id
+          ? {
+            ...q,
+            [field]: value,
+            errors: { ...q.errors, [field]: false }
+          }
+          : q
+      )
+    )
+  }
+
+  const addQuestion = () =>
+    setQuestions(prev => [...prev, createEmptyQuestion()])
+
+  const removeQuestion = id => {
+    if (questions.length === 1) return
+    setQuestions(prev => prev.filter(q => q.id !== id))
+  }
+
+  const validateQuestions = () => {
+    let valid = true
+
+    setQuestions(prev =>
+      prev.map(q => {
+        const textError = !q.text.trim()
+        const typeError = !q.type
+
+        if (textError || typeError) valid = false
+
+        return {
+          ...q,
+          errors: { text: textError, type: typeError }
+        }
+      })
+    )
+
+    return valid
+  }
+
+
+
+  const handleSaveSurvey = async () => {
+    if (!validateQuestions()) return
+
+    setLoading(true)
+    
+    try {
+      const payload = {
+        questions: questions.map(({ text, type, mandatory }) => ({
+          text: text.trim(),
+          type,
+          mandatory
+        }))
+      }
+
+      const response = await fetch(
+        `${API_URL}/company/module/survey/setting/${mId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        }
+      )
+
+      if (response.ok) {
+        toast.success('Survey setting saved successfully')
+        handleFetchQuestion()
+        handleClose()
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Dialog
+      open={open}
+      fullWidth
+      maxWidth="lg"
+      fullScreen={isMobile} // Optional: Makes dialog full screen on mobile
+      sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}
+    >
+      <DialogCloseButton onClick={handleClose} disableRipple>
+        <i className="tabler-x"></i>
+      </DialogCloseButton>
+
+      <DialogTitle
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center"
+        }}
+      >Add Survey
+      </DialogTitle>
+
+      <form onSubmit={handleSubmit(handleSaveSurvey)} noValidate>
+        <DialogContent
+          sx={{
+            maxHeight: isMobile ? 'none' : '70vh',
+            overflowY: 'auto',
+            px: { xs: 2, sm: 4 },
+            pt: 2
+          }}
+        >
+          {
+
+            fetching ? (
+              <SurveySkeleton isTablet={isTablet} />
+            ) : (
+
+              questions.map((q, index) => (
+                <Box
+                  key={q.id}
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: isTablet
+                      ? '40px 1fr auto'
+                      : '30px 1fr 170px 140px 40px',
+                    gap: 2,
+                    mb: 4,
+                    pb: isTablet ? 2 : 0,
+                    borderBottom: isTablet
+                      ? `1px solid ${theme.palette.divider}`
+                      : 'none'
+                  }}
+                >
+                  {/* Number */}
+                  <Typography sx={{ mt: 1 }}>{index + 1}.</Typography>
+
+                  {/* Question Text */}
+                  <Box sx={{ gridColumn: isTablet ? '2 / 4' : 'auto' }}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      value={q.text}
+                      placeholder="Enter question"
+                      error={q.errors.text}
+                      helperText={
+                        q.errors.text
+                          ? 'Question text is required'
+                          : `${q.text.length}/300`
+                      }
+                      onChange={e =>
+                        handleQuestionChange(q.id, 'text', e.target.value)
+                      }
+                      inputProps={{ maxLength: 300 }}
+                    />
+                  </Box>
+
+                  {/* Question Type */}
+                  <Box sx={{ gridColumn: isTablet ? '2 / 3' : 'auto' }}>
+                    <Select
+                      size="small"
+                      fullWidth
+                      value={q.type}
+                      error={q.errors.type}
+                      onChange={e =>
+                        handleQuestionChange(q.id, 'type', e.target.value)
+                      }
+                    >
+                      {QUESTION_TYPES.map(type => (
+                        <MenuItem key={type.value} value={type.value}>
+                          {type.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+
+                    {q.errors.type && (
+                      <Typography variant="caption" color="   var(--mui-palette-error-main);">
+                        Question type is required
+                      </Typography>
+                    )}
+                  </Box>
+
+                  {/* Mandatory */}
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'start',
+                      justifyContent: isTablet ? 'flex-start' : 'start'
+                    }}
+                  >
+                    <Checkbox
+                      size="small"
+                      checked={q.mandatory}
+                      onChange={e =>
+                        handleQuestionChange(
+                          q.id,
+                          'mandatory',
+                          e.target.checked
+                        )
+                      }
+                    />
+                    <Typography variant="body2">Mandatory</Typography>
+                  </Box>
+
+                  {/* Delete */}
+                  <Box>
+
+                    <IconButton
+                      size="small"
+                      color="error"
+                      disabled={questions.length === 1}
+                      onClick={() => removeQuestion(q.id)}
+                    >
+                      <i className="tabler-trash" />
+                    </IconButton>
+                  </Box>
+                </Box>
+              )))
+          }
+
+          <Button
+            variant="contained"
+            sx={{ ml: isTablet ? 0 : 8 }}
+            onClick={addQuestion}
+          >
+            Add Question
+          </Button>
+        </DialogContent>
+
+        <DialogActions
+          sx={{
+            flexDirection: isMobile ? 'column' : 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 2,
+            mb: 6,
+            px: 3,
+            py: 3
+          }}
+        >
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={loading}
+            fullWidth={isMobile}
+          >
+            {loading ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              'Submit'
+            )}
+          </Button>
+
+          <Button
+            variant="tonal"
+            color="error"
+            onClick={handleClose}
+            fullWidth={isMobile}
+          >
+            Cancel
+          </Button>
+        </DialogActions>
+      </form>
+    </Dialog>
+  )
+}
+
 const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivities, mId }) => {
 
   const [editingId, setEditingId] = useState(null);
   const [editingTitle, setEditingTitle] = useState("");
   const [editingError, setEditingError] = useState("");
+
   const [selectedId, setSelectedId] = useState();
   const [isOpen, setISOpen] = useState(false);
   const [activityId, setActivityId] = useState();
@@ -1209,101 +1544,116 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [logData, setLogData] = useState();
 
-  const { lang } = useParams()
+  const [questions, setQuestions] = useState([]);
+  const [fetching, setFetching] = useState(false);
 
+  const [orderType, setOrderType] = useState("any"); // ✅ correct useState syntax
+
+  const handleOrderChange = (event) => {
+    setOrderType(event.target.value); // update state when radio changes
+  };
+
+  const [checkCertificate, setCheckCertificate] = useState(false);
+  const [selectedCertificateId, setSelectedCertificateId] = useState(null);
+  const [certificateData, setCertificateData] = useState([]);
+
+  const [isFeedbackChecked, setIsFeedbackChecked] = useState(false);
+  const [isMandatoryChecked, setIsMandatoryChecked] = useState(false);
+
+  const [surveyModal, setSurveyModal] = useState(false);
+
+  const [loading, setLoading] = useState(false);
+
+  const { lang } = useParams();
   const router = useRouter();
+  const { handleSubmit, control } = useForm();
 
-  const handleChangeName = async (id) => {
-    const data = { title: editingTitle };
-
+  // Fetch certificates
+  const handleFetchCertificate = async () => {
     try {
-      const response = await fetch(`${API_URL}/company/activity/set-name/${mId}/${id}`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
+      const response = await fetch(`${API_URL}/company/certificate/data`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (response.ok) {
-        toast.success("Activity name saved successfully", { autoClose: 1000 });
-        fetchActivities();
-      } else {
-        const result = await response.json();
-
-        toast.error(result.message || "Failed to update name");
-      }
+      
+      const result = await response.json();
+      
+      if (response.ok) setCertificateData(result.data || []);
     } catch (error) {
-      toast.error("Error updating activity name");
+      console.error(error);
     }
   };
 
-  const handleSave = async (id) => {
-    if (!editingTitle.trim()) {
-
-      setEditingError("Title is required");
-
-      return;
-    }
-
-    if (editingTitle.length > 150) {
-      setEditingError("Title cannot exceed 150 characters");
-
-      return;
-    }
-
-    setEditingError("");
-    await handleChangeName(id);
-    setEditingId(null);
-    setEditingTitle("");
-  };
-
-  const handleEditClick = (activity) => {
-    setEditingId(activity._id);
-    setEditingTitle(activity?.name || activity?.activity_type?.activity_data?.title || "");
-    setEditingError("");
-  };
-
-  const handleActivity = () => setOpen(true);
-
-  const handleDeleteContent = async (id) => {
+  // Fetch survey questions
+  const handleFetchQuestion = async () => {
+    setFetching(true);
+    
     try {
-      const response = await fetch(`${API_URL}/company/activity/delete/${mId}/${id}`, {
-        method: "DELETE",
+      const response = await fetch(`${API_URL}/company/module/survey/setting/${mId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      const value = await response.json();
+      
+      if (response.ok && Array.isArray(value?.data)) {
+        setQuestions(
+          value.data.length
+            ? value.data.map((q) => ({
+              id: Date.now() + Math.random(),
+              text: q.question || "",
+              type: q.questionsType || "",
+              mandatory: q.mandatory || false,
+              errors: { text: false, type: false },
+            }))
+            : []
+        );
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setFetching(false);
+    }
+  };
+
+  const fetchModuleSettings = async () => {
+    try {
+      const response = await fetch(`${API_URL}/company/modules/save/settings/${mId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const data = await response.json();
+      const result = await response.json();
 
-      if (response.ok) {
-        toast.success("Activity deleted successfully", { autoClose: 1000 });
-        fetchActivities();
-      } else {
-        toast.error(data.message || "Failed to delete activity");
+      if (response.ok && result.data) {
+        setOrderType(result.data.orderType || "any");
+        setCheckCertificate(result.data.certificateEnabled || false);
+        setSelectedCertificateId(result.data.selectedCertificateId || null);
+        setIsFeedbackChecked(result.data.feedbackSurveyEnabled || false);
+        setIsMandatoryChecked(result.data.mandatory || false);
       }
     } catch (error) {
-      toast.error("Error deleting activity");
+      console.error("Error fetching module settings:", error);
     }
   };
 
+  useEffect(() => {
+    if (API_URL && token) {
+      fetchModuleSettings()
+      handleFetchCertificate();
+      handleFetchQuestion();
+    }
+  }, [API_URL, token]);
+
+  // Handle activity card click
   const handleCardClick = (activity) => {
-
     const isDocumentType = activity.module_type_id === "688723af5dd97f4ccae68834";
-
-    const quesLength = activity?.questions?.length
+    const quesLength = activity?.questions?.length;
 
     if (quesLength > 0) {
-
-      router.replace(`/${lang}/apps/quiz/${mId}/${activity?._id}`)
-
+      router.replace(`/${lang}/apps/quiz/${mId}/${activity?._id}`);
     } else {
-
-      // Close modals first to force re-render
       setISOpen(false);
       setIsModalOpen(false);
 
-      // Delay to ensure proper re-opening
       setTimeout(() => {
         setLogData(activity);
         setActivityId(activity._id);
@@ -1319,32 +1669,139 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
     }
   };
 
+  const handleChangeName = async (id) => {
+    if (!editingTitle.trim()) {
+      setEditingError("Title is required");
+    
+      return;
+    }
+
+    if (editingTitle.length > 150) {
+      setEditingError("Title cannot exceed 150 characters");
+      
+      return;
+    }
+    
+    setEditingError("");
+
+    try {
+      const response = await fetch(`${API_URL}/company/activity/set-name/${mId}/${id}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ title: editingTitle }),
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        toast.success("Activity name saved successfully", { autoClose: 1000 });
+        fetchActivities();
+      } else {
+        toast.error(result.message || "Failed to update name");
+      }
+    } catch (error) {
+      toast.error("Error updating activity name");
+    }
+    
+    setEditingId(null);
+    setEditingTitle("");
+  };
+
+  const handleEditClick = (activity) => {
+    setEditingId(activity._id);
+    setEditingTitle(activity?.name || activity?.activity_type?.activity_data?.title || "");
+    setEditingError("");
+  };
+
+  const handleDeleteContent = async (id) => {
+    try {
+      const response = await fetch(`${API_URL}/company/activity/delete/${mId}/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        toast.success("Activity deleted successfully", { autoClose: 1000 });
+        fetchActivities();
+      } else {
+        toast.error(data.message || "Failed to delete activity");
+      }
+    } catch (error) {
+      toast.error("Error deleting activity");
+    }
+  };
+
+  const handleCheckboxChange = (event) => {
+    setSelectedCertificateId(null);
+    setCheckCertificate(event.target.checked);
+  };
+
+  const moduleSettingSave = async (formData) => {
+    try {
+
+      setLoading(true);
+
+      if (checkCertificate && !selectedCertificateId) {
+        toast.error("Please select a certificate", {
+          autoClose: 1000
+        });
+        
+        return; // stop submission
+      }
+
+      const payload = {
+        orderType: orderType || "any",
+        certificateEnabled: checkCertificate,
+        selectedCertificateId: checkCertificate ? selectedCertificateId : null,
+        feedbackSurveyEnabled: isFeedbackChecked,
+        mandatory: isMandatoryChecked,
+      };
+
+
+      const response = await fetch(`${API_URL}/company/modules/save/settings/${mId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        toast.success("Module settings saved successfully", { autoClose: 1000 });
+        setLoading(false);
+      }
+
+    } catch (error) {
+      console.error("Error saving module settings:", error);
+      toast.error("Failed to save module settings");
+    }
+  };
+
   return (
     <Box p={3}>
       <Grid container spacing={3}>
-
-        <Grid item size={{ xs: 12, md: 8 }}>
-          <Box sx={{
-            maxHeight: '70vh',
-            overflowY: 'auto',
-            pr: 1
-          }}>
-            {activities && activities.length > 0 ? (
+        {/* Left Column - Activities */}
+        <Grid item size={{ xs: 12, md: 7 }}>
+          <Box sx={{ maxHeight: "70vh", overflowY: "auto", pr: 1 }}>
+            {activities.length > 0 ? (
               activities.map((activity, index) => (
                 <Card
                   key={index}
                   variant="outlined"
                   sx={{
-                    borderColor: '#0A2E73',
+                    borderColor: "#0A2E73",
                     borderRadius: 2,
                     p: 2,
                     mb: 4,
                     mt: 1,
-                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                    '&:hover': {
+                    transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                    "&:hover": {
                       boxShadow: 3,
-                      transform: 'translateY(-2px)',
-                      borderColor: '#0845b3',
+                      transform: "translateY(-2px)",
+                      borderColor: "#0845b3",
                     },
                   }}
                 >
@@ -1352,16 +1809,7 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
                     <Grid item xs>
                       <Box display="flex" alignItems="flex-start" gap={2}>
                         <Box
-                          sx={{
-                            inlineSize: 40,
-                            blockSize: 40,
-                            cursor: 'pointer',
-                            '& svg': {
-                              transform: 'scale(0.6)',
-                              transformOrigin: 'center',
-                              display: 'block',
-                            },
-                          }}
+                          sx={{ inlineSize: 40, blockSize: 40, cursor: "pointer" }}
                           onClick={() => handleCardClick(activity)}
                           dangerouslySetInnerHTML={{
                             __html: activity?.activity_type?.activity_data?.svg_content,
@@ -1369,59 +1817,47 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
                         />
                         <Box flex={1}>
                           <Box display="flex" alignItems="center">
-                            <Typography component="div" fontWeight={600}>
-                              <Box ml={1} display="flex" alignItems="center" color="#0A2E73">
-                                {editingId === activity._id ? (
-                                  <>
-                                    <Box>
-                                      <InputBase
-                                        value={editingTitle}
-                                        onChange={(e) => setEditingTitle(e.target.value)}
-                                        sx={{
-                                          fontWeight: 600,
-                                          fontSize: 16,
-                                          borderBottom: editingError
-                                            ? '1px solid red'
-                                            : '1px solid #ccc',
-                                          mr: 1,
-                                          width: '100%',
-                                        }}
-                                        autoFocus
-                                        placeholder="Enter title"
-                                      />
-                                      {editingError && (
-                                        <Typography variant="caption" color="error" ml={0.5}>
-                                          {editingError}
-                                        </Typography>
-                                      )}
-                                    </Box>
-                                    <IconButton
-                                      onClick={() => handleSave(activity._id)}
-                                      size="small"
-                                      sx={{ color: "#0A2E73", ml: 1 }}
-                                    >
-                                      <i className="tabler-check" />
-                                    </IconButton>
-                                  </>
-                                ) : (
-                                  <Typography
-                                    component="div"
-                                    fontWeight={600}
-                                    display="flex"
-                                    alignItems="center"
-                                  >
-                                    {activity?.name || activity?.activity_type?.activity_data?.title}
-                                    <IconButton
-                                      onClick={() => handleEditClick(activity)}
-                                      size="small"
-                                      sx={{ ml: 1, color: "#0A2E73" }}
-                                    >
-                                      <i className="tabler-edit" style={{ fontSize: 18 }} />
-                                    </IconButton>
+                            {editingId === activity._id ? (
+                              <Box display="flex" alignItems="center" gap={1}>
+                                <InputBase
+                                  value={editingTitle}
+                                  onChange={(e) => setEditingTitle(e.target.value)}
+                                  sx={{
+                                    fontWeight: 600,
+                                    fontSize: 16,
+                                    borderBottom: editingError ? "1px solid red" : "1px solid #ccc",
+                                    width: "100%",
+                                  }}
+                                  autoFocus
+                                  placeholder="Enter title"
+                                />
+                                <IconButton
+                                  onClick={() => handleChangeName(activity._id)}
+                                  size="small"
+                                  sx={{ color: "#0A2E73" }}
+                                >
+                                  <i className="tabler-check" />
+                                </IconButton>
+                                {editingError && (
+                                  <Typography variant="caption" color="error" ml={0.5}>
+                                    {editingError}
                                   </Typography>
                                 )}
                               </Box>
-                            </Typography>
+                            ) : (
+                              <Box display="flex" alignItems="center" gap={1}>
+                                <Typography fontWeight={600}>
+                                  {activity?.name || activity?.activity_type?.activity_data?.title}
+                                </Typography>
+                                <IconButton
+                                  onClick={() => handleEditClick(activity)}
+                                  size="small"
+                                  sx={{ color: "#0A2E73" }}
+                                >
+                                  <i className="tabler-edit" style={{ fontSize: 18 }} />
+                                </IconButton>
+                              </Box>
+                            )}
                           </Box>
 
                           <Typography color="error" variant="body2" sx={{ mt: 0.5 }}>
@@ -1433,13 +1869,13 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
                             variant="contained"
                             sx={{
                               mt: 1,
-                              fontSize: '0.75rem',
-                              textTransform: 'none',
-                              backgroundColor: '#00b66c',
-                              '&:hover': { backgroundColor: '#009956' },
+                              fontSize: "0.75rem",
+                              textTransform: "none",
+                              backgroundColor: "#00b66c",
+                              "&:hover": { backgroundColor: "#009956" },
                               borderRadius: 10,
                               px: 2,
-                              minWidth: 'unset',
+                              minWidth: "unset",
                             }}
                           >
                             Draft
@@ -1451,7 +1887,7 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
                     <Grid item>
                       <IconButton
                         size="small"
-                        sx={{ color: '#0A2E73' }}
+                        sx={{ color: "#0A2E73" }}
                         onClick={() => handleDeleteContent(activity._id)}
                       >
                         <i className="tabler-trash" />
@@ -1466,62 +1902,169 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
           </Box>
         </Grid>
 
-        <Grid item size={{ xs: 12, md: 4 }}>
+        {/* Right Column - Module Settings */}
+        <Grid item size={{ xs: 12, md: 5 }}>
           <Box display="flex" justifyContent="flex-start" gap={2} mb={2}>
-            <Button variant="contained" color="primary" onClick={handleActivity}>
+            <Button type="button" variant="contained" color="primary" onClick={() => setOpen(true)}>
               Add Activity
             </Button>
           </Box>
 
-          <RadioGroup defaultValue="any" sx={{ mb: 3 }}>
-            <FormControlLabel
-              value="ordered"
-              control={<Radio />}
-              label="Learner needs to follow the order"
-            />
-            <FormControlLabel
-              value="any"
-              control={<Radio />}
-              label="Learner can attempt any order"
-            />
-          </RadioGroup>
+          <form onSubmit={handleSubmit(moduleSettingSave)}>
+            {/* Order Selection */}
+            <RadioGroup
+              value={orderType}        // ✅ controlled component
+              onChange={handleOrderChange} // ✅ handle state update
+              sx={{ mb: 3 }}
+              name="orderType"
+            >
+              <FormControlLabel value="ordered" control={<Radio />} label="Learner needs to follow the order" />
+              <FormControlLabel value="any" control={<Radio />} label="Learner can attempt any order" />
+            </RadioGroup>
 
-          <Typography variant="subtitle1" gutterBottom>
-            On completion of Module launch the following
-          </Typography>
+            <Typography variant="subtitle1" gutterBottom>
+              On completion of Module launch the following
+            </Typography>
 
-          <Box display="flex" flexDirection="column" gap={2}>
-            <FormControlLabel
-              control={<Checkbox />}
-              label={
-                <Box display="flex" alignItems="center">
-                  Certificate
-                  <Button size="small" sx={{ ml: 2 }} variant="outlined">
-                    Quick Preview
-                  </Button>
+            <Box display="flex" flexDirection="column" gap={3}>
+              {/* Certificate Checkbox */}
+              <FormControlLabel
+                control={<Checkbox checked={checkCertificate} onChange={handleCheckboxChange} />}
+                label={<Typography>Certificate</Typography>}
+              />
+
+              {checkCertificate && (
+                <Box sx={{ display: "flex", gap: 2, minWidth: "max-content", flexWrap: "wrap" }}>
+                  {certificateData.map((item, index) => {
+                    const id = item._id ?? index;
+                    const isSelected = selectedCertificateId === id;
+                    
+                    return (
+                      <Card
+                        key={id}
+                        sx={{
+                          width: 180,
+                          height: 120,
+                          borderRadius: 2,
+                          border: isSelected ? "2px solid #1976d2" : "1px solid #e0e0e0",
+                          cursor: "pointer",
+                          position: "relative",
+                        }}
+                        onClick={() => setSelectedCertificateId(id)}
+                      >
+                        {isSelected && (
+                          <Box
+                            sx={{
+                              position: "absolute",
+                              top: 6,
+                              right: 6,
+                              backgroundColor: "primary.main",
+                              color: "#fff",
+                              borderRadius: "50%",
+                              width: 18,
+                              height: 18,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: 12,
+                            }}
+                          >
+                            <i className="tabler-check" />
+                          </Box>
+                        )}
+                        <Box
+                          sx={{
+                            width: "100%",
+                            height: "100%",
+                            backgroundImage: `url(${assert_url}/frames/${item.backgroundImage})`,
+                            backgroundSize: "cover",
+                            backgroundPosition: "center",
+                          }}
+                        >
+                          <Box sx={{ p: 1, textAlign: "center" }}>
+                            {item?.logoURL && (
+                              <img
+                                src={`${assert_url}/company_logo/${item.logoURL}`}
+                                alt="Logo"
+                                width={40}
+                                height={20}
+                                style={{ objectFit: "contain" }}
+                              />
+                            )}
+                            <Typography sx={{ fontSize: 10, fontWeight: 600 }}>{item.title}</Typography>
+                            <Typography sx={{ fontSize: 9 }}>[UserName]</Typography>
+                            <Typography sx={{ fontSize: 8, color: "text.secondary" }}>On [date]</Typography>
+                          </Box>
+                        </Box>
+                      </Card>
+                    );
+                  })}
                 </Box>
-              }
-            />
-            <FormControlLabel
-              control={<Checkbox />}
-              label={
-                <Box display="flex" alignItems="center">
-                  Feedback survey
-                  <Button size="small" sx={{ ml: 2 }} variant="text">
-                    Add A Survey
-                  </Button>
-                </Box>
-              }
-            />
-          </Box>
+              )}
+
+              {/* Feedback Survey */}
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={isFeedbackChecked}
+                    onChange={(e) => setIsFeedbackChecked(e.target.checked)}
+                    disabled={!fetching && questions.length === 0}
+                  />
+                }
+                label={
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <Typography>Feedback survey</Typography>
+                    <Button size="small" variant="outlined" onClick={() => setSurveyModal(true)}>
+                      Add A Survey
+                    </Button>
+                  </Box>
+                }
+              />
+
+              {/* Mandatory Checkbox */}
+              {isFeedbackChecked && (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={isMandatoryChecked}
+                      onChange={(e) => setIsMandatoryChecked(e.target.checked)}
+                      disabled={!fetching && questions.length === 0}
+                    />
+                  }
+                  label="Mandatory"
+                />
+              )}
+            </Box>
+
+            <Box mt={3}>
+              <Button type="submit" variant="contained" disabled={loading}>
+                {loading ? (
+                  <CircularProgress
+                    size={24}
+                  />
+                ) : (
+                  "Save"
+                )}
+              </Button>
+            </Box>
+          </form>
         </Grid>
       </Grid>
 
-      <ShowFileModal
-        open={isModalOpen}
-        setOpen={setIsModalOpen}
-        docURL={docURL}
+      <SurveyModalComponent
+        open={surveyModal}
+        setISOpen={setSurveyModal}
+        API_URL={API_URL}
+        setFetching={setFetching}
+        fetching={fetching}
+        token={token}
+        setQuestions={setQuestions}
+        questions={questions}
+        handleFetchQuestion={handleFetchQuestion}
+        mId={mId}
       />
+
+      <ShowFileModal open={isModalOpen} setOpen={setIsModalOpen} docURL={docURL} />
 
       <ActivityModal
         fetchActivities={fetchActivities}
@@ -2012,6 +2555,7 @@ const SettingComponent = ({ activities }) => {
         }
 
         const body = await res.json();
+
         const result = body?.data || {};
 
         setPushEnrollmentSetting(

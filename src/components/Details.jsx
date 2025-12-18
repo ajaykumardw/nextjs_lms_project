@@ -173,91 +173,110 @@ export default function ProgramPage({ data }) {
       <Typography variant="h6" className="mt-2">Enrolled Modules</Typography>
 
       {/* Modules List */}
-      {data?.courses?.map((item, index) => {
+      {data?.courses?.length > 0
+        ?
+        (
+          data?.courses?.map((item, index) => {
 
-        // Calculate average completion
-        const logs = item?.activity_logs || [];
+            // Calculate average completion
+            const logs = item?.activity_logs || [];
 
-        const avgCompletion = logs.length
-          ? logs.reduce((sum, l) => sum + Number(l.completion_percentage || 0), 0) / logs.length
-          : 0;
+            const avgCompletion = logs.length
+              ? logs.reduce((sum, l) => sum + Number(l.completion_percentage || 0), 0) / logs.length
+              : 0;
 
-        // Determine status
-        let status = "Pending";
+            // Determine status
+            let status = "Pending";
 
-        if (avgCompletion.toFixed(1) >= 100) status = "Completed";
-        else if (avgCompletion.toFixed(1) > 0) status = "In Progress";
+            if (avgCompletion.toFixed(1) >= 100) status = "Completed";
+            else if (avgCompletion.toFixed(1) > 0) status = "In Progress";
 
-        return (
-          <Card
-            key={index}
-            className="rounded-lg hover:shadow-sm transition-all"
-            onClick={() => {
-              router.push(`/${lang}/apps/content?id=${item._id}&content-folder-id=${data?.courseDetails?._id}`);
+            return (
+              <Card
+                key={index}
+                className="rounded-lg hover:shadow-sm transition-all"
+                onClick={() => {
+                  router.push(`/${lang}/apps/content?id=${item._id}&content-folder-id=${data?.courseDetails?._id}`);
+                }}
+              >
+                <CardContent className="flex items-start justify-between gap-4">
+                  <Stack direction="row" spacing={2}>
+                    <Box
+                      component="img"
+                      src={`${assert_url}/program_module/${item.image_url}`}
+                      sx={{ width: 75, height: 75, borderRadius: 1, objectFit: 'cover' }}
+                    />
+
+                    <Box>
+                      <Typography fontWeight={600}>{item.title}</Typography>
+                      <Typography variant="body2" color="text.secondary">{item.description}</Typography>
+
+                      <Stack direction="row" spacing={1} alignItems="center" mt={1}>
+                        <i className="tabler-file-description text-sm" />
+                        <Typography variant="caption">{"type"}</Typography>
+                        <Typography variant="caption">•</Typography>
+
+                        <i className="tabler-device-laptop text-sm" />
+                        <i className="tabler-device-mobile text-sm" />
+                        <Typography variant="caption">•</Typography>
+
+                        <Typography variant="caption">{data?.courseDetails?.title}</Typography>
+                      </Stack>
+                    </Box>
+                  </Stack>
+
+                  <Box textAlign="right">
+                    <Typography variant="body2" color="text.secondary">
+                      Enrolled on {formatEnrollDate(item?.created_at)}
+                    </Typography>
+
+                    <Chip
+                      label={status}
+                      size="small"
+                      color={
+                        status === "Completed"
+                          ? "success"
+                          : status === "In Progress"
+                            ? "warning"
+                            : "default"
+                      }
+                      sx={{ mt: 1 }}
+                    />
+
+                    <IconButton size="small">{">"}</IconButton>
+                  </Box>
+                </CardContent>
+
+                {status !== "Pending" && (
+                  <LinearProgress
+                    variant="determinate"
+                    value={avgCompletion.toFixed(1) > 100 ? 100 : avgCompletion.toFixed(1)}
+                    sx={{
+                      height: 3,
+                      borderRadius: 0,
+                      '& .MuiLinearProgress-bar': { backgroundColor: '#fbbc04' }
+                    }}
+                  />
+                )}
+              </Card>
+            );
+          })
+        )
+        : (
+          <Box
+            className="flex justify-center items-center"
+            sx={{
+              py: 6,
+              border: '1px solid #ECECEC',
+              borderRadius: 2,
+              backgroundColor: '#FAFAFA',
             }}
           >
-            <CardContent className="flex items-start justify-between gap-4">
-              <Stack direction="row" spacing={2}>
-                <Box
-                  component="img"
-                  src={`${assert_url}/program_module/${item.image_url}`}
-                  sx={{ width: 75, height: 75, borderRadius: 1, objectFit: 'cover' }}
-                />
-
-                <Box>
-                  <Typography fontWeight={600}>{item.title}</Typography>
-                  <Typography variant="body2" color="text.secondary">{item.description}</Typography>
-
-                  <Stack direction="row" spacing={1} alignItems="center" mt={1}>
-                    <i className="tabler-file-description text-sm" />
-                    <Typography variant="caption">{"type"}</Typography>
-                    <Typography variant="caption">•</Typography>
-
-                    <i className="tabler-device-laptop text-sm" />
-                    <i className="tabler-device-mobile text-sm" />
-                    <Typography variant="caption">•</Typography>
-
-                    <Typography variant="caption">{data?.courseDetails?.title}</Typography>
-                  </Stack>
-                </Box>
-              </Stack>
-
-              <Box textAlign="right">
-                <Typography variant="body2" color="text.secondary">
-                  Enrolled on {formatEnrollDate(item?.created_at)}
-                </Typography>
-
-                <Chip
-                  label={status}
-                  size="small"
-                  color={
-                    status === "Completed"
-                      ? "success"
-                      : status === "In Progress"
-                        ? "warning"
-                        : "default"
-                  }
-                  sx={{ mt: 1 }}
-                />
-
-                <IconButton size="small">{">"}</IconButton>
-              </Box>
-            </CardContent>
-
-            {status !== "Pending" && (
-              <LinearProgress
-                variant="determinate"
-                value={avgCompletion.toFixed(1) > 100 ? 100 : avgCompletion.toFixed(1)}
-                sx={{
-                  height: 3,
-                  borderRadius: 0,
-                  '& .MuiLinearProgress-bar': { backgroundColor: '#fbbc04' }
-                }}
-              />
-            )}
-          </Card>
-        );
-      })}
+            <Typography variant="body1" color="text.secondary" fontStyle="italic">
+              No Program found.
+            </Typography>
+          </Box>
+        )}
 
     </Box>
   )
