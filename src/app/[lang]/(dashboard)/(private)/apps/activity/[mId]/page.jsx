@@ -112,6 +112,7 @@ const createEmptyQuestion = () => ({
   id: Date.now() + Math.random(),
   text: '',
   type: '',
+  options: null, // ✅ REQUIRED
   mandatory: false,
   errors: { text: false, type: false }
 })
@@ -190,7 +191,7 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
       setData([]);
       setUploadData([]);
 
-      if (!acceptedFiles || !acceptedFiles.length) {
+      if (!acceptedFiles || !acceptedFiles?.length) {
         setLoading(false);
         toast.error('No file selected.');
 
@@ -255,7 +256,7 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
 
           const missingHeadersList = requiredHeaders.filter(h => !headers.includes(h));
 
-          if (missingHeadersList.length > 0) {
+          if (missingHeadersList?.length > 0) {
             setMissingHeaders(missingHeadersList);
             setLoading(false);
             setProgress(0);
@@ -301,7 +302,7 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
 
             // Question
             if (!question) errors.push(`Row ${rowNum}: Question cannot be empty.`);
-            else if (question.length > 500) errors.push(`Row ${rowNum}: Question length must not exceed 500 characters.`);
+            else if (question?.length > 500) errors.push(`Row ${rowNum}: Question length must not exceed 500 characters.`);
 
             // Options check
             if (options.every(o => o === '')) errors.push(`Row ${rowNum}: At least one Option (1–6) must have a value.`);
@@ -311,7 +312,7 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
 
             // Section
             if (!section) errors.push(`Row ${rowNum}: Section cannot be empty.`);
-            else if (section.length > 10) errors.push(`Row ${rowNum}: Section length must not exceed 10 characters.`);
+            else if (section?.length > 10) errors.push(`Row ${rowNum}: Section length must not exceed 10 characters.`);
 
             // Answer Explanation
             if (answerExplanation.length > 500) errors.push(`Row ${rowNum}: Answer Explanation length must not exceed 500 characters.`);
@@ -326,7 +327,7 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
             const parsedAnswers = parseCorrectAnswer(row['Correct Answer'] || '');
             const uniqueAnswers = [...new Set(parsedAnswers)];
 
-            if (uniqueAnswers.length === 0) errors.push(`Row ${rowNum}: Correct Answer must contain at least one option number (1–6).`);
+            if (uniqueAnswers?.length === 0) errors.push(`Row ${rowNum}: Correct Answer must contain at least one option number (1–6).`);
             else {
               uniqueAnswers.forEach(ans => {
                 if (!/^[1-6]$/.test(ans)) errors.push(`Row ${rowNum}: Correct Answer contains invalid option number: ${ans}`);
@@ -339,17 +340,17 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
             }
 
             // Single / Multiple rules
-            if (questionType === 'Single Correct' && uniqueAnswers.length !== 1) errors.push(`Row ${rowNum}: For Single Correct, Correct Answer must contain exactly ONE option number.`);
-            if (questionType === 'Multiple Correct' && uniqueAnswers.length < 2) errors.push(`Row ${rowNum}: For Multiple Correct, Correct Answer must contain at least TWO option numbers.`);
+            if (questionType === 'Single Correct' && uniqueAnswers?.length !== 1) errors.push(`Row ${rowNum}: For Single Correct, Correct Answer must contain exactly ONE option number.`);
+            if (questionType === 'Multiple Correct' && uniqueAnswers?.length < 2) errors.push(`Row ${rowNum}: For Multiple Correct, Correct Answer must contain at least TWO option numbers.`);
 
             // Explanation logic
             if (useAnswerExplanationLower === 'true' && !answerExplanation) errors.push(`Row ${rowNum}: Answer Explanation cannot be empty when Use Answer Explanation is TRUE.`);
             if (useAnswerExplanationLower === 'false' && answerExplanation) errors.push(`Row ${rowNum}: Answer Explanation must be empty when Use Answer Explanation is FALSE.`);
           });
 
-          if (duplicateSno.length > 0) errors.unshift(`Duplicate Sno values found: ${[...new Set(duplicateSno)].join(', ')}`);
+          if (duplicateSno?.length > 0) errors.unshift(`Duplicate Sno values found: ${[...new Set(duplicateSno)].join(', ')}`);
 
-          if (errors.length > 0) {
+          if (errors?.length > 0) {
             setValidationErrors(errors);
             setLoading(false);
             setProgress(0);
@@ -488,7 +489,7 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
   };
 
   const handleUploadData = () => {
-    if (uploadData && uploadData.length > 0) {
+    if (uploadData && uploadData?.length > 0) {
       // For API expectation: adjust shape if required by backend; currently sending array of normalized objects
       submitAnswer(uploadData).then(() => {
         // Clear everything after save
@@ -589,9 +590,9 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
             ))}
           </thead>
           <tbody>
-            {table.getRowModel().rows.length === 0 ? (
+            {table.getRowModel().rows?.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className='text-center'>No data available</td>
+                <td colSpan={columns?.length} className='text-center'>No data available</td>
               </tr>
             ) : (
               table.getRowModel().rows.map(row => (
@@ -619,10 +620,10 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
       <Card>
         <CardContent>
           <Alert severity='info'>Note: Allowed only Excel files with *.xls or *.xlsx extension.</Alert>
-          {missingHeaders.length > 0 && (
+          {missingHeaders?.length > 0 && (
             <Alert severity='error'>Missing Headers: {missingHeaders.join(', ')}</Alert>
           )}
-          {validationErrors.length > 0 && (
+          {validationErrors?.length > 0 && (
             <Alert severity='error' className='mt-2'>
               {validationErrors.map((err, idx) => <div key={idx}>{err}</div>)}
             </Alert>
@@ -660,13 +661,13 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
               </List>
             )}
 
-            {uploadData && uploadData.length > 0 && <TableImportComponent />}
+            {uploadData && uploadData?.length > 0 && <TableImportComponent />}
           </AppReactDropzone>
         </CardContent>
       </Card>
 
       <DialogActions className='justify-center'>
-        {uploadData && uploadData.length > 0 && missingHeaders.length === 0 && validationErrors.length === 0 && (
+        {uploadData && uploadData?.length > 0 && missingHeaders?.length === 0 && validationErrors?.length === 0 && (
           <Button variant='contained' onClick={handleUploadData}>Start Import</Button>
         )}
         <Button variant='tonal' type='button' color='secondary' onClick={handleDialogClose}>Close</Button>
@@ -906,7 +907,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
     maxSize: fileConfig.maxSize,
     accept: fileConfig.accept,
     onDrop: async (acceptedFiles) => {
-      if (acceptedFiles && !acceptedFiles.length) return
+      if (acceptedFiles && !acceptedFiles?.length) return
       const selectedFile = acceptedFiles[0]
 
       setFile(null)
@@ -1217,12 +1218,12 @@ const QUESTION_TYPES = [
   { label: 'Rating (1–5) - Star', value: '5' },
   { label: 'Subjective Answer', value: '6' },
   { label: 'Multiple Choice', value: '7' },
-  { label: 'MCQ with Image', value: '8' },
-  { label: 'Likert Scale', value: '9' },
-  { label: 'Satisfaction Scale', value: '10' },
-  { label: 'Quality Scale', value: '11' },
-  { label: 'Date', value: '12' }
+  { label: 'Likert Scale', value: '8' },
+  { label: 'Satisfaction Scale', value: '9' },
+  { label: 'Quality Scale', value: '10' },
 ]
+
+const OPTION_BASED_TYPES = ['7', '8', '9', '10']
 
 const SurveySkeleton = ({ isTablet }) => (
   <>
@@ -1248,15 +1249,239 @@ const SurveySkeleton = ({ isTablet }) => (
   </>
 )
 
+const labelOption = {
+  "7": "Define your custom options",
+  "8": "Define your Likert scale",
+  "9": "Define your Satisfaction scale",
+  "10": "Define your Quality scale"
+}
 
+const MCQModalComponent = ({ open, setOpen, activeQuestionId, setOptionData, optionData }) => {
+  const handleClose = () => setOpen(false)
+
+  const [customOptions, setCustomOptions] = useState([''])
+  const [allowMulti, setAllowMulti] = useState(false)
+  const [errors, setErrors] = useState([])
+  const [addNeutral, setAddNeutral] = useState(false)
+  const [minOptionError, setMinOptionError] = useState('')
+
+  // Pre-fill modal state from optionData
+  useEffect(() => {
+    if (!open) return
+
+    setErrors([])
+    setAllowMulti(false)
+    setAddNeutral(false)
+    setCustomOptions([''])
+
+    if (optionData?.option?.length) {
+      if (activeQuestionId === '7') {
+        setCustomOptions(optionData.option.map(o => o.value))
+        setAllowMulti(optionData.multiOption || false)
+      }
+
+      if (activeQuestionId === '8') {
+        const hasNeutral = optionData.option.some(o => o.value === 'Neutral')
+        setAddNeutral(hasNeutral)
+      }
+
+      if (activeQuestionId === '9') {
+        // Prefill if needed
+      }
+
+      if (activeQuestionId === '10') {
+        // Prefill if needed
+      }
+    }
+  }, [open, optionData])
+
+  const likertOptions = addNeutral
+    ? ['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree']
+    : ['Strongly Disagree', 'Disagree', 'Agree', 'Strongly Agree']
+
+  const satisfactionOptions = [
+    'Very Dissatisfied',
+    'Dissatisfied',
+    'Neutral',
+    'Satisfied',
+    'Very Satisfied'
+  ]
+
+  const qualityOptions = ['Poor', 'Good', 'Excellent']
+
+  const MAX_OPTIONS = 10
+
+  const addCustomOption = () => {
+    if (customOptions.length >= MAX_OPTIONS) return
+    setCustomOptions(prev => [...prev, ''])
+  }
+
+  const updateCustomOption = (index, value) => {
+    const updated = [...customOptions]
+    updated[index] = value
+    setCustomOptions(updated)
+    setErrors(prev => {
+      const err = [...prev]
+      err[index] = false
+      return err
+    })
+    setMinOptionError('')
+  }
+
+  const removeCustomOption = index => {
+    if (customOptions.length <= 2) return
+    setCustomOptions(prev => prev.filter((_, i) => i !== index))
+    setErrors(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const handleSave = () => {
+    let payload = []
+
+    setMinOptionError('')
+    setErrors([])
+
+    if (activeQuestionId === '7') {
+      if (customOptions.length < 2) {
+        setMinOptionError('At least 2 options are required')
+        return
+      }
+
+      const validationErrors = customOptions.map(opt => !opt.trim())
+      if (validationErrors.some(Boolean)) {
+        setErrors(validationErrors)
+        return
+      }
+
+      payload = customOptions.map((opt, index) => ({
+        index,
+        value: opt.trim()
+      }))
+    }
+
+    if (activeQuestionId === '8') {
+      payload = likertOptions.map((opt, index) => ({
+        index,
+        value: opt
+      }))
+    }
+
+    if (activeQuestionId === '9') {
+      payload = satisfactionOptions.map((opt, index) => ({
+        index,
+        value: opt
+      }))
+    }
+
+    if (activeQuestionId === '10') {
+      payload = qualityOptions.map((opt, index) => ({
+        index,
+        value: opt
+      }))
+    }
+
+    setOptionData({
+      option: payload,
+      multiOption: activeQuestionId === '7' ? allowMulti : false
+    })
+
+    setOpen(false)
+  }
+
+  return (
+    <Dialog open={open} fullWidth maxWidth="lg" sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}>
+      <DialogCloseButton onClick={handleClose} disableRipple>
+        <i className="tabler-x" />
+      </DialogCloseButton>
+
+      <DialogTitle textAlign="center">{labelOption?.[activeQuestionId] || ''}</DialogTitle>
+
+      <DialogContent>
+        {activeQuestionId === '7' &&
+          customOptions.map((opt, index) => (
+            <Box key={index} sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ flex: 1 }}>
+                <Typography>Option {index + 1}</Typography>
+                <TextField
+                  fullWidth
+                  value={opt}
+                  error={errors[index]}
+                  helperText={errors[index] && 'Option cannot be empty'}
+                  onChange={e => updateCustomOption(index, e.target.value)}
+                />
+                {minOptionError && (
+                  <Typography color="error" variant="caption" sx={{ mb: 1 }}>
+                    {minOptionError}
+                  </Typography>
+                )}
+              </Box>
+              <IconButton
+                color="error"
+                size="small"
+                disabled={customOptions.length <= 2}
+                onClick={() => removeCustomOption(index)}
+                sx={{ mt: 3 }}
+              >
+                <i className="tabler-trash" />
+              </IconButton>
+            </Box>
+          ))}
+
+        {activeQuestionId === '7' && (
+          <>
+            <Button onClick={addCustomOption} variant="contained">
+              Add Option
+            </Button>
+            <Box sx={{ display: 'flex', justifyContent: 'end' }}>
+              <FormControlLabel
+                control={<Checkbox checked={allowMulti} onChange={e => setAllowMulti(e.target.checked)} />}
+                label="Allow Multiselect"
+              />
+            </Box>
+          </>
+        )}
+
+        {activeQuestionId === '8' && (
+          <>
+            <FormControlLabel
+              control={<Checkbox checked={addNeutral} onChange={e => setAddNeutral(e.target.checked)} />}
+              label="Add Neutral"
+            />
+            {likertOptions.map((opt, i) => (
+              <TextField key={i} fullWidth disabled value={opt} sx={{ mb: 2 }} />
+            ))}
+          </>
+        )}
+
+        {activeQuestionId === '9' &&
+          satisfactionOptions.map((opt, i) => (
+            <TextField key={i} fullWidth disabled value={opt} sx={{ mb: 2 }} />
+          ))}
+
+        {activeQuestionId === '10' &&
+          qualityOptions.map((opt, i) => (
+            <TextField key={i} fullWidth disabled value={opt} sx={{ mb: 2 }} />
+          ))}
+      </DialogContent>
+
+      <DialogActions sx={{ justifyContent: 'center' }}>
+        <Button variant="contained" onClick={handleSave}>
+          Save
+        </Button>
+      </DialogActions>
+    </Dialog>
+  )
+}
+
+// ---------- Survey Modal Component ----------
 const SurveyModalComponent = ({ open, setISOpen, API_URL, token, mId, questions, setQuestions, handleFetchQuestion, fetching }) => {
-
   const [loading, setLoading] = useState(false)
-
+  const [optionData, setOptionData] = useState()
+  const [activeQuestionRowId, setActiveQuestionRowId] = useState(null)
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const isTablet = useMediaQuery(theme.breakpoints.down('md'))
-
+  const [mcqOpen, setMCQOpen] = useState(false)
+  const [activeQuestionId, setActiveQuestionId] = useState(null)
   const { handleSubmit } = useForm()
 
   const handleClose = () => {
@@ -1278,255 +1503,164 @@ const SurveyModalComponent = ({ open, setISOpen, API_URL, token, mId, questions,
     )
   }
 
-  const addQuestion = () =>
-    setQuestions(prev => [...prev, createEmptyQuestion()])
-
-  const removeQuestion = id => {
-    if (questions.length === 1) return
-    setQuestions(prev => prev.filter(q => q.id !== id))
-  }
+  const addQuestion = () => setQuestions(prev => [...prev, createEmptyQuestion()])
+  const removeQuestion = id => questions?.length > 1 && setQuestions(prev => prev.filter(q => q.id !== id))
 
   const validateQuestions = () => {
     let valid = true
-
     setQuestions(prev =>
       prev.map(q => {
         const textError = !q.text.trim()
         const typeError = !q.type
-
         if (textError || typeError) valid = false
-
-        return {
-          ...q,
-          errors: { text: textError, type: typeError }
-        }
+        return { ...q, errors: { text: textError, type: typeError } }
       })
     )
-
     return valid
   }
 
-
+  // Sync optionData from modal to questions
+  useEffect(() => {
+    if (!optionData || !activeQuestionRowId) return
+    setQuestions(prev =>
+      prev.map(q =>
+        q.id === activeQuestionRowId
+          ? { ...q, options: optionData.option, multiOption: optionData.multiOption }
+          : q
+      )
+    )
+  }, [optionData])
 
   const handleSaveSurvey = async () => {
     if (!validateQuestions()) return
-
     setLoading(true)
-    
-    try {
-      const payload = {
-        questions: questions.map(({ text, type, mandatory }) => ({
-          text: text.trim(),
-          type,
-          mandatory
-        }))
-      }
+    let activeError = false
 
-      const response = await fetch(
-        `${API_URL}/company/module/survey/setting/${mId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify(payload)
+    try {
+      const payload = questions.map((q, index) => {
+        const baseQuestion = { text: q.text.trim(), type: q.type, mandatory: q.mandatory }
+
+        if (OPTION_BASED_TYPES.includes(q.type)) {
+          if (!q.options || q.options.length === 0) {
+            toast.error(`Question ${index + 1} requires at least one option`)
+            activeError = true
+          }
         }
-      )
+
+        if (q.options?.length) {
+          baseQuestion.options = q.options
+          baseQuestion.multiOption = q.multiOption
+        }
+
+        return baseQuestion
+      })
+
+      if (activeError) return
+
+      const response = await fetch(`${API_URL}/company/module/survey/setting/${mId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ questions: payload })
+      })
 
       if (response.ok) {
         toast.success('Survey setting saved successfully')
         handleFetchQuestion()
         handleClose()
+      } else {
+        toast.error('Failed to save survey settings')
       }
     } catch (err) {
       console.error(err)
+      toast.error('An error occurred while saving survey')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <Dialog
-      open={open}
-      fullWidth
-      maxWidth="lg"
-      fullScreen={isMobile} // Optional: Makes dialog full screen on mobile
-      sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}
-    >
+    <Dialog open={open} fullWidth maxWidth="lg" fullScreen={isMobile} sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}>
       <DialogCloseButton onClick={handleClose} disableRipple>
-        <i className="tabler-x"></i>
+        <i className="tabler-x" />
       </DialogCloseButton>
 
-      <DialogTitle
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center"
-        }}
-      >Add Survey
-      </DialogTitle>
+      <DialogTitle sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>Add Survey</DialogTitle>
 
       <form onSubmit={handleSubmit(handleSaveSurvey)} noValidate>
-        <DialogContent
-          sx={{
-            maxHeight: isMobile ? 'none' : '70vh',
-            overflowY: 'auto',
-            px: { xs: 2, sm: 4 },
-            pt: 2
-          }}
-        >
-          {
+        <DialogContent sx={{ maxHeight: isMobile ? 'none' : '70vh', overflowY: 'auto', px: { xs: 2, sm: 4 }, pt: 2 }}>
+          {fetching ? (
+            <SurveySkeleton isTablet={isTablet} />
+          ) : (
+            questions.map((q, index) => (
+              <Box key={index} sx={{ display: 'grid', gridTemplateColumns: isTablet ? '40px 1fr auto' : '30px 1fr 200px 140px 40px', gap: 2, mb: 4, pb: isTablet ? 2 : 0, borderBottom: isTablet ? `1px solid ${theme.palette.divider}` : 'none' }}>
+                <Typography sx={{ mt: 1 }}>{index + 1}.</Typography>
 
-            fetching ? (
-              <SurveySkeleton isTablet={isTablet} />
-            ) : (
+                <Box sx={{ gridColumn: isTablet ? '2 / 4' : 'auto' }}>
+                  <TextField fullWidth size="small" value={q.text} placeholder="Enter question" error={q.errors.text} helperText={q.errors.text ? 'Question text is required' : `${q.text?.length}/300`} onChange={e => handleQuestionChange(q.id, 'text', e.target.value)} inputProps={{ maxLength: 300 }} />
+                </Box>
 
-              questions.map((q, index) => (
-                <Box
-                  key={q.id}
-                  sx={{
-                    display: 'grid',
-                    gridTemplateColumns: isTablet
-                      ? '40px 1fr auto'
-                      : '30px 1fr 170px 140px 40px',
-                    gap: 2,
-                    mb: 4,
-                    pb: isTablet ? 2 : 0,
-                    borderBottom: isTablet
-                      ? `1px solid ${theme.palette.divider}`
-                      : 'none'
-                  }}
-                >
-                  {/* Number */}
-                  <Typography sx={{ mt: 1 }}>{index + 1}.</Typography>
-
-                  {/* Question Text */}
-                  <Box sx={{ gridColumn: isTablet ? '2 / 4' : 'auto' }}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      value={q.text}
-                      placeholder="Enter question"
-                      error={q.errors.text}
-                      helperText={
-                        q.errors.text
-                          ? 'Question text is required'
-                          : `${q.text.length}/300`
-                      }
-                      onChange={e =>
-                        handleQuestionChange(q.id, 'text', e.target.value)
-                      }
-                      inputProps={{ maxLength: 300 }}
-                    />
-                  </Box>
-
-                  {/* Question Type */}
-                  <Box sx={{ gridColumn: isTablet ? '2 / 3' : 'auto' }}>
-                    <Select
-                      size="small"
-                      fullWidth
-                      value={q.type}
-                      error={q.errors.type}
-                      onChange={e =>
-                        handleQuestionChange(q.id, 'type', e.target.value)
-                      }
-                    >
+                <Box sx={{ gridColumn: isTablet ? '2 / 4' : 'auto', display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                  <Box sx={{ flex: 1, minWidth: 200 }}>
+                    <Select size="small" fullWidth value={q.type} error={q.errors.type} onChange={e => handleQuestionChange(q.id, 'type', e.target.value)}>
                       {QUESTION_TYPES.map(type => (
                         <MenuItem key={type.value} value={type.value}>
                           {type.label}
                         </MenuItem>
                       ))}
                     </Select>
-
-                    {q.errors.type && (
-                      <Typography variant="caption" color="   var(--mui-palette-error-main);">
-                        Question type is required
-                      </Typography>
-                    )}
+                    {q.errors.type && <Typography variant="caption" color="error">Question type is required</Typography>}
                   </Box>
 
-                  {/* Mandatory */}
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'start',
-                      justifyContent: isTablet ? 'flex-start' : 'start'
-                    }}
-                  >
-                    <Checkbox
+                  {OPTION_BASED_TYPES.includes(q.type) && (
+                    <Button
                       size="small"
-                      checked={q.mandatory}
-                      onChange={e =>
-                        handleQuestionChange(
-                          q.id,
-                          'mandatory',
-                          e.target.checked
-                        )
-                      }
-                    />
+                      variant="contained"
+                      sx={{ whiteSpace: 'nowrap' }}
+                      onClick={() => {
+                        setActiveQuestionId(q.type)
+                        setActiveQuestionRowId(q.id)
+                        const currentQuestion = questions.find(ques => ques.id === q.id)
+                        console.log("currentQuestion", currentQuestion);
+
+                        setOptionData(currentQuestion?.options ? { option: currentQuestion.options, multiOption: currentQuestion.multiOption } : { option: [], multiOption: false })
+                        setMCQOpen(true)
+                      }}
+                    >
+                      View Options
+                    </Button>
+                  )}
+
+                  <Box sx={{ display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
+                    <Checkbox size="small" checked={q.mandatory} onChange={e => handleQuestionChange(q.id, 'mandatory', e.target.checked)} />
                     <Typography variant="body2">Mandatory</Typography>
                   </Box>
-
-                  {/* Delete */}
-                  <Box>
-
-                    <IconButton
-                      size="small"
-                      color="error"
-                      disabled={questions.length === 1}
-                      onClick={() => removeQuestion(q.id)}
-                    >
-                      <i className="tabler-trash" />
-                    </IconButton>
-                  </Box>
                 </Box>
-              )))
-          }
 
-          <Button
-            variant="contained"
-            sx={{ ml: isTablet ? 0 : 8 }}
-            onClick={addQuestion}
-          >
+                <Box>
+                  <IconButton size="small" color="error" disabled={questions.length === 1} onClick={() => removeQuestion(q.id)}>
+                    <i className="tabler-trash" />
+                  </IconButton>
+                </Box>
+              </Box>
+            ))
+          )}
+
+          <Button variant="contained" sx={{ ml: isTablet ? 0 : 8 }} onClick={addQuestion}>
             Add Question
           </Button>
         </DialogContent>
 
-        <DialogActions
-          sx={{
-            flexDirection: isMobile ? 'column' : 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 2,
-            mb: 6,
-            px: 3,
-            py: 3
-          }}
-        >
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={loading}
-            fullWidth={isMobile}
-          >
-            {loading ? (
-              <CircularProgress size={24} color="inherit" />
-            ) : (
-              'Submit'
-            )}
+        <DialogActions sx={{ flexDirection: isMobile ? 'column' : 'row', alignItems: 'center', justifyContent: 'center', gap: 2, mb: 6, px: 3, py: 3 }}>
+          <Button type="submit" variant="contained" disabled={loading} fullWidth={isMobile}>
+            {loading ? <CircularProgress size={24} color="inherit" /> : 'Submit'}
           </Button>
-
-          <Button
-            variant="tonal"
-            color="error"
-            onClick={handleClose}
-            fullWidth={isMobile}
-          >
+          <Button variant="tonal" color="error" onClick={handleClose} fullWidth={isMobile}>
             Cancel
           </Button>
         </DialogActions>
       </form>
+
+      <MCQModalComponent open={mcqOpen} setOpen={setMCQOpen} activeQuestionId={activeQuestionId} setOptionData={setOptionData} optionData={optionData} />
     </Dialog>
   )
 }
@@ -1575,9 +1709,9 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       const result = await response.json();
-      
+
       if (response.ok) setCertificateData(result.data || []);
     } catch (error) {
       console.error(error);
@@ -1587,20 +1721,22 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
   // Fetch survey questions
   const handleFetchQuestion = async () => {
     setFetching(true);
-    
+
     try {
       const response = await fetch(`${API_URL}/company/module/survey/setting/${mId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       const value = await response.json();
-      
+
       if (response.ok && Array.isArray(value?.data)) {
         setQuestions(
-          value.data.length
+          value.data?.length
             ? value.data.map((q) => ({
               id: Date.now() + Math.random(),
               text: q.question || "",
+              options: q.options || [],
+              multiOption: q.multiOption || false,
               type: q.questionsType || "",
               mandatory: q.mandatory || false,
               errors: { text: false, type: false },
@@ -1646,7 +1782,7 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
   // Handle activity card click
   const handleCardClick = (activity) => {
     const isDocumentType = activity.module_type_id === "688723af5dd97f4ccae68834";
-    const quesLength = activity?.questions?.length;
+    const quesLength = activity?.questions?.length || 0;
 
     if (quesLength > 0) {
       router.replace(`/${lang}/apps/quiz/${mId}/${activity?._id}`);
@@ -1672,16 +1808,16 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
   const handleChangeName = async (id) => {
     if (!editingTitle.trim()) {
       setEditingError("Title is required");
-    
+
       return;
     }
 
-    if (editingTitle.length > 150) {
+    if (editingTitle?.length > 150) {
       setEditingError("Title cannot exceed 150 characters");
-      
+
       return;
     }
-    
+
     setEditingError("");
 
     try {
@@ -1690,9 +1826,9 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify({ title: editingTitle }),
       });
-      
+
       const result = await response.json();
-      
+
       if (response.ok) {
         toast.success("Activity name saved successfully", { autoClose: 1000 });
         fetchActivities();
@@ -1702,7 +1838,7 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
     } catch (error) {
       toast.error("Error updating activity name");
     }
-    
+
     setEditingId(null);
     setEditingTitle("");
   };
@@ -1719,9 +1855,9 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       const data = await response.json();
-      
+
       if (response.ok) {
         toast.success("Activity deleted successfully", { autoClose: 1000 });
         fetchActivities();
@@ -1747,7 +1883,7 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
         toast.error("Please select a certificate", {
           autoClose: 1000
         });
-        
+
         return; // stop submission
       }
 
@@ -1786,7 +1922,7 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
         {/* Left Column - Activities */}
         <Grid item size={{ xs: 12, md: 7 }}>
           <Box sx={{ maxHeight: "70vh", overflowY: "auto", pr: 1 }}>
-            {activities.length > 0 ? (
+            {activities?.length > 0 ? (
               activities.map((activity, index) => (
                 <Card
                   key={index}
@@ -1938,7 +2074,7 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
                   {certificateData.map((item, index) => {
                     const id = item._id ?? index;
                     const isSelected = selectedCertificateId === id;
-                    
+
                     return (
                       <Card
                         key={id}
@@ -2008,7 +2144,7 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
                   <Checkbox
                     checked={isFeedbackChecked}
                     onChange={(e) => setIsFeedbackChecked(e.target.checked)}
-                    disabled={!fetching && questions.length === 0}
+                    disabled={!fetching && questions?.length === 0}
                   />
                 }
                 label={
@@ -2028,7 +2164,7 @@ const ContentFlowComponent = ({ setOpen, activities, API_URL, token, fetchActivi
                     <Checkbox
                       checked={isMandatoryChecked}
                       onChange={(e) => setIsMandatoryChecked(e.target.checked)}
-                      disabled={!fetching && questions.length === 0}
+                      disabled={!fetching && questions?.length === 0}
                     />
                   }
                   label="Mandatory"
@@ -2096,7 +2232,7 @@ const ImportUserModal = ({
 
   // Save uploaded data
   const handleDataSave = async () => {
-    if (Object.keys(rowErrors).length > 0) {
+    if (Object.keys(rowErrors)?.length > 0) {
       toast.error("Please fix the errors in the table before submitting.");
 
       return;
@@ -2148,7 +2284,7 @@ const ImportUserModal = ({
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"]
     },
     onDrop: async (acceptedFiles) => {
-      if (!acceptedFiles.length) return;
+      if (!acceptedFiles?.length) return;
       const selectedFile = acceptedFiles[0];
 
       try {
@@ -2157,7 +2293,7 @@ const ImportUserModal = ({
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
 
-        if (!jsonData.length) {
+        if (!jsonData?.length) {
           throw new Error("Excel file is empty.");
         }
 
@@ -2255,7 +2391,7 @@ const ImportUserModal = ({
   });
 
   const columns = useMemo(() => {
-    if (!excelData.length) return [];
+    if (!excelData?.length) return [];
 
     return Object.keys(excelData[0]).map(key => ({
       header: key,
@@ -2340,9 +2476,9 @@ const ImportUserModal = ({
             ))}
           </thead>
           <tbody>
-            {table.getRowModel().rows.length === 0 ? (
+            {table.getRowModel().rows?.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="text-center">No data available</td>
+                <td colSpan={columns?.length} className="text-center">No data available</td>
               </tr>
             ) : (
               table.getRowModel().rows.map(row => (
@@ -2417,10 +2553,10 @@ const ImportUserModal = ({
             </Grid>
           </Grid>
 
-          {excelData.length > 0 && <TableImportComponent />}
+          {excelData?.length > 0 && <TableImportComponent />}
 
           <DialogActions sx={{ justifyContent: "center", gap: 2, mt: 4 }}>
-            {excelData.length > 0 && Object.keys(rowErrors).length === 0 && (
+            {excelData.length > 0 && Object.keys(rowErrors)?.length === 0 && (
               <Button
                 onClick={handleSubmit(handleDataSave)}
                 variant="contained"
@@ -2575,7 +2711,7 @@ const SettingComponent = ({ activities }) => {
           setDueDays(result.dueDays);
         }
 
-        if (Array.isArray(result.targetPairs) && result.targetPairs.length > 0) {
+        if (Array.isArray(result.targetPairs) && result.targetPairs?.length > 0) {
           const enriched = result.targetPairs.map((pair) => {
             let secondOptions = [];
 
@@ -2652,7 +2788,7 @@ const SettingComponent = ({ activities }) => {
   // Auto-select users from modal
   useEffect(() => {
     if (
-      allData.length > 0 &&
+      allData?.length > 0 &&
       selectedPairIndex !== null &&
       targetOptionPairs[selectedPairIndex]?.target === "5"
     ) {
@@ -2715,7 +2851,7 @@ const SettingComponent = ({ activities }) => {
 
   const handleAddClick = () => {
     setTargetOptionPairs((prev) => {
-      if (prev.length >= MAX_PAIRS) return prev;
+      if (prev?.length >= MAX_PAIRS) return prev;
 
       return [...prev, { target: "", options: [], secondOptions: [] }];
 
@@ -2724,7 +2860,7 @@ const SettingComponent = ({ activities }) => {
 
   const handleRemoveClick = (index) => {
     setTargetOptionPairs((prev) => {
-      if (prev.length === 1) return prev;
+      if (prev?.length === 1) return prev;
       const copy = [...prev];
 
       copy.splice(index, 1);
@@ -2977,7 +3113,7 @@ const SettingComponent = ({ activities }) => {
                   <Button
                     variant="contained"
                     onClick={handleAddClick}
-                    disabled={targetOptionPairs.length >= MAX_PAIRS}
+                    disabled={targetOptionPairs?.length >= MAX_PAIRS}
                   >
                     + Add
                   </Button>
@@ -3103,7 +3239,7 @@ const SettingComponent = ({ activities }) => {
             variant="contained"
             color="primary"
             sx={{ mt: 3 }}
-            disabled={!activities || activities.length === 0}
+            disabled={!activities || activities?.length === 0}
           >
             Publish
           </Button>

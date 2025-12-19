@@ -14,13 +14,23 @@ import {
   CardContent,
   Typography,
   Stack,
+  Snackbar,
+  Alert,
   Chip,
   Button,
   Skeleton
 } from '@mui/material'
 
-export default function ProgramPage() {
+import { toast } from 'react-toastify'
 
+
+function formatEnrollDate(dateString) {
+  const date = new Date(dateString)
+
+  return `${String(date.getDate()).padStart(2, '0')} ${String(date.getMonth() + 1).padStart(2, '0')} ${date.getFullYear()}`
+}
+
+export default function ProgramPage() {
   const paramData = useSearchParams()
 
   const moduleId = paramData.get('id')
@@ -30,29 +40,41 @@ export default function ProgramPage() {
   const ASSET_URL = process.env.NEXT_PUBLIC_ASSETS_URL
 
   const { lang: locale } = useParams()
-
   const { data: session } = useSession()
   const token = session?.user?.token
 
   const [data, setData] = useState()
   const [loading, setLoading] = useState(true)
+  const [settingData, setSettingData] = useState()
 
   const fetchActivity = async () => {
     try {
       const response = await fetch(`${API_URL}/user/activity/data/${moduleId}`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+        headers: { Authorization: `Bearer ${token}` }
       })
-
       const result = await response.json()
+      if (response.ok) setData(result?.data)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
+  const fetchSurveyData = async () => {
+    try {
+      const response = await fetch(`${API_URL}/user/module/survey/data/${moduleId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      const result = await response.json()
       if (response.ok) {
-        setData(result?.data)
+        const module_setting = result?.data?.moduleSetting || {}
+        setSettingData({
+          orderType: module_setting?.orderType || 'any'
+        })
       }
-    } catch (error) {
-      console.error(error)
+    } catch (err) {
+      console.error(err)
     } finally {
       setLoading(false)
     }
@@ -61,26 +83,22 @@ export default function ProgramPage() {
   useEffect(() => {
     if (API_URL && token && moduleId) {
       fetchActivity()
+      fetchSurveyData()
     }
   }, [API_URL, token, moduleId])
-
-  // Mapping module types
 
   const moduleTypeLabel = {
     '688723af5dd97f4ccae68834': 'Documents & Slides',
     '688723af5dd97f4ccae68835': 'Video',
     '688723af5dd97f4ccae68836': 'YouTube Video',
-
-    '688723af5dd97f4ccae68837': 'Scrom Content',
+    '688723af5dd97f4ccae68837': 'Scorm Content',
     '688723af5dd97f4ccae68838': 'Web Link',
     '688723af5dd97f4ccae68839': 'Subjective Assessment',
     '688723af5dd97f4ccae6883a': 'Flash Card',
-    "68886902954c4d9dc7a379bd": "Quiz"
-
+    '68886902954c4d9dc7a379bd': 'Quiz'
   }
 
   const docType = {
-
     '688723af5dd97f4ccae68834': 'pdf',
     '688723af5dd97f4ccae68835': 'video',
     '688723af5dd97f4ccae68836': 'youtube-video',
@@ -88,84 +106,24 @@ export default function ProgramPage() {
     '688723af5dd97f4ccae68838': 'web-link',
     '688723af5dd97f4ccae68839': 'subjective-sssessment',
     '688723af5dd97f4ccae6883a': 'flash-card',
-    '68886902954c4d9dc7a379bd': "quiz"
+    '68886902954c4d9dc7a379bd': 'quiz'
   }
 
-  function formatEnrollDate(dateString) {
-    const date = new Date(dateString)
-
-    return `${String(date.getDate()).padStart(2, '0')} ${String(date.getMonth() + 1).padStart(2, '0')} ${date.getFullYear()}`
+  const handleActivityClick = (canOpen, url) => {
+    if (!canOpen) {
+      toast.error('Please complete the previous activity first.', {
+        autoClose: 1000
+      })
+      return
+    }
+    window.location.href = url
   }
 
-  // -----------------------------------------------------
-  // FULL PAGE SKELETON
+  if (loading) return null
 
-  // -----------------------------------------------------
-
-  if (loading) {
-
-    return (
-
-      <Box className="p-6 space-y-6">
-
-        {/* Header Skeleton */}
-
-        <Card>
-
-          <Skeleton variant="rectangular" height={60} />
-
-          <CardContent className="flex flex-col sm:flex-row gap-5 items-center">
-
-            <Skeleton variant="rectangular" width={260} height={230} />
-
-            <Box className="flex flex-col gap-3 flex-1">
-
-              <Skeleton width="50%" />
-
-              <Skeleton width="70%" />
-            </Box>
-          </CardContent>
-        </Card>
-
-        {/* Description Skeleton */}
-
-        <Card>
-
-          <CardContent>
-
-            <Skeleton width="100%" />
-            <Skeleton width="90%" />
-
-          </CardContent>
-
-        </Card>
-
-        {/* Activities Skeleton */}
-
-        <Typography variant="h6" mb={2}>Activities</Typography>
-
-        {[...Array(3)].map((_, i) => (
-
-          <Card key={i} className="mb-3">
-            <CardContent>
-
-              <Skeleton width="60%" />
-
-              <Skeleton width="40%" />
-            </CardContent>
-          </Card>
-        ))}
-      </Box>
-    )
-  }
-
-  // -----------------------------------------------------
-  // REAL PAGE RENDER
-  // -----------------------------------------------------
   return (
     <Box className="p-6 space-y-6">
 
-      {/* HEADER */}
       <Card>
         <Breadcrumbs
           px={5}
@@ -244,91 +202,50 @@ export default function ProgramPage() {
       </Card>
 
       {/* ACTIVITIES */}
-
       <Box>
-        <Typography variant="h6" mb={2}>
-          Activities
-        </Typography>
+        <Typography variant="h6" mb={2}>Activities</Typography>
 
-        {data?.activities?.length > 0 ? (
-          data.activities.map((activity, index) => {
-            const label =
-              activity?.name ||
-              moduleTypeLabel[activity?.module_type_id] ||
-              "Objective Quiz";
+        {data?.activities?.map((activity, index) => {
+          const label =
+            activity?.name ||
+            moduleTypeLabel[activity?.module_type_id]
 
-            const log = activity?.logs?.[0];
-            
-            const isCompleted =
-              (log?.is_completed && Number(log?.completion_percentage) >= 100) ||
-              log?.scorm_data?.lessonStatus === "passed";
+          const log = activity?.logs?.[0]
 
-            const completedDate = log?.scorm_data?.lessonStatus === "passed"
-              ? formatEnrollDate(log?.scorm_data?.passed_at_time)
-              : log?.is_completed && log?.completed_at_time && log?.completed_at_time !== "null"
-                ? formatEnrollDate(log?.completed_at_time)
-                : "";
+          const isCompleted =
+            (log?.is_completed && Number(log?.completion_percentage) >= 100) ||
+            log?.scorm_data?.lessonStatus === 'passed'
 
-            return (
-              <Card key={index} className="mb-3 hover:shadow-sm transition-all">
-                <CardContent className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          const prevActivity = data.activities[index - 1]
+          const prevLog = prevActivity?.logs?.[0]
 
-                  {/* Left Section */}
-                  <Box>
-                    <Typography fontWeight={600}>{label}</Typography>
+          const prevCompleted =
+            (prevLog?.is_completed && Number(prevLog?.completion_percentage) >= 100) ||
+            prevLog?.scorm_data?.lessonStatus === 'passed'
 
-                    <Stack direction="row" spacing={1} alignItems="center" mt={1}>
-                      {activity.required && (
-                        <Chip
-                          label="⭐ Required"
-                          color="success"
-                          size="small"
-                        />
-                      )}
-                    </Stack>
-                  </Box>
+          const isOrdered = settingData?.orderType === 'ordered'
+          const canOpen = !isOrdered || index === 0 || prevCompleted
 
-                  {/* Right Section */}
-                  <Stack direction="row" spacing={2} alignItems="center">
-                    {isCompleted && (
-                      <Chip
-                        label={`Completed On : ${completedDate}`}
-                        variant="outlined"
-                        color="success"
-                        size="small"
-                      />
-                    )}
+          const url = `/${locale}/apps/content-data?type=${docType[activity?.module_type_id]}&activityId=${activity?._id}&moduleId=${moduleId}&contentFolderId=${content_folder_id}&moduleTypeId=${activity?.module_type_id}`
 
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      disabled={log?.scorm_data?.lessonStatus === "passed"}
-                      href={`/${locale}/apps/content-data?type=${docType?.[activity?.module_type_id]}&activityId=${activity?._id}&moduleId=${moduleId}&contentFolderId=${content_folder_id}&moduleTypeId=${activity?.module_type_id}`}
-                      sx={{ borderRadius: 2, textTransform: "none", px: 3 }}
-                    >
-                      {isCompleted ? "Completed" : "In progress"}
-                    </Button>
-                  </Stack>
-                </CardContent>
-              </Card>
-            );
-          })
-        ) : (
-          <Box
-            className="flex justify-center items-center"
-            sx={{
-              py: 6,
-              border: '1px solid #ECECEC',
-              borderRadius: 2,
-              backgroundColor: '#FAFAFA',
-            }}
-          >
-            <Typography variant="body1" color="text.secondary" fontStyle="italic">
-              No activities found.
-            </Typography>
-          </Box>
-        )}
+          return (
+            <Card key={index} className="mb-3">
+              <CardContent className="flex justify-between items-center">
+                <Typography fontWeight={600}>{label}</Typography>
+
+                <Button
+                  variant="contained"
+                  onClick={() => handleActivityClick(canOpen, url)}
+                >
+                  {isCompleted ? 'Completed' : 'In progress'}
+                </Button>
+              </CardContent>
+            </Card>
+          )
+        })}
       </Box>
     </Box>
   )
 }
+
+
