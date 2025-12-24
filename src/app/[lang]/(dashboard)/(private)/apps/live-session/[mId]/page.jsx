@@ -581,7 +581,7 @@ const SurveyModalComponent = ({ open, setISOpen, token, mId, questions, setQuest
     )
 }
 
-const BasicsComponent = ({ token, mId, setShowPresenterSelector, selectedPresenter, setSelectedPresenter }) => {
+const BasicsComponent = ({ token, mId, setShowPresenterSelector, selectedPresenter, liveData }) => {
 
     const [questions, setQuestions] = useState([]);
     const [fetching, setFetching] = useState(false);
@@ -599,7 +599,7 @@ const BasicsComponent = ({ token, mId, setShowPresenterSelector, selectedPresent
 
     const [loading, setLoading] = useState(false);
 
-    const { handleSubmit, control } = useForm();
+    const { handleSubmit, control, setValue } = useForm();
 
     // Fetch certificates
     const handleFetchCertificate = async () => {
@@ -671,6 +671,20 @@ const BasicsComponent = ({ token, mId, setShowPresenterSelector, selectedPresent
     };
 
     useEffect(() => {
+        if (liveData?.start_live_time && liveData?.end_live_time) {
+
+            const start = dayjs(liveData.start_live_time);
+            const end = dayjs(liveData.end_live_time);
+
+
+            setValue("date", start);
+            setValue("startTime", start);
+            setValue("endTime", end);
+        }
+    }, [liveData, setValue]);
+
+
+    useEffect(() => {
         if (API_URL && token) {
             fetchModuleSettings()
             handleFetchCertificate();
@@ -704,20 +718,19 @@ const BasicsComponent = ({ token, mId, setShowPresenterSelector, selectedPresent
                 mandatory: isMandatoryChecked,
             };
 
+            const response = await fetch(`${API_URL}/company/modules/save/settings/${mId}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(payload),
+            });
 
-            // const response = await fetch(`${API_URL}/company/modules/save/settings/${mId}`, {
-            //     method: "POST",
-            //     headers: {
-            //         "Content-Type": "application/json",
-            //         Authorization: `Bearer ${token}`,
-            //     },
-            //     body: JSON.stringify(payload),
-            // });
-
-            // if (response.ok) {
-            //     toast.success("Module settings saved successfully", { autoClose: 1000 });
-            //     setLoading(false);
-            // }
+            if (response.ok) {
+                toast.success("Module settings saved successfully", { autoClose: 1000 });
+                setLoading(false);
+            }
 
         } catch (error) {
             console.error("Error saving module settings:", error);
@@ -1423,7 +1436,45 @@ const ImportUserModal = ({
     );
 };
 
-const SettingComponent = ({ createData }) => {
+const SkeletonForm = () => (
+    <Grid container spacing={4}>
+        <Grid item size={{ xs: 12, md: 9 }}>
+            {/* Title */}
+            <Skeleton variant="text" width={220} height={32} />
+
+            {[...Array(2)].map((_, idx) => (
+                <Grid
+                    container
+                    spacing={2}
+                    alignItems="center"
+                    mb={3}
+                    key={idx}
+                >
+                    <Grid item size={{ xs: 12, md: 3 }}>
+                        <Skeleton variant="rectangular" height={40} />
+                    </Grid>
+
+                    <Grid item size={{ xs: 12, md: 6 }}>
+                        <Skeleton variant="rectangular" height={40} />
+                    </Grid>
+
+                    <Grid item size={{ xs: 12, md: 2 }}>
+                        <Skeleton variant="rectangular" height={36} />
+                    </Grid>
+
+                    <Grid item size={{ xs: 12, md: 1 }}>
+                        <Skeleton variant="circular" width={36} height={36} />
+                    </Grid>
+                </Grid>
+            ))}
+
+            {/* Publish button */}
+            <Skeleton variant="rectangular" width={120} height={42} />
+        </Grid>
+    </Grid>
+);
+
+const SettingComponent = ({ createData, isNotPublish }) => {
 
     const { data: session } = useSession();
     const token = session?.user?.token;
@@ -1441,6 +1492,8 @@ const SettingComponent = ({ createData }) => {
     const [selectedPairIndex, setSelectedPairIndex] = useState(null);
     const [allData, setAllData] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
+
+    const [loading, setLoading] = useState(false)
 
     const [targetOptionPairs, setTargetOptionPairs] = useState([
         { target: "", options: [], secondOptions: [] },
@@ -1466,6 +1519,8 @@ const SettingComponent = ({ createData }) => {
                         `Request failed with ${res.status} ${res.statusText}: ${errText}`
                     );
                 }
+
+                setLoading(true)
 
                 const body = await res.json();
 
@@ -1682,9 +1737,13 @@ const SettingComponent = ({ createData }) => {
     const onSubmit = (e) => {
         e.preventDefault();
 
-        if (dueType === "fixed" && startDate > endDate) {
-            toast.error("Start date cannot be later than end date");
+        const hasInvalidTargetPair = targetOptionPairs.some(
+            (pair) =>
+                !pair.target || !Array.isArray(pair.options) || pair.options.length === 0
+        );
 
+        if (hasInvalidTargetPair) {
+            toast.error("Please select one module target and option");
             return;
         }
 
@@ -1712,161 +1771,173 @@ const SettingComponent = ({ createData }) => {
     };
 
     return (
-        <form onSubmit={onSubmit}>
-            <Grid container spacing={4}>
-                <Grid item size={{ xs: 12, md: 9 }}>
 
-                    {/* Target Audience */}
-                    <Typography variant="h6" gutterBottom>
-                        This Module Is Targeted At
-                    </Typography>
-                    {targetOptionPairs.map((pair, idx) => (
-                        <Grid container spacing={2} alignItems="center" mb={3} key={idx}>
-                            <Grid item size={{ xs: 12, md: 3 }}>
-                                <TextField
-                                    select
-                                    label="Select module targets"
-                                    fullWidth
-                                    size="small"
-                                    value={pair.target}
-                                    onChange={(e) => handleFirstChange(idx, e.target.value)}
-                                >
-                                    <MenuItem value="">Select Module Target</MenuItem>
-                                    <MenuItem
-                                        value="1"
-                                        disabled={targetOptionPairs.some(
-                                            (p, i) => p.target === "1" && i !== idx
-                                        )}
-                                    >
-                                        Designation
-                                    </MenuItem>
-                                    <MenuItem
-                                        value="2"
-                                        disabled={targetOptionPairs.some(
-                                            (p, i) => p.target === "2" && i !== idx
-                                        )}
-                                    >
-                                        Department
-                                    </MenuItem>
-                                    <MenuItem
-                                        value="3"
-                                        disabled={targetOptionPairs.some(
-                                            (p, i) => p.target === "3" && i !== idx
-                                        )}
-                                    >
-                                        Group
-                                    </MenuItem>
-                                    <MenuItem
-                                        value="4"
-                                        disabled={targetOptionPairs.some(
-                                            (p, i) => p.target === "4" && i !== idx
-                                        )}
-                                    >
-                                        Region
-                                    </MenuItem>
-                                    <MenuItem
-                                        value="5"
-                                        disabled={targetOptionPairs.some(
-                                            (p, i) => p.target === "5" && i !== idx
-                                        )}
-                                    >
-                                        User
-                                    </MenuItem>
-                                </TextField>
-                            </Grid>
+        loading ? (
+            <>
 
-                            <Grid item size={{ xs: 12, md: 6 }}>
-                                <TextField
-                                    select
-                                    label="Select option"
-                                    fullWidth
-                                    size="small"
-                                    value={pair.options}
-                                    onChange={(e) => handleSecondChange(idx, e.target.value)}
-                                    SelectProps={{ multiple: true }}
-                                >
-                                    {pair.secondOptions && pair.secondOptions.length > 0 ? (
-                                        pair.target !== "5"
-                                            ? pair.secondOptions.map((item, i) => (
-                                                <MenuItem
-                                                    key={String(item._id ?? i)}
-                                                    value={String(item._id ?? item.id ?? item)}
-                                                >
-                                                    {item.name || item.title || item.label || item._id}
-                                                </MenuItem>
-                                            ))
-                                            : pair.secondOptions.map((item, i) => (
-                                                <MenuItem
-                                                    key={String(item._id ?? i)}
-                                                    value={String(item._id ?? item.id ?? item)}
-                                                >
-                                                    {item.first_name} {item.last_name}
-                                                </MenuItem>
-                                            ))
-                                    ) : (
-                                        <MenuItem disabled>No data found</MenuItem>
+
+                <form onSubmit={onSubmit}>
+                    <Grid container spacing={4}>
+                        <Grid item size={{ xs: 12, md: 9 }}>
+
+                            {/* Target Audience */}
+                            <Typography variant="h6" gutterBottom>
+                                This Module Is Targeted At
+                            </Typography>
+                            {targetOptionPairs.map((pair, idx) => (
+                                <Grid container spacing={2} alignItems="center" mb={3} key={idx}>
+                                    <Grid item size={{ xs: 12, md: 3 }}>
+                                        <TextField
+                                            select
+                                            label="Select module targets"
+                                            fullWidth
+                                            size="small"
+                                            value={pair.target}
+                                            onChange={(e) => handleFirstChange(idx, e.target.value)}
+                                        >
+                                            <MenuItem value="">Select Module Target</MenuItem>
+                                            <MenuItem
+                                                value="1"
+                                                disabled={targetOptionPairs.some(
+                                                    (p, i) => p.target === "1" && i !== idx
+                                                )}
+                                            >
+                                                Designation
+                                            </MenuItem>
+                                            <MenuItem
+                                                value="2"
+                                                disabled={targetOptionPairs.some(
+                                                    (p, i) => p.target === "2" && i !== idx
+                                                )}
+                                            >
+                                                Department
+                                            </MenuItem>
+                                            <MenuItem
+                                                value="3"
+                                                disabled={targetOptionPairs.some(
+                                                    (p, i) => p.target === "3" && i !== idx
+                                                )}
+                                            >
+                                                Group
+                                            </MenuItem>
+                                            <MenuItem
+                                                value="4"
+                                                disabled={targetOptionPairs.some(
+                                                    (p, i) => p.target === "4" && i !== idx
+                                                )}
+                                            >
+                                                Region
+                                            </MenuItem>
+                                            <MenuItem
+                                                value="5"
+                                                disabled={targetOptionPairs.some(
+                                                    (p, i) => p.target === "5" && i !== idx
+                                                )}
+                                            >
+                                                User
+                                            </MenuItem>
+                                        </TextField>
+                                    </Grid>
+
+                                    <Grid item size={{ xs: 12, md: 6 }}>
+                                        <TextField
+                                            select
+                                            label="Select option"
+                                            fullWidth
+                                            size="small"
+                                            value={pair.options}
+                                            onChange={(e) => handleSecondChange(idx, e.target.value)}
+                                            SelectProps={{ multiple: true }}
+                                        >
+                                            {pair.secondOptions && pair.secondOptions.length > 0 ? (
+                                                pair.target !== "5"
+                                                    ? pair.secondOptions.map((item, i) => (
+                                                        <MenuItem
+                                                            key={String(item._id ?? i)}
+                                                            value={String(item._id ?? item.id ?? item)}
+                                                        >
+                                                            {item.name || item.title || item.label || item._id}
+                                                        </MenuItem>
+                                                    ))
+                                                    : pair.secondOptions.map((item, i) => (
+                                                        <MenuItem
+                                                            key={String(item._id ?? i)}
+                                                            value={String(item._id ?? item.id ?? item)}
+                                                        >
+                                                            {item.first_name} {item.last_name}
+                                                        </MenuItem>
+                                                    ))
+                                            ) : (
+                                                <MenuItem disabled>No data found</MenuItem>
+                                            )}
+                                        </TextField>
+                                    </Grid>
+
+                                    {pair.target === "5" && (
+                                        <Grid item size={{ xs: 12, md: 2 }}>
+                                            <Button
+                                                variant="outlined"
+                                                onClick={() => handleImportUser(idx)}
+                                            >
+                                                Import User
+                                            </Button>
+                                        </Grid>
                                     )}
-                                </TextField>
-                            </Grid>
 
-                            {pair.target === "5" && (
-                                <Grid item size={{ xs: 12, md: 2 }}>
-                                    <Button
-                                        variant="outlined"
-                                        onClick={() => handleImportUser(idx)}
+                                    <Grid
+                                        item
+                                        size={{ xs: 12, md: 1 }}
+                                        display="flex"
+                                        justifyContent="center"
                                     >
-                                        Import User
-                                    </Button>
+                                        {idx === 0 ? (
+                                            <Button
+                                                variant="contained"
+                                                onClick={handleAddClick}
+                                                disabled={targetOptionPairs?.length >= MAX_PAIRS}
+                                            >
+                                                + Add
+                                            </Button>
+                                        ) : (
+                                            <IconButton
+                                                color="error"
+                                                onClick={() => handleRemoveClick(idx)}
+                                            >
+                                                <i className="tabler-trash" />
+                                            </IconButton>
+                                        )}
+                                    </Grid>
                                 </Grid>
-                            )}
+                            ))}
 
-                            <Grid
-                                item
-                                size={{ xs: 12, md: 1 }}
-                                display="flex"
-                                justifyContent="center"
+                            {/* Save Button */}
+                            <Button
+                                type="submit"
+                                variant="contained"
+                                color="primary"
+                                sx={{ mt: 3 }}
+                                disabled={isNotPublish}
                             >
-                                {idx === 0 ? (
-                                    <Button
-                                        variant="contained"
-                                        onClick={handleAddClick}
-                                        disabled={targetOptionPairs?.length >= MAX_PAIRS}
-                                    >
-                                        + Add
-                                    </Button>
-                                ) : (
-                                    <IconButton
-                                        color="error"
-                                        onClick={() => handleRemoveClick(idx)}
-                                    >
-                                        <i className="tabler-trash" />
-                                    </IconButton>
-                                )}
-                            </Grid>
+                                Publish
+                            </Button>
                         </Grid>
-                    ))}
+                    </Grid>
 
-                    {/* Save Button */}
-                    <Button
-                        type="submit"
-                        variant="contained"
-                        color="primary"
-                        sx={{ mt: 3 }}
-                        disabled={true}
-                    >
-                        Publish
-                    </Button>
-                </Grid>
-            </Grid>
+                    {/* Import User Modal */}
+                    <ImportUserModal
+                        open={isOpen}
+                        handleClose={handleClose}
+                        allData={allData}
+                        setAllData={setAllData}
+                    />
+                </form>
 
-            {/* Import User Modal */}
-            <ImportUserModal
-                open={isOpen}
-                handleClose={handleClose}
-                allData={allData}
-                setAllData={setAllData}
-            />
-        </form>
+            </>
+        ) : (
+            <>
+                <SkeletonForm />
+            </>
+        )
     );
 };
 
@@ -1875,6 +1946,7 @@ const SessionPresenterComponent = ({
     createData,
     selectedPresenter,
     setSelectedPresenter,
+    liveData
 }) => {
     const [userData, setUserData] = useState([]);
 
@@ -1960,9 +2032,12 @@ const LiveSessionCard = () => {
     const { data: session } = useSession();
     const token = session?.user?.token;
     const { lang: locale, mId: mId } = useParams()
+    const [liveData, setLiveData] = useState()
 
     const [showPresenterSelector, setShowPresenterSelector] = useState(false);
     const [selectedPresenter, setSelectedPresenter] = useState(null);
+
+    const [isNotPublish, setIsNotPublish] = useState(true);
 
     const [createData, setCreateData] = useState({
         designation: [],
@@ -2006,11 +2081,42 @@ const LiveSessionCard = () => {
         return null;
     }, [API_URL, token]);
 
+    const fetchLiveData = useCallback(async () => {
+        if (!API_URL || !token) return;
+
+        try {
+            const res = await fetch(`${API_URL}/company/live/session/${mId}`, {
+                method: "GET",
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            const body = await res.json();
+
+            if (res.ok) {
+
+                if (body?.data?.presenter_id) {
+
+                    setIsNotPublish(false)
+                }
+
+                setSelectedPresenter(body?.data?.presenter_id)
+                setLiveData(body?.data)
+            } else {
+                console.error("Error fetching create data:", body);
+            }
+        } catch (err) {
+            console.error("Error fetching create data:", err);
+        }
+
+        return null;
+    }, [API_URL, token, mId]);
+
     useEffect(() => {
         if (API_URL && token) {
             fetchCreateData();
+            fetchLiveData()
         }
-    }, [API_URL, token, fetchCreateData]);
+    }, [API_URL, token, mId]);
 
     const onClose = () => {
         setShowPresenterSelector(false)
@@ -2038,13 +2144,14 @@ const LiveSessionCard = () => {
                                             token={token}
                                             setShowPresenterSelector={setShowPresenterSelector}
                                             mId={mId}
+                                            liveData={liveData}
                                             setSelectedPresenter={setSelectedPresenter}
                                             selectedPresenter={selectedPresenter}
                                         />
                                     </>
                                 </TabPanel>
                                 <TabPanel value='setting' className='p-0'>
-                                    <SettingComponent createData={createData} />
+                                    <SettingComponent createData={createData} isNotPublish={isNotPublish} />
                                 </TabPanel>
                             </Box>
                             <Dialog fullWidth maxWidth='lg' scroll='body' open={showPresenterSelector} onClose={onClose} sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}>
@@ -2057,6 +2164,7 @@ const LiveSessionCard = () => {
                                         createData={createData}
                                         setSelectedPresenter={setSelectedPresenter}
                                         selectedPresenter={selectedPresenter}
+                                        liveData={liveData}
                                     />
                                 </DialogContent>
                             </Dialog>
