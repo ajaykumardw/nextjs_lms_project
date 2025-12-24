@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 
 import { useSession } from 'next-auth/react';
 
@@ -93,6 +93,8 @@ const ProgramCardComponent = ({
     const [categories, setCategories] = useState();
     const [breadCumbData, setBreadCumbData] = useState();
 
+    // const { lang: locale } = useParams();
+
     const router = useRouter();
 
     const handleMenuOpen = (event, item) => {
@@ -156,7 +158,7 @@ const ProgramCardComponent = ({
         if (API_URL && token && stage) {
             fetchCategory()
         }
-        
+
         if (API_URL && token && parent && currentId) {
             fetchBreadCumbCategory();
         }
@@ -169,6 +171,20 @@ const ProgramCardComponent = ({
         }
 
     }, [selectedCategory, stage])
+
+    const linkData = (itemId, moduleTypeId) => {
+
+        if (stage != "Module") return `${nextLink}/${itemId}`
+
+        const data = {
+            "688219557b6953e899cb57d2": `${nextLink}/${itemId}`,
+            "688219557b6953e899cb57d3": `/${locale}/apps/live-session/${itemId}`,
+            "688219557b6953e899cb57d4": `/${locale}/apps/ilt-page/${itemId}`
+        }
+
+        return data?.[moduleTypeId] || `${nextLink}/${itemId}`
+
+    }
 
     if (loading) {
         return (
@@ -202,7 +218,7 @@ const ProgramCardComponent = ({
                     <Box>
                         <Typography variant="h5">My {stage}</Typography>
                         <BreadcumbComponent data={breadCumbData} locale={locale} stage={stage} />
-                        {/* <Typography variant="body2" mt={1}>Total {totalItems} {stage} you have in your bucket</Typography> */}
+
                     </Box>
 
                     <Box className="flex items-center gap-4 flex-wrap justify-end">
@@ -259,7 +275,7 @@ const ProgramCardComponent = ({
                                             boxShadow: 6,
                                         },
                                     }}
-                                    onClick={() => router.push(`${nextLink}/${item._id}`)} // This remains
+                                    onClick={() => router.push(linkData(item._id, item?.module_type_id))} // This remains
                                 >
                                     <img
                                         src={item.image_url ? `${ASSET_URL}/program_module/${item.image_url}` : placeholderBase64}
@@ -294,6 +310,7 @@ const ProgramCardComponent = ({
                                             >
                                                 <i className="tabler-dots-vertical" />
                                             </IconButton>
+
                                         </Box>
                                     </CardContent>
                                 </Card>

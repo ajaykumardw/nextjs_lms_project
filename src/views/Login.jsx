@@ -138,8 +138,6 @@ const Login = ({ mode }) => {
         redirect: false
       })
 
-      console.log("Res", res);
-
       setLoading(false)
 
       if (res && res?.ok && !res.error) {

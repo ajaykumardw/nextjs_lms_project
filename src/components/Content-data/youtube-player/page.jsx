@@ -62,29 +62,23 @@ const YouTubePlayerComponent = ({ url, setFieldData, pageData }) => {
         width="100%"
         height="100%"
 
-        // Total duration — always take the highest
-
         onDuration={(duration) => {
-          
-          const rounded = Math.round(duration)
-
-          setTotalVideoTime(prev => Math.max(prev, rounded))
+          const rounded = Math.ceil(duration); // 🔑 use ceil
+          setTotalVideoTime(prev => Math.max(prev, rounded));
         }}
-
-        // Progress — never allow backward movement
 
         onProgress={(state) => {
-          const rounded = Math.round(state.playedSeconds)
+          const rounded = Math.floor(state.playedSeconds);
 
-          // Prevent decreasing time
-
-          setCurrentVideoTime(prev => Math.max(prev, rounded))
-
-          // Viewed should always be maximum point reached
-          
-          setViewedVideoTime(prev => Math.max(prev, rounded))
+          setCurrentVideoTime(prev => Math.max(prev, rounded));
+          setViewedVideoTime(prev => Math.max(prev, rounded));
         }}
-      />
+
+        onEnded={() => {
+          setCurrentVideoTime(totalVideoTime);
+          setViewedVideoTime(totalVideoTime);
+        }}
+      />  
     </Box>
   )
 }

@@ -24,7 +24,7 @@ const formatDate = (date) => {
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
-  
+
   return `${year}-${month}-${day}`;
 };
 
@@ -36,7 +36,8 @@ const QuizStaticLayout = ({
   quizSetting,
   isInstruction = false,
   log,
-  saveInsertQuizData = async () => ({ ok: false })
+  saveInsertQuizData = async () => ({ ok: false }),
+  setSurveyModalOpen
 }) => {
   const theme = useTheme();
   const { lang: locale } = useParams();
@@ -68,7 +69,7 @@ const QuizStaticLayout = ({
   useEffect(() => {
     if (quizSetting?.timing?.type === "overallTime" && isInstruction) {
       const durationInMs = quizSetting.timing.duration * 60 * 1000;
-      
+
       setTimeLeft(durationInMs);
 
       timerRef.current = setInterval(() => {
@@ -76,15 +77,15 @@ const QuizStaticLayout = ({
           if (prev <= 1000) {
             clearInterval(timerRef.current);
             handleSave(); // now uses latest attemptedRef.current
-            
+
             return 0;
           }
-          
+
           return prev - 1000;
         });
       }, 1000);
     }
-    
+
     return () => clearInterval(timerRef.current);
   }, [quizSetting?.timing, isInstruction]);
 
@@ -93,7 +94,7 @@ const QuizStaticLayout = ({
     const totalSeconds = Math.floor(ms / 1000);
     const m = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
     const s = String(totalSeconds % 60).padStart(2, "0");
-    
+
 
     return `${m}:${s}`;
   };
@@ -118,10 +119,10 @@ const QuizStaticLayout = ({
   const scoreSingleCorrect = (question, selectedOneBased, marks) => {
     const difficulty = Number(question.difficulty) || 1;
     const { correct, wrong } = marks[difficulty] || marks[1];
-    
+
     if (!Array.isArray(selectedOneBased) || selectedOneBased.length === 0) return 0;
     const correctAnswer = Number((question.correct_answer || [])[0]);
-    
+
     return Number(selectedOneBased[0]) === correctAnswer ? correct : wrong;
   };
 
@@ -139,7 +140,7 @@ const QuizStaticLayout = ({
     // If sizes match and all selected are correct -> full correct
     const selectedSet = new Set(selected);
     const correctSet = new Set(correctAnswers);
-    
+
     const fullCorrect =
       selectedSet.size === correctSet.size &&
       [...correctSet].every(v => selectedSet.has(v));
@@ -152,11 +153,11 @@ const QuizStaticLayout = ({
 
   const calculateScore = (question, selectedOneBased, marks) => {
     const type = (question.question_type || "Single Correct").toLowerCase();
-    
+
     if (type.includes("multiple")) {
       return scoreMultipleCorrect(question, selectedOneBased, marks);
     }
-    
+
     return scoreSingleCorrect(question, selectedOneBased, marks);
   };
 
@@ -167,7 +168,7 @@ const QuizStaticLayout = ({
       setQuestions(null);
       setSections([]);
       setAttempted([]);
-      
+
       return;
     }
 
@@ -198,7 +199,7 @@ const QuizStaticLayout = ({
         marks[1].correct;
 
       let selectedOne = [];
-      
+
       if (fromReport) {
         if (Array.isArray(fromReport.selected_option_no)) {
           selectedOne = fromReport.selected_option_no
@@ -206,7 +207,7 @@ const QuizStaticLayout = ({
             .filter(Number.isFinite);
         } else if (fromReport.selected_option_no != null) {
           const num = Number(fromReport.selected_option_no);
-          
+
           if (Number.isFinite(num)) selectedOne = [num];
         }
       }
@@ -248,7 +249,7 @@ const QuizStaticLayout = ({
 
     // GROUP BY SECTION
     const groups = {};
-    
+
     mapped.forEach(q => {
       if (!groups[q.section]) groups[q.section] = [];
       groups[q.section].push(q);
@@ -263,7 +264,7 @@ const QuizStaticLayout = ({
 
     // FLATTEN
     const flat = sectionArr.flatMap(s => s.items);
-    
+
     setQuestions(flat);
     setIndex(0);
 
@@ -296,7 +297,7 @@ const QuizStaticLayout = ({
   useEffect(() => {
     try {
       const serialized = JSON.stringify(attempted || []);
-      
+
       if (lastSentRef.current !== serialized) {
         setQuizData(attempted);
         lastSentRef.current = serialized;
@@ -309,7 +310,7 @@ const QuizStaticLayout = ({
   /** Helpers */
   const isQuestionAttempted = (questionId) => {
     const att = attempted.find(a => a.question_id === questionId);
-    
+
     if (!att) return false;
 
     return Array.isArray(att.selected_option_no) && att.selected_option_no.length > 0;
@@ -401,6 +402,13 @@ const QuizStaticLayout = ({
       const res = await saveInsertQuizData(attemptedRef.current); // use ref
 
       if (res?.ok) {
+
+        if (res?.data?.completed) {
+
+          setSurveyModalOpen(res?.data?.completed)
+          return;
+        }
+
         toast.success("Quiz completed successfully!", { autoClose: 1000 });
         router.push(`/${locale}/apps/content?id=${moduleId}&content-folder-id=${contentFolderId}`);
       } else {

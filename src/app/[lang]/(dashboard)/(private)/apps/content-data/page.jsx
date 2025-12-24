@@ -29,6 +29,8 @@ import { toast } from 'react-toastify';
 
 import DialogCloseButton from '@/components/dialogs/DialogCloseButton';
 
+import SurveyModalComponent from '@/components/survey-modal/page';
+
 const PDFViewer = dynamic(() => import('@/components/Content-data/PdfViewer/index'), { ssr: false });
 const DocViewer = dynamic(() => import('@/components/Content-data/DocViewer/index'), { ssr: false });
 const PptViewer = dynamic(() => import('@/components/Content-data/PptViewer/index'), { ssr: false });
@@ -58,6 +60,8 @@ const ContentData = () => {
   const [pageInfo, setPageInfo] = useState({ current: 1, total: 0 });
   const [loading, setLoading] = useState(true);
   const [openConfirm, setOpenConfirm] = useState(false);
+
+  const [surveyModalOpen, setSurveyModalOpen] = useState(false)
 
   const [scormData, setScormData] = useState({});
 
@@ -137,7 +141,11 @@ const ContentData = () => {
 
       const json = await res.json().catch(() => null);
 
-      return { ok: res.ok, status: res.status, data: json };
+      console.log("JSON 18", json?.data);
+      
+      setSurveyModalOpen(json?.data?.completed || false);
+
+      return { ok: res.ok, status: res.status, data: json?.data };
     } catch (error) {
 
       console.error('postJson error', error);
@@ -156,6 +164,11 @@ const ContentData = () => {
       });
 
       const result = await response.json();
+
+      if(response.ok){
+        const value = result?.data?.completed || false;
+        setSurveyModalOpen(value);
+      }
 
     } catch (error) {
       throw new Error(error)
@@ -210,7 +223,7 @@ const ContentData = () => {
           console.warn('Field autosave failed', res);
         }
       });
-    }, 1200); // 1.2s debounce
+    }, 800); // 1.2s debounce
 
     return () => {
       if (fieldAutosaveTimer.current) {
@@ -296,6 +309,14 @@ const ContentData = () => {
           toast.error('Failed to save quiz before marking complete');
           console.warn('markComplete saveInsertQuizData failed', res);
         }
+
+        if (res?.ok && res?.data?.completed) {
+
+          setSurveyModalOpen(res?.data?.completed)
+          return;
+        }
+
+
       } else {
         const res = await saveInsertFieldData(fieldData);
 
@@ -303,6 +324,13 @@ const ContentData = () => {
           toast.error('Failed to save progress before marking complete');
           console.warn('markComplete saveInsertFieldData failed', res);
         }
+
+        if (res?.ok && res?.data?.completed) {
+
+          setSurveyModalOpen(res?.data?.completed)
+          return;
+        }
+
       }
 
       toast.success('Activity completed successfully', { autoClose: 1000 });
@@ -382,7 +410,7 @@ const ContentData = () => {
               </Typography>
             )}</>
           } />
-          {/* <Divider sx={{ my: 2 }} /> */}
+
           <CardContent>
 
 
@@ -400,16 +428,16 @@ const ContentData = () => {
               ) : (
                 <>
                   {types === 'pdf' && isPDF && (
-                    <PDFViewer pdfUrl={fileUrl} onPageChange={handlePageChange} setFieldData={setFieldData} pageData={data.logs?.[0]} />
+                    <PDFViewer pdfUrl={fileUrl} onPageChange={handlePageChange} setFieldData={setFieldData} pageData={data.logs?.[0]} setSurveyModalOpen={setSurveyModalOpen} />
                   )}
                   {(extension === 'doc' || extension === 'docx') && (
-                    <DocViewer fileUrl={fileUrl} onPageLoad={handlePageChange} setFieldData={setFieldData} pageData={data.logs?.[0]} />
+                    <DocViewer fileUrl={fileUrl} onPageLoad={handlePageChange} setFieldData={setFieldData} pageData={data.logs?.[0]} setSurveyModalOpen={setSurveyModalOpen} />
                   )}
                   {(extension === 'ppt' || extension === 'pptx') && (
-                    <PptViewer fileUrl={fileUrl} onPageLoad={handlePageChange} setFieldData={setFieldData} pageData={data.logs?.[0]} />
+                    <PptViewer fileUrl={fileUrl} onPageLoad={handlePageChange} setFieldData={setFieldData} pageData={data.logs?.[0]} setSurveyModalOpen={setSurveyModalOpen} />
                   )}
                   {(types === 'video' || types === 'youtube-video') && (
-                    <YouTubePlayerComponent url={types === 'video' ? videoURL : youtubeVideoURL} setFieldData={setFieldData} pageData={data.logs?.[0]} />
+                    <YouTubePlayerComponent url={types === 'video' ? videoURL : youtubeVideoURL} setFieldData={setFieldData} pageData={data.logs?.[0]} setSurveyModalOpen={setSurveyModalOpen} />
                   )}
                   {types === 'quiz' && (
                     <QuizQuestionComponent
@@ -422,6 +450,7 @@ const ContentData = () => {
                       report={data.quiz_reports || []}
                       setQuizData={setQuizData}
                       saveInsertQuizData={saveInsertQuizData} // pass actual fn
+                      setSurveyModalOpen={setSurveyModalOpen}
                     />
                   )}
                   {types === 'scrom-content' &&
@@ -430,6 +459,7 @@ const ContentData = () => {
                       scormData={scormData}
                       scromLogData={scromLogData}
                       setScormData={setScormData}
+                      setSurveyModalOpen={setSurveyModalOpen}
                     />
                   }
                 </>
@@ -508,6 +538,8 @@ const ContentData = () => {
           </CardActions>
         </Card>
       )}
+
+      <SurveyModalComponent open={surveyModalOpen} setOpen={setSurveyModalOpen} moduleId={moduleId} />
 
       <Dialog open={openConfirm} onClose={() => setOpenConfirm(false)} sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}>
         <DialogCloseButton onClick={() => setOpenConfirm(false)}><i className="tabler-x" /></DialogCloseButton>
