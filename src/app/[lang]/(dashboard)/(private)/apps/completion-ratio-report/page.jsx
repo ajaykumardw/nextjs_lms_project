@@ -1,6 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+
+import { useSession } from "next-auth/react"
 
 import {
     Box,
@@ -12,6 +14,7 @@ import {
     Select,
     MenuItem,
     Table,
+    Skeleton,
     TableBody,
     TableCell,
     CircularProgress,
@@ -27,13 +30,33 @@ import {
 
 import Grid from "@mui/material/Grid2"
 
-import dayjs from "dayjs";
-
 import { LocalizationProvider, DateTimePicker } from "@mui/x-date-pickers";
 
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 
 import { TabContext, TabList, TabPanel } from "@mui/lab"
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL
+
+const TableSkeletonRow = () => (
+    <TableRow>
+        <TableCell>
+            <Skeleton width="60%" />
+        </TableCell>
+        <TableCell>
+            <Skeleton variant="rectangular" height={20} />
+        </TableCell>
+        <TableCell>
+            <Skeleton width="40%" />
+        </TableCell>
+        <TableCell>
+            <Skeleton width="40%" />
+        </TableCell>
+        <TableCell>
+            <Skeleton width="40%" />
+        </TableCell>
+    </TableRow>
+);
 
 /* -------------------- Filter Modal -------------------- */
 const FilterModal = ({ open, onClose }) => {
@@ -255,9 +278,41 @@ const LearnerProgressBar = ({
     );
 };
 
-
 /* -------------------- Tables -------------------- */
-const DashboardTab = ({ onFilterClick }) => {
+const DashboardTab = ({ onFilterClick, token }) => {
+    const [dashboardData, setDashboardData] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchDashboardReport = async () => {
+        try {
+            setLoading(true);
+            const response = await fetch(
+                `${API_URL}/company/dashboard/completion/report`,
+                {
+                    method: "GET",
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+
+            const value = await response.json();
+            if (response.ok) {
+
+                console.log("Value", value?.data);
+                
+
+                setDashboardData(value?.data || []);
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (API_URL && token) fetchDashboardReport();
+    }, [API_URL, token]);
+
     return (
         <>
             <ReportHeader title="Modules" onFilterClick={onFilterClick} />
@@ -267,7 +322,9 @@ const DashboardTab = ({ onFilterClick }) => {
                     <TableHead>
                         <TableRow>
                             <TableCell>Module Type</TableCell>
-                            <TableCell>Learner Progress Level <ProgressLegend /></TableCell>
+                            <TableCell>
+                                Learner Progress Level <ProgressLegend />
+                            </TableCell>
                             <TableCell>Total Modules</TableCell>
                             <TableCell>Total Enrolled Modules</TableCell>
                             <TableCell>Module Enrollments</TableCell>
@@ -275,50 +332,40 @@ const DashboardTab = ({ onFilterClick }) => {
                     </TableHead>
 
                     <TableBody>
-                        <TableRow>
-                            <TableCell>Micro-learning module</TableCell>
-
-                            <TableCell>
-                                <LearnerProgressBar
-                                    notStarted={20}
-                                    inProgress={60}
-                                    completed={40}
-                                />
-                            </TableCell>
-
-                            <TableCell>159</TableCell>
-                            <TableCell>11</TableCell>
-                            <TableCell>13</TableCell>
-                        </TableRow>
-
-                        <TableRow>
-                            <TableCell>Content Marketplace</TableCell>
-                            <TableCell>
-                                <LearnerProgressBar
-                                    notStarted={0}
-                                    inProgress={100}
-                                    completed={0}
-                                />
-                            </TableCell>
-                            <TableCell>4</TableCell>
-                            <TableCell>1</TableCell>
-                            <TableCell>1</TableCell>
-                        </TableRow>
-                        <TableRow>
-                            <TableCell>Content Marketplace</TableCell>
-                            <TableCell>
-                                Not started
-                            </TableCell>
-                            <TableCell>4</TableCell>
-                            <TableCell>1</TableCell>
-                            <TableCell>1</TableCell>
-                        </TableRow>
+                        {loading ? (
+                            Array.from({ length: 3 }).map((_, index) => (
+                                <TableSkeletonRow key={index} />
+                            ))
+                        ) : dashboardData.length > 0 ? (
+                            dashboardData.map((item, index) => (
+                                <TableRow key={index}>
+                                    <TableCell>{item?.moduleTypeName || "-"}</TableCell>
+                                    <TableCell>
+                                        <LearnerProgressBar
+                                            notStarted={Number(item?.notStartedPercent || 0)}
+                                            inProgress={Number(item?.inProgressPercent || 0)}
+                                            completed={Number(item?.completedPercent || 0)}
+                                        />
+                                    </TableCell>
+                                    <TableCell>{item?.totalModules || 0}</TableCell>
+                                    <TableCell>{item?.totalEnrolledModules || 0}</TableCell>
+                                    <TableCell>{item?.moduleEnrollments || 0}</TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={5} align="center">
+                                    No data found
+                                </TableCell>
+                            </TableRow>
+                        )}
                     </TableBody>
                 </Table>
             </TableContainer>
         </>
     );
 };
+
 
 const ByLearnerAttributesTab = ({ onFilterClick }) => (
     <>
@@ -448,6 +495,10 @@ const ByModuleTab = ({ onFilterClick }) => (
 
 /* -------------------- Main Component -------------------- */
 const CompletionRatioReport = () => {
+
+    const { data: session } = useSession()
+    const token = session?.user?.token
+
     const [tab, setTab] = useState("dashboard")
     const [openFilter, setOpenFilter] = useState(false)
 
@@ -464,32 +515,35 @@ const CompletionRatioReport = () => {
 
                 <Box className="mt-4">
                     <TabPanel value="dashboard" className="p-0">
-                        <DashboardTab onFilterClick={() => setOpenFilter(true)} />
+                        <DashboardTab onFilterClick={() => setOpenFilter(true)} token={token} />
                     </TabPanel>
 
                     <TabPanel value="by_learner_attribute" className="p-0">
                         <ByLearnerAttributesTab
                             onFilterClick={() => setOpenFilter(true)}
+                            token={token}
                         />
                     </TabPanel>
 
                     <TabPanel value="by_learning_program" className="p-0">
                         <ByLearningProgramTab
                             onFilterClick={() => setOpenFilter(true)}
+                            token={token}
                         />
                     </TabPanel>
 
                     <TabPanel value="by_learner" className="p-0">
-                        <ByLearnerTab onFilterClick={() => setOpenFilter(true)} />
+                        <ByLearnerTab onFilterClick={() => setOpenFilter(true)} token={token} />
                     </TabPanel>
 
                     <TabPanel value="by_module" className="p-0">
-                        <ByModuleTab onFilterClick={() => setOpenFilter(true)} />
+                        <ByModuleTab onFilterClick={() => setOpenFilter(true)} token={token} />
                     </TabPanel>
                 </Box>
             </TabContext>
             <FilterModal
                 open={openFilter}
+                token={token}
                 onClose={() => setOpenFilter(false)}
             />
         </>

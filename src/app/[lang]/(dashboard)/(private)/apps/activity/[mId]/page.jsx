@@ -732,7 +732,20 @@ const ShowFileModal = ({ open, setOpen, docURL }) => {
   const googleViewerURL = `https://docs.google.com/gview?url=${encodeURIComponent(fullURL)}&embedded=true`
 
   return (
-    <Dialog open={open} fullWidth maxWidth="md" onClose={handleClose}>
+    <Dialog
+      open={open}
+      fullWidth
+      maxWidth="lg"
+      onClose={handleClose}
+      scroll="body"
+      closeAfterTransition={false}
+      sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}
+    >
+
+      <DialogCloseButton onClick={handleClose} disableRipple>
+        <i className="tabler-x" />
+      </DialogCloseButton>
+
       <DialogTitle>Document Preview</DialogTitle>
 
       <DialogContent dividers sx={{ minHeight: 600 }}>
@@ -832,6 +845,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
 
   useEffect(() => {
     if (editData && open) {
+
       if (isYoutube || isVideo) {
         reset({
           title: editData?.video_data?.title || '',
@@ -840,7 +854,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
         })
       } else if (isScrom) {
         reset({
-          title: editData?.scrom_data?.title,
+          title: editData?.scorm_data?.title,
           video_url: '',
           live_session_type: ''
         })
@@ -1018,11 +1032,22 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
         body: formData
       });
 
+      const value = await response.json()
+
       if (response.ok) {
-        toast.success(`${fileConfig.type} uploaded successfully`);
+
+        toast.success(`${fileConfig.type} uploaded successfully`, {
+          autoClose: 1000
+        });
         fetchActivities();
         handleClose();
         setISOpen(false);
+      } else {
+
+        toast.error(`${value?.message}`, {
+          autoClose: 1000
+        })
+
       }
     } catch (error) {
       toast.error('Upload failed');
@@ -1044,7 +1069,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
   }
 
   return (
-    <Dialog open={open} fullWidth maxWidth="md" sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}>
+    <Dialog open={open} fullWidth maxWidth="lg" sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}>
       <DialogCloseButton onClick={handleClose} disableRipple>
         <i className="tabler-x"></i>
       </DialogCloseButton>
@@ -1155,45 +1180,63 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
               </Grid>
             )}
 
-            {isYoutube && (
+            {(isYoutube || isVideo) && (
               <>
-                <Grid item size={{ xs: 12 }}>
-                  <Controller
-                    name="video_url"
-                    control={control}
-                    render={({ field }) => (
-                      <CustomTextField
-                        {...field}
-                        fullWidth
-                        label="Video URL*"
-                        placeholder="Enter YouTube video URL"
-                        error={!!errors.video_url}
-                        helperText={errors.video_url?.message}
-                      />
-                    )}
-                  />
-                </Grid>
+                {isYoutube && (
 
-                {ReactPlayer.canPlay(watch('video_url')) && (
-                  <Grid item size={{ xs: 12 }}>
-                    <Typography variant="subtitle1" gutterBottom>Video Preview</Typography>
-                    <Box sx={{ position: 'relative', width: '100%', height: '300px', borderRadius: 2, overflow: 'hidden', boxShadow: 1 }}>
-                      <ReactPlayer
-                        url={watch('video_url')}
-                        controls
-                        width="100%"
-                        height="100%"
-                        style={{ position: 'absolute', top: 0, left: 0 }}
+                  <>
+                    <Grid item size={{ xs: 12 }}>
+                      <Controller
+                        name="video_url"
+                        control={control}
+                        render={({ field }) => (
+                          <CustomTextField
+                            {...field}
+                            fullWidth
+                            label="Video URL*"
+                            placeholder="Enter YouTube video URL"
+                            error={!!errors.video_url}
+                            helperText={errors.video_url?.message}
+                          />
+                        )}
                       />
-                    </Box>
-                  </Grid>
+                    </Grid>
+                  </>
                 )}
+
+                <>
+
+                  {ReactPlayer.canPlay(preview ? preview : (isVideo ? `${assert_url}/activity/${watch('video_url')}` : watch('video_url'))) && (
+                    <Grid item size={{ xs: 12 }}>
+                      <Typography variant="subtitle1" gutterBottom>Video Preview</Typography>
+                      <Box sx={{ position: 'relative', width: '100%', height: '300px', borderRadius: 2, overflow: 'hidden', boxShadow: 1 }}>
+                        <ReactPlayer
+                          url={preview ? preview : (isVideo ? `${assert_url}/activity/${watch('video_url')}` : watch('video_url'))}
+                          controls
+                          width="100%"
+                          height="100%"
+                          style={{ position: 'absolute', top: 0, left: 0 }}
+                        />
+                      </Box>
+                    </Grid>
+                  )}
+                </>
+
               </>
             )}
           </Grid>
 
-          <DialogActions sx={{ justifyContent: 'center', gap: 2, mt: 4 }}>
-            <Button type="submit" variant="contained" disabled={loading} sx={{ height: 40, position: 'relative' }}>
+          <DialogActions sx={{
+            justifyContent: 'center',
+            gap: 2,
+            mt: 4
+          }}>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={loading}
+              sx={{ height: 40, position: 'relative' }}
+            >
               {loading ? (
                 <CircularProgress size={24} sx={{
                   color: 'white', position: 'absolute', top: '50%', left: '50%',
@@ -2499,7 +2542,7 @@ const ImportUserModal = ({
   );
 
   return (
-    <Dialog open={open} fullWidth maxWidth="md" sx={{ "& .MuiDialog-paper": { overflow: "visible" } }}>
+    <Dialog open={open} fullWidth maxWidth="lg" sx={{ "& .MuiDialog-paper": { overflow: "visible" } }}>
       <DialogTitle>Import User</DialogTitle>
       <form onSubmit={handleSubmit(handleDataSave)} noValidate>
         <DialogContent sx={{ maxHeight: "80vh", overflowY: "auto" }}>
@@ -3301,7 +3344,7 @@ const ContentFlowModal = ({ open, data, setOpen, setSelected, selected, setNext,
         fullWidth
         open={open}
         onClose={() => setOpen(false)}
-        maxWidth="md"
+        maxWidth="lg"
         scroll="body"
         closeAfterTransition={false}
         sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}
