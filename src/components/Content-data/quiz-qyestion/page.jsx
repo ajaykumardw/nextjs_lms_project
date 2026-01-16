@@ -52,10 +52,10 @@ const QuizStaticLayout = ({
   const [timeLeft, setTimeLeft] = useState(null);
   const timerRef = useRef(null);
 
-  const [questions, setQuestions] = useState(null); // flattened questions (UI uses 0-based selected)
+  const [questions, setQuestions] = useState(null);
   const [sections, setSections] = useState([]);
   const [index, setIndex] = useState(0);
-  const [attempted, setAttempted] = useState([]); // only attempted questions, used for backend
+  const [attempted, setAttempted] = useState([]);
   const lastSentRef = useRef(null);
   const explicitSaveTimer = useRef(null);
 
@@ -65,7 +65,6 @@ const QuizStaticLayout = ({
     attemptedRef.current = attempted;
   }, [attempted]);
 
-  // Timer (overallTime)
   useEffect(() => {
     if (quizSetting?.timing?.type === "overallTime" && isInstruction) {
       const durationInMs = quizSetting.timing.duration * 60 * 1000;
@@ -76,7 +75,7 @@ const QuizStaticLayout = ({
         setTimeLeft(prev => {
           if (prev <= 1000) {
             clearInterval(timerRef.current);
-            handleSave(); // now uses latest attemptedRef.current
+            handleSave();
 
             return 0;
           }
@@ -99,7 +98,6 @@ const QuizStaticLayout = ({
     return `${m}:${s}`;
   };
 
-  // Utility: build marks map (positive correct, negative wrong)
   const buildMarks = () => ({
     1: {
       correct: quizSetting?.marking?.easy?.correct ?? 1,
@@ -115,7 +113,6 @@ const QuizStaticLayout = ({
     }
   });
 
-  // SCORING FUNCTIONS (work with 1-based selected arrays and 1-based correct_answer)
   const scoreSingleCorrect = (question, selectedOneBased, marks) => {
     const difficulty = Number(question.difficulty) || 1;
     const { correct, wrong } = marks[difficulty] || marks[1];
@@ -132,12 +129,10 @@ const QuizStaticLayout = ({
     const correctAnswers = (question.correct_answer || []).map(Number);
     const selected = (selectedOneBased || []).map(Number);
 
-    // If any selected option is not in correctAnswers => negative
     for (const s of selected) {
       if (!correctAnswers.includes(s)) return wrong;
     }
 
-    // If sizes match and all selected are correct -> full correct
     const selectedSet = new Set(selected);
     const correctSet = new Set(correctAnswers);
 
@@ -147,7 +142,6 @@ const QuizStaticLayout = ({
 
     if (fullCorrect) return correct;
 
-    // Partial (some correct but not all, and no wrong selected) => 0
     return 0;
   };
 
@@ -161,8 +155,6 @@ const QuizStaticLayout = ({
     return scoreSingleCorrect(question, selectedOneBased, marks);
   };
 
-  /** Load Questions + Merge Report (map, compute total_mark and initial attempted) */
-  /** Load Questions + Merge Report (map, compute total_mark and initial attempted) */
   useEffect(() => {
     if (!Array.isArray(data) || data.length === 0) {
       setQuestions(null);
@@ -174,15 +166,13 @@ const QuizStaticLayout = ({
 
     const marks = buildMarks();
 
-    //  NEW — ORDER SETTING
     let processed = [...data];
 
     if (quizSetting?.orderSetting === "differentOrder") {
-      // shuffle questions
+
       processed = processed.sort(() => Math.random() - 0.5);
     }
 
-    // MAP QUESTIONS
     const mapped = processed.map(q => {
       const fromReport = Array.isArray(report)
         ? report.find(r => r.question_id === q._id)
@@ -247,7 +237,6 @@ const QuizStaticLayout = ({
       };
     });
 
-    // GROUP BY SECTION
     const groups = {};
 
     mapped.forEach(q => {
@@ -262,30 +251,24 @@ const QuizStaticLayout = ({
 
     setSections(sectionArr);
 
-    // FLATTEN
     const flat = sectionArr.flatMap(s => s.items);
 
     setQuestions(flat);
     setIndex(0);
 
-    // INITIAL ATTEMPTED (all questions)
-    const initialAttempts = mapped.map(q => {
-      const selected = Array.isArray(q.selected) ? q.selected : [];
-
-      const selectedOne = selected.map(n => String(n + 1));
-      const is_correct = q.mark > 0;
-      const mark = selectedOne.length > 0 ? q.mark : 0;
-
-      return {
+    const initialAttempts = mapped
+      .filter(q => Array.isArray(q.selected) && q.selected.length > 0)
+      .map(q => ({
         question_id: q.id,
-        selected_option_no: selectedOne,
-        is_correct,
-        mark,
+        selected_option_no: q.selected.map(n => String(n + 1)),
+        is_correct: q.mark > 0,
+        mark: q.mark,
         total_mark: q.total_mark
-      };
-    });
+      }));
 
     setAttempted(initialAttempts);
+
+
   }, [
     data,
     report,
@@ -350,13 +333,10 @@ const QuizStaticLayout = ({
         newSelectedZero = [optionIndex];
       }
 
-      // Update question.selected (0-based)
       updated[index] = { ...q, selected: newSelectedZero };
 
-      // Prepare 1-based selected for scoring and backend
       const selectedOne = newSelectedZero.map(n => n + 1);
 
-      // Recompute mark using current settings
       const marks = buildMarks();
 
       const scoringQuestion = {
@@ -367,18 +347,14 @@ const QuizStaticLayout = ({
 
       const mark = calculateScore(scoringQuestion, selectedOne, marks);
 
-      // Update attempted: only keep questions with selection
       setAttempted(prevAtt => {
         const filtered = prevAtt.filter(a => a.question_id !== q.id);
 
         if (selectedOne.length === 0) {
 
-          // user cleared selection -> remove from attempted
-
           return filtered;
         }
 
-        // push updated attempt with selected_option_no as array of strings
         filtered.push({
           question_id: q.id,
           selected_option_no: selectedOne.map(String),
@@ -394,7 +370,6 @@ const QuizStaticLayout = ({
     });
   };
 
-  /** Save */
   const handleSave = async () => {
     if (explicitSaveTimer.current) clearTimeout(explicitSaveTimer.current);
 
@@ -406,6 +381,7 @@ const QuizStaticLayout = ({
         if (res?.data?.completed) {
 
           setSurveyModalOpen(res?.data?.completed)
+
           return;
         }
 
@@ -423,7 +399,6 @@ const QuizStaticLayout = ({
   const panelBg = theme.palette.mode === "dark" ? "#1e1e1e" : "#fff";
   const borderColor = theme.palette.mode === "dark" ? "#333" : "#ddd";
 
-  // Defensive accessor for settings
   const otherSettings = quizSetting?.otherSettings || {};
   const allowSkipQuestions = otherSettings.allowSkipQuestions !== undefined ? otherSettings.allowSkipQuestions : true;
   const isMandatory = otherSettings.isMandatory !== undefined ? otherSettings.isMandatory : false;
@@ -431,14 +406,21 @@ const QuizStaticLayout = ({
   if (!isInstruction) {
 
     return (
-      <IntroductionSet log={log} quizSetting={quizSetting} data={data} />
+      <IntroductionSet
+        log={log}
+        quizSetting={quizSetting}
+        data={data}
+      />
     );
   }
 
   return (
     <>
-      {/* SAVE CONFIRMATION */}
-      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}>
+      <Dialog
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}
+      >
         <DialogCloseButton onClick={() => setConfirmOpen(false)}><i className="tabler-x" /></DialogCloseButton>
 
         <DialogTitle>Confirm Save</DialogTitle>
@@ -461,10 +443,8 @@ const QuizStaticLayout = ({
         </DialogActions>
       </Dialog>
 
-      {/* MAIN LAYOUT */}
       <Box display="flex" flexDirection={{ xs: "column", md: "row" }} height="50vh" bgcolor={bg}>
 
-        {/* LEFT SIDEBAR */}
         <Box
           flex={1}
           p={2}
@@ -488,10 +468,11 @@ const QuizStaticLayout = ({
                   const idx = questions.findIndex(qq => qq.id === q.id);
 
                   const handleClickQuestion = () => {
-                    // If skipping is not allowed, prevent navigation to other question unless the target is already attempted
+
                     if (!allowSkipQuestions) {
-                      // allow clicking the same index or a previously attempted question
+
                       if (idx === index) {
+
                         setIndex(idx);
 
                         return;
@@ -537,11 +518,9 @@ const QuizStaticLayout = ({
           )}
         </Box>
 
-        {/* RIGHT CONTENT */}
         <Box flex={2} p={3} sx={{ overflowY: "auto" }}>
           {!loading && (
             <>
-              {/* HEADER WITH QUESTION + TIMER */}
               <Box
                 display="flex"
                 justifyContent="space-between"
@@ -552,7 +531,6 @@ const QuizStaticLayout = ({
                   Question {index + 1}
                 </Typography>
 
-                {/* TIMER (only when overallTime & not instruction page) */}
                 {isInstruction && quizSetting?.timing?.type === "overallTime" && (
                   <Box
                     sx={{
@@ -632,7 +610,6 @@ const QuizStaticLayout = ({
             </>
           )}
 
-          {/* NAVIGATION */}
           <Box display="flex" justifyContent="space-between" mt={4}>
             <Button
               variant="outlined"
@@ -696,7 +673,7 @@ const IntroductionSet = ({ log, quizSetting, data }) => {
         <Card>
           <CardContent>
             <Typography variant='h5' className='mbe-2'>
-              {log?.name}
+              {log?.name || "Objective Quiz"}
             </Typography>
             <Grid container>
               <Grid item size={{ xs: 12, sm: 6 }} className='flex flex-col pie-5 gap-[26px]'>

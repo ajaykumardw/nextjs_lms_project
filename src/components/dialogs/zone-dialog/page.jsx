@@ -185,7 +185,7 @@ const ZoneDialog = ({ open, setOpen, title = '', fetchZoneData, selectedZone, ty
       <form onSubmit={handleSubmit(submitData)} noValidate>
         <DialogContent className="overflow-visible flex flex-col gap-6 sm:pli-16">
           {selectedZone ? (
-            <Grid item xs={12} md={11}>
+            <Grid item size={{ xs: 12, md: 11,  }}>
               <Controller
                 name={`name`}
                 control={control}
@@ -224,7 +224,7 @@ const ZoneDialog = ({ open, setOpen, title = '', fetchZoneData, selectedZone, ty
             <>
               {fields.map((field, index) => (
                 <Grid container spacing={2} key={field.id} alignItems="center">
-                  <Grid item xs={12} md={11}>
+                  <Grid item size={{ xs: 12, md: 11,  }}>
                     <Controller
                       name={`zones.${index}.name`}
                       control={control}
@@ -259,7 +259,7 @@ const ZoneDialog = ({ open, setOpen, title = '', fetchZoneData, selectedZone, ty
                       )}
                     />
                   </Grid>
-                  <Grid item xs={12} md={1} className="flex justify-end">
+                  <Grid item size={{ xs: 12, md: 1,  }} className="flex justify-end">
                     {fields.length > 1 && (
                       <IconButton
                         color="error"

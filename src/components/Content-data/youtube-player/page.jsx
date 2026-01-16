@@ -2,39 +2,41 @@
 
 import { useRef, useState, useEffect } from 'react'
 
-import { Box } from "@mui/material"
+import { Box } from '@mui/material'
 
 import ReactPlayer from 'react-player'
 
 const YouTubePlayerComponent = ({ url, setFieldData, pageData }) => {
   const playerRef = useRef(null)
+  const pendingSeekRef = useRef(null)
+  const hasSeekedRef = useRef(false)
 
   const [totalVideoTime, setTotalVideoTime] = useState(0)
   const [currentVideoTime, setCurrentVideoTime] = useState(0)
   const [viewedVideoTime, setViewedVideoTime] = useState(0)
 
   // Load DB values on mount (highest wins)
-  useEffect(() => {
-    if (!pageData) return;
+    useEffect(() => {
+      if (!pageData) return
 
-    const dbTotal = Number(pageData.total_video_time) || 0
-    const dbCurrent = Number(pageData.current_video_time) || 0
-    const dbViewed = Number(pageData.viewed_video_time) || 0
+      const dbTotal = Number(pageData.total_video_time) || 0
+      const dbCurrent = Number(pageData.current_video_time) || 0
+      const dbViewed = Number(pageData.viewed_video_time) || 0
 
-    setTotalVideoTime(prev => Math.max(prev, dbTotal))
-    setCurrentVideoTime(prev => Math.max(prev, dbCurrent))
-    setViewedVideoTime(prev => Math.max(prev, dbViewed))
+      setTotalVideoTime(prev => Math.max(prev, dbTotal))
+      setCurrentVideoTime(prev => Math.max(prev, dbCurrent))
+      setViewedVideoTime(prev => Math.max(prev, dbViewed))
 
-    // Seek only to DB time, never lower
-    if (playerRef.current && dbCurrent > 0) {
-      playerRef.current.seekTo(dbCurrent, 'seconds')
-    }
-  }, [pageData])
+      // Store seek time — actual seek happens on onReady
+      if (dbCurrent > 0) {
+        pendingSeekRef.current = dbCurrent
+        hasSeekedRef.current = false
+      }
+    }, [pageData])
 
   // Push updated times upward (only increasing)
-
   useEffect(() => {
-    if (!setFieldData) return;
+    if (!setFieldData) return
 
     setFieldData(prev => ({
       ...prev,
@@ -42,7 +44,7 @@ const YouTubePlayerComponent = ({ url, setFieldData, pageData }) => {
       currentVideoTime,
       viewedVideoTime,
     }))
-  }, [totalVideoTime, currentVideoTime, viewedVideoTime])
+  }, [totalVideoTime, currentVideoTime, viewedVideoTime, setFieldData])
 
   return (
     <Box
@@ -62,23 +64,37 @@ const YouTubePlayerComponent = ({ url, setFieldData, pageData }) => {
         width="100%"
         height="100%"
 
+        onReady={() => {
+          if (
+            playerRef.current &&
+            pendingSeekRef.current !== null &&
+            !hasSeekedRef.current
+          ) {
+            playerRef.current.seekTo(pendingSeekRef.current, 'seconds')
+            hasSeekedRef.current = true
+            pendingSeekRef.current = null
+          }
+        }}
+
         onDuration={(duration) => {
-          const rounded = Math.ceil(duration); // 🔑 use ceil
-          setTotalVideoTime(prev => Math.max(prev, rounded));
+          
+          const rounded = Math.ceil(duration)
+          
+          setTotalVideoTime(prev => Math.max(prev, rounded))
         }}
 
         onProgress={(state) => {
-          const rounded = Math.floor(state.playedSeconds);
+          const rounded = Math.floor(state.playedSeconds)
 
-          setCurrentVideoTime(prev => Math.max(prev, rounded));
-          setViewedVideoTime(prev => Math.max(prev, rounded));
+          setCurrentVideoTime(prev => Math.max(prev, rounded))
+          setViewedVideoTime(prev => Math.max(prev, rounded))
         }}
 
         onEnded={() => {
-          setCurrentVideoTime(totalVideoTime);
-          setViewedVideoTime(totalVideoTime);
+          setCurrentVideoTime(totalVideoTime)
+          setViewedVideoTime(totalVideoTime)
         }}
-      />  
+      />
     </Box>
   )
 }

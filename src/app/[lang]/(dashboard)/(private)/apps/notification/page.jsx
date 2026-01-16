@@ -295,7 +295,12 @@ const NotificationTabs = () => {
                 <DialogCloseButton onClick={handleClose}><i className='tabler-x' /></DialogCloseButton>
                 <DialogTitle variant='h4' className='text-center'>Edit Email Notification</DialogTitle>
                 <form onSubmit={handleSubmit(onSubmit)} noValidate>
-                    <DialogContent>
+                    <DialogContent
+                        sx={{
+                            maxBlockSize: '80vh',  // limit height
+                            overflowY: 'auto',  // enable vertical scroll
+                        }}
+                    >
                         <Grid container spacing={4}>
                             <Grid size={{ xs: 12 }}>
                                 <Controller

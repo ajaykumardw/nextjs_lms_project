@@ -39,6 +39,7 @@ export default function PdfViewer({ pdfUrl, onPageChange, setFieldData, pageData
   // Load saved data
   useEffect(() => {
     if (pageData) {
+
       let newCurrent = pageData.current_page_no || 1;
       let newViewed = Array.isArray(pageData.view_page_no)
         ? Array.from(new Set(pageData.view_page_no))

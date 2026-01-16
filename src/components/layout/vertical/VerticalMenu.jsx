@@ -28,6 +28,7 @@ import StyledVerticalNavExpandIcon from '@menu/styles/vertical/StyledVerticalNav
 
 import menuItemStyles from '@core/styles/vertical/menuItemStyles'
 import menuSectionStyles from '@core/styles/vertical/menuSectionStyles'
+import { jaJP } from '@mui/x-date-pickers/locales'
 
 const RenderExpandIcon = ({ open, transitionDuration }) => (
   <StyledVerticalNavExpandIcon open={open} transitionDuration={transitionDuration}>
@@ -239,6 +240,11 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
                 My Module
               </MenuItem>
 
+              <MenuItem key="self_enroll_module" href={`/${locale}/apps/self-enroll`}>
+                <i className="tabler-users" style={{ marginRight: 8 }} />
+                Self Enroll Module
+              </MenuItem>
+
               <MenuItem key="courses" href={`/${locale}/apps/my-courses`}>
                 <i className="tabler-book" style={{ marginRight: 8 }} />
                 My Course
@@ -310,7 +316,6 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
           {permissArray?.isCompany && permissArray?.hasUserPermission && (
             <SubMenu label={dictionary['navigation'].user_plural} icon={<i className='tabler-user' />}>
               <MenuItem href={`/${locale}/apps/user/list`}>{dictionary['navigation'].list_plural}</MenuItem>
-              <MenuItem href={`/${locale}/apps/user/view`}>{dictionary['navigation'].view_plural}</MenuItem>
             </SubMenu>
           )}
           {permissArray?.isCompany && permissArray?.hasGroupPermission && (
@@ -324,8 +329,12 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
             </SubMenu>
           )}
           {permissArray?.isCompany && (
-            <SubMenu label="reports" icon={<i className="tabler-report" />}>
-              <MenuItem key="Role" href={`/${locale}/apps/completion-ratio-report`}>Completion Ratio Report</MenuItem>
+            <SubMenu label="Report" icon={<i className="tabler-report" />}>
+              <MenuItem key="completion_ratio_report" href={`/${locale}/apps/completion-ratio-report`}>Completion Ratio Report</MenuItem>
+              <MenuItem key="quiz_assessment_report" href={`/${locale}/apps/quiz-assessment-report`}>Quiz Assessment Report</MenuItem>
+              <MenuItem key="scorm_report" href={`/${locale}/apps/scorm-report`}>Scorm Report</MenuItem>
+              <MenuItem key="login_report" href={`/${locale}/apps/login-report`}>Login Report</MenuItem>
+              <MenuItem key="user_report" href={`/${locale}/apps/user-report`}>User Report</MenuItem>
             </SubMenu>
           )}
           {((permissArray?.isCompany && permissArray?.hasLabelPermission) || permissArray?.isSuperAdmin) && (

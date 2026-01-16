@@ -1325,6 +1325,7 @@ const MCQModalComponent = ({ open, setOpen, activeQuestionId, setOptionData, opt
 
       if (activeQuestionId === '8') {
         const hasNeutral = optionData.option.some(o => o.value === 'Neutral')
+
         setAddNeutral(hasNeutral)
       }
 
@@ -1361,11 +1362,14 @@ const MCQModalComponent = ({ open, setOpen, activeQuestionId, setOptionData, opt
 
   const updateCustomOption = (index, value) => {
     const updated = [...customOptions]
+
     updated[index] = value
     setCustomOptions(updated)
     setErrors(prev => {
       const err = [...prev]
+
       err[index] = false
+
       return err
     })
     setMinOptionError('')
@@ -1384,14 +1388,19 @@ const MCQModalComponent = ({ open, setOpen, activeQuestionId, setOptionData, opt
     setErrors([])
 
     if (activeQuestionId === '7') {
+
       if (customOptions.length < 2) {
         setMinOptionError('At least 2 options are required')
+
         return
       }
 
       const validationErrors = customOptions.map(opt => !opt.trim())
+
       if (validationErrors.some(Boolean)) {
+
         setErrors(validationErrors)
+
         return
       }
 
@@ -1551,14 +1560,18 @@ const SurveyModalComponent = ({ open, setISOpen, API_URL, token, mId, questions,
 
   const validateQuestions = () => {
     let valid = true
+
     setQuestions(prev =>
       prev.map(q => {
         const textError = !q.text.trim()
         const typeError = !q.type
+
         if (textError || typeError) valid = false
+
         return { ...q, errors: { text: textError, type: typeError } }
       })
     )
+
     return valid
   }
 
@@ -1663,7 +1676,6 @@ const SurveyModalComponent = ({ open, setISOpen, API_URL, token, mId, questions,
                         setActiveQuestionId(q.type)
                         setActiveQuestionRowId(q.id)
                         const currentQuestion = questions.find(ques => ques.id === q.id)
-                        console.log("currentQuestion", currentQuestion);
 
                         setOptionData(currentQuestion?.options ? { option: currentQuestion.options, multiOption: currentQuestion.multiOption } : { option: [], multiOption: false })
                         setMCQOpen(true)
@@ -2940,7 +2952,7 @@ const SettingComponent = ({ activities }) => {
         toast.error(body?.message || "Failed to save settings");
       }
     } catch (err) {
-      console.error("❌ Error saving settings:", err?.message || err);
+      console.error("Error saving settings:", err?.message || err);
       toast.error("Something went wrong!");
     }
   };
@@ -2977,6 +2989,41 @@ const SettingComponent = ({ activities }) => {
     setAllData([]);
   };
 
+  const now = new Date();
+
+  const isSameDay = (d1, d2) =>
+    d1 && d2 && d1.toDateString() === d2.toDateString();
+
+  const startOfDay = () => {
+    const d = new Date();
+    
+    d.setHours(0, 0, 0, 0);
+    
+    return d;
+  };
+
+  const endOfDay = () => {
+    const d = new Date();
+    
+    d.setHours(23, 59, 59, 999);
+    
+    return d;
+  };
+
+
+  useEffect(() => {
+    if (startDate && endDate && startDate > endDate) {
+      setEndDate(startDate);
+    }
+  }, [startDate]);
+
+  useEffect(() => {
+    if (startDate && endDate && endDate < startDate) {
+      setStartDate(endDate);
+    }
+  }, [endDate]);
+
+
   const dateInputStyle = {
     width: "200px",
     padding: "10px 12px",
@@ -3012,11 +3059,11 @@ const SettingComponent = ({ activities }) => {
               control={<Radio />}
               label="To all existing & new Learners under this Content Folder who meet Target audience criteria"
             />
-            <FormControlLabel
+            {/* <FormControlLabel
               value="3"
               control={<Radio />}
               label="Let me select Learners while publishing"
-            />
+            /> */}
           </RadioGroup>
 
           {/* Self Enrollment */}
@@ -3205,50 +3252,59 @@ const SettingComponent = ({ activities }) => {
                   <Typography variant="subtitle1">Fixed due date</Typography>
 
                   <Box display="flex" flexDirection="row" gap={4}>
-                    {/* Start Time */}
                     {dueType === "fixed" && (
                       <Box>
                         <Typography variant="body2" gutterBottom>
                           Start time
                         </Typography>
+
                         <DatePicker
                           selected={startDate}
                           onChange={(date) => setStartDate(date)}
                           showTimeSelect
                           dateFormat="Pp"
-                          placeholderText="Select start time"
-                          customInput={
-                            <input
-                              style={dateInputStyle}
-                              placeholder="Select start time"
-                            />
+
+                          minDate={now}
+                          maxDate={endDate || null}
+
+                          minTime={isSameDay(startDate, now) ? now : startOfDay()}
+                          maxTime={
+                            endDate && isSameDay(startDate, endDate)
+                              ? endDate
+                              : endOfDay()
                           }
+                          customInput={<input style={dateInputStyle} />}
                         />
                       </Box>
                     )}
 
-                    {/* End Date */}
                     {dueType === "fixed" && (
                       <Box>
                         <Typography variant="body2" gutterBottom>
                           End date
                         </Typography>
+
                         <DatePicker
                           selected={endDate}
                           onChange={(date) => setEndDate(date)}
                           showTimeSelect
                           dateFormat="Pp"
-                          placeholderText="Select end date"
-                          customInput={
-                            <input
-                              style={dateInputStyle}
-                              placeholder="Select end date"
-                            />
+
+                          minDate={startDate || now}
+                          minTime={
+                            isSameDay(endDate, startDate)
+                              ? startDate
+                              : isSameDay(endDate, now)
+                                ? now
+                                : startOfDay()
                           }
+                          maxTime={endOfDay()}
+                          customInput={<input style={dateInputStyle} />}
                         />
                       </Box>
                     )}
                   </Box>
+
                 </Box>
               }
             />

@@ -3,10 +3,10 @@ import Channel from '@views/apps/channel'
 
 export default async function ChannelApp({ params }) {
 
-    const locale = params.lang;
+    const { lang } = await params
 
     return (
-        <PermissionGuardServer locale={locale} element={'hasDepartmentPermission'}>
+        <PermissionGuardServer locale={lang} element={'hasDepartmentPermission'}>
             <Channel />
         </PermissionGuardServer>
     )

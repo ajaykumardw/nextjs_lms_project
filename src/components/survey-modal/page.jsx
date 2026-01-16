@@ -1,7 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
+
 import { useSession } from "next-auth/react"
+
 import { useForm, Controller } from "react-hook-form"
 
 import {
@@ -21,6 +23,7 @@ import {
 } from "@mui/material"
 
 import { toast } from "react-toastify"
+
 import DialogCloseButton from "../dialogs/DialogCloseButton"
 
 const SurveyModalComponent = ({ open, setOpen, moduleId }) => {

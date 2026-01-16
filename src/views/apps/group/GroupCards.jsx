@@ -52,19 +52,19 @@ const GroupCard = ({ fetchRoleData, tableData }) => {
     <Grid container spacing={6}>
       {/* Add Role Card */}
       {permissions && permissions?.['hasGroupAddPermission'] && (
-        <Grid xs={12} sm={6} lg={4}>
+        <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
           <OpenDialogOnElementClick
             element={Card}
             elementProps={{
               className: 'cursor-pointer bs-full',
               children: (
                 <Grid container className='bs-full'>
-                  <Grid xs={5}>
+                  <Grid size={{ xs: 5 }}>
                     <div className='flex items-end justify-center bs-full'>
                       <img alt='add-role' src='/images/illustrations/characters/5.png' height={130} />
                     </div>
                   </Grid>
-                  <Grid xs={7}>
+                  <Grid size={{ xs: 7 }}>
                     <CardContent>
                       <div className='flex flex-col items-end gap-4 text-right'>
                         <Button variant='contained' size='small'>

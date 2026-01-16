@@ -4,8 +4,6 @@
 
 import { useState, useEffect } from 'react'
 
-import { useParams } from 'next/navigation'
-
 import { useSession } from 'next-auth/react'
 
 import Typography from '@mui/material/Typography'
@@ -18,8 +16,6 @@ import ZoneCards from './ZoneCards'
 
 import SkeletonTableComponent from '@/components/skeleton/table/page'
 
-import PermissionGuard from '@/hocs/PermissionGuard'
-
 const Zones = () => {
 
   const [zoneData, setZoneData] = useState();
@@ -27,11 +23,8 @@ const Zones = () => {
 
   const URL = process.env.NEXT_PUBLIC_API_URL;
 
-  const { data: session } = useSession() || {};
-
-  const { lang: locale } = useParams()
-
-  const token = session && session.user && session?.user?.token;
+  const { data: session } = useSession()
+  const token = session?.user?.token
 
   async function fetchZoneData() {
 
@@ -40,6 +33,7 @@ const Zones = () => {
         {
           method: "GET",
           headers: {
+
             // "Content-Type": "application/json",
             Authorization: `Bearer ${token}`
           }
@@ -48,6 +42,10 @@ const Zones = () => {
       const datas = await response.json();
 
       if (response.ok) {
+
+
+        console.log("Data", datas);
+
         setLoading(true);
         setZoneData(datas?.data);
       } else {
@@ -65,7 +63,7 @@ const Zones = () => {
     if (URL && token) {
       fetchZoneData();
     }
-  }, [token])
+  }, [URL, token])
 
   return (
     <Grid container spacing={6}>
@@ -88,7 +86,7 @@ const Zones = () => {
         <Typography>Find all of your company&#39;s administrator accounts and their associate roles.</Typography>
       </Grid>
       <Grid size={{ xs: 12 }}>
-        {zoneData ? (
+        {loading ? (
           <ZonesTable tableData={zoneData} fetchZoneData={fetchZoneData} />
         )
           : (

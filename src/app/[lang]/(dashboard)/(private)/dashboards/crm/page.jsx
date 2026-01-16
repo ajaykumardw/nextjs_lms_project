@@ -23,13 +23,13 @@ export default function DashboardCRM({ params }) {
   return (
     <PermissionGuard locale={locale} element="notUser">
       <Grid container spacing={6}>
-        <Grid xs={12} sm={6} md={4} lg={2}>
+        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
           <DistributedBarChartOrder />
         </Grid>
-        <Grid xs={12} sm={6} md={4} lg={2}>
+        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
           <LineAreaYearlySalesChart />
         </Grid>
-        <Grid xs={12} sm={6} md={4} lg={2}>
+        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
           <CardStatVertical
             title="Total Profit"
             subtitle="Last Week"
@@ -43,7 +43,7 @@ export default function DashboardCRM({ params }) {
             chipVariant="tonal"
           />
         </Grid>
-        <Grid xs={12} sm={6} md={4} lg={2}>
+        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
           <CardStatVertical
             title="Total Sales"
             subtitle="Last Week"
@@ -57,28 +57,28 @@ export default function DashboardCRM({ params }) {
             chipVariant="tonal"
           />
         </Grid>
-        <Grid xs={12} md={8} lg={4}>
+        <Grid size={{ xs: 12, md: 8, lg: 4 }}>
           <BarChartRevenueGrowth />
         </Grid>
-        <Grid xs={12} lg={8}>
+        <Grid size={{ xs: 12, lg: 8}}>
           <EarningReportsWithTabs />
         </Grid>
-        <Grid xs={12} md={6} lg={4}>
+        <Grid size={{ xs: 12, md: 6, lg: 4 }}>
           <RadarSalesChart />
         </Grid>
-        <Grid xs={12} md={6} lg={4}>
+        <Grid size={{ xs: 12, md: 6, lg: 4 }}>
           <SalesByCountries />
         </Grid>
-        <Grid xs={12} md={6} lg={4}>
+        <Grid size={{ xs: 12, md: 6, lg: 4 }}>
           <ProjectStatus />
         </Grid>
-        <Grid xs={12} md={6} lg={4}>
+        <Grid size={{ xs: 12, md: 6, lg: 4 }}>
           <ActiveProjects />
         </Grid>
-        <Grid xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           {/* <LastTransaction serverMode={serverMode} /> */}
         </Grid>
-        <Grid xs={12} md={6}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <ActivityTimeline />
         </Grid>
       </Grid>

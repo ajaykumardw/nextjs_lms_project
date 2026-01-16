@@ -6,14 +6,14 @@ import UserFormLayout from '@/components/company-form/page';
 
 import PermissionGuard from '@/hocs/PermissionGuard'
 
-export default function UserFormLayouts({ params }) {
+export default async function UserFormLayouts({ params }) {
 
-  const locale = params.lang;
+  const { lang } = await params;
 
   return (
     <Grid container spacing={6}>
       <Grid size={{ xs: 12 }}>
-        <PermissionGuard locale={locale} element={'isSuperAdmin'}>
+        <PermissionGuard locale={lang} element={'isSuperAdmin'}>
           <UserFormLayout />
         </PermissionGuard>
       </Grid>

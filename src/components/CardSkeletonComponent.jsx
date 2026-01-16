@@ -26,7 +26,7 @@ const CardSkeleton = () => {
             {/* Card Skeletons */}
             <Grid container spacing={4} >
                 {Array.from({ length: skeletonCount }).map((_, idx) => (
-                    <Grid key={idx} maxWidth={"386px"} minWidth={"380px"} item xs={12} sm={6} md={4}>
+                    <Grid key={idx} maxWidth={"386px"} minWidth={"380px"} item size={{ xs: 12, sm: 6, md: 4 }}>
                         <Card
                             sx={{
                                 borderRadius: 2,

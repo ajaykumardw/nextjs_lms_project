@@ -193,12 +193,15 @@ const MCQModalComponent = ({ open, setOpen, activeQuestionId, setOptionData, opt
 
         if (optionData?.option?.length) {
             if (activeQuestionId === '7') {
+
                 setCustomOptions(optionData.option.map(o => o.value))
+
                 setAllowMulti(optionData.multiOption || false)
             }
 
             if (activeQuestionId === '8') {
                 const hasNeutral = optionData.option.some(o => o.value === 'Neutral')
+
                 setAddNeutral(hasNeutral)
             }
 
@@ -235,11 +238,14 @@ const MCQModalComponent = ({ open, setOpen, activeQuestionId, setOptionData, opt
 
     const updateCustomOption = (index, value) => {
         const updated = [...customOptions]
+
         updated[index] = value
         setCustomOptions(updated)
         setErrors(prev => {
             const err = [...prev]
+
             err[index] = false
+
             return err
         })
         setMinOptionError('')
@@ -260,12 +266,15 @@ const MCQModalComponent = ({ open, setOpen, activeQuestionId, setOptionData, opt
         if (activeQuestionId === '7') {
             if (customOptions.length < 2) {
                 setMinOptionError('At least 2 options are required')
+
                 return
             }
 
             const validationErrors = customOptions.map(opt => !opt.trim())
+
             if (validationErrors.some(Boolean)) {
                 setErrors(validationErrors)
+
                 return
             }
 
@@ -424,14 +433,18 @@ const SurveyModalComponent = ({ open, setISOpen, token, mId, questions, setQuest
 
     const validateQuestions = () => {
         let valid = true
+
         setQuestions(prev =>
             prev.map(q => {
                 const textError = !q.text.trim()
                 const typeError = !q.type
+
                 if (textError || typeError) valid = false
+
                 return { ...q, errors: { text: textError, type: typeError } }
             })
         )
+
         return valid
     }
 
@@ -536,7 +549,7 @@ const SurveyModalComponent = ({ open, setISOpen, token, mId, questions, setQuest
                                                 setActiveQuestionId(q.type)
                                                 setActiveQuestionRowId(q.id)
                                                 const currentQuestion = questions.find(ques => ques.id === q.id)
-                                                console.log("currentQuestion", currentQuestion);
+
 
                                                 setOptionData(currentQuestion?.options ? { option: currentQuestion.options, multiOption: currentQuestion.multiOption } : { option: [], multiOption: false })
                                                 setMCQOpen(true)
@@ -745,26 +758,31 @@ const BasicsComponent = ({ token, mId, setShowPresenterSelector, selectedPresent
 
             if (!selectedPresenter) {
                 toast.error("Please select a session presenter", { autoClose: 1000 });
+
                 return;
             }
 
             if (!date) {
                 toast.error("Please select a date", { autoClose: 1000 });
+
                 return;
             }
 
             if (!startTime) {
                 toast.error("Please select start time", { autoClose: 1000 });
+
                 return;
             }
 
             if (!endTime) {
                 toast.error("Please select end time", { autoClose: 1000 });
+
                 return;
             }
 
             if (dayjs(date).isBefore(dayjs().startOf("day"))) {
                 toast.error("Date cannot be before today", { autoClose: 1000 });
+
                 return;
             }
 
@@ -778,6 +796,7 @@ const BasicsComponent = ({ token, mId, setShowPresenterSelector, selectedPresent
 
             if (!startDateTime.isBefore(endDateTime)) {
                 toast.error("Start time must be before end time", { autoClose: 1000 });
+
                 return;
             }
 
@@ -1480,13 +1499,13 @@ const SettingComponent = ({ createData, isNotPublish }) => {
     const token = session?.user?.token;
     const { mId } = useParams();
 
-    const [pushEnrollmentSetting, setPushEnrollmentSetting] = useState("3");
-    const [selfEnrollmentSetting, setSelfEnrollmentSetting] = useState("3");
+    const [pushEnrollmentSetting, setPushEnrollmentSetting] = useState("1");
+    const [selfEnrollmentSetting, setSelfEnrollmentSetting] = useState("1");
 
-    const [dueType, setDueType] = useState("relative");
-    const [startDate, setStartDate] = useState(new Date());
-    const [endDate, setEndDate] = useState(new Date());
-    const [dueDays, setDueDays] = useState(5);
+    const [dueType, setDueType] = useState();
+    const [startDate, setStartDate] = useState();
+    const [endDate, setEndDate] = useState();
+    const [dueDays, setDueDays] = useState();
     const [lockModule, setLockModule] = useState(false);
 
     const [selectedPairIndex, setSelectedPairIndex] = useState(null);
@@ -1525,23 +1544,6 @@ const SettingComponent = ({ createData, isNotPublish }) => {
                 const body = await res.json();
 
                 const result = body?.data || {};
-
-                setPushEnrollmentSetting(
-                    (result.pushEnrollmentSetting ?? "3").toString()
-                );
-                setSelfEnrollmentSetting(
-                    (result.selfEnrollmentSetting ?? "3").toString()
-                );
-                setLockModule(result.lockModule ?? false);
-
-                if (result.start_date && result.end_date) {
-                    setDueType("fixed");
-                    setStartDate(new Date(result.start_date));
-                    setEndDate(new Date(result.end_date));
-                } else if (result.dueDays != null) {
-                    setDueType("relative");
-                    setDueDays(result.dueDays);
-                }
 
                 if (Array.isArray(result.targetPairs) && result.targetPairs?.length > 0) {
                     const enriched = result.targetPairs.map((pair) => {
@@ -1744,6 +1746,7 @@ const SettingComponent = ({ createData, isNotPublish }) => {
 
         if (hasInvalidTargetPair) {
             toast.error("Please select one module target and option");
+
             return;
         }
 
@@ -1760,6 +1763,7 @@ const SettingComponent = ({ createData, isNotPublish }) => {
             end_date: dueType === "fixed" ? endDate.toISOString() : null,
             dueDays: dueType === "relative" ? Number(dueDays) : null,
         };
+
 
         handleDataSave(payload);
     };

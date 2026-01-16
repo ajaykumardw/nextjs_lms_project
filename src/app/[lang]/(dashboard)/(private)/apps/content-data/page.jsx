@@ -39,6 +39,7 @@ const QuizQuestionComponent = dynamic(() => import('@/components/Content-data/qu
 const ScromContentComponent = dynamic(() => import('@/components/Content-data/scrom-content/page'), { ssr: false });
 
 const ContentData = () => {
+
   const { lang: locale } = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -81,12 +82,8 @@ const ContentData = () => {
 
   const [quizData, setQuizData] = useState([]);
 
-  // refs for debounced autosave
-
   const fieldAutosaveTimer = useRef(null);
   const quizAutosaveTimer = useRef(null);
-
-  /** FETCH ACTIVITY */
 
   const fetchActivity = async () => {
     setLoading(true);
@@ -120,9 +117,8 @@ const ContentData = () => {
     fetchActivity();
   }, [API_URL, token, activityId]);
 
-  /** SAFE FETCH HELPERS */
-
   const postJson = async (url, payload) => {
+
     try {
 
       if (!API_URL || !token) {
@@ -141,8 +137,6 @@ const ContentData = () => {
 
       const json = await res.json().catch(() => null);
 
-      console.log("JSON 18", json?.data);
-      
       setSurveyModalOpen(json?.data?.completed || false);
 
       return { ok: res.ok, status: res.status, data: json?.data };
@@ -165,8 +159,10 @@ const ContentData = () => {
 
       const result = await response.json();
 
-      if(response.ok){
+      if (response.ok) {
+        
         const value = result?.data?.completed || false;
+
         setSurveyModalOpen(value);
       }
 
@@ -175,7 +171,6 @@ const ContentData = () => {
     }
   }
 
-  /** SAVE FUNCTIONS (set = update, insert = final/insert) */
   const saveFieldData = async (payload) => {
 
     const url = `${API_URL}/user/activity/set/report/data/${moduleId}/${contentFolderId}/${activityId}/${moduleTypeId}`;
@@ -202,9 +197,8 @@ const ContentData = () => {
     return postJson(url, payload);
   };
 
-  /** AUTOSAVE FIELD DATA — debounced to avoid API spam */
   useEffect(() => {
-    // only trigger when meaningful values change
+ 
     const changed =
 
       fieldData.currentPage ||
@@ -223,7 +217,7 @@ const ContentData = () => {
           console.warn('Field autosave failed', res);
         }
       });
-    }, 800); // 1.2s debounce
+    }, 800);
 
     return () => {
       if (fieldAutosaveTimer.current) {
@@ -242,7 +236,6 @@ const ContentData = () => {
     token
   ]);
 
-  /** AUTOSAVE QUIZ DATA — debounced */
   useEffect(() => {
     if (!Array.isArray(quizData) || quizData.length === 0) return;
 
@@ -264,8 +257,6 @@ const ContentData = () => {
 
   }, [quizData, API_URL, token]);
 
-  /** FILE AND VIDEO INFO */
-
   const fileUrl = data?.document_data?.image_url ? `${ASSET_URL}/activity/${data.document_data.image_url}` : null;
   const videoURL = data?.video_data?.video_url ? `${ASSET_URL}/activity/${data.video_data.video_url}` : null;
   const youtubeVideoURL = data?.video_data?.video_url;
@@ -274,8 +265,6 @@ const ContentData = () => {
 
   const isPDF = extension === 'pdf';
   const isOfficeDoc = ['ppt', 'pptx', 'doc', 'docx'].includes(extension);
-
-  /** PAGE CHANGE HANDLER */
 
   const handlePageChange = (current, total) => {
     setPageInfo({ current, total });
@@ -287,8 +276,6 @@ const ContentData = () => {
     }));
   };
 
-  /** COMPLETION CHECK */
-
   const isCompletedCondition =
     (data?.logs?.[0]?.completion_percentage || 0) >= 100 || (
       (fieldData.totalPages > 0 && fieldData.viewedPages.length === fieldData.totalPages) ||
@@ -297,7 +284,6 @@ const ContentData = () => {
 
     );
 
-  /** MARK COMPLETE — uses insert endpoints */
   const handleMarkComplete = async () => {
     setOpenConfirm(false);
 
@@ -313,6 +299,7 @@ const ContentData = () => {
         if (res?.ok && res?.data?.completed) {
 
           setSurveyModalOpen(res?.data?.completed)
+
           return;
         }
 
@@ -328,6 +315,7 @@ const ContentData = () => {
         if (res?.ok && res?.data?.completed) {
 
           setSurveyModalOpen(res?.data?.completed)
+
           return;
         }
 
@@ -362,13 +350,11 @@ const ContentData = () => {
   useEffect(() => {
     if (Object.keys(scormData).length === 0) return;
 
-    // Clear previous timeout
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
 
-    // Set new timeout to delay API call
     saveTimeout.current = setTimeout(() => {
       handleSaveScormData(scormData);
-    }, 800); // ⬅ Save every 5 seconds
+    }, 800);
 
     return () => clearTimeout(saveTimeout.current);
   }, [scormData, moduleId, contentFolderId, activityId, moduleTypeId]);
@@ -428,23 +414,47 @@ const ContentData = () => {
               ) : (
                 <>
                   {types === 'pdf' && isPDF && (
-                    <PDFViewer pdfUrl={fileUrl} onPageChange={handlePageChange} setFieldData={setFieldData} pageData={data.logs?.[0]} setSurveyModalOpen={setSurveyModalOpen} />
+                    <PDFViewer
+                      pdfUrl={fileUrl}
+                      onPageChange={handlePageChange}
+                      setFieldData={setFieldData}
+                      pageData={data.logs?.[0]}
+                      setSurveyModalOpen={setSurveyModalOpen}
+                    />
                   )}
                   {(extension === 'doc' || extension === 'docx') && (
-                    <DocViewer fileUrl={fileUrl} onPageLoad={handlePageChange} setFieldData={setFieldData} pageData={data.logs?.[0]} setSurveyModalOpen={setSurveyModalOpen} />
+                    <DocViewer
+                      fileUrl={fileUrl}
+                      onPageLoad={handlePageChange}
+                      setFieldData={setFieldData}
+                      pageData={data.logs?.[0]}
+                      setSurveyModalOpen={setSurveyModalOpen}
+                    />
                   )}
                   {(extension === 'ppt' || extension === 'pptx') && (
-                    <PptViewer fileUrl={fileUrl} onPageLoad={handlePageChange} setFieldData={setFieldData} pageData={data.logs?.[0]} setSurveyModalOpen={setSurveyModalOpen} />
+                    <PptViewer
+                      fileUrl={fileUrl}
+                      onPageLoad={handlePageChange}
+                      setFieldData={setFieldData}
+                      pageData={data.logs?.[0]}
+                      setSurveyModalOpen={setSurveyModalOpen}
+                    />
                   )}
                   {(types === 'video' || types === 'youtube-video') && (
-                    <YouTubePlayerComponent url={types === 'video' ? videoURL : youtubeVideoURL} setFieldData={setFieldData} pageData={data.logs?.[0]} setSurveyModalOpen={setSurveyModalOpen} />
+                    <YouTubePlayerComponent
+                      url={types === 'video' ? videoURL : youtubeVideoURL}
+                      setFieldData={setFieldData}
+                      pageData={data.logs?.[0]}
+                      setSurveyModalOpen={setSurveyModalOpen}
+                    />
                   )}
                   {types === 'quiz' && (
+
                     <QuizQuestionComponent
                       log={data}
                       isInstruction={isInstruction}
                       setInstruction={setInstruction}
-                      status={data?.logs?.[0]?.is_completed || false}
+                      status={false}
                       quizSetting={data?.QuizSetting?.[0] || {}}
                       data={data.questions || []}
                       report={data.quiz_reports || []}

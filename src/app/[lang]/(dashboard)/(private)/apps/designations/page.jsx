@@ -3,10 +3,10 @@ import DesignationComponent from '@/views/apps/designation/index'
 
 export default async function DesignationApp({ params }) {
 
-  const locale = params.lang;
+  const { lang } = await params;
 
   return (
-    <PermissionGuardServer locale={locale} element={'hasDesignationPermission'}>
+    <PermissionGuardServer locale={lang} element={'hasDesignationPermission'}>
       <DesignationComponent />
     </PermissionGuardServer>
   )

@@ -4,11 +4,11 @@ import BlastMessage from "@/components/blast-success-message/page.jsx";
 
 export default async function UserDashboard({ params }) {
 
-    const locale = await params?.lang;
+    const { lang } = await params;
 
     return (
         <>
-            <PermissionGuard locale={locale} element={'isUser'}>
+            <PermissionGuard locale={lang   } element={'isUser'}>
                 <>
                     <LogisticsDashboard />
                 </>

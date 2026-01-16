@@ -40,6 +40,9 @@ const BadgeContentSpan = styled('span')({
 })
 
 const UserDropdown = () => {
+
+  const API_URL = process.env.NEXT_PUBLIC_API_URL
+
   // States
   const [open, setOpen] = useState(false)
 
@@ -49,6 +52,9 @@ const UserDropdown = () => {
   // Hooks
   const router = useRouter()
   const { data: session } = useSession()
+
+  const token = session?.user?.token
+
   const { settings } = useSettings()
   const { lang: locale } = useParams()
 
@@ -61,7 +67,7 @@ const UserDropdown = () => {
 
     if (timeLeft <= 0) {
       signOut({ callbackUrl: process.env.NEXT_PUBLIC_APP_URL })
-      
+
       return
     }
 
@@ -86,9 +92,27 @@ const UserDropdown = () => {
     setOpen(false)
   }
 
+  const handleLogOut = async () => {
+    try {
+      const response = await fetch(`${API_URL}/auth/logout`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+    } catch (error) {
+      throw new Error(error)
+    }
+  }
+
   const handleUserLogout = async () => {
     try {
+
+      await handleLogOut();
+
       await signOut({ callbackUrl: process.env.NEXT_PUBLIC_APP_URL })
+
     } catch (error) {
       console.error(error)
     }

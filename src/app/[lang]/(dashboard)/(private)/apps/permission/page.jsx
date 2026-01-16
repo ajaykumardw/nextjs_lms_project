@@ -1,12 +1,12 @@
 import PermissionGuardServer from '@/hocs/PermissionGuard';
 import Permissions from '@views/apps/permission/page'
 
-export default function PermissionApp({ params }) {
+export default async function PermissionApp({ params }) {
 
-    const locale = params.lang;
+    const { lang } = await params;
 
     return (
-        <PermissionGuardServer locale={locale} element={'isSuperAdmin'}>
+        <PermissionGuardServer locale={lang} element={'isSuperAdmin'}>
             <Permissions />
         </PermissionGuardServer>
     );

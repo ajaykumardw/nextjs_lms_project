@@ -1,8 +1,11 @@
 'use client'
 
 import { useEffect, useState, useRef, forwardRef } from 'react'
+
 import { useParams, useSearchParams } from 'next/navigation'
+
 import { useSession } from 'next-auth/react'
+
 import {
   Box,
   Card,
@@ -13,14 +16,19 @@ import {
   Stack,
   Button,
 } from '@mui/material'
+
 import Grid from "@mui/material/Grid2"
+
 import { toast } from 'react-toastify'
+
 import html2canvas from 'html2canvas'
+
 import jsPDF from 'jspdf'
 
 function formatCompleteDate(dateString) {
   if (!dateString) return ''
   const date = new Date(dateString)
+
   return date.toLocaleDateString('en-GB', {
     day: '2-digit',
     month: 'short',
@@ -119,7 +127,9 @@ const ProgramPage = () => {
       const response = await fetch(`${API_URL}/user/activity/data/${moduleId}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
+
       const result = await response.json()
+
       if (response.ok) setData(result?.data)
     } catch (err) {
       console.error(err)
@@ -133,9 +143,12 @@ const ProgramPage = () => {
       const response = await fetch(`${API_URL}/user/module/survey/data/${moduleId}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
+
       const result = await response.json()
+
       if (response.ok) {
         const module_setting = result?.data?.moduleSetting || {}
+
         setSettingData({ orderType: module_setting?.orderType || 'any' })
       }
     } catch (err) {
@@ -174,12 +187,46 @@ const ProgramPage = () => {
     '68886902954c4d9dc7a379bd': 'quiz'
   }
 
+  const handleStartActivity = async (url) => {
+    try {
+
+
+      const urlStr = url;
+
+      const parsedUrl = new URL(urlStr, 'http://dummy-base.com');
+      const params = parsedUrl.searchParams;
+
+      const activityId = params.get('activityId');
+      const moduleId = params.get('moduleId');
+      const contentFolderId = params.get('contentFolderId');
+      const moduleTypeId = params.get('moduleTypeId');
+
+      const response = await fetch(`${API_URL}/user/activity/new/attempt/${moduleId}/${contentFolderId}/${activityId}/${moduleTypeId}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+
+        window.location.href = url
+      }
+
+    } catch (error) {
+      throw new Error(error)
+    }
+  }
+
   const handleActivityClick = (canOpen, url) => {
     if (!canOpen) {
       toast.error('Please complete the previous activity first.', { autoClose: 1000 })
+
       return
     }
-    window.location.href = url
+
+    handleStartActivity(url)
+
   }
 
   const downloadCertificate = async (certificateData, activity) => {
@@ -188,6 +235,7 @@ const ProgramPage = () => {
 
     if (!certificateData?.backgroundImage) {
       toast.error("Invalid certificate data")
+
       return
     }
 
@@ -198,6 +246,7 @@ const ProgramPage = () => {
         setTimeout(async () => {
           if (!certificateRef.current) {
             toast.error("Certificate not rendered")
+
             return
           }
 
@@ -211,13 +260,14 @@ const ProgramPage = () => {
           const imgData = canvas.toDataURL('image/png')
 
           const pdf = new jsPDF('landscape', 'mm', 'a4')
+
           pdf.addImage(imgData, 'PNG', 10, 10, 277, 190)
 
-          // ✅ FORCE DOWNLOAD (NO OPEN)
           const pdfBlob = pdf.output('blob')
           const url = URL.createObjectURL(pdfBlob)
 
           const link = document.createElement('a')
+
           link.href = url
           link.download = `${activity.name}-certificate.pdf`
           document.body.appendChild(link)

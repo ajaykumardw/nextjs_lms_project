@@ -5,12 +5,12 @@ import Roles from '@views/apps/roles'
 import { getUserData } from '@/app/server/actions'
 import PermissionGuard from '@/hocs/PermissionGuard';
 
-export default function RoleApp({ params }) {
+export default async function RoleApp({ params }) {
 
-  const locale = params.lang;
+  const { lang } = await params;
 
   return (
-    <PermissionGuard locale={locale} element={'isSuperAdmin'}>
+    <PermissionGuard locale={lang} element={'isSuperAdmin'}>
       <Roles />
     </PermissionGuard>
   )

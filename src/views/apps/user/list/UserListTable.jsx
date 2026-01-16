@@ -283,27 +283,23 @@ const UserListTable = ({ userData, loadData, setIsUserCardShow, getStatsCount })
           </div>
         )
       }),
-      columnHelper.accessor('action', {
+      columnHelper.display({
+        id: 'action',
         header: 'Action',
         cell: ({ row }) => (
           <div className='flex items-center'>
-            {/* <IconButton>
-              <Link href={getLocalizedUrl('/apps/user/view', locale)} className='flex'>
-                <i className='tabler-eye text-textSecondary' />
-              </Link>
-            </IconButton> */}
             <OptionMenu
               iconButtonProps={{ size: 'medium' }}
               iconClassName='text-textSecondary'
               options={[
-                {
+                permissions?.hasUserEditPermission && {
                   text: 'Edit account',
                   icon: 'tabler-edit',
                   menuItemProps: {
                     className: 'flex items-center gap-2 text-textSecondary',
-                    onClick: (() => {
+                    onClick: () => {
                       router.push(`/${locale}/apps/user/form/${row.original._id}`)
-                    })
+                    }
                   }
                 },
                 {
@@ -311,9 +307,9 @@ const UserListTable = ({ userData, loadData, setIsUserCardShow, getStatsCount })
                   icon: 'tabler-lock',
                   menuItemProps: {
                     className: 'flex items-center gap-2 text-textSecondary',
-                    onClick: (() => {
-                      updateNewPasswordhandle(row.original);
-                    })
+                    onClick: () => {
+                      updateNewPasswordhandle(row.original)
+                    }
                   }
                 },
                 {
@@ -321,9 +317,9 @@ const UserListTable = ({ userData, loadData, setIsUserCardShow, getStatsCount })
                   icon: 'tabler-user',
                   menuItemProps: {
                     className: 'flex items-center gap-2 text-textSecondary',
-                    onClick: (() => {
-                      handleManageEmpDialog(row.original);
-                    })
+                    onClick: () => {
+                      handleManageEmpDialog(row.original)
+                    }
                   }
                 },
                 {
@@ -331,20 +327,21 @@ const UserListTable = ({ userData, loadData, setIsUserCardShow, getStatsCount })
                   icon: 'tabler-trash',
                   menuItemProps: {
                     className: 'flex items-center gap-2 text-textSecondary',
-                    onClick: (() => {
+                    onClick: () => {
                       openDeleteDialogHandle(row.original)
-                    })
+                    }
                   }
-                },
-              ]}
+                }
+              ].filter(Boolean)}
             />
           </div>
         ),
         enableSorting: false
       })
+
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [data, filteredData]
+    [data, filteredData, permissions]
   )
 
   const table = useReactTable({

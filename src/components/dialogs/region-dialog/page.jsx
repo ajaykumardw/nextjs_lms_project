@@ -258,7 +258,7 @@ const RegionDialog = ({
             {
               fields.map((field, index) => (
                 <Grid container spacing={2} key={field.id} alignItems="center">
-                  <Grid item xs={12} md={11}>
+                  <Grid item size={{ xs: 12, md: 11,  }}>
                     <Controller
                       name={`region.${index}.name`}
                       control={control}
@@ -303,7 +303,7 @@ const RegionDialog = ({
                     />
 
                   </Grid>
-                  <Grid item xs={12} md={1} className="flex justify-end">
+                  <Grid item size={{ xs: 12, md: 1,  }} className="flex justify-end">
                     {fields.length > 1 && (
                       <IconButton
                         color="error"
@@ -331,7 +331,7 @@ const RegionDialog = ({
         ) : (
           <div className="ml-9 mr-9">
             <Grid container spacing={2} direction={"column"}>
-              <Grid item xs={12} md={8}>
+              <Grid item size={{ xs: 12, md: 8,  }}>
                 <Controller
                   name="name"
                   control={control}
@@ -367,7 +367,7 @@ const RegionDialog = ({
                 />
               </Grid>
 
-              <Grid item xs={12} md={4}>
+              <Grid item size={{ xs: 12, md: 4,  }}>
                 <Controller
                   name="zoneId"
                   control={control}

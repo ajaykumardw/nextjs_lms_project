@@ -75,15 +75,15 @@ const ManageEmpCodeDialog = ({ open, setOpen, user, loadData }) => {
       user_code: ''
     }
   });
-  
+
   // States
-  
+
   const [activeStep, setActiveStep] = useState(0)
   const [value, setCodeValue] = useState('')
   const [selectedCode, setSelectedCode] = useState('');
   const [codes, setCodes] = useState([]);
   const { doPostFormData } = useApi();
-  
+
   const handleClose = () => {
     setOpen(false)
     setActiveStep(0)
@@ -114,12 +114,12 @@ const ManageEmpCodeDialog = ({ open, setOpen, user, loadData }) => {
 
   const handleRadioChange = async (code, index) => {
     const endpoint = `admin/user/mark/active/empcode/${user.id}`;
-    
+
     const data = {
       index: index,
       user_code: code,
     }
-    
+
     await doPostFormData({
       endpoint,
       values: data,
@@ -134,14 +134,14 @@ const ManageEmpCodeDialog = ({ open, setOpen, user, loadData }) => {
 
       }
     });
-    
+
     // setSelectedCode(event.target.value);
     // setCodeValue(event.target.value); // If you're using react-hook-form
   };
 
   const onSubmit = async (data) => {
     const endpoint = `admin/user/attach/empcode/${user.id}`;
-    
+
     await doPostFormData({
       endpoint,
       values: data,
@@ -161,12 +161,12 @@ const ManageEmpCodeDialog = ({ open, setOpen, user, loadData }) => {
   };
 
   useEffect(() => {
-    
+
     if (user) {
       setCodes(user.codes);
       setSelectedCode(user.emp_id);
     }
-    
+
     reset({
       user_code: ''
     })
@@ -184,7 +184,7 @@ const ManageEmpCodeDialog = ({ open, setOpen, user, loadData }) => {
       <DialogCloseButton onClick={() => setOpen(false)} disableRipple>
         <i className='tabler-x' />
       </DialogCloseButton>
-      <DialogTitle variant='h4' className='flex gap-2 flex-col text-center sm:pbs-16 sm:pbe-6 sm:pli-16'>
+      <DialogTitle  className='flex gap-2 flex-col text-center sm:pbs-16 sm:pbe-6 sm:pli-16'>
         Manage Employee Ids
         <Typography component='span' className='flex flex-col text-center'>
           You can manage multiple Employee IDs for {user?.first_name}
@@ -247,7 +247,7 @@ const ManageEmpCodeDialog = ({ open, setOpen, user, loadData }) => {
                     </div>
                     <Radio
                       value={item.code}
-                      
+
                       // onChange={(e) => handleRadioChange(e, index)}
                       checked={selectedCode === item.code}
                     />

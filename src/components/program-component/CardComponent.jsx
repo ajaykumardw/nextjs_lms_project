@@ -290,7 +290,7 @@ const ProgramCardComponent = ({
                                         <Box display="flex" justifyContent="space-between" alignItems="flex-start">
                                             <Box>
                                                 <Typography variant="h6" fontWeight={600}>
-                                                    {item?.title}
+                                                    {item?.title || ""}
                                                 </Typography>
 
                                                 {stage === "Program" && (
