@@ -53,6 +53,7 @@ const ContentData = () => {
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
   const ASSET_URL = process.env.NEXT_PUBLIC_ASSETS_URL;
   const { data: session } = useSession();
+
   const token = session?.user?.token;
 
   const saveTimeout = useRef(null);
@@ -160,7 +161,7 @@ const ContentData = () => {
       const result = await response.json();
 
       if (response.ok) {
-        
+
         const value = result?.data?.completed || false;
 
         setSurveyModalOpen(value);
@@ -198,7 +199,7 @@ const ContentData = () => {
   };
 
   useEffect(() => {
- 
+
     const changed =
 
       fieldData.currentPage ||
@@ -359,8 +360,6 @@ const ContentData = () => {
     return () => clearTimeout(saveTimeout.current);
   }, [scormData, moduleId, contentFolderId, activityId, moduleTypeId]);
 
-
-  /** RENDER */
   const ready = types && data;
 
   const moduleTypeLabel = {
@@ -374,6 +373,86 @@ const ContentData = () => {
     "68886902954c4d9dc7a379bd": "Quiz"
 
   }
+
+  const isLeavingRef = useRef(false);
+  const initialUrlRef = useRef('');
+
+  const endActivityUrl = `${API_URL}/user/activity/end/attempt`;
+
+  const endActivity = () => {
+    if (!token || isLeavingRef.current) return;
+
+    isLeavingRef.current = true;
+
+    try {
+      const payload = {
+        moduleId,
+        contentFolderId,
+        activityId,
+        moduleTypeId,
+        token
+      };
+
+      const blob = new Blob(
+        [JSON.stringify(payload)],
+        { type: 'application/json' }
+      );
+
+      navigator.sendBeacon(endActivityUrl, blob);
+    } catch (err) {
+      console.error('Failed to end activity', err);
+    }
+  };
+
+  useEffect(() => {
+    if (!token) return;
+
+    initialUrlRef.current = window.location.href;
+
+    const handleBeforeUnload = (event) => {
+      endActivity();
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [token]);
+
+  useEffect(() => {
+    if (!token || typeof window === 'undefined') return;
+
+    window.history.pushState({ guard: true }, '', window.location.href);
+
+    const handlePopState = () => {
+      const newUrl = window.location.href;
+
+      if (newUrl === initialUrlRef.current) {
+        window.history.pushState({ guard: true }, '', initialUrlRef.current);
+        
+        return;
+      }
+
+      const leave = window.confirm('Do you want to leave this page?');
+
+      if (!leave) {
+        window.history.pushState({ guard: true }, '', initialUrlRef.current);
+
+        return;
+      }
+
+      endActivity();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [token]);
 
   return (
     <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
@@ -539,7 +618,7 @@ const ContentData = () => {
               <Button
                 variant="outlined"
                 color="secondary"
-                href={`/${locale}/apps/content?id=${moduleId}&content-folder-id=${contentFolderId}`}
+                onClick={() => handleEndActivity({ link: `/${locale}/apps/content?id=${moduleId}&content-folder-id=${contentFolderId}`, token })}
               >
                 Exit
               </Button>
@@ -571,3 +650,4 @@ const ContentData = () => {
 };
 
 export default ContentData;
+

@@ -1,10 +1,15 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+
 import { useRouter, useParams } from 'next/navigation'
+
 import { useSession } from 'next-auth/react'
+
 import { useForm, Controller } from 'react-hook-form'
+
 import { valibotResolver } from '@hookform/resolvers/valibot'
+
 import {
     object,
     string,
@@ -105,13 +110,16 @@ const NotificationForm = () => {
 
     const [createData, setCreateData] = useState(null)
     const [loading, setLoading] = useState(false)
-
     const [selectOpt, setSelectOpt] = useState('')
     const [selectForm, setSelectForm] = useState(false)
-
     const [isFooterImage, setIsFooterImage] = useState(false)
-
     const [isShowFooter, setIsShowFooter] = useState(false)
+    const [placeholder, setPlaceholder] = useState()
+    const [selectedValue, setSelectedValue] = useState()
+    const [selectedVariable, setSelectedVariable] = useState("")
+    const [editData, setEditData] = useState()
+    const [selectedPlaceholder, setSelectedPlaceholder] = useState("");
+    const [activeEditor, setActiveEditor] = useState(null);
 
     const fileImageSchema = pipe(
         instance(File),
@@ -122,22 +130,9 @@ const NotificationForm = () => {
         )
     );
 
-    const stringImageSchema = pipe(
-        string(),
-        minLength(1, 'Logo is required')
-    );
+    const stringImageSchema = pipe(string());
 
-    const imageSchema = union([
-        fileImageSchema,
-        stringImageSchema
-    ]);
-
-    const requiredImageSchema = pipe(
-        imageSchema,
-        check(value => value !== undefined, 'Logo is required')
-    );
-
-    const optionalImageSchema = optional(imageSchema);
+    const imageSchema = union([fileImageSchema, stringImageSchema]);
 
     const schema = useMemo(
         () =>
@@ -153,20 +148,10 @@ const NotificationForm = () => {
                     message: pipe(string(), minLength(1, 'Message is required'), maxLength(5000)),
                     footer: pipe(string(), minLength(1, "Footer is required"), maxLength(500)),
                     default_select: optional(boolean()),
-                    header_logo: id ? optionalImageSchema : requiredImageSchema,
+                    header_logo: optional(imageSchema),
+                    footer_logo: optional(imageSchema),
                     header_logo_align: pipe(string(), minLength(1, "Header logo alignment is required")),
-                    show_footer_logo: optional(boolean()),
-                    footer_logo:
-                        isShowFooter
-                            ? (id && isFooterImage)
-                                ? optionalImageSchema
-                                : requiredImageSchema
-                            : optionalImageSchema,
-
-                    footer_logo_align:
-                        isShowFooter
-                            ? pipe(string(), minLength(1, "Footer logo alignment is required"))
-                            : optional(string()),
+                    show_footer_logo: optional(boolean())
                 })
             ),
         [selectOpt, isShowFooter, id, isFooterImage]
@@ -176,6 +161,8 @@ const NotificationForm = () => {
         control,
         watch,
         setValue,
+        setError,
+        clearErrors,
         handleSubmit,
         formState: { errors }
     } = useForm({
@@ -195,6 +182,12 @@ const NotificationForm = () => {
             footer_logo_align: ''
         }
     })
+
+    useEffect(() => {
+        if (selectedPlaceholder && selectedVariable) {
+            setSelectedValue(`${slugify(selectedPlaceholder)}_${slugify(selectedVariable)}`)
+        }
+    }, [selectedPlaceholder, selectedVariable])
 
     const editor = useEditor({
         extensions: [
@@ -226,10 +219,12 @@ const NotificationForm = () => {
         const res = await fetch(`${API_URL}/company/notification/create`, {
             headers: { Authorization: `Bearer ${token}` }
         })
+        
         const data = await res.json()
 
         if (!res.ok) throw new Error('create load failed')
 
+        setPlaceholder(data?.data?.placeholder?.placeholder_data)
         setCreateData(data?.data?.notification)
     }
 
@@ -237,33 +232,48 @@ const NotificationForm = () => {
         const res = await fetch(`${API_URL}/company/notification/edit/${id}`, {
             headers: { Authorization: `Bearer ${token}` }
         })
-        const data = await res.json()
+        
         if (!res.ok) throw new Error('edit load failed')
 
-        const result = data?.data
+        const data = await res.json()
 
-        setValue('template_name', result.template_name)
-        setValue('notification_type', result.notification_type)
-        setSelectOpt(result.notification_type)
-        setValue('category_type', result.category_type)
-        setValue('subject', result.subject)
-        setValue('message', result.message)
-        setValue("show_footer_logo", result?.show_footer_logo)
-        setValue("header_logo", result?.header_logo)
+        if (res.ok) {
 
-        if (result?.footer_logo) {
+            const result = data?.data
 
-            setIsFooterImage(true)
+            setEditData(result);
+
+
         }
-        setValue("footer_logo", result?.footer_logo)
-        setValue("header_logo_align", result?.header_logo_align)
-        setValue("footer_logo_align", result?.footer_logo_align)
-        setValue('footer', result.footer)
-        setValue('default_select', !!result.default_select)
 
-        editor?.commands.setContent(result.message || '')
-        footerEditor?.commands.setContent(result.footer || '')
     }
+
+    useEffect(() => {
+        if (editData) {
+
+            setValue('template_name', editData?.template_name || "")
+            setValue('notification_type', editData?.notification_type || "")
+            setSelectOpt(editData?.notification_type)
+            setValue('category_type', editData?.category_type || '')
+            setValue('subject', editData?.subject || "")
+            setValue('message', editData?.message || "")
+            setValue("show_footer_logo", editData?.show_footer_logo || false)
+
+            if (editData?.footer_logo) {
+
+                setIsFooterImage(true)
+            }
+
+            setValue("header_logo_align", editData?.header_logo_align || "center")
+            setValue("footer_logo_align", editData?.footer_logo_align || "center")
+            setValue('footer', editData?.footer || "")
+            setValue('default_select', !!editData.default_select)
+
+            editor?.commands.setContent(editData.message || '')
+            footerEditor?.commands.setContent(editData.footer || '')
+
+        }
+    }, [editData])
 
     useEffect(() => {
         if (!API_URL || !token) return
@@ -283,6 +293,7 @@ const NotificationForm = () => {
         if (!createData || !selectOpt || !editor || !footerEditor || !selectForm) return
 
         const selected = createData?.notification_data?.find((i) => i._id === selectOpt)
+        
         if (!selected) return
 
         editor.commands.setContent(selected.default_message || '')
@@ -291,8 +302,79 @@ const NotificationForm = () => {
         setValue('footer', selected.default_footer || '')
     }, [createData, selectOpt, selectForm, editor, footerEditor])
 
+    const ALLOWED_IMAGE_TYPES = [
+        'image/png',
+        'image/jpeg',
+        'image/webp',
+        'image/svg+xml',
+    ];
+
+    const isValidImageType = (file) =>
+        file && ALLOWED_IMAGE_TYPES.includes(file.type);
+
     const onSubmit = async (values) => {
         try {
+
+            let hasError = false;
+
+            if (!values.header_logo && !editData?.header_logo) {
+
+                setError("header_logo", {
+                    type: "required",
+                    message: "Header logo is required",
+                });
+
+                hasError = true;
+
+            } else if (values.header_logo && !isValidImageType(values.header_logo)) {
+
+                setError("header_logo", {
+                    type: "validate",
+                    message: "Only PNG, JPEG, WEBP, or SVG files are allowed",
+                });
+
+                hasError = true;
+
+            }
+
+            if (values.show_footer_logo) {
+
+                if (!values.footer_logo && !editData?.footer_logo) {
+
+                    setError("footer_logo", {
+                        type: "required",
+                        message: "Footer logo is required",
+                    });
+
+                    hasError = true;
+
+                } else if ((values?.footer_logo) && !isValidImageType(values.footer_logo)) {
+
+                    setError("footer_logo", {
+                        type: "validate",
+                        message: "Only PNG, JPEG, WEBP, or SVG files are allowed",
+                    });
+
+                    hasError = true;
+                }
+
+                if (!values.footer_logo_align) {
+
+                    setError("footer_logo_align", {
+                        type: "required",
+                        message: "Footer logo align is required",
+                    });
+
+                    hasError = true;
+                }
+            }
+
+            if (hasError) {
+                return;
+            } else {
+                clearErrors();
+            }
+
             const formData = new FormData()
 
             formData.append('template_name', values.template_name)
@@ -303,27 +385,24 @@ const NotificationForm = () => {
             formData.append('default_select', values.default_select ? '1' : '0')
             formData.append('header_logo_align', values.header_logo_align)
 
-            // append category_type ONLY when required
             if (values.notification_type === '687752877c5f232a7b35c975') {
                 formData.append('category_type', values.category_type)
             }
 
-            // header logo
             if (values.header_logo instanceof File) {
                 formData.append('header_logo', values.header_logo)
             }
 
-            // footer logo
             formData.append('show_footer_logo', values.show_footer_logo ? '1' : '0')
 
-            if (values.show_footer_logo && values.footer_logo instanceof File) {
-                formData.append('footer_logo', values.footer_logo)
-                formData.append('footer_logo_align', values.footer_logo_align)
-            }
+            if (values.show_footer_logo) {
 
-            // ✅ Proper debugging
-            for (const [key, value] of formData.entries()) {
-                console.log(key, value)
+                if (values.footer_logo instanceof File) {
+
+                    formData.append('footer_logo', values.footer_logo)
+                }
+                
+                formData.append('footer_logo_align', values.footer_logo_align)
             }
 
             const res = await fetch(
@@ -340,6 +419,7 @@ const NotificationForm = () => {
             )
 
             const result = await res.json()
+            
             if (!res.ok) throw new Error(result.message)
 
             toast.success(`Notification ${id ? 'updated' : 'created'} successfully`)
@@ -449,7 +529,7 @@ const NotificationForm = () => {
 
                                                 <CustomTextField
                                                     fullWidth
-                                                    required
+                                                    required={(!editData?.header_logo)}
                                                     label="Header Logo"
                                                     value={field.value?.name || ''}
                                                     placeholder="Choose file"
@@ -514,6 +594,7 @@ const NotificationForm = () => {
                                                     checked={!!field.value}
                                                     onChange={(e) => {
                                                         const checked = e.target.checked;
+                                                        
                                                         field.onChange(checked);
 
                                                         setIsShowFooter(checked)
@@ -543,7 +624,7 @@ const NotificationForm = () => {
 
                                                     <CustomTextField
                                                         fullWidth
-                                                        required
+                                                        required={(!editData?.footer_logo && watch("show_footer_logo"))}
                                                         label="Footer Logo"
                                                         value={field.value?.name || ''}
                                                         placeholder="Choose file"
@@ -583,7 +664,7 @@ const NotificationForm = () => {
                                                     {...field}
                                                     select
                                                     fullWidth
-                                                    required
+                                                    required={(!editData?.footer_logo_align && watch("show_footer_logo"))}
                                                     label="Footer Logo Alignment"
                                                     error={!!errors.footer_logo_align}
                                                     helperText={errors.footer_logo_align?.message}
@@ -598,18 +679,97 @@ const NotificationForm = () => {
                                 </>
                             )}
 
+                            {/* Placeholder, Variable and Insert in one row */}
+                            <Grid size={{ xs: 12 }}>
+                                <Grid container spacing={2}>
+                                    {/* Placeholder Dropdown */}
+                                    <Grid size={{ xs: 5 }}>
+                                        <CustomTextField
+                                            select
+                                            fullWidth
+                                            value={selectedPlaceholder}
+                                            onChange={(e) => {
+                                                setSelectedPlaceholder(e.target.value);
+                                                setSelectedVariable(""); // reset variable on placeholder change
+                                            }}
+                                        >
+                                            {placeholder && placeholder.map((item, index) => (
+                                                <MenuItem key={index} value={item.name}>
+                                                    {item.name}
+                                                </MenuItem>
+                                            ))}
+                                        </CustomTextField>
+                                    </Grid>
+
+                                    {/* Variable Dropdown */}
+                                    <Grid size={{ xs: 5 }}>
+                                        <CustomTextField
+                                            select
+                                            fullWidth
+                                            value={selectedVariable}
+                                            onChange={(e) => setSelectedVariable(e.target.value)}
+                                            disabled={!selectedPlaceholder}
+                                        >
+                                            {(
+                                                selectedPlaceholder && placeholder && placeholder.find((p) => p.name === selectedPlaceholder)
+                                                    ?.variable || []
+                                            ).map((v) => (
+                                                <MenuItem key={v.name} value={v.name}>
+                                                    {v.name}
+                                                </MenuItem>
+                                            ))}
+                                        </CustomTextField>
+                                    </Grid>
+
+                                    {/* Insert Button */}
+                                    <Grid size={{ xs: 2 }}>
+                                        <Button
+                                            fullWidth
+                                            variant="outlined"
+                                            onClick={() => {
+                                                if (!selectedValue) return;
+
+                                                const targetEditor =
+                                                    activeEditor === 'footer' ? footerEditor : editor;
+
+                                                if (!targetEditor) return;
+
+                                                console.log("DATA", activeEditor, targetEditor)
+
+                                                targetEditor
+                                                    .chain()
+                                                    .focus()
+                                                    .insertContent(`{{${selectedValue}}}`)
+                                                    .run();
+                                            }}
+                                            disabled={!selectedPlaceholder || !selectedVariable}
+                                        >
+                                            Insert
+                                        </Button>
+                                    </Grid>
+                                </Grid>
+                            </Grid>
 
                             <Grid size={{ xs: 12 }}>
                                 <Typography>Message *</Typography>
                                 <EditorToolbar editor={editor} />
-                                <EditorContent editor={editor} className="border rounded p-2 min-h-[150px]" />
+                                <EditorContent
+                                    editor={editor}
+                                    className="border rounded p-2 min-h-[150px]"
+                                    onFocus={() => setActiveEditor('message')}
+                                />
                                 {errors.message && <p className="text-error text-sm">{errors.message.message}</p>}
                             </Grid>
 
                             <Grid size={{ xs: 12 }}>
                                 <Typography>Footer *</Typography>
                                 <EditorToolbar editor={footerEditor} />
-                                <EditorContent editor={footerEditor} className="border rounded p-2 min-h-[150px]" />
+                                <EditorContent
+                                    editor={footerEditor}
+                                    className="border rounded p-2 min-h-[150px]"
+                                    onFocus={() => setActiveEditor('footer')}
+                                />
+
                                 {errors.footer && <p className="text-error text-sm">{errors.footer.message}</p>}
                             </Grid>
                         </Grid>

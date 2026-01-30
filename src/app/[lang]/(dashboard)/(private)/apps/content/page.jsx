@@ -335,9 +335,9 @@ const ProgramPage = () => {
         <Typography variant="h6" mb={2}>Activities</Typography>
 
         {data?.activities?.map((activity, index) => {
+
           const moduleTypeId = activity?.module_type_id;
           const label = activity?.name || moduleTypeLabel?.[moduleTypeId]
-
 
           const log = activity?.logs?.[0]
           const isCompleted = (log?.is_completed && Number(log?.completion_percentage) >= 100) || (log?.scorm_data?.lessonStatus === "passed" || log?.scorm_data?.lessonStatus === "incomplete")
@@ -348,8 +348,8 @@ const ProgramPage = () => {
           const prevCompleted = (prevLog?.is_completed && Number(prevLog?.completion_percentage) >= 100) || prevLog?.scorm_data?.lessonStatus === 'passed'
           const isOrdered = settingData?.orderType === 'ordered'
           const canOpen = !isOrdered || index === 0 || prevCompleted
-          const url = `/${locale}/apps/content-data?type=${docType[activity?.module_type_id]}&activityId=${activity?._id}&moduleId=${moduleId}&contentFolderId=${content_folder_id}&moduleTypeId=${activity?.module_type_id}`
 
+          const url = `/${locale}/apps/content-data?type=${docType[activity?.module_type_id]}&activityId=${activity?._id}&moduleId=${moduleId}&contentFolderId=${content_folder_id}&moduleTypeId=${activity?.module_type_id}`
           const isDisabled = isCompleted && moduleTypeId == "688723af5dd97f4ccae68837";
 
           return (

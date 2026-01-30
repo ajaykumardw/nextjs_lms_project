@@ -10,10 +10,11 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  Grid,
   CircularProgress,
   IconButton
 } from '@mui/material'
+
+import Grid from "@mui/material/Grid2";
 
 // Hook Form + Validation
 import { useForm, useFieldArray, Controller } from 'react-hook-form'

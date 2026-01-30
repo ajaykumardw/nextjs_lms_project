@@ -259,7 +259,7 @@ const ProgramCardComponent = ({
                 <Grid container spacing={10} alignItems="stretch">
                     {data?.length > 0 ? (
                         data.map((item) => (
-                            <Grid item size={{ xs: 12, md: 3, lg: 3 }} key={item?._id}>
+                            <Grid item size={{ xs: 12, md: 3, lg: 3 }} key={item?._id} onClick={() => router.push(linkData(item._id, item?.module_type_id))} >
                                 <Card
                                     sx={{
                                         border: '1px solid #e0e0e0',
@@ -275,7 +275,6 @@ const ProgramCardComponent = ({
                                             boxShadow: 6,
                                         },
                                     }}
-                                    onClick={() => router.push(linkData(item._id, item?.module_type_id))} // This remains
                                 >
                                     <img
                                         src={item.image_url ? `${ASSET_URL}/program_module/${item.image_url}` : placeholderBase64}

@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react'
 
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Button, MenuItem, Grid, CircularProgress, IconButton
+  Button, MenuItem, CircularProgress, IconButton
 } from '@mui/material'
+
+import Grid from "@mui/material/Grid2";
 
 import { useForm, useFieldArray, Controller } from 'react-hook-form'
 
@@ -20,8 +22,6 @@ import { toast } from 'react-toastify'
 import CustomTextField from '@core/components/mui/TextField'
 import DialogCloseButton from '../DialogCloseButton'
 
-
-// Validation Schemas
 const regionSchema = object({
   name: pipe(
     string(),
@@ -258,7 +258,7 @@ const RegionDialog = ({
             {
               fields.map((field, index) => (
                 <Grid container spacing={2} key={field.id} alignItems="center">
-                  <Grid item size={{ xs: 12, md: 11,  }}>
+                  <Grid item size={{ xs: 12, }}>
                     <Controller
                       name={`region.${index}.name`}
                       control={control}
@@ -303,7 +303,7 @@ const RegionDialog = ({
                     />
 
                   </Grid>
-                  <Grid item size={{ xs: 12, md: 1,  }} className="flex justify-end">
+                  <Grid item size={{ xs: 12, }} className="flex justify-end">
                     {fields.length > 1 && (
                       <IconButton
                         color="error"
@@ -331,7 +331,7 @@ const RegionDialog = ({
         ) : (
           <div className="ml-9 mr-9">
             <Grid container spacing={2} direction={"column"}>
-              <Grid item size={{ xs: 12, md: 8,  }}>
+              <Grid item size={{ xs: 12, }}>
                 <Controller
                   name="name"
                   control={control}
@@ -367,7 +367,7 @@ const RegionDialog = ({
                 />
               </Grid>
 
-              <Grid item size={{ xs: 12, md: 4,  }}>
+              <Grid item size={{ xs: 12, }}>
                 <Controller
                   name="zoneId"
                   control={control}

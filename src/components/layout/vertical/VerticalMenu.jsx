@@ -28,7 +28,6 @@ import StyledVerticalNavExpandIcon from '@menu/styles/vertical/StyledVerticalNav
 
 import menuItemStyles from '@core/styles/vertical/menuItemStyles'
 import menuSectionStyles from '@core/styles/vertical/menuSectionStyles'
-import { jaJP } from '@mui/x-date-pickers/locales'
 
 const RenderExpandIcon = ({ open, transitionDuration }) => (
   <StyledVerticalNavExpandIcon open={open} transitionDuration={transitionDuration}>
@@ -335,6 +334,8 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
               <MenuItem key="scorm_report" href={`/${locale}/apps/scorm-report`}>Scorm Report</MenuItem>
               <MenuItem key="login_report" href={`/${locale}/apps/login-report`}>Login Report</MenuItem>
               <MenuItem key="user_report" href={`/${locale}/apps/user-report`}>User Report</MenuItem>
+              <MenuItem key="advance_training_report" href={`/${locale}/apps/advance-training-report`}>Advance Training Report</MenuItem>
+              <MenuItem key="miscellaneous_report" href={`/${locale}/apps/miscellaneous-report`}>Miscellaneous Report</MenuItem>
             </SubMenu>
           )}
           {((permissArray?.isCompany && permissArray?.hasLabelPermission) || permissArray?.isSuperAdmin) && (
