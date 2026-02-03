@@ -76,7 +76,7 @@ import { TabContext, TabList, TabPanel } from "@mui/lab"
 
 import { toast } from "react-toastify"
 
-import * as XLSX from 'xlsx';
+import ExcelJS from "exceljs";
 
 import { LocalizationProvider } from '@mui/x-date-pickers';
 
@@ -1147,39 +1147,52 @@ const ImportUserModal = ({
 
     const { getRootProps, getInputProps } = useDropzone({
         multiple: false,
-        maxSize: 5 * 1024 * 1024,
+        maxSize: 5 * 1024 * 1024, // 5MB
         accept: {
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"]
         },
         onDrop: async (acceptedFiles) => {
+
             if (!acceptedFiles?.length) return;
+
             const selectedFile = acceptedFiles[0];
 
             try {
-                const data = await selectedFile.arrayBuffer();
-                const workbook = XLSX.read(data, { type: "array" });
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
 
-                if (!jsonData?.length) {
-                    throw new Error("Excel file is empty.");
-                }
+                const arrayBuffer = await selectedFile.arrayBuffer();
 
-                const headerRow = jsonData[0].map(h => String(h || "").trim());
+                const workbook = new ExcelJS.Workbook();
+                await workbook.xlsx.load(arrayBuffer);
+
+                const worksheet = workbook.worksheets[0]; // first sheet
+
+                if (!worksheet) throw new Error("Excel file is empty.");
+
+                const headerRow = worksheet.getRow(1).values.slice(1).map(h => String(h || "").trim());
                 const cleanHeaders = headerRow.map((h, idx) => h || `Column${idx + 1}`);
 
                 validateExcelHeaders(cleanHeaders.map(h => h.toLowerCase()));
 
-                const rows = XLSX.utils.sheet_to_json(firstSheet, {
-                    header: cleanHeaders,
-                    range: 1,
-                    defval: ""
+                const rows = [];
+                worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+
+                    if (rowNumber === 1) return; // skip header
+
+                    const rowValues = row.values.slice(1); // ExcelJS is 1-based
+                    const rowData = {};
+
+                    cleanHeaders.forEach((header, idx) => {
+                        rowData[header] = rowValues[idx] ?? "";
+                    });
+
+                    rows.push(rowData);
                 });
 
                 const errors = {};
                 const matchedUsersArray = [];
 
                 rows.forEach((row, index) => {
+
                     const snoVal = String(row["Sno"] || "").trim();
                     const empVal = String(row["EmpId/Email"] || "").trim();
 
@@ -1187,30 +1200,35 @@ const ImportUserModal = ({
                     const empFilled = empVal !== "";
 
                     if (snoFilled !== empFilled) {
+
                         errors[index] = "Sno and EmpId/Email must both be filled or both be empty.";
 
                         return;
                     }
 
                     if (empFilled) {
+
                         const isEmail = empVal.includes("@");
                         let matchedUser = null;
 
                         if (isEmail) {
+
                             const norm = normalizeEmail(empVal);
                             const hashed = hash(norm);
 
                             matchedUser = users.find(user => user.email_hash === hashed);
                         } else {
+
                             matchedUser = users.find(user =>
                                 user.codes.some(c => String(c.code).trim().toLowerCase() === empVal.trim().toLowerCase())
                             );
                         }
 
-
                         if (matchedUser) {
+
                             matchedUsersArray.push(matchedUser._id);
                         } else {
+
                             errors[index] = `${empVal} does not exist`;
                         }
                     }
@@ -1223,6 +1241,7 @@ const ImportUserModal = ({
                 setMatchedUsers(matchedUsersArray);
 
             } catch (err) {
+
                 setFile(null);
                 setExcelData([]);
                 setRowErrors({});
@@ -1233,7 +1252,6 @@ const ImportUserModal = ({
         },
         onDropRejected: (rejectedFiles) => {
             rejectedFiles.forEach(file => {
-
                 file.errors.forEach(error => {
                     let msg = "";
 

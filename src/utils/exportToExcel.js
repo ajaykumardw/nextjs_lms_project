@@ -1,4 +1,4 @@
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 
 export const exportToExcel = ({
@@ -7,28 +7,28 @@ export const exportToExcel = ({
     fileName = "report.xlsx",
     sheetName = "Report",
 }) => {
+
     if (!rows || rows.length === 0) return;
 
-    const worksheetData = [
-        headers.map(h => h.label),
-        ...rows.map(row =>
-            headers.map(h => row[h.key] ?? "")
-        ),
-    ];
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet(sheetName);
 
-    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
-    const workbook = XLSX.utils.book_new();
+    worksheet.addRow(headers.map(h => h.label));
 
-    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+    rows.forEach(row => {
 
-    const excelBuffer = XLSX.write(workbook, {
-        bookType: "xlsx",
-        type: "array",
+        const rowData = headers.map(h => row[h.key] ?? "");
+
+        worksheet.addRow(rowData);
     });
 
-    const blob = new Blob([excelBuffer], {
-        type: "application/octet-stream",
-    });
+    workbook.xlsx.writeBuffer().then(buffer => {
 
-    saveAs(blob, fileName);
+        const blob = new Blob([buffer], { type: "application/octet-stream" });
+
+        saveAs(blob, fileName);
+    }).catch(err => {
+
+        console.error("Error exporting Excel file:", err);
+    });
 };

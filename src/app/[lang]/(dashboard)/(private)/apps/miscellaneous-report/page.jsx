@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 import { useSession } from "next-auth/react";
 
@@ -43,58 +43,35 @@ import { exportToExcel } from "@/utils/exportToExcel"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
 
-const LOCKED_ATTRIBUTES = ["userId", "quizName", "fullName", "moduleName"];
+const LOCKED_ATTRIBUTES = ["userName", "activityName", "fullName", "moduleName"];
 
 const reportAttributes = [
-    { label: "User Id", key: "userId", defaultChecked: true },
     { label: "Participant Name", key: "fullName", defaultChecked: true },
-    { label: "Quiz Name", key: "quizName", defaultChecked: true },
-    { label: "Module Name", key: "moduleName", defaultChecked: true },
+    { label: "User Email", key: "userEmail" },
+    { label: "User Id", key: "userName", defaultChecked: true },
+    { label: "Quiz Name", key: "activityName", defaultChecked: true },
     { label: "Program Name", key: "programName" },
-    { label: "User Status", key: "userStatus" },
-    { label: "User Email", key: "email" },
-    { label: "Language", key: "language" },
+    { label: "Content folder Name", key: "contentFolderName" },
+    { label: "Module Name", key: "moduleName", defaultChecked: true },
+    { label: "Date of Attempt", key: "attemptDate" },
+    { label: "Date of Completion", key: "completionTime" },
+    { label: "Score Percentage", key: "markPercent" },
+    { label: "Time Taken", key: "duration" },
+    { label: "Total Questions", key: "totalQuestion" },
+    { label: "Questions Attempted", key: "attemptQuestion" },
+    { label: "Questions Right", key: "correctQuestion" },
+    { label: "Re-Attempts Count", key: "current_attempt" },
+    { label: "Location name", key: "locationName" },
+    { label: "Department name", key: "departmentName" },
+    { label: "Designation name", key: "designationName" },
+    { label: "Group name", key: "groupName" },
+    { label: "Region name", key: "regionName" },
+    { label: "Result", key: "passedStatus" },
     { label: "Completion Status", key: "completionStatus" },
-    { label: "Date of Attempt", key: "dateOfAttempt" },
-    { label: "Date of Completion", key: "dateOfCompletion" },
-    { label: "Score Percentage", key: "scorePercentage" },
-    { label: "Maximum Score", key: "maxScore" },
-    { label: "Result", key: "result" },
-    { label: "Time Taken", key: "timeTaken" },
-    { label: "Total Questions", key: "totalQuestions" },
-    { label: "Questions Attempted", key: "questionsAttempted" },
-    { label: "Questions Right", key: "questionsRight" },
-    { label: "Re-Attempts Count", key: "reattemptCount" },
+    { label: "User Status", key: "userStatus" },
 ];
 
-const TableSkeletonRow = () => (
-    <TableRow>
-        <TableCell>
-            <Skeleton width="60%" />
-        </TableCell>
-        <TableCell>
-            <Skeleton variant="rectangular" height={20} />
-        </TableCell>
-        <TableCell>
-            <Skeleton width="40%" />
-        </TableCell>
-        <TableCell>
-            <Skeleton width="40%" />
-        </TableCell>
-        <TableCell>
-            <Skeleton width="40%" />
-        </TableCell>
-        <TableCell>
-            <Skeleton width="40%" />
-        </TableCell>
-        <TableCell>
-            <Skeleton width="40%" />
-        </TableCell>
-        <TableCell>
-            <Skeleton width="40%" />
-        </TableCell>
-    </TableRow>
-);
+
 
 const ReportHeader = ({
     title,
@@ -117,7 +94,6 @@ const ReportHeader = ({
                         setEndDate(null)
 
                         setFilterData({
-                            allowedFields: [],
                             userStatus: [],
                             result: [],
                             completionStatus: [],
@@ -159,35 +135,24 @@ const DashboardTab = ({ onFilterClick, token, filterData, setFilterData, isShowF
         setPage(newPage);
     };
 
+    const visibleAttributes = useMemo(() => {
+        if (!filterData?.allowedFields?.length) return reportAttributes;
+
+        return reportAttributes.filter(attr =>
+            filterData.allowedFields.includes(attr.key)
+        );
+    }, [filterData.allowedFields]);
+
     const handleChangeRowsPerPage = (event) => {
         setRowsPerPage(parseInt(event.target.value, 10));
         setPage(0);
     };
 
-    useEffect(() => {
-        if (filterData) {
-
-            console.log("Filter", filterData);
-
-        }
-    }, [filterData])
-
-    const dashboardHeaders = [
-        { label: "Full Name", key: "fullName" },
-        { label: "Email", key: "email" },
-        { label: "User Id", key: "lastestCode" },
-        { label: "Phone", key: "phone" },
-        { label: "Type", key: "sessionType" },
-        { label: "Activity Time", key: "activity_time" },
-        { label: "Department", key: "department" },
-        { label: "Designation", key: "designation" },
-    ];
-
     const handleExport = () => {
         exportToExcel({
-            headers: dashboardHeaders,
+            headers: visibleAttributes,
             rows: dashboardData,
-            fileName: "quiz_assessment_Report.xlsx",
+            fileName: "miscellaneous_report.xlsx",
         });
     };
 
@@ -248,7 +213,7 @@ const DashboardTab = ({ onFilterClick, token, filterData, setFilterData, isShowF
 
             if (response.ok) {
 
-                console.log("Value", value);
+                console.log("Data", value.data);
 
                 setDashboardData(value?.data || []);
             }
@@ -270,6 +235,15 @@ const DashboardTab = ({ onFilterClick, token, filterData, setFilterData, isShowF
         page * rowsPerPage + rowsPerPage
     );
 
+    const TableSkeletonRow = ({ visibleAttributes = [] }) => (
+        <TableRow>
+            {visibleAttributes.map((attr, index) => (
+                <TableCell key={attr?.key || index}>
+                    <Skeleton width="60%" />
+                </TableCell>
+            ))}
+        </TableRow>
+    );
 
     return (
         <>
@@ -278,42 +252,47 @@ const DashboardTab = ({ onFilterClick, token, filterData, setFilterData, isShowF
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell>User Name</TableCell>
-                            <TableCell>Email</TableCell>
-                            <TableCell>User Id</TableCell>
-                            <TableCell>Phone</TableCell>
-                            <TableCell>Type</TableCell>
-                            <TableCell>Login/LogOut time</TableCell>
-                            <TableCell>Department</TableCell>
-                            <TableCell>Designation</TableCell>
+                            {visibleAttributes.map(attr => (
+                                <TableCell key={attr.key}>{attr.label}</TableCell>
+                            ))}
                         </TableRow>
                     </TableHead>
 
                     <TableBody>
                         {loading ? (
                             Array.from({ length: 3 }).map((_, index) => (
-                                <TableSkeletonRow key={index} />
+                                <TableSkeletonRow
+                                    key={`skeleton-${index}`}
+                                    visibleAttributes={visibleAttributes}
+                                />
                             ))
-                        ) : paginatedData.length > 0 ? (
-                            paginatedData.map((item, index) => (
-                                <TableRow key={index}>
-                                    <TableCell>{item?.fullName || ""}</TableCell>
-                                    <TableCell>{item?.email || ""}</TableCell>
-                                    <TableCell>{item?.lastestCode || ""}</TableCell>
-                                    <TableCell>{item?.phone || ""}</TableCell>
-                                    <TableCell>{item?.sessionType || "LogIn"}</TableCell>
-                                    <TableCell>{item?.activity_time ? new Date(item?.activity_time).toLocaleString() : ""}</TableCell>
-                                    <TableCell>{item?.department || ""}</TableCell>
-                                    <TableCell>{item?.designation || ""}</TableCell>
+                        )
+                            : paginatedData.length > 0 ? (
+                                paginatedData.map((item, index) => (
+                                    <TableRow key={index}>
+                                        {visibleAttributes.map(attr => {
+                                            let value = item?.[attr.key];
+
+                                            // Optional formatting
+                                            if (attr.key === "activity_time" && value) {
+                                                value = new Date(value).toLocaleString();
+                                            }
+
+                                            return (
+                                                <TableCell key={attr.key}>
+                                                    {value ?? ""}
+                                                </TableCell>
+                                            );
+                                        })}
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={visibleAttributes.length} align="center">
+                                        No data found
+                                    </TableCell>
                                 </TableRow>
-                            ))
-                        ) : (
-                            <TableRow>
-                                <TableCell colSpan={8} align="center">
-                                    No data found
-                                </TableCell>
-                            </TableRow>
-                        )}
+                            )}
                     </TableBody>
                 </Table>
                 <TablePagination
@@ -362,14 +341,15 @@ const MiscellaneousReport = () => {
         endDate: null,
     });
 
-    // Fetch initial filter data
     const fetchCreateData = async () => {
         try {
             const res = await fetch(`${API_URL}/company/dashboard/filter/data`, {
                 method: "GET",
                 headers: { Authorization: `Bearer ${token}` },
             });
+            
             const json = await res.json();
+            
             if (res.ok) setCreateData(json?.data || {});
         } catch (e) {
             console.error(e);
@@ -490,6 +470,7 @@ const MiscellaneousReport = () => {
                                     onChange={(e) => {
                                         if (e.target.checked) {
                                             const allKeys = reportAttributes.map((a) => a.key);
+                                            
                                             setSelectedAttributes(allKeys);
                                         } else {
                                             setSelectedAttributes([...LOCKED_ATTRIBUTES]);
@@ -503,6 +484,7 @@ const MiscellaneousReport = () => {
                         <Grid container spacing={2}>
                             {reportAttributes.map((attr) => {
                                 const locked = LOCKED_ATTRIBUTES.includes(attr.key);
+                                
                                 return (
                                     <Grid item size={{ xs: 12, sm: 6, md: 3 }} key={attr.key}>
                                         <Stack direction="row" spacing={1} alignItems="center">
@@ -626,6 +608,7 @@ const MiscellaneousReport = () => {
                                                     multiple,
                                                     renderValue: (selected) => {
                                                         if (!selected || selected.length === 0) return "";
+                                                        
                                                         return selected
                                                             .filter((v) => v !== "all")
                                                             .map((id) => (normalizedItems.find((i) => i._id === id)?.title || normalizedItems.find((i) => i._id === id)?.name || normalizedItems.find((i) => i._id === id)?.state_name))
@@ -659,7 +642,6 @@ const MiscellaneousReport = () => {
                             setStartDate(null);
                             setEndDate(null);
                             setFilterData({
-                                allowedFields: [],
                                 userStatus: [],
                                 result: [],
                                 completionStatus: [],

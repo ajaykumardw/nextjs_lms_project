@@ -84,7 +84,7 @@ import { TabContext, TabList, TabPanel } from "@mui/lab"
 
 import { toast } from "react-toastify"
 
-import * as XLSX from 'xlsx';
+import ExcelJS from "exceljs";
 
 import DatePicker from "react-datepicker";
 
@@ -176,12 +176,11 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
 
   const { getRootProps, getInputProps } = useDropzone({
     multiple: false,
-    maxSize: 2000000,
+    maxSize: 2 * 1024 * 1024, // 2MB
     accept: {
-      'application/vnd.ms-excel': ['.xls'],
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
     },
-    onDrop: (acceptedFiles) => {
+    onDrop: async (acceptedFiles) => {
       // reset
       setFileInput(null);
       setMissingHeaders([]);
@@ -191,10 +190,9 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
       setData([]);
       setUploadData([]);
 
-      if (!acceptedFiles || !acceptedFiles?.length) {
+      if (!acceptedFiles?.length) {
         setLoading(false);
-        toast.error('No file selected.');
-
+        toast.error("No file selected.");
         return;
       }
 
@@ -202,234 +200,236 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
 
       if (!selectedFile) {
         setLoading(false);
-        toast.error('File read failed.');
-
+        toast.error("File read failed.");
         return;
       }
 
-      const reader = new FileReader();
+      try {
+        const arrayBuffer = await selectedFile.arrayBuffer();
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(arrayBuffer);
 
-      // Robust parser for Correct Answer cell values
-      function parseCorrectAnswer(raw) {
-        if (raw === null || raw === undefined) return [];
+        const worksheet = workbook.worksheets[0]; // first sheet
 
-        if (Array.isArray(raw)) {
+        // Read headers
+        const headerRow = worksheet.getRow(1).values.slice(1);
+        const requiredHeaders = [
+          "Sno",
+          "Question",
+          "Option 1",
+          "Option 2",
+          "Option 3",
+          "Option 4",
+          "Option 5",
+          "Option 6",
+          "Correct Answer",
+          "Difficulty Level",
+          "Section",
+          "Answer Explanation",
+          "Use Answer Explanation",
+          "Question Type",
+        ];
 
-          return raw
-            .map(v => (v === null || v === undefined ? '' : String(v)))
-            .map(s => s.replace(/[\[\]\(\)\{\}'"]/g, ' '))
-            .flatMap(s => s.split(/[^0-9]+/))
-            .map(s => s.trim())
-            .filter(Boolean);
-        }
+        const missingHeaders = requiredHeaders.filter(
+          (h) => !headerRow.includes(h)
+        );
 
-        let s = String(raw).trim();
-
-        s = s.replace(/[\[\]\(\)\{\}]/g, ' ').replace(/['"]/g, ' ');
-
-        return s.split(/[^0-9]+/).map(p => p.trim()).filter(Boolean);
-      }
-
-      reader.onload = async (e) => {
-        if (!e.target?.result) {
+        if (missingHeaders.length > 0) {
+          setMissingHeaders(missingHeaders);
           setLoading(false);
-          toast.error('Unable to read file.');
-
+          setProgress(0);
           return;
         }
 
-        try {
-          const arrayBuffer = e.target.result;
-          const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+        // Read data rows
+        const jsonData = [];
+        worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+          if (rowNumber === 1) return;
+          const rowValues = row.values.slice(1);
+          const rowData = {};
+          headerRow.forEach((header, index) => {
+            rowData[header] = rowValues[index] ?? "";
+          });
+          jsonData.push(rowData);
+        });
 
-          // Validate headers
-          const headers = XLSX.utils.sheet_to_json(worksheet, { header: 1 })[0] || [];
+        // Validation
+        const seenSno = new Set();
+        const duplicateSno = [];
+        const errors = [];
 
-          const requiredHeaders = [
-            'Sno', 'Question', 'Option 1', 'Option 2', 'Option 3', 'Option 4', 'Option 5', 'Option 6',
-            'Correct Answer', 'Difficulty Level', 'Section', 'Answer Explanation',
-            'Use Answer Explanation', 'Question Type'
+        function parseCorrectAnswer(raw) {
+          if (raw == null) return [];
+          const s = String(raw)
+            .replace(/[\[\]\(\)\{\}'"]/g, " ")
+            .trim();
+          return s
+            .split(/[^0-9]+/)
+            .map((p) => p.trim())
+            .filter(Boolean);
+        }
+
+        jsonData.forEach((row, index) => {
+          const rowNum = index + 2; // Excel row index
+          const sno = String(row["Sno"] || "").trim();
+          const question = String(row["Question"] || "").trim();
+          const difficulty = String(row["Difficulty Level"] || "").trim();
+          const questionType = String(row["Question Type"] || "").trim();
+          const section = String(row["Section"] || "").trim();
+          const answerExplanation = String(row["Answer Explanation"] || "").trim();
+          let useAnswerExplanation = String(row["Use Answer Explanation"] || "")
+            .trim()
+            .toLowerCase();
+
+          if (useAnswerExplanation === "") useAnswerExplanation = "false";
+
+          const options = [
+            String(row["Option 1"] || "").trim(),
+            String(row["Option 2"] || "").trim(),
+            String(row["Option 3"] || "").trim(),
+            String(row["Option 4"] || "").trim(),
+            String(row["Option 5"] || "").trim(),
+            String(row["Option 6"] || "").trim(),
           ];
 
-          const missingHeadersList = requiredHeaders.filter(h => !headers.includes(h));
-
-          if (missingHeadersList?.length > 0) {
-            setMissingHeaders(missingHeadersList);
-            setLoading(false);
-            setProgress(0);
-
-            return;
+          if (!sno) errors.push(`Row ${rowNum}: Sno is required.`);
+          else {
+            if (seenSno.has(sno)) duplicateSno.push(sno);
+            seenSno.add(sno);
           }
 
-          // Validation
-          const seenSno = new Set();
-          const duplicateSno = [];
-          const errors = [];
+          if (!question) errors.push(`Row ${rowNum}: Question cannot be empty.`);
+          else if (question.length > 500)
+            errors.push(`Row ${rowNum}: Question must not exceed 500 characters.`);
 
-          jsonData.forEach((row, index) => {
-            const rowNum = index + 2;
+          if (options.every((o) => o === ""))
+            errors.push(`Row ${rowNum}: At least one option must have a value.`);
 
-            const snoRaw = row['Sno'];
-            const sno = snoRaw !== undefined && snoRaw !== null ? String(snoRaw).trim() : '';
-            const question = (row['Question'] || '').toString().trim();
-            const difficulty = (row['Difficulty Level'] || '').toString().trim();
-            const questionType = (row['Question Type'] || '').toString().trim();
-            const section = (row['Section'] || '').toString().trim();
-            const answerExplanation = (row['Answer Explanation'] || '').toString().trim();
-            let useAnswerExplanationLower = (row['Use Answer Explanation'] || '').toString().trim().toLowerCase();
+          if (!["1", "2", "3"].includes(difficulty))
+            errors.push(`Row ${rowNum}: Difficulty Level must be 1, 2, or 3.`);
 
-            if (useAnswerExplanationLower === '') useAnswerExplanationLower = 'false';
+          if (!section) errors.push(`Row ${rowNum}: Section cannot be empty.`);
+          else if (section.length > 10)
+            errors.push(`Row ${rowNum}: Section must not exceed 10 characters.`);
 
-            // Options
-            const options = [
-              (row["Option 1"] || '').toString().trim(),
-              (row["Option 2"] || '').toString().trim(),
-              (row["Option 3"] || '').toString().trim(),
-              (row["Option 4"] || '').toString().trim(),
-              (row["Option 5"] || '').toString().trim(),
-              (row["Option 6"] || '').toString().trim()
-            ];
+          if (answerExplanation.length > 500)
+            errors.push(`Row ${rowNum}: Answer Explanation must not exceed 500 characters.`);
 
-            // Sno - required and duplicate
-            if (!sno) errors.push(`Row ${rowNum}: Sno is required.`);
-            else {
-              if (seenSno.has(sno)) duplicateSno.push(sno);
-              seenSno.add(sno);
-            }
+          if (!["true", "false"].includes(useAnswerExplanation))
+            errors.push(`Row ${rowNum}: Use Answer Explanation must be TRUE or FALSE.`);
 
-            // Question
-            if (!question) errors.push(`Row ${rowNum}: Question cannot be empty.`);
-            else if (question?.length > 500) errors.push(`Row ${rowNum}: Question length must not exceed 500 characters.`);
+          if (!["Single Correct", "Multiple Correct"].includes(questionType))
+            errors.push(
+              `Row ${rowNum}: Question Type must be 'Single Correct' or 'Multiple Correct'.`
+            );
 
-            // Options check
-            if (options.every(o => o === '')) errors.push(`Row ${rowNum}: At least one Option (1–6) must have a value.`);
+          const parsedAnswers = parseCorrectAnswer(row["Correct Answer"]);
+          const uniqueAnswers = [...new Set(parsedAnswers)];
 
-            // Difficulty
-            if (!['1', '2', '3'].includes(difficulty)) errors.push(`Row ${rowNum}: Difficulty Level must be 1, 2, or 3.`);
-
-            // Section
-            if (!section) errors.push(`Row ${rowNum}: Section cannot be empty.`);
-            else if (section?.length > 10) errors.push(`Row ${rowNum}: Section length must not exceed 10 characters.`);
-
-            // Answer Explanation
-            if (answerExplanation.length > 500) errors.push(`Row ${rowNum}: Answer Explanation length must not exceed 500 characters.`);
-
-            // Use Answer Explanation
-            if (!["true", "false"].includes(useAnswerExplanationLower)) errors.push(`Row ${rowNum}: Use Answer Explanation must be TRUE or FALSE.`);
-
-            // Question Type
-            if (!['Single Correct', 'Multiple Correct'].includes(questionType)) errors.push(`Row ${rowNum}: Question Type must be 'Single Correct' or 'Multiple Correct'.`);
-
-            // Parse Correct Answer
-            const parsedAnswers = parseCorrectAnswer(row['Correct Answer'] || '');
-            const uniqueAnswers = [...new Set(parsedAnswers)];
-
-            if (uniqueAnswers?.length === 0) errors.push(`Row ${rowNum}: Correct Answer must contain at least one option number (1–6).`);
-            else {
-              uniqueAnswers.forEach(ans => {
-                if (!/^[1-6]$/.test(ans)) errors.push(`Row ${rowNum}: Correct Answer contains invalid option number: ${ans}`);
-                else {
-                  const optIndex = Number(ans) - 1;
-
-                  if (!options[optIndex]) errors.push(`Row ${rowNum}: Correct Answer references Option ${ans} but that option is empty.`);
-                }
-              });
-            }
-
-            // Single / Multiple rules
-            if (questionType === 'Single Correct' && uniqueAnswers?.length !== 1) errors.push(`Row ${rowNum}: For Single Correct, Correct Answer must contain exactly ONE option number.`);
-            if (questionType === 'Multiple Correct' && uniqueAnswers?.length < 2) errors.push(`Row ${rowNum}: For Multiple Correct, Correct Answer must contain at least TWO option numbers.`);
-
-            // Explanation logic
-            if (useAnswerExplanationLower === 'true' && !answerExplanation) errors.push(`Row ${rowNum}: Answer Explanation cannot be empty when Use Answer Explanation is TRUE.`);
-            if (useAnswerExplanationLower === 'false' && answerExplanation) errors.push(`Row ${rowNum}: Answer Explanation must be empty when Use Answer Explanation is FALSE.`);
-          });
-
-          if (duplicateSno?.length > 0) errors.unshift(`Duplicate Sno values found: ${[...new Set(duplicateSno)].join(', ')}`);
-
-          if (errors?.length > 0) {
-            setValidationErrors(errors);
-            setLoading(false);
-            setProgress(0);
-
-            return;
+          if (uniqueAnswers.length === 0)
+            errors.push(
+              `Row ${rowNum}: Correct Answer must contain at least one option number (1–6).`
+            );
+          else {
+            uniqueAnswers.forEach((ans) => {
+              if (!/^[1-6]$/.test(ans))
+                errors.push(
+                  `Row ${rowNum}: Correct Answer contains invalid option number: ${ans}`
+                );
+              else if (!options[Number(ans) - 1])
+                errors.push(
+                  `Row ${rowNum}: Correct Answer references Option ${ans} but that option is empty.`
+                );
+            });
           }
 
-          // Normalize rows for upload
-          const normalized = jsonData.map((row) => {
-            const opts = [
-              (row['Option 1'] || '').toString().trim(),
-              (row['Option 2'] || '').toString().trim(),
-              (row['Option 3'] || '').toString().trim(),
-              (row['Option 4'] || '').toString().trim(),
-              (row['Option 5'] || '').toString().trim(),
-              (row['Option 6'] || '').toString().trim(),
-            ];
+          if (questionType === "Single Correct" && uniqueAnswers.length !== 1)
+            errors.push(
+              `Row ${rowNum}: For Single Correct, Correct Answer must contain exactly ONE option number.`
+            );
 
-            const parsed = parseCorrectAnswer(row['Correct Answer'] || '');
-            const unique = [...new Set(parsed)].filter(v => /^[1-6]$/.test(String(v)));
-            const filtered = unique.filter(ans => opts[Number(ans) - 1] !== '');
+          if (questionType === "Multiple Correct" && uniqueAnswers.length < 2)
+            errors.push(
+              `Row ${rowNum}: For Multiple Correct, Correct Answer must contain at least TWO option numbers.`
+            );
 
-            const useAnswerExplanationBool = (row['Use Answer Explanation'] || '').toString().trim().toLowerCase() === 'true';
+          if (useAnswerExplanation === "true" && !answerExplanation)
+            errors.push(
+              `Row ${rowNum}: Answer Explanation cannot be empty when Use Answer Explanation is TRUE.`
+            );
+          if (useAnswerExplanation === "false" && answerExplanation)
+            errors.push(
+              `Row ${rowNum}: Answer Explanation must be empty when Use Answer Explanation is FALSE.`
+            );
+        });
 
-            return {
-              Sno: row['Sno'],
-              Question: (row['Question'] || '').toString().trim(),
-              Option1: opts[0],
-              Option2: opts[1],
-              Option3: opts[2],
-              Option4: opts[3],
-              Option5: opts[4],
-              Option6: opts[5],
-              DifficultyLevel: (row['Difficulty Level'] || '').toString().trim(),
-              CorrectAnswer: filtered.map(Number),
-              Section: (row['Section'] || '').toString().trim(),
-              AnswerExplanation: (row['Answer Explanation'] || '').toString().trim(),
-              UseAnswerExplanation: useAnswerExplanationBool,
-              QuestionType: (row['Question Type'] || '').toString().trim(),
-            };
-          });
+        if (duplicateSno.length > 0)
+          errors.unshift(`Duplicate Sno values found: ${[...new Set(duplicateSno)].join(", ")}`);
 
-          setUploadData(normalized);
-          setFileInput(selectedFile);
-          setLoading(false);
-          setProgress(100);
-        } catch (err) {
-          console.error('Error processing the Excel file:', err);
-          toast.error('Error processing the Excel file. Check the file and headers.');
+        if (errors.length > 0) {
+          setValidationErrors(errors);
           setLoading(false);
           setProgress(0);
-          setUploadData([]);
-          setData([]);
+          return;
         }
-      };
 
-      reader.onerror = (error) => {
-        console.error('Error reading the file:', error);
+        const normalized = jsonData.map((row) => {
+          const opts = [
+            String(row["Option 1"] || "").trim(),
+            String(row["Option 2"] || "").trim(),
+            String(row["Option 3"] || "").trim(),
+            String(row["Option 4"] || "").trim(),
+            String(row["Option 5"] || "").trim(),
+            String(row["Option 6"] || "").trim(),
+          ];
+
+          const parsed = parseCorrectAnswer(row["Correct Answer"]);
+          const unique = [...new Set(parsed)].filter((v) => /^[1-6]$/.test(String(v)));
+          const filtered = unique.filter((ans) => opts[Number(ans) - 1] !== "");
+
+          return {
+            Sno: row["Sno"],
+            Question: String(row["Question"] || "").trim(),
+            Option1: opts[0],
+            Option2: opts[1],
+            Option3: opts[2],
+            Option4: opts[3],
+            Option5: opts[4],
+            Option6: opts[5],
+            DifficultyLevel: String(row["Difficulty Level"] || "").trim(),
+            CorrectAnswer: filtered.map(Number),
+            Section: String(row["Section"] || "").trim(),
+            AnswerExplanation: String(row["Answer Explanation"] || "").trim(),
+            UseAnswerExplanation: String(row["Use Answer Explanation"] || "").trim().toLowerCase() === "true",
+            QuestionType: String(row["Question Type"] || "").trim(),
+          };
+        });
+
+        setUploadData(normalized);
+        setFileInput(selectedFile);
+        setLoading(false);
+        setProgress(100);
+      } catch (err) {
+        console.error("Error processing Excel file:", err);
+        toast.error("Error processing the Excel file. Check the file and headers.");
         setLoading(false);
         setProgress(0);
         setUploadData([]);
         setData([]);
-        toast.error('Error reading file.');
-      };
-
-      reader.readAsArrayBuffer(selectedFile);
+      }
     },
     onDropRejected: (rejectedFiles) => {
       setLoading(false);
       setProgress(0);
       setUploadData([]);
       setData([]);
-      rejectedFiles.forEach(file => {
-        file.errors.forEach(error => {
+      rejectedFiles.forEach((file) => {
+        file.errors.forEach((error) => {
           switch (error.code) {
-            case 'file-invalid-type':
+            case "file-invalid-type":
               toast.error(`Invalid file type for ${file.file.name}`);
               break;
-            case 'file-too-large':
+            case "file-too-large":
               toast.error(`File ${file.file.name} is too large.`);
               break;
             default:
@@ -437,7 +437,7 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
           }
         });
       });
-    }
+    },
   });
 
   const handleDialogClose = () => {
@@ -2333,34 +2333,46 @@ const ImportUserModal = ({
   };
 
   const { getRootProps, getInputProps } = useDropzone({
+
     multiple: false,
-    maxSize: 5 * 1024 * 1024,
+    maxSize: 5 * 1024 * 1024, // 5MB
     accept: {
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"]
     },
+    
     onDrop: async (acceptedFiles) => {
       if (!acceptedFiles?.length) return;
+
       const selectedFile = acceptedFiles[0];
 
       try {
-        const data = await selectedFile.arrayBuffer();
-        const workbook = XLSX.read(data, { type: "array" });
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+        const arrayBuffer = await selectedFile.arrayBuffer();
 
-        if (!jsonData?.length) {
-          throw new Error("Excel file is empty.");
-        }
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(arrayBuffer);
 
-        const headerRow = jsonData[0].map(h => String(h || "").trim());
+        const worksheet = workbook.worksheets[0]; // first sheet
+        if (!worksheet) throw new Error("Excel file is empty.");
+
+        // Read header row
+        const headerRow = worksheet.getRow(1).values.slice(1).map(h => String(h || "").trim());
         const cleanHeaders = headerRow.map((h, idx) => h || `Column${idx + 1}`);
 
+        // Validate headers (you already have this function)
         validateExcelHeaders(cleanHeaders.map(h => h.toLowerCase()));
 
-        const rows = XLSX.utils.sheet_to_json(firstSheet, {
-          header: cleanHeaders,
-          range: 1,
-          defval: ""
+        // Read all rows starting from row 2
+        const rows = [];
+        worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+
+          if (rowNumber === 1) return;
+
+          const rowValues = row.values.slice(1);
+          const rowData = {};
+          cleanHeaders.forEach((header, idx) => {
+            rowData[header] = rowValues[idx] ?? "";
+          });
+          rows.push(rowData);
         });
 
         const errors = {};
@@ -2374,8 +2386,9 @@ const ImportUserModal = ({
           const empFilled = empVal !== "";
 
           if (snoFilled !== empFilled) {
+    
             errors[index] = "Sno and EmpId/Email must both be filled or both be empty.";
-
+    
             return;
           }
 
@@ -2394,7 +2407,6 @@ const ImportUserModal = ({
               );
             }
 
-
             if (matchedUser) {
               matchedUsersArray.push(matchedUser._id);
             } else {
@@ -2410,6 +2422,7 @@ const ImportUserModal = ({
         setMatchedUsers(matchedUsersArray);
 
       } catch (err) {
+        console.error("Error processing Excel file:", err);
         setFile(null);
         setExcelData([]);
         setRowErrors({});
@@ -2420,7 +2433,6 @@ const ImportUserModal = ({
     },
     onDropRejected: (rejectedFiles) => {
       rejectedFiles.forEach(file => {
-
         file.errors.forEach(error => {
           let msg = "";
 
@@ -2996,17 +3008,17 @@ const SettingComponent = ({ activities }) => {
 
   const startOfDay = () => {
     const d = new Date();
-    
+
     d.setHours(0, 0, 0, 0);
-    
+
     return d;
   };
 
   const endOfDay = () => {
     const d = new Date();
-    
+
     d.setHours(23, 59, 59, 999);
-    
+
     return d;
   };
 
