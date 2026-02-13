@@ -432,7 +432,7 @@ const ContentData = () => {
 
       if (newUrl === initialUrlRef.current) {
         window.history.pushState({ guard: true }, '', initialUrlRef.current);
-        
+
         return;
       }
 
@@ -477,7 +477,6 @@ const ContentData = () => {
           } />
 
           <CardContent>
-
 
             <Box
               sx={{
@@ -618,7 +617,12 @@ const ContentData = () => {
               <Button
                 variant="outlined"
                 color="secondary"
-                onClick={() => handleEndActivity({ link: `/${locale}/apps/content?id=${moduleId}&content-folder-id=${contentFolderId}`, token })}
+                onClick={() => {
+
+                  endActivity()
+                  router.replace(`/${locale}/apps/content?id=${moduleId}&content-folder-id=${contentFolderId}`)
+                }
+                }
               >
                 Exit
               </Button>

@@ -350,17 +350,41 @@ const DashboardTab = ({ token, filterData, onFilterClick }) => {
         fetchData()
     }, [token, filterData])
 
-    const handleExport = () => {
-        exportToExcel({
-            headers: visibleColumns,
-            rows: data.map(row =>
-                Object.fromEntries(
-                    visibleColumns.map(c => [c.key, row[c.key] ?? ""])
-                )
-            ),
-            fileName: "advance_training_report.xlsx"
-        })
+    const handleExport = async () => {
+
+        if (data.length > 2000) {
+
+            exportToExcel({
+                headers: visibleColumns,
+                rows: data.map(row =>
+                    Object.fromEntries(
+                        visibleColumns.map(c => [c.key, row[c.key] ?? ""])
+                    )
+                ),
+                fileName: "advance_training_report.xlsx"
+            })
+        } else {
+
+            const res = await fetch(`${API_URL}/company/export/center/create`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    reportType: "advance_training_report",
+                    data,
+                    visibleColumns
+                })
+            })
+
+            const json = await res.json()
+
+            console.log("Response data", json);
+
+        }
     }
+
 
     const userStatusObj = {
         "Completed": 'success',

@@ -250,7 +250,7 @@ const ChannelDialog = ({ open, setOpen, data, fetchPermissionModule, nameData })
     };
 
     return (
-        <Dialog open={open} onClose={handleClose} sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}>
+        <Dialog fullWidth maxWidth='lg' open={open} onClose={handleClose} sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}>
             <form onSubmit={handleSubmit(onSubmit)} noValidate>
                 <DialogCloseButton onClick={handleClose}><i className='tabler-x' /></DialogCloseButton>
                 <DialogTitle variant="h4" className='text-center sm:pbs-16 sm:pbe-6 sm:pli-16'>
