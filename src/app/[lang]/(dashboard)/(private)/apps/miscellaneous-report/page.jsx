@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useMemo } from "react";
 
+import { useRouter, useParams } from "next/navigation"
+
 import { useSession } from "next-auth/react";
 
 import {
@@ -125,6 +127,10 @@ const ReportHeader = ({
 
 const DashboardTab = ({ onFilterClick, token, filterData, setFilterData, isShowFilter, setIsShowFilter, setStartDate, setEndDate }) => {
 
+    const router = useRouter();
+
+    const { lang } = useParams();
+
     const [dashboardData, setDashboardData] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -148,12 +154,43 @@ const DashboardTab = ({ onFilterClick, token, filterData, setFilterData, isShowF
         setPage(0);
     };
 
-    const handleExport = () => {
-        exportToExcel({
-            headers: visibleAttributes,
-            rows: dashboardData,
-            fileName: "miscellaneous_report.xlsx",
-        });
+    const handleExport = async () => {
+
+        if (dashboardData.length <= 2000) {
+
+            exportToExcel({
+                headers: visibleAttributes,
+                rows: dashboardData,
+                fileName: "miscellaneous_report.xlsx",
+            });
+        } else {
+
+            const res = await fetch(`${API_URL}/company/export/center/create`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    reportType: "Miscellaneous Report",
+                    visibleColumns: dashboardData.map(row =>
+                        Object.fromEntries(
+                            visibleAttributes.map(c => [c.key, row[c.key] ?? ""])
+                        )
+                    )
+                })
+            })
+
+            const json = await res.json()
+
+            if (res.ok) {
+
+                router.push(`/${lang}/apps/download-center`)
+
+            }
+
+        }
+
     };
 
     const fetchDashboardReport = async () => {
@@ -347,9 +384,9 @@ const MiscellaneousReport = () => {
                 method: "GET",
                 headers: { Authorization: `Bearer ${token}` },
             });
-            
+
             const json = await res.json();
-            
+
             if (res.ok) setCreateData(json?.data || {});
         } catch (e) {
             console.error(e);
@@ -470,7 +507,7 @@ const MiscellaneousReport = () => {
                                     onChange={(e) => {
                                         if (e.target.checked) {
                                             const allKeys = reportAttributes.map((a) => a.key);
-                                            
+
                                             setSelectedAttributes(allKeys);
                                         } else {
                                             setSelectedAttributes([...LOCKED_ATTRIBUTES]);
@@ -484,7 +521,7 @@ const MiscellaneousReport = () => {
                         <Grid container spacing={2}>
                             {reportAttributes.map((attr) => {
                                 const locked = LOCKED_ATTRIBUTES.includes(attr.key);
-                                
+
                                 return (
                                     <Grid item size={{ xs: 12, sm: 6, md: 3 }} key={attr.key}>
                                         <Stack direction="row" spacing={1} alignItems="center">
@@ -608,7 +645,7 @@ const MiscellaneousReport = () => {
                                                     multiple,
                                                     renderValue: (selected) => {
                                                         if (!selected || selected.length === 0) return "";
-                                                        
+
                                                         return selected
                                                             .filter((v) => v !== "all")
                                                             .map((id) => (normalizedItems.find((i) => i._id === id)?.title || normalizedItems.find((i) => i._id === id)?.name || normalizedItems.find((i) => i._id === id)?.state_name))

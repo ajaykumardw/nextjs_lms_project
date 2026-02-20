@@ -60,7 +60,9 @@ export default function PdfViewer({ pdfUrl, onPageChange, setFieldData, pageData
 
       setViewedPages((prev) => {
         const s = new Set(prev);
+        
         s.add(newCurrentPage);
+        
         return Array.from(s).sort((a, b) => a - b);
       });
 

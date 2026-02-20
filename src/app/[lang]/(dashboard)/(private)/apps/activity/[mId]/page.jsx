@@ -37,6 +37,7 @@ import {
   Avatar,
   FormControlLabel,
   Radio,
+  CircularProgress,
   LinearProgress,
   RadioGroup,
   Checkbox,
@@ -50,7 +51,6 @@ import {
   InputAdornment,
   Tab,
   DialogContent,
-  CircularProgress,
 } from '@mui/material'
 
 import Grid from '@mui/material/Grid2'
@@ -193,6 +193,7 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
       if (!acceptedFiles?.length) {
         setLoading(false);
         toast.error("No file selected.");
+
         return;
       }
 
@@ -200,19 +201,23 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
 
       if (!selectedFile) {
         setLoading(false);
+
         toast.error("File read failed.");
+
         return;
       }
 
       try {
         const arrayBuffer = await selectedFile.arrayBuffer();
         const workbook = new ExcelJS.Workbook();
+
         await workbook.xlsx.load(arrayBuffer);
 
         const worksheet = workbook.worksheets[0]; // first sheet
 
         // Read headers
         const headerRow = worksheet.getRow(1).values.slice(1);
+
         const requiredHeaders = [
           "Sno",
           "Question",
@@ -238,15 +243,18 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
           setMissingHeaders(missingHeaders);
           setLoading(false);
           setProgress(0);
+
           return;
         }
 
         // Read data rows
         const jsonData = [];
+
         worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
           if (rowNumber === 1) return;
           const rowValues = row.values.slice(1);
           const rowData = {};
+
           headerRow.forEach((header, index) => {
             rowData[header] = rowValues[index] ?? "";
           });
@@ -260,9 +268,11 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
 
         function parseCorrectAnswer(raw) {
           if (raw == null) return [];
+
           const s = String(raw)
             .replace(/[\[\]\(\)\{\}'"]/g, " ")
             .trim();
+
           return s
             .split(/[^0-9]+/)
             .map((p) => p.trim())
@@ -370,6 +380,7 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
           setValidationErrors(errors);
           setLoading(false);
           setProgress(0);
+
           return;
         }
 
@@ -2339,7 +2350,7 @@ const ImportUserModal = ({
     accept: {
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"]
     },
-    
+
     onDrop: async (acceptedFiles) => {
       if (!acceptedFiles?.length) return;
 
@@ -2349,9 +2360,11 @@ const ImportUserModal = ({
         const arrayBuffer = await selectedFile.arrayBuffer();
 
         const workbook = new ExcelJS.Workbook();
+
         await workbook.xlsx.load(arrayBuffer);
 
         const worksheet = workbook.worksheets[0]; // first sheet
+
         if (!worksheet) throw new Error("Excel file is empty.");
 
         // Read header row
@@ -2363,12 +2376,14 @@ const ImportUserModal = ({
 
         // Read all rows starting from row 2
         const rows = [];
+
         worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
 
           if (rowNumber === 1) return;
 
           const rowValues = row.values.slice(1);
           const rowData = {};
+
           cleanHeaders.forEach((header, idx) => {
             rowData[header] = rowValues[idx] ?? "";
           });
@@ -2386,9 +2401,9 @@ const ImportUserModal = ({
           const empFilled = empVal !== "";
 
           if (snoFilled !== empFilled) {
-    
+
             errors[index] = "Sno and EmpId/Email must both be filled or both be empty.";
-    
+
             return;
           }
 
@@ -2936,6 +2951,8 @@ const SettingComponent = ({ activities }) => {
     });
   };
 
+  const [isPublish, setIsPublish] = useState(false)
+
   const handleImportUser = (index) => {
     setSelectedPairIndex(index);
     setIsOpen(true);
@@ -2943,6 +2960,8 @@ const SettingComponent = ({ activities }) => {
 
   const handleDataSave = async (value) => {
     if (!API_URL || !token || !mId) return;
+
+    setIsPublish(true)
 
     try {
       const res = await fetch(`${API_URL}/company/program/schedule/${mId}`, {
@@ -2957,15 +2976,24 @@ const SettingComponent = ({ activities }) => {
       const body = await res.json();
 
       if (res.ok) {
+
+        setIsPublish(false)
+
         toast.success(body?.message || "Setting saved successfully", {
           autoClose: 1000,
         });
+
       } else {
+        
         toast.error(body?.message || "Failed to save settings");
       }
     } catch (err) {
+
       console.error("Error saving settings:", err?.message || err);
       toast.error("Something went wrong!");
+    } finally {
+
+      setIsPublish(false)
     }
   };
 
@@ -3350,9 +3378,9 @@ const SettingComponent = ({ activities }) => {
             variant="contained"
             color="primary"
             sx={{ mt: 3 }}
-            disabled={!activities || activities?.length === 0}
+            disabled={isPublish || !activities || activities?.length === 0}
           >
-            Publish
+            {isPublish ? <CircularProgress size={24} color="inherit" /> : "Publish"}
           </Button>
         </Grid>
       </Grid>

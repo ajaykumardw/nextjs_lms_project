@@ -328,6 +328,11 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
             </SubMenu>
           )}
           {permissArray?.isCompany && (
+            <SubMenu label="Download center" icon={<i className="tabler-download" />}>
+              <MenuItem key="download_center" href={`/${locale}/apps/download-center`}>Listing</MenuItem>
+            </SubMenu>
+          )}
+          {permissArray?.isCompany && (
             <SubMenu label="Report" icon={<i className="tabler-report" />}>
               <MenuItem key="completion_ratio_report" href={`/${locale}/apps/completion-ratio-report`}>Completion Ratio Report</MenuItem>
               <MenuItem key="quiz_assessment_report" href={`/${locale}/apps/quiz-assessment-report`}>Quiz Assessment Report</MenuItem>
@@ -338,13 +343,18 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
               <MenuItem key="miscellaneous_report" href={`/${locale}/apps/miscellaneous-report`}>Miscellaneous Report</MenuItem>
             </SubMenu>
           )}
+          {/* {permissArray?.isCompany && (
+            <SubMenu label="Notification" icon={<i className="tabler-notification" />}>
+              <MenuItem key="notification_listing" href={`/${locale}/apps/admin/notification`}>Listing</MenuItem>
+              <MenuItem key="notification_listing" href={`/${locale}/apps/admin/notification-`}>Schedule</MenuItem>
+            </SubMenu>
+          )} */}
           {((permissArray?.isCompany && permissArray?.hasLabelPermission) || permissArray?.isSuperAdmin) && (
             <SubMenu label="Settings" icon={<i className="tabler-settings" />}>
               {permissArray?.isSuperAdmin && (
                 [
                   <MenuItem key="language" href={`/${locale}/apps/language`}>Language</MenuItem>,
                   <MenuItem key="terminology" href={`/${locale}/apps/terminology`}>Terminology</MenuItem>,
-                  <MenuItem key="notification_templates" href={`/${locale}/apps/admin/notification`}>Notification</MenuItem>
                 ]
               )}
               {permissArray?.isCompany && permissArray?.hasLabelPermission && (

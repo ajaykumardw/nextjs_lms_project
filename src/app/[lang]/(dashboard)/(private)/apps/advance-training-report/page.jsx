@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react"
 
+import { useRouter, useParams } from "next/navigation"
+
 import { useSession } from "next-auth/react"
 
 import {
@@ -33,11 +35,15 @@ import {
 } from "@mui/material"
 
 import Grid from "@mui/material/Grid2"
+
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers"
+
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs"
+
 import dayjs from "dayjs"
 
 import DialogCloseButton from "@/components/dialogs/DialogCloseButton"
+
 import { exportToExcel } from "@/utils/exportToExcel"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
@@ -306,6 +312,10 @@ const DashboardTab = ({ token, filterData, onFilterClick }) => {
         filterData.columns.includes(c.key)
     )
 
+    const router = useRouter();
+
+    const { lang } = useParams();
+
     useEffect(() => {
         if (!token) return
 
@@ -352,7 +362,7 @@ const DashboardTab = ({ token, filterData, onFilterClick }) => {
 
     const handleExport = async () => {
 
-        if (data.length > 2000) {
+        if (data.length <= 2000) {
 
             exportToExcel({
                 headers: visibleColumns,
@@ -372,15 +382,22 @@ const DashboardTab = ({ token, filterData, onFilterClick }) => {
                     Authorization: `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    reportType: "advance_training_report",
-                    data,
-                    visibleColumns
+                    reportType: "Advance Training Report",
+                    visibleColumns: data.map(row =>
+                        Object.fromEntries(
+                            visibleColumns.map(c => [c.key, row[c.key] ?? ""])
+                        )
+                    )
                 })
             })
 
             const json = await res.json()
 
-            console.log("Response data", json);
+            if (res.ok) {
+
+                router.push(`/${lang}/apps/download-center`)
+
+            }
 
         }
     }

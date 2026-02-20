@@ -1,6 +1,8 @@
 "use client"
 
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState } from "react"
+
+import { useRouter, useParams } from "next/navigation"
 
 import { useSession } from "next-auth/react"
 
@@ -222,6 +224,10 @@ const ReportHeader = ({
 
 const DashboardTab = ({ onFilterClick, token, filterData, setFilterData }) => {
 
+    const router = useRouter();
+
+    const { lang } = useParams();
+
     const [dashboardData, setDashboardData] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -253,12 +259,40 @@ const DashboardTab = ({ onFilterClick, token, filterData, setFilterData }) => {
         { label: "Program Name", key: "programName" },
     ];
 
-    const handleExport = () => {
-        exportToExcel({
-            headers: dashboardHeaders,
-            rows: dashboardData,
-            fileName: "quiz_assessment_Report.xlsx",
-        });
+    const handleExport = async () => {
+
+        if (dashboardData?.length <= 2000) {
+
+            exportToExcel({
+                headers: dashboardHeaders,
+                rows: dashboardData,
+                fileName: "quiz_assessment_Report.xlsx",
+            });
+        } else {
+
+            const res = await fetch(`${API_URL}/company/export/center/create`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    reportType: "Quiz Assessment Report",
+                    visibleColumns: dashboardData.map(row =>
+                        Object.fromEntries(
+                            dashboardHeaders.map(c => [c.key, row[c.key] ?? ""])
+                        )
+                    )
+                })
+            })
+
+            if (res.ok) {
+
+                router.push(`/${lang}/apps/download-center`)
+
+            }
+
+        }
     };
 
 

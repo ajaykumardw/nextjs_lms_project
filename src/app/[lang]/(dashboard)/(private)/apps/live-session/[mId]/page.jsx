@@ -1162,6 +1162,7 @@ const ImportUserModal = ({
                 const arrayBuffer = await selectedFile.arrayBuffer();
 
                 const workbook = new ExcelJS.Workbook();
+                
                 await workbook.xlsx.load(arrayBuffer);
 
                 const worksheet = workbook.worksheets[0]; // first sheet
@@ -1174,6 +1175,7 @@ const ImportUserModal = ({
                 validateExcelHeaders(cleanHeaders.map(h => h.toLowerCase()));
 
                 const rows = [];
+                
                 worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
 
                     if (rowNumber === 1) return; // skip header

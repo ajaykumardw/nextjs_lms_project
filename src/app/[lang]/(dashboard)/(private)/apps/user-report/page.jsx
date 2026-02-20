@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useMemo } from "react"
 
+import { useRouter, useParams } from "next/navigation"
+
 import { useSession } from "next-auth/react"
 
 import {
@@ -387,6 +389,10 @@ const ReportHeader = ({
 
 const DashboardTab = ({ onFilterClick, token, filterData }) => {
 
+    const router = useRouter();
+
+    const { lang } = useParams();
+
     const [dashboardData, setDashboardData] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -411,29 +417,59 @@ const DashboardTab = ({ onFilterClick, token, filterData }) => {
         page * rowsPerPage + rowsPerPage
     );
 
-    const handleExport = () => {
+    const handleExport = async () => {
+
         const visibleColumns = ALL_COLUMNS.filter(col =>
             filterData.columns.includes(col.key)
         );
 
         const filteredRows = dashboardData.map(row => {
             const obj = {};
-            
+
             visibleColumns.forEach(col => {
                 obj[col.key] =
                     col.key === "userStatus"
                         ? row[col.key] ? "Active" : "Inactive"
                         : row[col.key] ?? "";
             });
-            
+
             return obj;
         });
 
-        exportToExcel({
-            headers: visibleColumns,
-            rows: filteredRows,
-            fileName: "user_report.xlsx",
-        });
+        if (filteredRows.length <= 2000) {
+
+            exportToExcel({
+                headers: visibleColumns,
+                rows: filteredRows,
+                fileName: "user_report.xlsx",
+            });
+        } else {
+
+            const res = await fetch(`${API_URL}/company/export/center/create`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    reportType: "User Report",
+                    visibleColumns: filteredRows.map(row =>
+                        Object.fromEntries(
+                            visibleColumns.map(c => [c.key, row[c.key] ?? ""])
+                        )
+                    )
+                })
+            })
+
+            const json = await res.json()
+
+            if (res.ok) {
+
+                router.push(`/${lang}/apps/download-center`)
+
+            }
+
+        }
     };
 
 
@@ -467,7 +503,7 @@ const DashboardTab = ({ onFilterClick, token, filterData }) => {
             );
 
             const json = await res.json();
-            
+
             setDashboardData(json?.data || []);
             setLoading(false);
         };

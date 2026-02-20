@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useMemo } from "react"
 
+import { useRouter, useParams } from "next/navigation"
+
 import { useSession } from "next-auth/react"
 
 import {
@@ -644,6 +646,10 @@ const ModuleTypeData = ({
 
 const DashboardTab = ({ onFilterClick, token, filterData, setFilterData }) => {
 
+    const router = useRouter();
+
+    const { lang } = useParams();
+
     const [dashboardData, setDashboardData] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -673,12 +679,40 @@ const DashboardTab = ({ onFilterClick, token, filterData, setFilterData }) => {
         { label: "Module Enrollments", key: "moduleEnrollment" },
     ];
 
-    const handleExport = () => {
-        exportToExcel({
-            headers: dashboardHeaders,
-            rows: dashboardData,
-            fileName: "Dashboard_Report.xlsx",
-        });
+    const handleExport = async () => {
+
+        if (dashboardData.length <= 2000) {
+
+            exportToExcel({
+                headers: dashboardHeaders,
+                rows: dashboardData,
+                fileName: "Dashboard_Report.xlsx",
+            });
+        } else {
+
+            const res = await fetch(`${API_URL}/company/export/center/create`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    reportType: "Dashboard Training Report",
+                    visibleColumns: dashboardData.map(row =>
+                        Object.fromEntries(
+                            dashboardHeaders.map(c => [c.key, row[c.key] ?? ""])
+                        )
+                    )
+                })
+            })
+
+            if (res.ok) {
+
+                router.push(`/${lang}/apps/download-center`)
+
+            }
+
+        }
     };
 
 
@@ -820,6 +854,10 @@ const DashboardTab = ({ onFilterClick, token, filterData, setFilterData }) => {
 
 const ByLearningProgramTab = ({ onFilterClick, token, filterData }) => {
 
+    const router = useRouter();
+
+    const { lang } = useParams();
+
     const [programData, setProgramData] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -841,12 +879,40 @@ const ByLearningProgramTab = ({ onFilterClick, token, filterData }) => {
         { label: "Completion %", key: "completionPercentage" },
     ];
 
-    const handleExport = () => {
-        exportToExcel({
-            headers,
-            rows: programData,
-            fileName: "Learning_Program_Report.xlsx",
-        });
+    const handleExport = async () => {
+
+        if (programData.length <= 2000) {
+
+            exportToExcel({
+                headers,
+                rows: programData,
+                fileName: "Learning_Program_Report.xlsx",
+            });
+        } else {
+
+            const res = await fetch(`${API_URL}/company/export/center/create`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    reportType: "Learning Program Report",
+                    visibleColumns: programData.map(row =>
+                        Object.fromEntries(
+                            headers.map(c => [c.key, row[c.key] ?? ""])
+                        )
+                    )
+                })
+            })
+
+            if (res.ok) {
+
+                router.push(`/${lang}/apps/download-center`)
+
+            }
+
+        }
     };
 
     const fetchProgramReport = async () => {
@@ -948,6 +1014,10 @@ const ByLearningProgramTab = ({ onFilterClick, token, filterData }) => {
 
 const ByLearnerTab = ({ onFilterClick, token, filterData }) => {
 
+    const router = useRouter();
+
+    const { lang } = useParams();
+
     const [learnerData, setLearnerData] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -972,12 +1042,40 @@ const ByLearnerTab = ({ onFilterClick, token, filterData }) => {
         { label: "Location", key: "countryName" },
     ];
 
-    const handleExport = () => {
-        exportToExcel({
-            headers,
-            rows: learnerData,
-            fileName: "Learner_Report.xlsx",
-        });
+    const handleExport = async () => {
+
+        if (learnerData.length <= 2000) {
+
+            exportToExcel({
+                headers,
+                rows: learnerData,
+                fileName: "Learner_Report.xlsx",
+            });
+        } else {
+
+            const res = await fetch(`${API_URL}/company/export/center/create`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    reportType: "Learner Report",
+                    visibleColumns: learnerData.map(row =>
+                        Object.fromEntries(
+                            headers.map(c => [c.key, row[c.key] ?? ""])
+                        )
+                    )
+                })
+            })
+
+            if (res.ok) {
+
+                router.push(`/${lang}/apps/download-center`)
+
+            }
+
+        }
     };
 
 
@@ -1096,6 +1194,11 @@ const GenericTableSkeletonRow = ({ columns = 4 }) => (
 );
 
 const ByModuleTab = ({ onFilterClick, token, filterData }) => {
+
+    const router = useRouter();
+
+    const { lang } = useParams();
+
     const [moduleReportData, setModuleReportData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -1119,12 +1222,43 @@ const ByModuleTab = ({ onFilterClick, token, filterData }) => {
         { label: "Status", key: "status" },
     ];
 
-    const handleExport = () => {
-        exportToExcel({
-            headers,
-            rows: filteredModules,
-            fileName: "Module_Report.xlsx",
-        });
+    const handleExport = async () => {
+
+        if (filteredModules.length <= 2000) {
+
+            exportToExcel({
+                headers,
+                rows: filteredModules,
+                fileName: "Module_Report.xlsx",
+            });
+
+        } else {
+
+            const res = await fetch(`${API_URL}/company/export/center/create`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    reportType: "Module Training Report",
+                    visibleColumns: filteredModules.map(row =>
+                        Object.fromEntries(
+                            headers.map(c => [c.key, row[c.key] ?? ""])
+                        )
+                    )
+                })
+            })
+
+            const json = await res.json()
+
+            if (res.ok) {
+
+                router.push(`/${lang}/apps/download-center`)
+
+            }
+
+        }
     };
 
     const fetchModuleReport = async () => {

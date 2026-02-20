@@ -151,6 +151,7 @@ const NotificationForm = () => {
                     header_logo: optional(imageSchema),
                     footer_logo: optional(imageSchema),
                     header_logo_align: pipe(string(), minLength(1, "Header logo alignment is required")),
+                    footer_logo_align: optional(string()),
                     show_footer_logo: optional(boolean())
                 })
             ),
@@ -219,7 +220,7 @@ const NotificationForm = () => {
         const res = await fetch(`${API_URL}/company/notification/create`, {
             headers: { Authorization: `Bearer ${token}` }
         })
-        
+
         const data = await res.json()
 
         if (!res.ok) throw new Error('create load failed')
@@ -232,7 +233,7 @@ const NotificationForm = () => {
         const res = await fetch(`${API_URL}/company/notification/edit/${id}`, {
             headers: { Authorization: `Bearer ${token}` }
         })
-        
+
         if (!res.ok) throw new Error('edit load failed')
 
         const data = await res.json()
@@ -293,7 +294,7 @@ const NotificationForm = () => {
         if (!createData || !selectOpt || !editor || !footerEditor || !selectForm) return
 
         const selected = createData?.notification_data?.find((i) => i._id === selectOpt)
-        
+
         if (!selected) return
 
         editor.commands.setContent(selected.default_message || '')
@@ -401,7 +402,7 @@ const NotificationForm = () => {
 
                     formData.append('footer_logo', values.footer_logo)
                 }
-                
+
                 formData.append('footer_logo_align', values.footer_logo_align)
             }
 
@@ -419,7 +420,7 @@ const NotificationForm = () => {
             )
 
             const result = await res.json()
-            
+
             if (!res.ok) throw new Error(result.message)
 
             toast.success(`Notification ${id ? 'updated' : 'created'} successfully`)
@@ -594,7 +595,7 @@ const NotificationForm = () => {
                                                     checked={!!field.value}
                                                     onChange={(e) => {
                                                         const checked = e.target.checked;
-                                                        
+
                                                         field.onChange(checked);
 
                                                         setIsShowFooter(checked)

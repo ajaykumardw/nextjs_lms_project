@@ -144,6 +144,7 @@ const ImportUsers = ({ batch, onBack }) => {
         const arrayBuffer = await selectedFile.arrayBuffer();
 
         const workbook = new ExcelJS.Workbook();
+        
         await workbook.xlsx.load(arrayBuffer);
 
         const worksheet = workbook.worksheets[0]; // first sheet

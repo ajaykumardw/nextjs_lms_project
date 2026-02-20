@@ -168,9 +168,11 @@ const ImportComponent = ({ open, onClose, setMatchUserId, matchUserId }) => {
                 const arrayBuffer = await selectedFile.arrayBuffer();
 
                 const workbook = new ExcelJS.Workbook();
+                
                 await workbook.xlsx.load(arrayBuffer);
 
                 const worksheet = workbook.worksheets[0];
+                
                 if (!worksheet) throw new Error("Excel file is empty.");
 
                 // Read header row
@@ -182,15 +184,18 @@ const ImportComponent = ({ open, onClose, setMatchUserId, matchUserId }) => {
                 if (missing.length) {
                     setMissingHeaders(missing);
                     setLoading(false);
+                    
                     return;
                 }
 
                 // Read all rows starting from row 2
                 const jsonData = [];
+                
                 worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
                     if (rowNumber === 1) return; // skip header
                     const rowValues = row.values.slice(1); // ExcelJS is 1-based
                     const rowData = {};
+                    
                     headers.forEach((header, idx) => {
                         rowData[header] = rowValues[idx] ?? "";
                     });
