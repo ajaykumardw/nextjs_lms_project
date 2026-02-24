@@ -507,8 +507,8 @@ const ScheduleDialog = ({
 
     const handleDaysChange = (type) => {
         setDays((prev) => {
-            if (type === "inc") return prev + 1;
-            if (type === "dec") return prev > 1 ? prev - 1 : 1;
+            if (type === "inc") return Number(prev) + 1;
+            if (type === "dec") return Number(prev) > 1 ? Number(prev) - 1 : 1;
             return prev;
         });
     };
@@ -522,7 +522,10 @@ const ScheduleDialog = ({
                 optional(array(string()))
                 :
                 pipe(array(string()), minLength(1, "Module is required")),
-            schedule_target: pipe(string(), minLength(1, "Assigned to is required")),
+            schedule_target: pipe(
+                string("Assigned to is required"),
+                minLength(1, "Assigned to is required")
+            ),
             audience:
                 selectScheduleTarget === "user"
                     ? pipe(array(string()), minLength(1, "Audience is required"))
@@ -600,9 +603,24 @@ const ScheduleDialog = ({
     }
 
     useEffect(() => {
-
         if (!scheduleEditData) return;
 
+        const selectedItem = createData?.assignedData?.find(
+            (i) => i._id === String(scheduleEditData.schedule_target)
+        );
+
+        const targetType = selectedItem?.type || null;
+
+        setSelectScheduleTarget(targetType);
+
+        if (targetType === "user") {
+            const selectedUsers =
+                scheduleEditData.users?.length ||
+                scheduleEditData.audience?.length ||
+                0;
+
+            setUserCount(selectedUsers);
+        }
 
         reset({
             title: scheduleEditData.title || "",
@@ -611,8 +629,17 @@ const ScheduleDialog = ({
                 : (Array.isArray(scheduleEditData.module_id)
                     ? scheduleEditData.module_id
                     : []),
+
             schedule_target: String(scheduleEditData.schedule_target) || "",
-            audience: scheduleEditData.audience || [],
+            audience:
+                targetType === "user"
+                    ? (
+                        scheduleEditData.audience?.length
+                            ? scheduleEditData.audience
+                            : scheduleEditData.users?.map(u => u._id) || []
+                    )
+                    : (scheduleEditData.audience || ""),
+
             repeat_type: String(scheduleEditData.repeat_type ?? "1"),
             schedule_type: scheduleEditData.schedule_type || "module_enrollment",
             start_date: scheduleEditData.start_date || "",
@@ -621,18 +648,10 @@ const ScheduleDialog = ({
             schedule_days: scheduleEditData?.schedule_days || 1
         });
 
-        setDays(scheduleEditData?.schedule_days || 1)
+        setDays(scheduleEditData?.schedule_days || 1);
+        setScheduleTypes(moduleTypeData?.[scheduleEditData?.schedule_type] || "");
 
-        setScheduleTypes(moduleTypeData?.[scheduleEditData?.schedule_type] || "")
-
-        // set audience list on edit
-        const selectedItem = createData?.assignedData?.find(
-            (i) => i._id === String(scheduleEditData.schedule_target)
-        );
-
-        setSelectScheduleTarget(selectedItem?.type || null);
-
-    }, [scheduleEditData, reset, createData]);
+    }, [scheduleEditData]);
 
     const saveNotificationSchedule = async (data) => {
         try {
@@ -676,6 +695,15 @@ const ScheduleDialog = ({
                 return;
             }
 
+            if (!values.schedule_target) {
+
+                setError("schedule_target", {
+                    type: "manual",
+                    message: "Schedule target is required"
+                });
+                return;
+            }
+
             values.template_id = editData._id;
             values.notification_type = editData.notification_type;
 
@@ -709,6 +737,14 @@ const ScheduleDialog = ({
 
         setIsScheduleOpen(false)
     }
+
+    useEffect(() => {
+
+        if (URL && token && editData && isScheduleOpen) {
+
+            fetchEditData()
+        }
+    }, [URL, token, editData, isScheduleOpen])
 
     return (
         <Dialog open={isScheduleOpen} fullWidth maxWidth="lg"
@@ -782,6 +818,7 @@ const ScheduleDialog = ({
                         <Grid item size={{ xs: 12 }}>
                             <Controller
                                 name="schedule_target"
+                                rules={{ required: "Assigned to is required" }}
                                 control={control}
                                 render={({ field }) => (
                                     <CustomTextField
@@ -794,8 +831,11 @@ const ScheduleDialog = ({
                                         error={!!errors.schedule_target}
                                         helperText={errors.schedule_target?.message}
                                         onChange={(e) => {
-                                            field.onChange(e);
+
                                             const selectedId = e.target.value;
+
+                                            field.onChange(selectedId);
+                                            setValue("schedule_target", selectedId, { shouldValidate: true });
 
                                             const selectedItem = createData?.assignedData?.find(
                                                 (i) => i._id === String(selectedId)
@@ -834,92 +874,104 @@ const ScheduleDialog = ({
                                 <Controller
                                     name="audience"
                                     control={control}
-                                    render={({ field }) => (
-                                        <CustomTextField
-                                            select
-                                            fullWidth
-                                            label="Target Audience"
-                                            size="small"
-                                            SelectProps={{
-                                                multiple: selectScheduleTarget === "user",
-                                                MenuProps: {
-                                                    PaperProps: {
-                                                        style: { maxHeight: 300 }
+                                    render={({ field }) => {
+
+                                        /* ⭐ FIX: keep selected users visible */
+                                        const selectedUsers = users.filter(u =>
+                                            field.value?.includes(u._id)
+                                        );
+
+                                        const filteredUsers = users.filter(u =>
+                                            `${u.first_name ?? ""} ${u.last_name ?? ""} ${u.name ?? ""}`
+                                                .toLowerCase()
+                                                .includes(userSearch.toLowerCase())
+                                        );
+
+                                        const visibleUsers = [
+                                            ...selectedUsers,
+                                            ...filteredUsers.filter(
+                                                u => !field.value?.includes(u._id)
+                                            )
+                                        ];
+
+                                        return (
+                                            <CustomTextField
+                                                select
+                                                fullWidth
+                                                label="Target Audience"
+                                                size="small"
+                                                SelectProps={{
+                                                    multiple: selectScheduleTarget === "user",
+                                                    MenuProps: {
+                                                        PaperProps: {
+                                                            style: { maxHeight: 300 }
+                                                        }
                                                     }
+                                                }}
+                                                value={
+                                                    selectScheduleTarget === "user"
+                                                        ? field.value || []
+                                                        : field.value || ""
                                                 }
-                                            }}
-                                            value={
-                                                selectScheduleTarget === "user"
-                                                    ? field.value || []
-                                                    : field.value || ""
-                                            }
-                                            onChange={(e) => {
+                                                onChange={(e) => {
+                                                    const value = e.target.value;
+                                                    field.onChange(value);
 
-                                                const value = e.target.value;
-                                                field.onChange(value);
+                                                    if (selectScheduleTarget === "user") {
 
-                                                // 🔥 update user count
-                                                if (selectScheduleTarget === "user") {
-                                                    const selectedUsers = users.filter(u =>
-                                                        value.includes(u._id)
-                                                    );
+                                                        const selectedUsers = users.filter(u =>
+                                                            value.includes(u._id)
+                                                        );
+                                                        setUserCount(selectedUsers.length);
+                                                    } else {
+                                                        const selectedItem = createData?.[selectScheduleTarget]
+                                                            ?.find(i => i._id === value);
 
-                                                    setUserCount(selectedUsers.length);
-                                                } else {
-                                                    const selectedItem = createData?.[selectScheduleTarget]
-                                                        ?.find(i => i._id === value);
+                                                        setUserCount(selectedItem?.userCount || 0);
+                                                    }
+                                                }}
+                                                error={!!errors.audience}
+                                                helperText={errors.audience?.message}
+                                            >
+                                                {selectScheduleTarget === "user" && (
+                                                    <MenuItem disableRipple disableTouchRipple
+                                                        sx={{
+                                                            position: "sticky",
+                                                            top: 0,
+                                                            zIndex: 1,
+                                                            backgroundColor: "background.paper",
+                                                            cursor: "default",
+                                                            "&:hover": { backgroundColor: "background.paper" }
+                                                        }}
+                                                    >
+                                                        <TextField
+                                                            size="small"
+                                                            placeholder="Search user..."
+                                                            fullWidth
+                                                            autoFocus
+                                                            value={userSearch}
+                                                            onChange={(e) => setUserSearch(e.target.value)}
+                                                            onKeyDown={(e) => e.stopPropagation()}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        />
+                                                    </MenuItem>
+                                                )}
 
-                                                    setUserCount(selectedItem?.userCount || 0);
-                                                }
-                                            }}
-                                            error={!!errors.audience}
-                                            helperText={errors.audience?.message}
-                                        >
-                                            {/* ⭐ SEARCH HEADER (sticky & non-selectable) */}
-                                            {selectScheduleTarget === "user" && (
-                                                <MenuItem
-                                                    disableRipple
-                                                    disableTouchRipple
-                                                    sx={{
-                                                        position: "sticky",
-                                                        top: 0,
-                                                        zIndex: 1,
-                                                        backgroundColor: "background.paper",
-                                                        cursor: "default",
-                                                        "&:hover": { backgroundColor: "background.paper" }
-                                                    }}
-                                                >
-                                                    <TextField
-                                                        size="small"
-                                                        placeholder="Search user..."
-                                                        fullWidth
-                                                        autoFocus
-                                                        value={userSearch}
-                                                        onChange={(e) => setUserSearch(e.target.value)}
-                                                        onKeyDown={(e) => e.stopPropagation()}
-                                                        onClick={(e) => e.stopPropagation()}
-                                                    />
-                                                </MenuItem>
-                                            )}
-
-                                            {(selectScheduleTarget === "user"
-                                                ? users.filter(u =>
-                                                    `${u.first_name ?? ""} ${u.last_name ?? ""} ${u.name ?? ""}`
-                                                        .toLowerCase()
-                                                        .includes(userSearch.toLowerCase())
-                                                )
-                                                : createData?.[selectScheduleTarget]
-                                            )?.map((item) => (
-                                                <MenuItem key={item._id} value={item._id} >
-                                                    {selectScheduleTarget === "user" && (
-                                                        <Checkbox checked={field.value?.includes(item._id)} />
-                                                    )}
-                                                    {item.name ??
-                                                        `${item.first_name ?? ""} ${item.last_name ?? ""} ${item.empCode}`}
-                                                </MenuItem>
-                                            ))}
-                                        </CustomTextField>
-                                    )}
+                                                {(selectScheduleTarget === "user"
+                                                    ? visibleUsers   /* ⭐ ONLY CHANGE */
+                                                    : createData?.[selectScheduleTarget]
+                                                )?.map((item) => (
+                                                    <MenuItem key={item._id} value={item._id}>
+                                                        {selectScheduleTarget === "user" && (
+                                                            <Checkbox checked={field.value?.includes(item._id)} />
+                                                        )}
+                                                        {item.name ??
+                                                            `${item.first_name ?? ""} ${item.last_name ?? ""} ${item.empCode}`}
+                                                    </MenuItem>
+                                                ))}
+                                            </CustomTextField>
+                                        )
+                                    }}
                                 />
                             </Grid>
                         )}

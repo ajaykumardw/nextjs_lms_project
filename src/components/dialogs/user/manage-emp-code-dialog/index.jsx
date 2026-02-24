@@ -184,7 +184,7 @@ const ManageEmpCodeDialog = ({ open, setOpen, user, loadData }) => {
       <DialogCloseButton onClick={() => setOpen(false)} disableRipple>
         <i className='tabler-x' />
       </DialogCloseButton>
-      <DialogTitle  className='flex gap-2 flex-col text-center sm:pbs-16 sm:pbe-6 sm:pli-16'>
+      <DialogTitle className='flex gap-2 flex-col text-center sm:pbs-16 sm:pbe-6 sm:pli-16'>
         Manage Employee Ids
         <Typography component='span' className='flex flex-col text-center'>
           You can manage multiple Employee IDs for {user?.first_name}
@@ -233,7 +233,7 @@ const ManageEmpCodeDialog = ({ open, setOpen, user, loadData }) => {
                           {item.code}
                         </Typography>
 
-                        <Typography variant='body2'>
+                        <Typography variant='body2' component={"div"}>
                           <Chip
                             variant='tonal'
                             label={item.type}
@@ -246,9 +246,7 @@ const ManageEmpCodeDialog = ({ open, setOpen, user, loadData }) => {
                       </div>
                     </div>
                     <Radio
-                      value={item.code}
-
-                      // onChange={(e) => handleRadioChange(e, index)}
+                      value={item.code} 
                       checked={selectedCode === item.code}
                     />
                   </div>

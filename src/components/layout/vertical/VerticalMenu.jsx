@@ -343,12 +343,11 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
               <MenuItem key="miscellaneous_report" href={`/${locale}/apps/miscellaneous-report`}>Miscellaneous Report</MenuItem>
             </SubMenu>
           )}
-          {/* {permissArray?.isCompany && (
+          {permissArray?.isSuperAdmin && (
             <SubMenu label="Notification" icon={<i className="tabler-notification" />}>
               <MenuItem key="notification_listing" href={`/${locale}/apps/admin/notification`}>Listing</MenuItem>
-              <MenuItem key="notification_listing" href={`/${locale}/apps/admin/notification-`}>Schedule</MenuItem>
             </SubMenu>
-          )} */}
+          )}
           {((permissArray?.isCompany && permissArray?.hasLabelPermission) || permissArray?.isSuperAdmin) && (
             <SubMenu label="Settings" icon={<i className="tabler-settings" />}>
               {permissArray?.isSuperAdmin && (
