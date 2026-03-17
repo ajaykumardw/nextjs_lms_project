@@ -52,7 +52,9 @@ export default function ProgramPage() {
       const response = await fetch(`${API_URL}/user/activity/data/${moduleId}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
+
       const result = await response.json()
+
       if (response.ok) setData(result?.data)
     } catch (err) {
       console.error(err)
@@ -66,9 +68,13 @@ export default function ProgramPage() {
       const response = await fetch(`${API_URL}/user/module/survey/data/${moduleId}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
+
       const result = await response.json()
+
       if (response.ok) {
+
         const module_setting = result?.data?.moduleSetting || {}
+
         setSettingData({
           orderType: module_setting?.orderType || 'any'
         })
@@ -114,8 +120,10 @@ export default function ProgramPage() {
       toast.error('Please complete the previous activity first.', {
         autoClose: 1000
       })
+
       return
     }
+    
     window.location.href = url
   }
 

@@ -39,10 +39,8 @@ const MyTrainingPage = () => {
       const result = await response.json();
 
       if (response.ok) {
+
         const value = result?.data;
-
-        console.log("Value", value);
-
 
         setCardData(value);
         setTotalItems(value?.length || 0);

@@ -6,9 +6,11 @@ import UserFormLayout from '@/components/company-form/page';
 
 import PermissionGuard from '@/hocs/PermissionGuard'
 
-export default function UserFormLayouts({ params }) {
+export default async function UserFormLayouts({ params }) {
 
-  const locale = params.lang;
+  const { lang } = await params;
+
+  const locale = lang;
 
   return (
     <Grid container spacing={6}>

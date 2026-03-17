@@ -32,82 +32,21 @@ import CustomAvatar from '@core/components/mui/Avatar'
 import CustomTextField from '@core/components/mui/TextField'
 import TablePaginationComponent from '@components/TablePaginationComponent'
 
+import { getInitials } from '@/utils/getInitials';
+
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
 
-// Vars
-const projectTable = [
-  {
-    id: 1,
-    hours: '18:42',
-    progressValue: 78,
-    totalTask: '122/240',
-    progressColor: 'success',
-    projectType: 'React Project',
-    projectTitle: 'BGC eCommerce App',
-    img: '/images/logos/react-bg.png'
-  },
-  {
-    id: 2,
-    hours: '20:42',
-    progressValue: 18,
-    totalTask: '9/56',
-    progressColor: 'error',
-    projectType: 'Figma Project',
-    projectTitle: 'Falcon Logo Design',
-    img: '/images/logos/figma-bg.png'
-  },
-  {
-    id: 3,
-    hours: '120:87',
-    progressValue: 62,
-    totalTask: '290/320',
-    progressColor: 'primary',
-    projectType: 'VueJs Project',
-    projectTitle: 'Dashboard Design',
-    img: '/images/logos/vue-bg.png'
-  },
-  {
-    id: 4,
-    hours: '89:19',
-    progressValue: 8,
-    totalTask: '7/63',
-    progressColor: 'error',
-    projectType: 'Xamarin Project',
-    projectTitle: 'Foodista Mobile App',
-    img: '/images/icons/mobile-bg.png'
-  },
-  {
-    id: 5,
-    hours: '230:10',
-    progressValue: 49,
-    totalTask: '120/186',
-    progressColor: 'warning',
-    projectType: 'Python Project',
-    projectTitle: 'Dojo React Project',
-    img: '/images/logos/python-bg.png'
-  },
-  {
-    id: 6,
-    hours: '342:41',
-    progressValue: 92,
-    totalTask: '99/109',
-    progressColor: 'success',
-    projectType: 'Sketch Project',
-    projectTitle: 'Blockchain Website',
-    img: '/images/logos/sketch-bg.png'
-  },
-  {
-    id: 7,
-    hours: '12:45',
-    progressValue: 88,
-    totalTask: '98/110',
-    progressColor: 'success',
-    projectType: 'HTML Project',
-    projectTitle: 'Hoffman Website',
-    img: '/images/logos/html-bg.png'
+const getAvatar = params => {
+  const { avatar, fullName } = params
+
+  if (avatar) {
+    return <CustomAvatar src={`${public_url}/uploads/images/${avatar}`} size={34} />
+  } else {
+    return <CustomAvatar size={34}>{getInitials(fullName)}</CustomAvatar>
   }
-]
+}
+
 
 const fuzzyFilter = (row, columnId, value, addMeta) => {
   // Rank the item
@@ -144,59 +83,46 @@ const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...prop
 // Column Definitions
 const columnHelper = createColumnHelper()
 
-const ProjectListTable = () => {
-  // States
+const ProjectListTable = ({ companyData = [] }) => {
+
   const [rowSelection, setRowSelection] = useState({})
 
-  const [data, setData] = useState(...[projectTable])
   const [globalFilter, setGlobalFilter] = useState('')
 
-  // Hooks
   const columns = useMemo(
     () => [
       columnHelper.accessor('projectTitle', {
-        header: 'Project',
+        header: 'Name',
         cell: ({ row }) => (
           <div className='flex items-center gap-4'>
-            <CustomAvatar src={row.original.img} size={34} />
+            {getAvatar({ avatar: row.original.photo, fullName: row.original.first_name + " " + row.original.last_name })}
             <div className='flex flex-col'>
               <Typography className='font-medium' color='text.primary'>
-                {row.original.projectTitle}
+                {row.original.first_name} {row.original.last_name}
               </Typography>
-              <Typography variant='body2'>{row.original.projectType}</Typography>
             </div>
           </div>
         )
       }),
       columnHelper.accessor('totalTask', {
-        header: 'Total Task',
-        cell: ({ row }) => <Typography color='text.primary'>{row.original.totalTask}</Typography>
+        header: 'Email',
+        cell: ({ row }) => <Typography color='text.primary'>{row.original.email}</Typography>
       }),
       columnHelper.accessor('progressValue', {
-        header: 'Progress',
+        header: 'Phone',
         cell: ({ row }) => (
           <>
-            <Typography color='text.primary'>{`${row.original.progressValue}%`}</Typography>
-            <LinearProgress
-              color={row.original.progressColor}
-              value={row.original.progressValue}
-              variant='determinate'
-              className='is-full'
-            />
+            <Typography color='text.primary'>{`${row.original.phone}`}</Typography>
           </>
         )
       }),
-      columnHelper.accessor('hours', {
-        header: 'Hours',
-        cell: ({ row }) => <Typography>{row.original.hours}</Typography>
-      })
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   )
 
   const table = useReactTable({
-    data,
+    data: (companyData ?? []),
     columns,
     filterFns: {
       fuzzy: fuzzyFilter
@@ -210,8 +136,7 @@ const ProjectListTable = () => {
         pageSize: 7
       }
     },
-    enableRowSelection: true, //enable row selection for all rows
-    // enableRowSelection: row => row.original.age > 18, // or enable row selection conditionally per row
+    enableRowSelection: true,
     globalFilterFn: fuzzyFilter,
     onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
@@ -226,7 +151,7 @@ const ProjectListTable = () => {
 
   return (
     <Card>
-      <CardHeader title='User&#39;s Project List' className='flex flex-wrap gap-4' />
+      <CardHeader title='User&#39;s List' className='flex flex-wrap gap-4' />
       <div className='flex items-center justify-between p-6 gap-4'>
         <div className='flex items-center gap-2'>
           <Typography>Show</Typography>

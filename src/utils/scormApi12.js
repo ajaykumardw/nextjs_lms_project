@@ -6,13 +6,11 @@ export class SCORM12API {
 
     LMSInitialize() {
         this.initialized = true;
-        console.log("SCORM 1.2: LMSInitialize");
         
         return "true";
     }
 
     LMSFinish() {
-        console.log("SCORM 1.2: LMSFinish");
         
         return "true";
     }
@@ -22,14 +20,13 @@ export class SCORM12API {
     }
 
     LMSSetValue(key, value) {
-        console.log("SCORM Set:", key, value);
+      
         this.data[key] = value;
         
         return "true";
     }
 
     LMSCommit() {
-        console.log("SCORM Commit:", this.data);
         
         return "true";
     }

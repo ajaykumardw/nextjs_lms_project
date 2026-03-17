@@ -36,8 +36,6 @@ const ContentFolderForm = () => {
 
                 const value = result?.data
 
-                console.log("Value", value);
-
                 setEditFormData(value)
 
                 setLoading(true)

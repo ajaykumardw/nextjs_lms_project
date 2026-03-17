@@ -107,9 +107,8 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
         menuSectionStyles={menuSectionStyles(verticalNavOptions, theme)}
       >
         <SubMenu
-          label="Dashboards"
+          label="Dashboard"
           icon={<i className='tabler-smart-home' />}
-          suffix={<CustomChip label='5' size='small' color='error' round='true' />}
         >
           {(permissArray?.notUser) && (
             <MenuItem href={`/${locale}/dashboards/crm`}>Crm</MenuItem>

@@ -70,7 +70,7 @@ const UserList = () => {
         <UserListCards />
       </Grid>
       <Grid size={{ xs: 12 }}>
-        <UserListTable userData={userData} />
+        <UserListTable userData={userData} fetchData={fetchData} />
       </Grid>
     </Grid>
   )

@@ -417,7 +417,6 @@ const UserFormLayout = () => {
                 const branchData = createData?.branch.filter((b) => b.regionId == editData.region_id) || [];
                 
                 setSelectedBranch(branchData);
-                console.log("Branch", branchData);
             }
         }
     }, [id, editData, reset, setValue, createData]);

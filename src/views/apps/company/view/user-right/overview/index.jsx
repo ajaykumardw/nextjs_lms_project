@@ -3,8 +3,6 @@ import Grid from '@mui/material/Grid2'
 
 // Component Imports
 import ProjectListTable from './ProjectListTable'
-import UserActivityTimeLine from './UserActivityTimeline'
-import InvoiceListTable from './InvoiceListTable'
 
 // Data Imports
 import { getInvoiceData } from '@/app/server/actions'
@@ -24,21 +22,21 @@ import { getInvoiceData } from '@/app/server/actions'
 
   return res.json()
 } */
-const OverViewTab = async () => {
-  // Vars
+const OverViewTab = async ({ companyData= [] }) => {
+
   const invoiceData = await getInvoiceData()
 
   return (
     <Grid container spacing={6}>
       <Grid size={{ xs: 12 }}>
-        <ProjectListTable />
+        <ProjectListTable companyData={companyData?.company_user || []} />
       </Grid>
-      <Grid size={{ xs: 12 }}>
+      {/* <Grid size={{ xs: 12 }}>
         <UserActivityTimeLine />
-      </Grid>
-      <Grid size={{ xs: 12 }}>
+      </Grid> */}
+      {/* <Grid size={{ xs: 12 }}>
         <InvoiceListTable invoiceData={invoiceData} />
-      </Grid>
+      </Grid> */}
     </Grid>
   )
 }

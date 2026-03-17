@@ -1,24 +1,19 @@
 'use client'
 
 // React Imports
+
 import { useEffect, useState, useMemo } from 'react'
 
 // Next Imports
-import { useRouter } from 'next/navigation';
-import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation';
 
-// MUI Imports
-import Card from '@mui/material/Card'
-import CardHeader from '@mui/material/CardHeader'
-import Button from '@mui/material/Button'
-import Typography from '@mui/material/Typography'
-import Chip from '@mui/material/Chip'
-import Checkbox from '@mui/material/Checkbox'
-import IconButton from '@mui/material/IconButton'
+import Link from 'next/link'
+
+import { useSession } from 'next-auth/react';
+
 import { styled } from '@mui/material/styles'
-import TablePagination from '@mui/material/TablePagination'
-import MenuItem from '@mui/material/MenuItem'
+
+import { Card, CardHeader, Button, Typography, Chip, Checkbox, IconButton, TablePagination, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, Alert } from '@mui/material'
 
 // Third-party Imports
 import classnames from 'classnames'
@@ -36,6 +31,8 @@ import {
   getSortedRowModel
 } from '@tanstack/react-table'
 
+import { toast } from 'react-toastify';
+
 // Component Imports
 import TableFilters from './TableFilters'
 import AddUserDrawer from './AddUserDrawer'
@@ -44,12 +41,16 @@ import TablePaginationComponent from '@components/TablePaginationComponent'
 import CustomTextField from '@core/components/mui/TextField'
 import CustomAvatar from '@core/components/mui/Avatar'
 
+import UpdatePasswordDialog from '@components/dialogs/user/update-password-dialog/page';
+
 // Util Imports
 import { getInitials } from '@/utils/getInitials'
 import { getLocalizedUrl } from '@/utils/i18n'
 
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
+
+
 
 // Styled Components
 const Icon = styled('i')({})
@@ -86,30 +87,75 @@ const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...prop
   return <CustomTextField {...props} value={value} onChange={e => setValue(e.target.value)} />
 }
 
-// Vars
-const userRoleObj = {
-  admin: { icon: 'tabler-crown', color: 'error' },
-  author: { icon: 'tabler-device-desktop', color: 'warning' },
-  editor: { icon: 'tabler-edit', color: 'info' },
-  maintainer: { icon: 'tabler-chart-pie', color: 'success' },
-  subscriber: { icon: 'tabler-user', color: 'primary' }
-}
-
 const userStatusObj = {
   active: 'success',
   pending: 'warning',
   inactive: 'secondary'
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 // Column Definitions
 const columnHelper = createColumnHelper()
 
-const UserListTable = ({ userData }) => {
+const UserListTable = ({ userData, fetchData }) => {
+
+  const { data: session } = useSession();
+  const token = session?.user?.token;
+
   // States
   const [rowSelection, setRowSelection] = useState({})
   const [data, setData] = useState([])
   const [filteredData, setFilteredData] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
+
+  const [deleteId, setDeleteId] = useState(null)
+  const [openDelete, setOpenDelete] = useState(false)
+  const [loadingDelete, setLoadingDelete] = useState(false)
+  const [user, setUser] = useState()
+  const [open, setOpen] = useState(false)
+  const [snack, setSnack] = useState({ open: false, msg: '', type: 'success' })
+
+  const handleDeleteClick = (id) => {
+    setDeleteId(id)
+    setOpenDelete(true)
+  }
+
+  const updateNewPasswordhandle = (row) => {
+    setUser(row);
+    setOpen(true);
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteId) return
+    setLoadingDelete(true)
+
+    try {
+      const res = await fetch(`${API_URL}/admin/company/${deleteId}/delete`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      if (!res.ok) throw new Error('Delete failed')
+
+      // remove from UI
+      setData(prev => prev.filter(item => item.id !== deleteId))
+      setFilteredData(prev => prev.filter(item => item.id !== deleteId))
+
+      toast.success("User deleted successfully", {
+        autoClose: 1000
+      })
+    } catch (e) {
+      setSnack({ open: true, msg: 'Delete failed', type: 'error' })
+    } finally {
+      setLoadingDelete(false)
+      setOpenDelete(false)
+      setDeleteId(null)
+    }
+  }
+
   const public_url = process.env.NEXT_PUBLIC_ASSETS_URL;
 
   const router = useRouter();
@@ -215,11 +261,11 @@ const UserListTable = ({ userData }) => {
         header: 'Action',
         cell: ({ row }) => (
           <div className='flex items-center'>
-            <IconButton onClick={() => setData(data?.filter(product => product.id !== row.original.id))}>
+            <IconButton onClick={() => handleDeleteClick(row.original.id)}>
               <i className='tabler-trash text-textSecondary' />
             </IconButton>
             <IconButton>
-              <Link href={getLocalizedUrl('/apps/company/view', locale)} className='flex'>
+              <Link href={getLocalizedUrl(`/apps/company/view/${row?.original?.id}`, locale)} className='flex'>
                 <i className='tabler-eye text-textSecondary' />
               </Link>
             </IconButton>
@@ -228,9 +274,14 @@ const UserListTable = ({ userData }) => {
               iconClassName='text-textSecondary'
               options={[
                 {
-                  text: 'Download',
-                  icon: 'tabler-download',
-                  menuItemProps: { className: 'flex items-center gap-2 text-textSecondary' }
+                  text: 'Update password',
+                  icon: 'tabler-lock',
+                  menuItemProps: {
+                    className: 'flex items-center gap-2 text-textSecondary',
+                    onClick: (() => {
+                      updateNewPasswordhandle(row.original);
+                    })
+                  }
                 },
                 {
                   text: 'Edit',
@@ -399,6 +450,26 @@ const UserListTable = ({ userData }) => {
           }}
         />
       </Card>
+      <Dialog open={openDelete} onClose={() => setOpenDelete(false)}>
+        <DialogTitle>Delete Company</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure you want to delete this company?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDelete(false)}>Cancel</Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={handleDeleteConfirm}
+            disabled={loadingDelete}
+          >
+            {loadingDelete ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <>
+        <UpdatePasswordDialog open={open} setOpen={setOpen} data={user} />
+      </>
     </>
   )
 }

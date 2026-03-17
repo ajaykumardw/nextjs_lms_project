@@ -1282,6 +1282,7 @@ const MCQModalComponent = ({ open, setOpen, activeQuestionId, setOptionData, opt
 
       if (activeQuestionId === '8') {
         const hasNeutral = optionData.option.some(o => o.value === 'Neutral')
+
         setAddNeutral(hasNeutral)
       }
 
@@ -1318,11 +1319,16 @@ const MCQModalComponent = ({ open, setOpen, activeQuestionId, setOptionData, opt
 
   const updateCustomOption = (index, value) => {
     const updated = [...customOptions]
+
     updated[index] = value
+
     setCustomOptions(updated)
+
     setErrors(prev => {
       const err = [...prev]
+
       err[index] = false
+      
       return err
     })
     setMinOptionError('')
@@ -1343,12 +1349,16 @@ const MCQModalComponent = ({ open, setOpen, activeQuestionId, setOptionData, opt
     if (activeQuestionId === '7') {
       if (customOptions.length < 2) {
         setMinOptionError('At least 2 options are required')
+
         return
       }
 
       const validationErrors = customOptions.map(opt => !opt.trim())
+
       if (validationErrors.some(Boolean)) {
+
         setErrors(validationErrors)
+
         return
       }
 
@@ -1508,14 +1518,18 @@ const SurveyModalComponent = ({ open, setISOpen, API_URL, token, mId, questions,
 
   const validateQuestions = () => {
     let valid = true
+
     setQuestions(prev =>
       prev.map(q => {
         const textError = !q.text.trim()
         const typeError = !q.type
+    
         if (textError || typeError) valid = false
+    
         return { ...q, errors: { text: textError, type: typeError } }
       })
     )
+    
     return valid
   }
 
@@ -1620,7 +1634,6 @@ const SurveyModalComponent = ({ open, setISOpen, API_URL, token, mId, questions,
                         setActiveQuestionId(q.type)
                         setActiveQuestionRowId(q.id)
                         const currentQuestion = questions.find(ques => ques.id === q.id)
-                        console.log("currentQuestion", currentQuestion);
 
                         setOptionData(currentQuestion?.options ? { option: currentQuestion.options, multiOption: currentQuestion.multiOption } : { option: [], multiOption: false })
                         setMCQOpen(true)
@@ -3328,7 +3341,6 @@ const ContentFlowModal = ({ open, data, setOpen, setSelected, selected, setNext,
               name="custom-radios-icons"
               value={selected || ''}
               onChange={(e) => {
-                console.log(e.target.value);
 
                 const selectedItem = data?.appConfig?.activity_data?.find(
                   (item) => item.title === e.target.value

@@ -196,11 +196,6 @@ const FormComponent = ({
       if (response.ok) {
         toast.success(`${stage} ${id ? "edit" : "add"} successfully`, { autoClose: 1000 })
         router.push(backURL)
-      } else {
-
-        console.log("Error", response, result);
-
-
       }
     } catch (error) {
       console.error(error)

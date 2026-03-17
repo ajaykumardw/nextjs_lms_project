@@ -138,8 +138,6 @@ const Login = ({ mode }) => {
         redirect: false
       })
 
-      console.log("Res", res);
-
       setLoading(false)
 
       if (res && res?.ok && !res.error) {
@@ -155,7 +153,7 @@ const Login = ({ mode }) => {
         const message = JSON.parse(res?.error) || 'Login failed. Please try again.'
 
         setErrorState(message)
-        console.log('Login error:', message)
+
       }
     } catch (err) {
       setLoading(false)
