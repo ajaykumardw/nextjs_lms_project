@@ -112,8 +112,8 @@ const Login = ({ mode }) => {
   } = useForm({
     resolver: valibotResolver(schema),
     defaultValues: {
-      email: 'email@dw.com',
-      password: 'emailDW'
+      email: '',
+      password: ''
     }
   })
 
@@ -257,7 +257,7 @@ const Login = ({ mode }) => {
                 />
               )}
             />
-            <div className='flex justify-between items-center gap-x-3 gap-y-1 flex-wrap'>
+            {/* <div className='flex justify-between items-center gap-x-3 gap-y-1 flex-wrap'>
               <FormControlLabel control={<Checkbox defaultChecked />} label='Remember me' />
               <Typography
                 className='text-end'
@@ -267,7 +267,7 @@ const Login = ({ mode }) => {
               >
                 Forgot password?
               </Typography>
-            </div>
+            </div> */}
             <Button
               fullWidth
               variant="contained"
@@ -291,14 +291,14 @@ const Login = ({ mode }) => {
                 'Login'
               )}
             </Button>
-            <div className='flex justify-center items-center flex-wrap gap-2'>
-              <Typography>New on our platform?</Typography>
-              <Typography component={Link} href={getLocalizedUrl('/register', locale)} color='primary.main'>
-                Create an account
-              </Typography>
-            </div>
-            <Divider className='gap-2'>or</Divider>
-            <Button
+              {/* <div className='flex justify-center items-center flex-wrap gap-2'>
+                <Typography>New on our platform?</Typography>
+                <Typography component={Link} href={getLocalizedUrl('/register', locale)} color='primary.main'>
+                  Create an account
+                </Typography>
+              </div> */}
+            {/* <Divider className='gap-2'>or</Divider> */}
+            {/* <Button
               color='secondary'
               className='self-center text-textPrimary'
               startIcon={<img src='/images/logos/google.png' alt='Google' width={22} />}
@@ -306,7 +306,7 @@ const Login = ({ mode }) => {
               onClick={() => signIn('google')}
             >
               Sign in with Google
-            </Button>
+            </Button> */}
           </form>
         </div>
       </div>

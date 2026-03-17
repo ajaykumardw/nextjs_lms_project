@@ -1,7 +1,7 @@
-// -------------------- React & Core --------------------
+"use client"
+
 import React, { useEffect, useMemo, useState } from 'react';
 
-// -------------------- MUI Components --------------------
 import {
   Button,
   Typography,
@@ -22,18 +22,22 @@ import {
   CircularProgress
 } from '@mui/material';
 
+import ExcelJS from "exceljs";
 
-// -------------------- External Libraries --------------------
-import * as XLSX from 'xlsx';
 import { useDropzone } from 'react-dropzone';
+
 import { toast } from 'react-toastify';
+
 import { object, string, minLength, array } from 'valibot';
+
 import { useForm, Controller } from 'react-hook-form';
+
 import { valibotResolver } from '@hookform/resolvers/valibot';
+
 import classnames from 'classnames';
+
 import { useSession } from 'next-auth/react';
 
-// -------------------- React Table --------------------
 import {
   createColumnHelper,
   flexRender,
@@ -46,21 +50,23 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
+
 import { rankItem } from '@tanstack/match-sorter-utils';
 
-// -------------------- MUI Custom Components --------------------
 import CustomTextField from '@core/components/mui/TextField';
+
 import CustomAvatar from '@core/components/mui/Avatar';
 
-// -------------------- Internal Imports --------------------
 import { useApi } from '../../../../utils/api';
+
 import tableStyles from '@core/styles/table.module.css';
+
 import AppReactDropzone from '@/libs/styles/AppReactDropzone';
+
 import TablePaginationComponent from '@/components/TablePaginationComponent';
+
 import ImportSuccessDialog from '@/components/dialogs/user/import-success-dialog/page';
 
-
-//import { ExpectedStudentExcelHeaders, ExpectedStudentExcelHeadersWithoutBatchId } from '@/configs/customDataConfig';
 const CHUNK_SIZE = 1;
 
 const schema = object({
@@ -115,184 +121,179 @@ const ImportUsers = ({ batch, onBack }) => {
   });
 
   const { getRootProps, getInputProps } = useDropzone({
-
-    // maxFiles: 1,
     multiple: false,
-    maxSize: 2000000,
+    maxSize: 2 * 1024 * 1024, // 2MB
     accept: {
       'application/vnd.ms-excel': ['.xls'],
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
     },
 
-    onDrop: (acceptedFiles) => {
+    onDrop: async (acceptedFiles) => {
+      
+      if (!acceptedFiles?.length) return;
 
       setFileInput(null);
       setMissingHeaders([]);
-      setLoading(true); // Start loading
-      setProgress(0); // Reset progress
+      setLoading(true);
+      setProgress(0);
       setData([]);
 
-      const reader = new FileReader();
+      try {
+        
+        const selectedFile = acceptedFiles[0];
+        const arrayBuffer = await selectedFile.arrayBuffer();
 
-      reader.onload = async (e) => {
-        if (e.target?.result) {
-          try {
-            const arrayBuffer = e.target.result;
-            const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
-            const sheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[sheetName];
-            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        const workbook = new ExcelJS.Workbook();
+        
+        await workbook.xlsx.load(arrayBuffer);
 
-            // Validate header
-            const requiredHeaders = [
-              'SRNO', 'Email', 'FirstName', 'LastName', 'PhoneNo', 'Password', 'ParticipationType',
-              'EmpID', 'Address', 'Country', 'State', 'City', 'PinCode', 'LicenseNo', 'Status'
-            ];
+        const worksheet = workbook.worksheets[0]; // first sheet
+        
+        if (!worksheet) throw new Error("Excel file is empty.");
 
-            // const optionalHeaders = [
-            //   'URNNumber', 'ApplicationNo', 'Designation', 'Department',
-            //   'EmployeeType', '', 'Zone', 'Region', 'Branch', 'Website'
-            // ];
+        const requiredHeaders = [
+          'SRNO', 'Email', 'FirstName', 'LastName', 'PhoneNo', 'Password', 'ParticipationType',
+          'EmpID', 'Address', 'Country', 'State', 'City', 'PinCode', 'LicenseNo', 'Status'
+        ];
 
-            // Now only validate required headers
-            const headers = XLSX.utils.sheet_to_json(worksheet, { header: 1 })[0];
-            const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+        const headers = worksheet.getRow(1).values.slice(1).map(h => String(h || "").trim());
 
-            // After checking for missingHeaders
-            if (missingHeaders.length > 0) {
-              setMissingHeaders(missingHeaders);
-              setLoading(false);
-              
-              return;
-            }
-
-            // Validate required header values
-            const rowsWithMissingValues = [];
-
-            jsonData.forEach((row, rowIndex) => {
-              requiredHeaders.forEach((header) => {
-                const value = row[header];
-                
-                if (value === undefined || value === null || value.toString().trim() === '') {
-                  rowsWithMissingValues.push({ row: rowIndex + 2, header });
-                  
-                  // +2 because Excel rowIndex starts from 0, and row 1 is the header
-                }
-              });
-            });
-
-            if (rowsWithMissingValues.length > 0) {
-
-              const errorMsg = rowsWithMissingValues
-                .map(r => `"${r.header}"`)
-                .join(', ');
-
-              const msgError = "Missing value in row: " + errorMsg
-
-              setShowError(msgError)
-
-              setLoading(false);
-              
-              return;
-            } else {
-              setShowError()
-            }
-
-            // Validate Excel duplicate emails
-            const seen = new Set();
-            const duplicates = new Set();
-
-            for (const row of jsonData) {
-
-              const email = (row.Email || '').toLowerCase().trim();
-
-              if (!email) continue;
-
-              if (seen.has(email)) {
-                duplicates.add(email);
-              } else {
-                seen.add(email);
-              }
-            }
-
-            if (duplicates.size > 0) {
-
-              toast.error(`Duplicate emails found in Excel: ${Array.from(duplicates).join(', ')}`);
-              setLoading(false);
-
-              return;
-            }
-
-            setData([]);
-            setUploadData(jsonData);
-            setFileInput(acceptedFiles[0]);
-          } catch (error) {
-            console.error('Error processing the Excel file:', error);
-            toast.error('Error in processing the Excel file.', {
-              hideProgressBar: false
-            });
-          }
+        const missingHeadersList = requiredHeaders.filter(h => !headers.includes(h));
+        
+        if (missingHeadersList.length > 0) {
+        
+          setMissingHeaders(missingHeadersList);
+          setLoading(false);
+        
+          return;
         }
-      };
 
-      reader.onerror = (error) => {
-        console.error('Error reading the file:', error);
-        setLoading(false); // End loading
-        setProgress(0); // Reset progress on error
+        const jsonData = [];
+        
+        worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+        
+          if (rowNumber === 1) return; // skip header
+        
+          const rowValues = row.values.slice(1); // ExcelJS rows are 1-based
+          const rowData = {};
+        
+          headers.forEach((header, idx) => {
+            rowData[header] = rowValues[idx] ?? "";
+          });
+        
+          jsonData.push(rowData);
+        });
+
+        const rowsWithMissingValues = [];
+        
+        jsonData.forEach((row, rowIndex) => {
+        
+          requiredHeaders.forEach(header => {
+        
+            const value = row[header];
+        
+            if (value === undefined || value === null || value.toString().trim() === '') {
+        
+              rowsWithMissingValues.push({ row: rowIndex + 2, header }); // +2: header + 1-based
+            }
+          });
+        });
+
+        if (rowsWithMissingValues.length > 0) {
+        
+          const errorMsg = rowsWithMissingValues.map(r => `"${r.header}"`).join(', ');
+          const msgError = "Missing value in row: " + errorMsg;
+        
+          setShowError(msgError);
+          setLoading(false);
+        
+          return;
+        } else {
+        
+          setShowError();
+        }
+
+        const seen = new Set();
+        const duplicates = new Set();
+
+        jsonData.forEach(row => {
+        
+          const email = (row.Email || '').toLowerCase().trim();
+        
+          if (!email) return;
+        
+          if (seen.has(email)) {
+        
+            duplicates.add(email);
+          } else {
+        
+            seen.add(email);
+          }
+        });
+
+        if (duplicates.size > 0) {
+        
+          toast.error(`Duplicate emails found in Excel: ${Array.from(duplicates).join(', ')}`);
+        
+          setLoading(false);
+        
+          return;
+        }
+
+        setData([]);
+        setUploadData(jsonData);
+        setFileInput(selectedFile);
+        setProgress(100);
+        setLoading(false);
+
+      } catch (err) {
+        
+        toast.error('Error in processing the Excel file.');
+      
+        setLoading(false);
+        setProgress(0);
         setUploadData([]);
         setData([]);
-      };
-
-      reader.onprogress = (event) => {
-        if (event.loaded && event.total) {
-          //const percentCompleted = Math.round((event.loaded / event.total) * 100);
-          setProgress(0); // Update progress
-        }
-      };
-
-      if (acceptedFiles[0]) {
-        reader.readAsArrayBuffer(acceptedFiles[0]); // Read the file as an ArrayBuffer
       }
     },
+
     onDropRejected: (rejectedFiles) => {
-      setLoading(false); // End loading
-      setProgress(0); // Reset progress on error
+      
+      setLoading(false);
+      setProgress(0);
       setUploadData([]);
       setData([]);
 
-      const errorMessage = rejectedFiles.map(file => {
+      rejectedFiles.forEach(file => {
+        
+        file.errors.forEach(error => {
+          
+          let msg = "";
+          
+          switch (error.code) {
+            case 'file-invalid-type':
+              msg = `Invalid file type for ${file.file.name}.`;
+              break;
+            case 'file-too-large':
+              msg = `File ${file.file.name} is too large.`;
+              break;
+            case 'too-many-files':
+              msg = `Too many files selected.`;
+              break;
+            default:
+              msg = `Error with file ${file.file.name}.`;
+          }
 
-        if (file.errors.length > 0) {
-
-          return file.errors.map(error => {
-            switch (error.code) {
-              case 'file-invalid-type':
-                return `Invalid file type for ${file.file.name}.`;
-              case 'file-too-large':
-                return `File ${file.file.name} is too large.`;
-              case 'too-many-files':
-                return `Too many files selected.`;
-              default:
-                return `Error with file ${file.file.name}.`;
-            }
-          }).join(' ');
-        }
-
-        return `Error with file ${file.file.name}.`;
-      });
-
-      errorMessage.map(error => {
-        toast.error(error, {
-          hideProgressBar: false
+          toast.error(msg, { hideProgressBar: false });
+          setImageError(msg);
         });
-      })
-
+      });
     }
   });
 
   const getRoles = async () => {
     const roleData = await doGet(`company/role`);
-    
+
     setRoles(roleData);
   }
 

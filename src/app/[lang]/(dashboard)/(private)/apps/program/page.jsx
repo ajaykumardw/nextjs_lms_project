@@ -11,8 +11,10 @@ import PermissionGuard from '@/hocs/PermissionClientGuard';
 import CardComponent from '@components/program-component/CardComponent';
 
 const MyTrainingPage = () => {
-  const params = useParams();
-  const locale = params.lang;
+
+  const { lang } = useParams();
+
+  const locale = lang;
 
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [loading, setLoading] = useState(false);

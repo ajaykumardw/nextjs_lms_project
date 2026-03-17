@@ -180,7 +180,7 @@ const Channel = () => {
                 header: 'Actions',
                 cell: ({ row }) => (
                     <div className='flex items-center'>
-                        {permissions && permissions?.['hasDepartmentlEditPermission'] && (
+                        {permissions && permissions?.['hasChannelEditPermission'] && (
 
                             <IconButton onClick={() => handleEditPermission(row.original)}>
                                 <i className='tabler-edit text-textSecondary' />
@@ -257,7 +257,7 @@ const Channel = () => {
                             placeholder='Search Department'
                             className='max-sm:is-full'
                         />
-                        {permissions && permissions?.['hasDepartmentAddPermission'] && (
+                        {permissions && permissions?.['hasChannelAddPermission'] && (
                             <OpenDialogOnElementClick
                                 element={Button}
                                 elementProps={buttonProps}

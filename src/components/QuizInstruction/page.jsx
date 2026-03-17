@@ -17,7 +17,7 @@ const DefaultExamInstructions = () => {
     ];
 
     return (
-        <Grid item xs={12}>
+        <Grid item size={{ xs: 12,  }}>
             <ol className='pl-6'>
                 {instructions.map((instruction, index) => (
                     <li key={index}>{instruction}</li>

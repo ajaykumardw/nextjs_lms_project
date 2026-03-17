@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 
 import { useSession } from 'next-auth/react';
 
@@ -93,6 +93,8 @@ const ProgramCardComponent = ({
     const [categories, setCategories] = useState();
     const [breadCumbData, setBreadCumbData] = useState();
 
+    // const { lang: locale } = useParams();
+
     const router = useRouter();
 
     const handleMenuOpen = (event, item) => {
@@ -170,6 +172,20 @@ const ProgramCardComponent = ({
 
     }, [selectedCategory, stage])
 
+    const linkData = (itemId, moduleTypeId) => {
+
+        if (stage != "Module") return `${nextLink}/${itemId}`
+
+        const data = {
+            "688219557b6953e899cb57d2": `${nextLink}/${itemId}`,
+            "688219557b6953e899cb57d3": `/${locale}/apps/live-session/${itemId}`,
+            "688219557b6953e899cb57d4": `/${locale}/apps/ilt-page/${itemId}`
+        }
+
+        return data?.[moduleTypeId] || `${nextLink}/${itemId}`
+
+    }
+
     if (loading) {
         return (
             <Card>
@@ -202,7 +218,7 @@ const ProgramCardComponent = ({
                     <Box>
                         <Typography variant="h5">My {stage}</Typography>
                         <BreadcumbComponent data={breadCumbData} locale={locale} stage={stage} />
-                        {/* <Typography variant="body2" mt={1}>Total {totalItems} {stage} you have in your bucket</Typography> */}
+
                     </Box>
 
                     <Box className="flex items-center gap-4 flex-wrap justify-end">
@@ -243,7 +259,7 @@ const ProgramCardComponent = ({
                 <Grid container spacing={10} alignItems="stretch">
                     {data?.length > 0 ? (
                         data.map((item) => (
-                            <Grid item size={{ xs: 12, md: 3, lg: 3 }} key={item?._id}>
+                            <Grid item size={{ xs: 12, md: 3, lg: 3 }} key={item?._id} onClick={() => router.push(linkData(item._id, item?.module_type_id))} >
                                 <Card
                                     sx={{
                                         border: '1px solid #e0e0e0',
@@ -259,7 +275,6 @@ const ProgramCardComponent = ({
                                             boxShadow: 6,
                                         },
                                     }}
-                                    onClick={() => router.push(`${nextLink}/${item._id}`)} // This remains
                                 >
                                     <img
                                         src={item.image_url ? `${ASSET_URL}/program_module/${item.image_url}` : placeholderBase64}
@@ -274,7 +289,7 @@ const ProgramCardComponent = ({
                                         <Box display="flex" justifyContent="space-between" alignItems="flex-start">
                                             <Box>
                                                 <Typography variant="h6" fontWeight={600}>
-                                                    {item?.title}
+                                                    {item?.title || ""}
                                                 </Typography>
 
                                                 {stage === "Program" && (
@@ -294,6 +309,7 @@ const ProgramCardComponent = ({
                                             >
                                                 <i className="tabler-dots-vertical" />
                                             </IconButton>
+
                                         </Box>
                                     </CardContent>
                                 </Card>

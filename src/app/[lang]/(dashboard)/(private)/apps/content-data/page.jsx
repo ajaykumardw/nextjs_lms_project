@@ -29,6 +29,8 @@ import { toast } from 'react-toastify';
 
 import DialogCloseButton from '@/components/dialogs/DialogCloseButton';
 
+import SurveyModalComponent from '@/components/survey-modal/page';
+
 const PDFViewer = dynamic(() => import('@/components/Content-data/PdfViewer/index'), { ssr: false });
 const DocViewer = dynamic(() => import('@/components/Content-data/DocViewer/index'), { ssr: false });
 const PptViewer = dynamic(() => import('@/components/Content-data/PptViewer/index'), { ssr: false });
@@ -37,6 +39,7 @@ const QuizQuestionComponent = dynamic(() => import('@/components/Content-data/qu
 const ScromContentComponent = dynamic(() => import('@/components/Content-data/scrom-content/page'), { ssr: false });
 
 const ContentData = () => {
+
   const { lang: locale } = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -50,6 +53,7 @@ const ContentData = () => {
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
   const ASSET_URL = process.env.NEXT_PUBLIC_ASSETS_URL;
   const { data: session } = useSession();
+
   const token = session?.user?.token;
 
   const saveTimeout = useRef(null);
@@ -58,6 +62,8 @@ const ContentData = () => {
   const [pageInfo, setPageInfo] = useState({ current: 1, total: 0 });
   const [loading, setLoading] = useState(true);
   const [openConfirm, setOpenConfirm] = useState(false);
+
+  const [surveyModalOpen, setSurveyModalOpen] = useState(false)
 
   const [scormData, setScormData] = useState({});
 
@@ -77,12 +83,8 @@ const ContentData = () => {
 
   const [quizData, setQuizData] = useState([]);
 
-  // refs for debounced autosave
-
   const fieldAutosaveTimer = useRef(null);
   const quizAutosaveTimer = useRef(null);
-
-  /** FETCH ACTIVITY */
 
   const fetchActivity = async () => {
     setLoading(true);
@@ -116,9 +118,8 @@ const ContentData = () => {
     fetchActivity();
   }, [API_URL, token, activityId]);
 
-  /** SAFE FETCH HELPERS */
-
   const postJson = async (url, payload) => {
+
     try {
 
       if (!API_URL || !token) {
@@ -137,7 +138,9 @@ const ContentData = () => {
 
       const json = await res.json().catch(() => null);
 
-      return { ok: res.ok, status: res.status, data: json };
+      setSurveyModalOpen(json?.data?.completed || false);
+
+      return { ok: res.ok, status: res.status, data: json?.data };
     } catch (error) {
 
       console.error('postJson error', error);
@@ -157,12 +160,18 @@ const ContentData = () => {
 
       const result = await response.json();
 
+      if (response.ok) {
+
+        const value = result?.data?.completed || false;
+
+        setSurveyModalOpen(value);
+      }
+
     } catch (error) {
       throw new Error(error)
     }
   }
 
-  /** SAVE FUNCTIONS (set = update, insert = final/insert) */
   const saveFieldData = async (payload) => {
 
     const url = `${API_URL}/user/activity/set/report/data/${moduleId}/${contentFolderId}/${activityId}/${moduleTypeId}`;
@@ -189,9 +198,8 @@ const ContentData = () => {
     return postJson(url, payload);
   };
 
-  /** AUTOSAVE FIELD DATA — debounced to avoid API spam */
   useEffect(() => {
-    // only trigger when meaningful values change
+
     const changed =
 
       fieldData.currentPage ||
@@ -210,7 +218,7 @@ const ContentData = () => {
           console.warn('Field autosave failed', res);
         }
       });
-    }, 1200); // 1.2s debounce
+    }, 800);
 
     return () => {
       if (fieldAutosaveTimer.current) {
@@ -229,7 +237,6 @@ const ContentData = () => {
     token
   ]);
 
-  /** AUTOSAVE QUIZ DATA — debounced */
   useEffect(() => {
     if (!Array.isArray(quizData) || quizData.length === 0) return;
 
@@ -251,8 +258,6 @@ const ContentData = () => {
 
   }, [quizData, API_URL, token]);
 
-  /** FILE AND VIDEO INFO */
-
   const fileUrl = data?.document_data?.image_url ? `${ASSET_URL}/activity/${data.document_data.image_url}` : null;
   const videoURL = data?.video_data?.video_url ? `${ASSET_URL}/activity/${data.video_data.video_url}` : null;
   const youtubeVideoURL = data?.video_data?.video_url;
@@ -261,8 +266,6 @@ const ContentData = () => {
 
   const isPDF = extension === 'pdf';
   const isOfficeDoc = ['ppt', 'pptx', 'doc', 'docx'].includes(extension);
-
-  /** PAGE CHANGE HANDLER */
 
   const handlePageChange = (current, total) => {
     setPageInfo({ current, total });
@@ -274,8 +277,6 @@ const ContentData = () => {
     }));
   };
 
-  /** COMPLETION CHECK */
-
   const isCompletedCondition =
     (data?.logs?.[0]?.completion_percentage || 0) >= 100 || (
       (fieldData.totalPages > 0 && fieldData.viewedPages.length === fieldData.totalPages) ||
@@ -284,7 +285,6 @@ const ContentData = () => {
 
     );
 
-  /** MARK COMPLETE — uses insert endpoints */
   const handleMarkComplete = async () => {
     setOpenConfirm(false);
 
@@ -296,6 +296,15 @@ const ContentData = () => {
           toast.error('Failed to save quiz before marking complete');
           console.warn('markComplete saveInsertQuizData failed', res);
         }
+
+        if (res?.ok && res?.data?.completed) {
+
+          setSurveyModalOpen(res?.data?.completed)
+
+          return;
+        }
+
+
       } else {
         const res = await saveInsertFieldData(fieldData);
 
@@ -303,6 +312,14 @@ const ContentData = () => {
           toast.error('Failed to save progress before marking complete');
           console.warn('markComplete saveInsertFieldData failed', res);
         }
+
+        if (res?.ok && res?.data?.completed) {
+
+          setSurveyModalOpen(res?.data?.completed)
+
+          return;
+        }
+
       }
 
       toast.success('Activity completed successfully', { autoClose: 1000 });
@@ -334,19 +351,15 @@ const ContentData = () => {
   useEffect(() => {
     if (Object.keys(scormData).length === 0) return;
 
-    // Clear previous timeout
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
 
-    // Set new timeout to delay API call
     saveTimeout.current = setTimeout(() => {
       handleSaveScormData(scormData);
-    }, 800); // ⬅ Save every 5 seconds
+    }, 800);
 
     return () => clearTimeout(saveTimeout.current);
   }, [scormData, moduleId, contentFolderId, activityId, moduleTypeId]);
 
-
-  /** RENDER */
   const ready = types && data;
 
   const moduleTypeLabel = {
@@ -360,6 +373,86 @@ const ContentData = () => {
     "68886902954c4d9dc7a379bd": "Quiz"
 
   }
+
+  const isLeavingRef = useRef(false);
+  const initialUrlRef = useRef('');
+
+  const endActivityUrl = `${API_URL}/user/activity/end/attempt`;
+
+  const endActivity = () => {
+    if (!token || isLeavingRef.current) return;
+
+    isLeavingRef.current = true;
+
+    try {
+      const payload = {
+        moduleId,
+        contentFolderId,
+        activityId,
+        moduleTypeId,
+        token
+      };
+
+      const blob = new Blob(
+        [JSON.stringify(payload)],
+        { type: 'application/json' }
+      );
+
+      navigator.sendBeacon(endActivityUrl, blob);
+    } catch (err) {
+      console.error('Failed to end activity', err);
+    }
+  };
+
+  useEffect(() => {
+    if (!token) return;
+
+    initialUrlRef.current = window.location.href;
+
+    const handleBeforeUnload = (event) => {
+      endActivity();
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [token]);
+
+  useEffect(() => {
+    if (!token || typeof window === 'undefined') return;
+
+    window.history.pushState({ guard: true }, '', window.location.href);
+
+    const handlePopState = () => {
+      const newUrl = window.location.href;
+
+      if (newUrl === initialUrlRef.current) {
+        window.history.pushState({ guard: true }, '', initialUrlRef.current);
+
+        return;
+      }
+
+      const leave = window.confirm('Do you want to leave this page?');
+
+      if (!leave) {
+        window.history.pushState({ guard: true }, '', initialUrlRef.current);
+
+        return;
+      }
+
+      endActivity();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [token]);
 
   return (
     <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
@@ -382,9 +475,8 @@ const ContentData = () => {
               </Typography>
             )}</>
           } />
-          {/* <Divider sx={{ my: 2 }} /> */}
-          <CardContent>
 
+          <CardContent>
 
             <Box
               sx={{
@@ -400,28 +492,53 @@ const ContentData = () => {
               ) : (
                 <>
                   {types === 'pdf' && isPDF && (
-                    <PDFViewer pdfUrl={fileUrl} onPageChange={handlePageChange} setFieldData={setFieldData} pageData={data.logs?.[0]} />
+                    <PDFViewer
+                      pdfUrl={fileUrl}
+                      onPageChange={handlePageChange}
+                      setFieldData={setFieldData}
+                      pageData={data.logs?.[0]}
+                      setSurveyModalOpen={setSurveyModalOpen}
+                    />
                   )}
                   {(extension === 'doc' || extension === 'docx') && (
-                    <DocViewer fileUrl={fileUrl} onPageLoad={handlePageChange} setFieldData={setFieldData} pageData={data.logs?.[0]} />
+                    <DocViewer
+                      fileUrl={fileUrl}
+                      onPageLoad={handlePageChange}
+                      setFieldData={setFieldData}
+                      pageData={data.logs?.[0]}
+                      setSurveyModalOpen={setSurveyModalOpen}
+                    />
                   )}
                   {(extension === 'ppt' || extension === 'pptx') && (
-                    <PptViewer fileUrl={fileUrl} onPageLoad={handlePageChange} setFieldData={setFieldData} pageData={data.logs?.[0]} />
+                    <PptViewer
+                      fileUrl={fileUrl}
+                      onPageLoad={handlePageChange}
+                      setFieldData={setFieldData}
+                      pageData={data.logs?.[0]}
+                      setSurveyModalOpen={setSurveyModalOpen}
+                    />
                   )}
                   {(types === 'video' || types === 'youtube-video') && (
-                    <YouTubePlayerComponent url={types === 'video' ? videoURL : youtubeVideoURL} setFieldData={setFieldData} pageData={data.logs?.[0]} />
+                    <YouTubePlayerComponent
+                      url={types === 'video' ? videoURL : youtubeVideoURL}
+                      setFieldData={setFieldData}
+                      pageData={data.logs?.[0]}
+                      setSurveyModalOpen={setSurveyModalOpen}
+                    />
                   )}
                   {types === 'quiz' && (
+
                     <QuizQuestionComponent
                       log={data}
                       isInstruction={isInstruction}
                       setInstruction={setInstruction}
-                      status={data?.logs?.[0]?.is_completed || false}
+                      status={false}
                       quizSetting={data?.QuizSetting?.[0] || {}}
                       data={data.questions || []}
                       report={data.quiz_reports || []}
                       setQuizData={setQuizData}
                       saveInsertQuizData={saveInsertQuizData} // pass actual fn
+                      setSurveyModalOpen={setSurveyModalOpen}
                     />
                   )}
                   {types === 'scrom-content' &&
@@ -430,6 +547,7 @@ const ContentData = () => {
                       scormData={scormData}
                       scromLogData={scromLogData}
                       setScormData={setScormData}
+                      setSurveyModalOpen={setSurveyModalOpen}
                     />
                   }
                 </>
@@ -499,7 +617,12 @@ const ContentData = () => {
               <Button
                 variant="outlined"
                 color="secondary"
-                href={`/${locale}/apps/content?id=${moduleId}&content-folder-id=${contentFolderId}`}
+                onClick={() => {
+
+                  endActivity()
+                  router.replace(`/${locale}/apps/content?id=${moduleId}&content-folder-id=${contentFolderId}`)
+                }
+                }
               >
                 Exit
               </Button>
@@ -508,6 +631,8 @@ const ContentData = () => {
           </CardActions>
         </Card>
       )}
+
+      <SurveyModalComponent open={surveyModalOpen} setOpen={setSurveyModalOpen} moduleId={moduleId} />
 
       <Dialog open={openConfirm} onClose={() => setOpenConfirm(false)} sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}>
         <DialogCloseButton onClick={() => setOpenConfirm(false)}><i className="tabler-x" /></DialogCloseButton>
@@ -529,3 +654,4 @@ const ContentData = () => {
 };
 
 export default ContentData;
+

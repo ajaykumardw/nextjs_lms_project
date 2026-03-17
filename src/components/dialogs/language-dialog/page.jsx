@@ -10,9 +10,10 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  Grid,
   CircularProgress,
 } from '@mui/material';
+
+import Grid from "@mui/material/Grid2";
 
 // Hook Form + Validation
 import { useForm, Controller } from 'react-hook-form'
@@ -210,7 +211,7 @@ const LanguageDialog = ({ open, setOpen, title = '', fetchLanguageData, selected
         <DialogContent className="overflow-visible flex flex-col gap-6 sm:pli-16">
 
           <>
-            <Grid item xs={12} md={11}>
+            <Grid item size={{ xs: 12, md: 11,  }}>
               <Controller
                 name="name"
                 control={control}
@@ -244,7 +245,7 @@ const LanguageDialog = ({ open, setOpen, title = '', fetchLanguageData, selected
                 )}
               />
             </Grid>
-            <Grid item xs={12} md={11}>
+            <Grid item size={{ xs: 12, md: 11,  }}>
               <Controller
                 name='short_name'
                 control={control}

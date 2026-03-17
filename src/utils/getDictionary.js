@@ -20,14 +20,13 @@ const getMenuList = async () => {
 
     if (response.ok) {
       const data = await response.json();
-      
-      return data.data;
+
+      return data.data || {};
     } else {
       return {};
     }
   } catch (error) {
-    console.error('Error fetching menu list:', error);
-    
+
     return {};
   }
 };
@@ -51,7 +50,7 @@ export const getDictionary = async (locale) => {
   }
 
   const fallback = dictionaries[locale];
-  
+
   if (!fallback) {
     throw new Error(`Dictionary for locale '${locale}' not found`);
   }

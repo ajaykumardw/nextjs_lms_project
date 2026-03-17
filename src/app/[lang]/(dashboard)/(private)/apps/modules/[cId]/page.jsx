@@ -1,68 +1,79 @@
 'use client'
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react'
 
-import { useParams } from 'next/navigation';
+import { useParams } from 'next/navigation'
 
-import { useSession } from 'next-auth/react';
+import { useSession } from 'next-auth/react'
 
 import PermissionGuard from '@/hocs/PermissionClientGuard'
 
-import ModuleCardComponent from '@components/program-component/CardComponent';
+import ModuleCardComponent from '@components/program-component/CardComponent'
 
-const MyCoursePage = () => {
+const MyModulePage = () => {
+  const { lang: locale, cId: cid } = useParams()
 
-  const { lang: locale, cId: cid } = useParams();
+  const API_URL = process.env.NEXT_PUBLIC_API_URL
+  const { data: session } = useSession()
+  const token = session?.user?.token
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
-  const { data: session } = useSession();
-  const token = session?.user?.token;
+  const [data, setData] = useState([])
+  const [activePage, setActivePage] = useState(0)
+  const [totalItems, setTotalItems] = useState(0)
 
-  const [createData, setCreateData] = useState();
+  const itemsPerPage = 3
 
-  const fetchCardData = async () => {
+  const getModuleList = async (page = 0) => {
     try {
-      const response = await fetch(`${API_URL}/company/module/${cid}`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
+      setActivePage(page)
 
-      const data = await response.json()
+      const response = await fetch(
+        `${API_URL}/company/module/${cid}?page=${page}&limit=${itemsPerPage}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+      const result = await response.json()
 
       if (response.ok) {
-        const result = data?.data;
 
-        setCreateData(result)
+        const value = result?.data;
+
+        setData(value.data)
+        setTotalItems(value.totalItems) // IMPORTANT
       }
-
     } catch (error) {
-      throw new Error(error)
+      console.error(error)
     }
   }
 
   useEffect(() => {
-    if (API_URL && token) {
-      fetchCardData();
+    if (API_URL && token && cid) {
+      getModuleList(0)
     }
-  }, [API_URL, token])
+  }, [API_URL, token, cid])
 
   return (
-    <PermissionGuard locale={locale} element={'isCompany'}>
+    <PermissionGuard locale={locale} element="isCompany">
       <ModuleCardComponent
-        contentFolderId={cid}
         locale={locale}
-        stage={'Module'}
+        stage="Module"
+        parent="Content Folder"
         currentId={cid}
-        parent={"Content Folder"}
+        data={data}
+        activePage={activePage}
+        itemsPerPage={itemsPerPage}
+        totalItems={totalItems}
+        getModuleList={getModuleList}
         formLink={`/${locale}/apps/modules/${cid}/form`}
         parentCategory={`/${locale}/apps/modules`}
-        data={createData}
         nextLink={`/${locale}/apps/activity`}
       />
     </PermissionGuard>
   )
 }
 
-export default MyCoursePage;
+export default MyModulePage

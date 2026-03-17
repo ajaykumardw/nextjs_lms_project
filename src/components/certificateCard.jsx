@@ -74,7 +74,7 @@ const CertificateCard = ({ searchValue }) => {
 
             <Grid container spacing={9}>
                 {searchValue.map((certificate, index) => (
-                    <Grid item key={index} xs={12} sm={6} md={3} lg={4}>
+                    <Grid item key={index} size={{ xs: 12, sm: 6, md: 3, lg: 4 }}>
                         <Card
                             onClick={() => handleOpen(certificate)}
                             className="cursor-pointer rounded-xl shadow-md transition-all duration-300 hover:shadow-lg hover:scale-[1.02] hover:border-primary"

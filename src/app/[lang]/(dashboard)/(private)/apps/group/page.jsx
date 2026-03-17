@@ -6,12 +6,12 @@ import Group from '@/views/apps/group/index'
 
 import PermissionGuard from '@/hocs/PermissionGuard';
 
-export default function GroupApp({ params }) {
+export default async function GroupApp({ params }) {
 
-    const locale = params.lang;
+    const { lang } = await params;
 
     return (
-        <PermissionGuard locale={locale} element={'hasGroupPermission'}>
+        <PermissionGuard locale={lang} element={'hasGroupPermission'}>
             <Group />
         </PermissionGuard>
     )

@@ -1,39 +1,25 @@
-// MUI Imports
-
 import { useEffect, useState, useRef } from 'react'
 
-import Dialog from '@mui/material/Dialog'
-import DialogTitle from '@mui/material/DialogTitle'
-import DialogContent from '@mui/material/DialogContent'
-import DialogActions from '@mui/material/DialogActions'
-import Typography from '@mui/material/Typography'
-import Button from '@mui/material/Button'
-import LinearProgress from '@mui/material/LinearProgress'
+import {
+    Avatar,
+    CircularProgress,
+    LinearProgress,
+    Button,
+    Typography,
+    DialogActions,
+    DialogContent,
+    DialogTitle
+} from '@mui/material'
+
 import Grid from '@mui/material/Grid2'
-import Switch from '@mui/material/Switch'
-import FormControl from '@mui/material/FormControl'
-import CircularProgress from '@mui/material/CircularProgress'
-import RadioGroup from '@mui/material/RadioGroup'
-import Radio from '@mui/material/Radio'
-import Alert from '@mui/material/Alert'
-import Avatar from '@mui/material/Avatar'
 
-import FormControlLabel from '@mui/material/FormControlLabel'
-
-// React Hook Form
 import { useForm, Controller } from 'react-hook-form'
 import { valibotResolver } from '@hookform/resolvers/valibot'
 import { useDropzone } from 'react-dropzone'
 
-
-// Valibot schema
 import { array, string, object, pipe, minLength, maxLength, boolean, nonEmpty, value } from 'valibot'
 
-// Component Imports
-
 import { useSession } from 'next-auth/react'
-
-import axios from 'axios';
 
 import { toast } from 'react-toastify'
 
@@ -126,45 +112,60 @@ const ScromCardLayout = ({ data, onClose, moduleData }) => {
             const endpoint = `admin/module/${moduleData._id}/card/scorm/${data._id}`;
             const url = `${process.env.NEXT_PUBLIC_API_URL}/${endpoint}`;
 
-            const res = await axios.put(url, formData, {
-                headers: { 'Content-Type': 'multipart/form-data', ...(token && { Authorization: `Bearer ${token}` }), },
-                maxBodyLength: Infinity,
-                maxContentLength: Infinity,
-                timeout: 600000,
-                onUploadProgress: (event) => {
-                    if (file) {
-                        const percent = Math.round((event.loaded * 100) / event.total);
+            const xhr = new XMLHttpRequest();
+            
+            xhr.open("PUT", url, true);
 
-                        setProgress(percent);
-
-                        const elapsed = (Date.now() - startTimeRef.current) / 1000; // in seconds
-                        const uploadedMB = event.loaded / (1024 * 1024);
-                        const totalMB = event.total / (1024 * 1024);
-                        const speed = uploadedMB / elapsed;
-                        const remaining = ((event.total - event.loaded) / (1024 * 1024)) / speed;
-
-                        setUploadStats(
-                            `${uploadedMB.toFixed(2)} MB / ${totalMB.toFixed(2)} MB uploaded — ` +
-                            `Speed: ${speed.toFixed(2)} MB/s — ETA: ${remaining.toFixed(1)} sec`
-                        );
-                    }
-                },
-            });
-
-
-            if (res.data.status == 'Success') {
-                const resp = res.data.data;
-
-                onClose(resp.cards);
-                setItem(resp.card);
-                setCardItems(resp.cards);
-
-                toast.success(res.data.message, {
-                    autoClose: 1200
-                });
+            if (token) {
+                xhr.setRequestHeader("Authorization", `Bearer ${token}`);
             }
 
-            setUploadedPath(res.data.filePath);
+            xhr.timeout = 600000;
+
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable && file) {
+                    const percent = Math.round((event.loaded * 100) / event.total);
+                    
+                    setProgress(percent);
+
+                    const elapsed = (Date.now() - startTimeRef.current) / 1000;
+                    const uploadedMB = event.loaded / (1024 * 1024);
+                    const totalMB = event.total / (1024 * 1024);
+                    const speed = uploadedMB / elapsed;
+                    const remaining = (totalMB - uploadedMB) / speed;
+
+                    setUploadStats(
+                        `${uploadedMB.toFixed(2)} MB / ${totalMB.toFixed(2)} MB uploaded — ` +
+                        `Speed: ${speed.toFixed(2)} MB/s — ETA: ${remaining.toFixed(1)} sec`
+                    );
+                }
+            };
+
+            xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    const res = JSON.parse(xhr.responseText);
+
+                    if (res.status === "Success") {
+                        const resp = res.data;
+
+                        onClose(resp.cards);
+                        setItem(resp.card);
+                        setCardItems(resp.cards);
+
+                        toast.success(res.message, { autoClose: 1200 });
+                    }
+
+                    setUploadedPath(res.filePath);
+                } else {
+                    console.error("Upload failed:", xhr.responseText);
+                }
+            };
+
+            xhr.onerror = () => console.error("Network error");
+            xhr.ontimeout = () => console.error("Upload timeout");
+
+            xhr.send(formData);
+
         } catch (error) {
 
             console.error('Upload error:', error);

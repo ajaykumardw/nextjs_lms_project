@@ -3,10 +3,10 @@ import Department from '@views/apps/departments'
 
 export default async function DepartmentApp({ params }) {
 
-    const locale = params.lang;
+    const { lang } = await params;
 
     return (
-        <PermissionGuardServer locale={locale} element={'hasDepartmentPermission'}>
+        <PermissionGuardServer locale={lang} element={'hasDepartmentPermission'}>
             <Department />
         </PermissionGuardServer>
     )

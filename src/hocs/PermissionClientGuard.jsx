@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, redirect } from 'next/navigation';
 
 import { useSession } from 'next-auth/react';
 
@@ -64,14 +64,16 @@ export default function PermissionGuard({ children, locale, element }) {
 
             if (!allowed) {
 
-               if (permissions?.isUser) {
-                     redirect(`/${locale}/dashboards/user/${'learner'}`);
-               }
-        
-               if (permissions?.notUser) {
+                if (permissions?.isUser) {
+
+                    redirect(`/${locale}/dashboards/user/${'learner'}`);
+                }
+
+                if (permissions?.notUser) {
+
                     redirect(`/${locale}/dashboards/crm`);
-               }
-                
+                }
+
             } else {
                 setIsAllowed(true);
             }

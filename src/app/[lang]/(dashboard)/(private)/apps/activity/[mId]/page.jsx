@@ -37,6 +37,7 @@ import {
   Avatar,
   FormControlLabel,
   Radio,
+  CircularProgress,
   LinearProgress,
   RadioGroup,
   Checkbox,
@@ -50,7 +51,6 @@ import {
   InputAdornment,
   Tab,
   DialogContent,
-  CircularProgress,
 } from '@mui/material'
 
 import Grid from '@mui/material/Grid2'
@@ -84,7 +84,7 @@ import { TabContext, TabList, TabPanel } from "@mui/lab"
 
 import { toast } from "react-toastify"
 
-import * as XLSX from 'xlsx';
+import ExcelJS from "exceljs";
 
 import DatePicker from "react-datepicker";
 
@@ -176,12 +176,11 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
 
   const { getRootProps, getInputProps } = useDropzone({
     multiple: false,
-    maxSize: 2000000,
+    maxSize: 2 * 1024 * 1024, // 2MB
     accept: {
-      'application/vnd.ms-excel': ['.xls'],
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
     },
-    onDrop: (acceptedFiles) => {
+    onDrop: async (acceptedFiles) => {
       // reset
       setFileInput(null);
       setMissingHeaders([]);
@@ -191,9 +190,9 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
       setData([]);
       setUploadData([]);
 
-      if (!acceptedFiles || !acceptedFiles?.length) {
+      if (!acceptedFiles?.length) {
         setLoading(false);
-        toast.error('No file selected.');
+        toast.error("No file selected.");
 
         return;
       }
@@ -202,234 +201,246 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
 
       if (!selectedFile) {
         setLoading(false);
-        toast.error('File read failed.');
+
+        toast.error("File read failed.");
 
         return;
       }
 
-      const reader = new FileReader();
+      try {
+        const arrayBuffer = await selectedFile.arrayBuffer();
+        const workbook = new ExcelJS.Workbook();
 
-      // Robust parser for Correct Answer cell values
-      function parseCorrectAnswer(raw) {
-        if (raw === null || raw === undefined) return [];
+        await workbook.xlsx.load(arrayBuffer);
 
-        if (Array.isArray(raw)) {
+        const worksheet = workbook.worksheets[0]; // first sheet
 
-          return raw
-            .map(v => (v === null || v === undefined ? '' : String(v)))
-            .map(s => s.replace(/[\[\]\(\)\{\}'"]/g, ' '))
-            .flatMap(s => s.split(/[^0-9]+/))
-            .map(s => s.trim())
-            .filter(Boolean);
-        }
+        // Read headers
+        const headerRow = worksheet.getRow(1).values.slice(1);
 
-        let s = String(raw).trim();
+        const requiredHeaders = [
+          "Sno",
+          "Question",
+          "Option 1",
+          "Option 2",
+          "Option 3",
+          "Option 4",
+          "Option 5",
+          "Option 6",
+          "Correct Answer",
+          "Difficulty Level",
+          "Section",
+          "Answer Explanation",
+          "Use Answer Explanation",
+          "Question Type",
+        ];
 
-        s = s.replace(/[\[\]\(\)\{\}]/g, ' ').replace(/['"]/g, ' ');
+        const missingHeaders = requiredHeaders.filter(
+          (h) => !headerRow.includes(h)
+        );
 
-        return s.split(/[^0-9]+/).map(p => p.trim()).filter(Boolean);
-      }
-
-      reader.onload = async (e) => {
-        if (!e.target?.result) {
+        if (missingHeaders.length > 0) {
+          setMissingHeaders(missingHeaders);
           setLoading(false);
-          toast.error('Unable to read file.');
+          setProgress(0);
 
           return;
         }
 
-        try {
-          const arrayBuffer = e.target.result;
-          const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+        // Read data rows
+        const jsonData = [];
 
-          // Validate headers
-          const headers = XLSX.utils.sheet_to_json(worksheet, { header: 1 })[0] || [];
+        worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+          if (rowNumber === 1) return;
+          const rowValues = row.values.slice(1);
+          const rowData = {};
 
-          const requiredHeaders = [
-            'Sno', 'Question', 'Option 1', 'Option 2', 'Option 3', 'Option 4', 'Option 5', 'Option 6',
-            'Correct Answer', 'Difficulty Level', 'Section', 'Answer Explanation',
-            'Use Answer Explanation', 'Question Type'
+          headerRow.forEach((header, index) => {
+            rowData[header] = rowValues[index] ?? "";
+          });
+          jsonData.push(rowData);
+        });
+
+        // Validation
+        const seenSno = new Set();
+        const duplicateSno = [];
+        const errors = [];
+
+        function parseCorrectAnswer(raw) {
+          if (raw == null) return [];
+
+          const s = String(raw)
+            .replace(/[\[\]\(\)\{\}'"]/g, " ")
+            .trim();
+
+          return s
+            .split(/[^0-9]+/)
+            .map((p) => p.trim())
+            .filter(Boolean);
+        }
+
+        jsonData.forEach((row, index) => {
+          const rowNum = index + 2; // Excel row index
+          const sno = String(row["Sno"] || "").trim();
+          const question = String(row["Question"] || "").trim();
+          const difficulty = String(row["Difficulty Level"] || "").trim();
+          const questionType = String(row["Question Type"] || "").trim();
+          const section = String(row["Section"] || "").trim();
+          const answerExplanation = String(row["Answer Explanation"] || "").trim();
+          let useAnswerExplanation = String(row["Use Answer Explanation"] || "")
+            .trim()
+            .toLowerCase();
+
+          if (useAnswerExplanation === "") useAnswerExplanation = "false";
+
+          const options = [
+            String(row["Option 1"] || "").trim(),
+            String(row["Option 2"] || "").trim(),
+            String(row["Option 3"] || "").trim(),
+            String(row["Option 4"] || "").trim(),
+            String(row["Option 5"] || "").trim(),
+            String(row["Option 6"] || "").trim(),
           ];
 
-          const missingHeadersList = requiredHeaders.filter(h => !headers.includes(h));
-
-          if (missingHeadersList?.length > 0) {
-            setMissingHeaders(missingHeadersList);
-            setLoading(false);
-            setProgress(0);
-
-            return;
+          if (!sno) errors.push(`Row ${rowNum}: Sno is required.`);
+          else {
+            if (seenSno.has(sno)) duplicateSno.push(sno);
+            seenSno.add(sno);
           }
 
-          // Validation
-          const seenSno = new Set();
-          const duplicateSno = [];
-          const errors = [];
+          if (!question) errors.push(`Row ${rowNum}: Question cannot be empty.`);
+          else if (question.length > 500)
+            errors.push(`Row ${rowNum}: Question must not exceed 500 characters.`);
 
-          jsonData.forEach((row, index) => {
-            const rowNum = index + 2;
+          if (options.every((o) => o === ""))
+            errors.push(`Row ${rowNum}: At least one option must have a value.`);
 
-            const snoRaw = row['Sno'];
-            const sno = snoRaw !== undefined && snoRaw !== null ? String(snoRaw).trim() : '';
-            const question = (row['Question'] || '').toString().trim();
-            const difficulty = (row['Difficulty Level'] || '').toString().trim();
-            const questionType = (row['Question Type'] || '').toString().trim();
-            const section = (row['Section'] || '').toString().trim();
-            const answerExplanation = (row['Answer Explanation'] || '').toString().trim();
-            let useAnswerExplanationLower = (row['Use Answer Explanation'] || '').toString().trim().toLowerCase();
+          if (!["1", "2", "3"].includes(difficulty))
+            errors.push(`Row ${rowNum}: Difficulty Level must be 1, 2, or 3.`);
 
-            if (useAnswerExplanationLower === '') useAnswerExplanationLower = 'false';
+          if (!section) errors.push(`Row ${rowNum}: Section cannot be empty.`);
+          else if (section.length > 10)
+            errors.push(`Row ${rowNum}: Section must not exceed 10 characters.`);
 
-            // Options
-            const options = [
-              (row["Option 1"] || '').toString().trim(),
-              (row["Option 2"] || '').toString().trim(),
-              (row["Option 3"] || '').toString().trim(),
-              (row["Option 4"] || '').toString().trim(),
-              (row["Option 5"] || '').toString().trim(),
-              (row["Option 6"] || '').toString().trim()
-            ];
+          if (answerExplanation.length > 500)
+            errors.push(`Row ${rowNum}: Answer Explanation must not exceed 500 characters.`);
 
-            // Sno - required and duplicate
-            if (!sno) errors.push(`Row ${rowNum}: Sno is required.`);
-            else {
-              if (seenSno.has(sno)) duplicateSno.push(sno);
-              seenSno.add(sno);
-            }
+          if (!["true", "false"].includes(useAnswerExplanation))
+            errors.push(`Row ${rowNum}: Use Answer Explanation must be TRUE or FALSE.`);
 
-            // Question
-            if (!question) errors.push(`Row ${rowNum}: Question cannot be empty.`);
-            else if (question?.length > 500) errors.push(`Row ${rowNum}: Question length must not exceed 500 characters.`);
+          if (!["Single Correct", "Multiple Correct"].includes(questionType))
+            errors.push(
+              `Row ${rowNum}: Question Type must be 'Single Correct' or 'Multiple Correct'.`
+            );
 
-            // Options check
-            if (options.every(o => o === '')) errors.push(`Row ${rowNum}: At least one Option (1–6) must have a value.`);
+          const parsedAnswers = parseCorrectAnswer(row["Correct Answer"]);
+          const uniqueAnswers = [...new Set(parsedAnswers)];
 
-            // Difficulty
-            if (!['1', '2', '3'].includes(difficulty)) errors.push(`Row ${rowNum}: Difficulty Level must be 1, 2, or 3.`);
-
-            // Section
-            if (!section) errors.push(`Row ${rowNum}: Section cannot be empty.`);
-            else if (section?.length > 10) errors.push(`Row ${rowNum}: Section length must not exceed 10 characters.`);
-
-            // Answer Explanation
-            if (answerExplanation.length > 500) errors.push(`Row ${rowNum}: Answer Explanation length must not exceed 500 characters.`);
-
-            // Use Answer Explanation
-            if (!["true", "false"].includes(useAnswerExplanationLower)) errors.push(`Row ${rowNum}: Use Answer Explanation must be TRUE or FALSE.`);
-
-            // Question Type
-            if (!['Single Correct', 'Multiple Correct'].includes(questionType)) errors.push(`Row ${rowNum}: Question Type must be 'Single Correct' or 'Multiple Correct'.`);
-
-            // Parse Correct Answer
-            const parsedAnswers = parseCorrectAnswer(row['Correct Answer'] || '');
-            const uniqueAnswers = [...new Set(parsedAnswers)];
-
-            if (uniqueAnswers?.length === 0) errors.push(`Row ${rowNum}: Correct Answer must contain at least one option number (1–6).`);
-            else {
-              uniqueAnswers.forEach(ans => {
-                if (!/^[1-6]$/.test(ans)) errors.push(`Row ${rowNum}: Correct Answer contains invalid option number: ${ans}`);
-                else {
-                  const optIndex = Number(ans) - 1;
-
-                  if (!options[optIndex]) errors.push(`Row ${rowNum}: Correct Answer references Option ${ans} but that option is empty.`);
-                }
-              });
-            }
-
-            // Single / Multiple rules
-            if (questionType === 'Single Correct' && uniqueAnswers?.length !== 1) errors.push(`Row ${rowNum}: For Single Correct, Correct Answer must contain exactly ONE option number.`);
-            if (questionType === 'Multiple Correct' && uniqueAnswers?.length < 2) errors.push(`Row ${rowNum}: For Multiple Correct, Correct Answer must contain at least TWO option numbers.`);
-
-            // Explanation logic
-            if (useAnswerExplanationLower === 'true' && !answerExplanation) errors.push(`Row ${rowNum}: Answer Explanation cannot be empty when Use Answer Explanation is TRUE.`);
-            if (useAnswerExplanationLower === 'false' && answerExplanation) errors.push(`Row ${rowNum}: Answer Explanation must be empty when Use Answer Explanation is FALSE.`);
-          });
-
-          if (duplicateSno?.length > 0) errors.unshift(`Duplicate Sno values found: ${[...new Set(duplicateSno)].join(', ')}`);
-
-          if (errors?.length > 0) {
-            setValidationErrors(errors);
-            setLoading(false);
-            setProgress(0);
-
-            return;
+          if (uniqueAnswers.length === 0)
+            errors.push(
+              `Row ${rowNum}: Correct Answer must contain at least one option number (1–6).`
+            );
+          else {
+            uniqueAnswers.forEach((ans) => {
+              if (!/^[1-6]$/.test(ans))
+                errors.push(
+                  `Row ${rowNum}: Correct Answer contains invalid option number: ${ans}`
+                );
+              else if (!options[Number(ans) - 1])
+                errors.push(
+                  `Row ${rowNum}: Correct Answer references Option ${ans} but that option is empty.`
+                );
+            });
           }
 
-          // Normalize rows for upload
-          const normalized = jsonData.map((row) => {
-            const opts = [
-              (row['Option 1'] || '').toString().trim(),
-              (row['Option 2'] || '').toString().trim(),
-              (row['Option 3'] || '').toString().trim(),
-              (row['Option 4'] || '').toString().trim(),
-              (row['Option 5'] || '').toString().trim(),
-              (row['Option 6'] || '').toString().trim(),
-            ];
+          if (questionType === "Single Correct" && uniqueAnswers.length !== 1)
+            errors.push(
+              `Row ${rowNum}: For Single Correct, Correct Answer must contain exactly ONE option number.`
+            );
 
-            const parsed = parseCorrectAnswer(row['Correct Answer'] || '');
-            const unique = [...new Set(parsed)].filter(v => /^[1-6]$/.test(String(v)));
-            const filtered = unique.filter(ans => opts[Number(ans) - 1] !== '');
+          if (questionType === "Multiple Correct" && uniqueAnswers.length < 2)
+            errors.push(
+              `Row ${rowNum}: For Multiple Correct, Correct Answer must contain at least TWO option numbers.`
+            );
 
-            const useAnswerExplanationBool = (row['Use Answer Explanation'] || '').toString().trim().toLowerCase() === 'true';
+          if (useAnswerExplanation === "true" && !answerExplanation)
+            errors.push(
+              `Row ${rowNum}: Answer Explanation cannot be empty when Use Answer Explanation is TRUE.`
+            );
+          if (useAnswerExplanation === "false" && answerExplanation)
+            errors.push(
+              `Row ${rowNum}: Answer Explanation must be empty when Use Answer Explanation is FALSE.`
+            );
+        });
 
-            return {
-              Sno: row['Sno'],
-              Question: (row['Question'] || '').toString().trim(),
-              Option1: opts[0],
-              Option2: opts[1],
-              Option3: opts[2],
-              Option4: opts[3],
-              Option5: opts[4],
-              Option6: opts[5],
-              DifficultyLevel: (row['Difficulty Level'] || '').toString().trim(),
-              CorrectAnswer: filtered.map(Number),
-              Section: (row['Section'] || '').toString().trim(),
-              AnswerExplanation: (row['Answer Explanation'] || '').toString().trim(),
-              UseAnswerExplanation: useAnswerExplanationBool,
-              QuestionType: (row['Question Type'] || '').toString().trim(),
-            };
-          });
+        if (duplicateSno.length > 0)
+          errors.unshift(`Duplicate Sno values found: ${[...new Set(duplicateSno)].join(", ")}`);
 
-          setUploadData(normalized);
-          setFileInput(selectedFile);
-          setLoading(false);
-          setProgress(100);
-        } catch (err) {
-          console.error('Error processing the Excel file:', err);
-          toast.error('Error processing the Excel file. Check the file and headers.');
+        if (errors.length > 0) {
+          setValidationErrors(errors);
           setLoading(false);
           setProgress(0);
-          setUploadData([]);
-          setData([]);
-        }
-      };
 
-      reader.onerror = (error) => {
-        console.error('Error reading the file:', error);
+          return;
+        }
+
+        const normalized = jsonData.map((row) => {
+          const opts = [
+            String(row["Option 1"] || "").trim(),
+            String(row["Option 2"] || "").trim(),
+            String(row["Option 3"] || "").trim(),
+            String(row["Option 4"] || "").trim(),
+            String(row["Option 5"] || "").trim(),
+            String(row["Option 6"] || "").trim(),
+          ];
+
+          const parsed = parseCorrectAnswer(row["Correct Answer"]);
+          const unique = [...new Set(parsed)].filter((v) => /^[1-6]$/.test(String(v)));
+          const filtered = unique.filter((ans) => opts[Number(ans) - 1] !== "");
+
+          return {
+            Sno: row["Sno"],
+            Question: String(row["Question"] || "").trim(),
+            Option1: opts[0],
+            Option2: opts[1],
+            Option3: opts[2],
+            Option4: opts[3],
+            Option5: opts[4],
+            Option6: opts[5],
+            DifficultyLevel: String(row["Difficulty Level"] || "").trim(),
+            CorrectAnswer: filtered.map(Number),
+            Section: String(row["Section"] || "").trim(),
+            AnswerExplanation: String(row["Answer Explanation"] || "").trim(),
+            UseAnswerExplanation: String(row["Use Answer Explanation"] || "").trim().toLowerCase() === "true",
+            QuestionType: String(row["Question Type"] || "").trim(),
+          };
+        });
+
+        setUploadData(normalized);
+        setFileInput(selectedFile);
+        setLoading(false);
+        setProgress(100);
+      } catch (err) {
+        console.error("Error processing Excel file:", err);
+        toast.error("Error processing the Excel file. Check the file and headers.");
         setLoading(false);
         setProgress(0);
         setUploadData([]);
         setData([]);
-        toast.error('Error reading file.');
-      };
-
-      reader.readAsArrayBuffer(selectedFile);
+      }
     },
     onDropRejected: (rejectedFiles) => {
       setLoading(false);
       setProgress(0);
       setUploadData([]);
       setData([]);
-      rejectedFiles.forEach(file => {
-        file.errors.forEach(error => {
+      rejectedFiles.forEach((file) => {
+        file.errors.forEach((error) => {
           switch (error.code) {
-            case 'file-invalid-type':
+            case "file-invalid-type":
               toast.error(`Invalid file type for ${file.file.name}`);
               break;
-            case 'file-too-large':
+            case "file-too-large":
               toast.error(`File ${file.file.name} is too large.`);
               break;
             default:
@@ -437,7 +448,7 @@ const ImportQuizModal = ({ open, onClose, activityId, handleClose }) => {
           }
         });
       });
-    }
+    },
   });
 
   const handleDialogClose = () => {
@@ -732,7 +743,20 @@ const ShowFileModal = ({ open, setOpen, docURL }) => {
   const googleViewerURL = `https://docs.google.com/gview?url=${encodeURIComponent(fullURL)}&embedded=true`
 
   return (
-    <Dialog open={open} fullWidth maxWidth="md" onClose={handleClose}>
+    <Dialog
+      open={open}
+      fullWidth
+      maxWidth="lg"
+      onClose={handleClose}
+      scroll="body"
+      closeAfterTransition={false}
+      sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}
+    >
+
+      <DialogCloseButton onClick={handleClose} disableRipple>
+        <i className="tabler-x" />
+      </DialogCloseButton>
+
       <DialogTitle>Document Preview</DialogTitle>
 
       <DialogContent dividers sx={{ minHeight: 600 }}>
@@ -832,6 +856,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
 
   useEffect(() => {
     if (editData && open) {
+
       if (isYoutube || isVideo) {
         reset({
           title: editData?.video_data?.title || '',
@@ -840,7 +865,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
         })
       } else if (isScrom) {
         reset({
-          title: editData?.scrom_data?.title,
+          title: editData?.scorm_data?.title,
           video_url: '',
           live_session_type: ''
         })
@@ -1018,11 +1043,22 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
         body: formData
       });
 
+      const value = await response.json()
+
       if (response.ok) {
-        toast.success(`${fileConfig.type} uploaded successfully`);
+
+        toast.success(`${fileConfig.type} uploaded successfully`, {
+          autoClose: 1000
+        });
         fetchActivities();
         handleClose();
         setISOpen(false);
+      } else {
+
+        toast.error(`${value?.message}`, {
+          autoClose: 1000
+        })
+
       }
     } catch (error) {
       toast.error('Upload failed');
@@ -1044,7 +1080,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
   }
 
   return (
-    <Dialog open={open} fullWidth maxWidth="md" sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}>
+    <Dialog open={open} fullWidth maxWidth="lg" sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}>
       <DialogCloseButton onClick={handleClose} disableRipple>
         <i className="tabler-x"></i>
       </DialogCloseButton>
@@ -1155,45 +1191,63 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
               </Grid>
             )}
 
-            {isYoutube && (
+            {(isYoutube || isVideo) && (
               <>
-                <Grid item size={{ xs: 12 }}>
-                  <Controller
-                    name="video_url"
-                    control={control}
-                    render={({ field }) => (
-                      <CustomTextField
-                        {...field}
-                        fullWidth
-                        label="Video URL*"
-                        placeholder="Enter YouTube video URL"
-                        error={!!errors.video_url}
-                        helperText={errors.video_url?.message}
-                      />
-                    )}
-                  />
-                </Grid>
+                {isYoutube && (
 
-                {ReactPlayer.canPlay(watch('video_url')) && (
-                  <Grid item size={{ xs: 12 }}>
-                    <Typography variant="subtitle1" gutterBottom>Video Preview</Typography>
-                    <Box sx={{ position: 'relative', width: '100%', height: '300px', borderRadius: 2, overflow: 'hidden', boxShadow: 1 }}>
-                      <ReactPlayer
-                        url={watch('video_url')}
-                        controls
-                        width="100%"
-                        height="100%"
-                        style={{ position: 'absolute', top: 0, left: 0 }}
+                  <>
+                    <Grid item size={{ xs: 12 }}>
+                      <Controller
+                        name="video_url"
+                        control={control}
+                        render={({ field }) => (
+                          <CustomTextField
+                            {...field}
+                            fullWidth
+                            label="Video URL*"
+                            placeholder="Enter YouTube video URL"
+                            error={!!errors.video_url}
+                            helperText={errors.video_url?.message}
+                          />
+                        )}
                       />
-                    </Box>
-                  </Grid>
+                    </Grid>
+                  </>
                 )}
+
+                <>
+
+                  {ReactPlayer.canPlay(preview ? preview : (isVideo ? `${assert_url}/activity/${watch('video_url')}` : watch('video_url'))) && (
+                    <Grid item size={{ xs: 12 }}>
+                      <Typography variant="subtitle1" gutterBottom>Video Preview</Typography>
+                      <Box sx={{ position: 'relative', width: '100%', height: '300px', borderRadius: 2, overflow: 'hidden', boxShadow: 1 }}>
+                        <ReactPlayer
+                          url={preview ? preview : (isVideo ? `${assert_url}/activity/${watch('video_url')}` : watch('video_url'))}
+                          controls
+                          width="100%"
+                          height="100%"
+                          style={{ position: 'absolute', top: 0, left: 0 }}
+                        />
+                      </Box>
+                    </Grid>
+                  )}
+                </>
+
               </>
             )}
           </Grid>
 
-          <DialogActions sx={{ justifyContent: 'center', gap: 2, mt: 4 }}>
-            <Button type="submit" variant="contained" disabled={loading} sx={{ height: 40, position: 'relative' }}>
+          <DialogActions sx={{
+            justifyContent: 'center',
+            gap: 2,
+            mt: 4
+          }}>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={loading}
+              sx={{ height: 40, position: 'relative' }}
+            >
               {loading ? (
                 <CircularProgress size={24} sx={{
                   color: 'white', position: 'absolute', top: '50%', left: '50%',
@@ -1328,7 +1382,7 @@ const MCQModalComponent = ({ open, setOpen, activeQuestionId, setOptionData, opt
       const err = [...prev]
 
       err[index] = false
-      
+
       return err
     })
     setMinOptionError('')
@@ -1347,6 +1401,7 @@ const MCQModalComponent = ({ open, setOpen, activeQuestionId, setOptionData, opt
     setErrors([])
 
     if (activeQuestionId === '7') {
+
       if (customOptions.length < 2) {
         setMinOptionError('At least 2 options are required')
 
@@ -1523,13 +1578,13 @@ const SurveyModalComponent = ({ open, setISOpen, API_URL, token, mId, questions,
       prev.map(q => {
         const textError = !q.text.trim()
         const typeError = !q.type
-    
+
         if (textError || typeError) valid = false
-    
+
         return { ...q, errors: { text: textError, type: typeError } }
       })
     )
-    
+
     return valid
   }
 
@@ -2291,34 +2346,50 @@ const ImportUserModal = ({
   };
 
   const { getRootProps, getInputProps } = useDropzone({
+
     multiple: false,
-    maxSize: 5 * 1024 * 1024,
+    maxSize: 5 * 1024 * 1024, // 5MB
     accept: {
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"]
     },
+
     onDrop: async (acceptedFiles) => {
       if (!acceptedFiles?.length) return;
+
       const selectedFile = acceptedFiles[0];
 
       try {
-        const data = await selectedFile.arrayBuffer();
-        const workbook = XLSX.read(data, { type: "array" });
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+        const arrayBuffer = await selectedFile.arrayBuffer();
 
-        if (!jsonData?.length) {
-          throw new Error("Excel file is empty.");
-        }
+        const workbook = new ExcelJS.Workbook();
 
-        const headerRow = jsonData[0].map(h => String(h || "").trim());
+        await workbook.xlsx.load(arrayBuffer);
+
+        const worksheet = workbook.worksheets[0]; // first sheet
+
+        if (!worksheet) throw new Error("Excel file is empty.");
+
+        // Read header row
+        const headerRow = worksheet.getRow(1).values.slice(1).map(h => String(h || "").trim());
         const cleanHeaders = headerRow.map((h, idx) => h || `Column${idx + 1}`);
 
+        // Validate headers (you already have this function)
         validateExcelHeaders(cleanHeaders.map(h => h.toLowerCase()));
 
-        const rows = XLSX.utils.sheet_to_json(firstSheet, {
-          header: cleanHeaders,
-          range: 1,
-          defval: ""
+        // Read all rows starting from row 2
+        const rows = [];
+
+        worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+
+          if (rowNumber === 1) return;
+
+          const rowValues = row.values.slice(1);
+          const rowData = {};
+
+          cleanHeaders.forEach((header, idx) => {
+            rowData[header] = rowValues[idx] ?? "";
+          });
+          rows.push(rowData);
         });
 
         const errors = {};
@@ -2332,6 +2403,7 @@ const ImportUserModal = ({
           const empFilled = empVal !== "";
 
           if (snoFilled !== empFilled) {
+
             errors[index] = "Sno and EmpId/Email must both be filled or both be empty.";
 
             return;
@@ -2352,7 +2424,6 @@ const ImportUserModal = ({
               );
             }
 
-
             if (matchedUser) {
               matchedUsersArray.push(matchedUser._id);
             } else {
@@ -2368,6 +2439,7 @@ const ImportUserModal = ({
         setMatchedUsers(matchedUsersArray);
 
       } catch (err) {
+        console.error("Error processing Excel file:", err);
         setFile(null);
         setExcelData([]);
         setRowErrors({});
@@ -2378,7 +2450,6 @@ const ImportUserModal = ({
     },
     onDropRejected: (rejectedFiles) => {
       rejectedFiles.forEach(file => {
-
         file.errors.forEach(error => {
           let msg = "";
 
@@ -2512,7 +2583,7 @@ const ImportUserModal = ({
   );
 
   return (
-    <Dialog open={open} fullWidth maxWidth="md" sx={{ "& .MuiDialog-paper": { overflow: "visible" } }}>
+    <Dialog open={open} fullWidth maxWidth="lg" sx={{ "& .MuiDialog-paper": { overflow: "visible" } }}>
       <DialogTitle>Import User</DialogTitle>
       <form onSubmit={handleSubmit(handleDataSave)} noValidate>
         <DialogContent sx={{ maxHeight: "80vh", overflowY: "auto" }}>
@@ -2882,6 +2953,8 @@ const SettingComponent = ({ activities }) => {
     });
   };
 
+  const [isPublish, setIsPublish] = useState(false)
+
   const handleImportUser = (index) => {
     setSelectedPairIndex(index);
     setIsOpen(true);
@@ -2889,6 +2962,8 @@ const SettingComponent = ({ activities }) => {
 
   const handleDataSave = async (value) => {
     if (!API_URL || !token || !mId) return;
+
+    setIsPublish(true)
 
     try {
       const res = await fetch(`${API_URL}/company/program/schedule/${mId}`, {
@@ -2903,15 +2978,24 @@ const SettingComponent = ({ activities }) => {
       const body = await res.json();
 
       if (res.ok) {
+
+        setIsPublish(false)
+
         toast.success(body?.message || "Setting saved successfully", {
           autoClose: 1000,
         });
+
       } else {
+
         toast.error(body?.message || "Failed to save settings");
       }
     } catch (err) {
-      console.error("❌ Error saving settings:", err?.message || err);
+
+      console.error("Error saving settings:", err?.message || err);
       toast.error("Something went wrong!");
+    } finally {
+
+      setIsPublish(false)
     }
   };
 
@@ -2946,6 +3030,41 @@ const SettingComponent = ({ activities }) => {
     setSelectedPairIndex(null);
     setAllData([]);
   };
+
+  const now = new Date();
+
+  const isSameDay = (d1, d2) =>
+    d1 && d2 && d1.toDateString() === d2.toDateString();
+
+  const startOfDay = () => {
+    const d = new Date();
+
+    d.setHours(0, 0, 0, 0);
+
+    return d;
+  };
+
+  const endOfDay = () => {
+    const d = new Date();
+
+    d.setHours(23, 59, 59, 999);
+
+    return d;
+  };
+
+
+  useEffect(() => {
+    if (startDate && endDate && startDate > endDate) {
+      setEndDate(startDate);
+    }
+  }, [startDate]);
+
+  useEffect(() => {
+    if (startDate && endDate && endDate < startDate) {
+      setStartDate(endDate);
+    }
+  }, [endDate]);
+
 
   const dateInputStyle = {
     width: "200px",
@@ -2982,11 +3101,11 @@ const SettingComponent = ({ activities }) => {
               control={<Radio />}
               label="To all existing & new Learners under this Content Folder who meet Target audience criteria"
             />
-            <FormControlLabel
+            {/* <FormControlLabel
               value="3"
               control={<Radio />}
               label="Let me select Learners while publishing"
-            />
+            /> */}
           </RadioGroup>
 
           {/* Self Enrollment */}
@@ -3175,50 +3294,59 @@ const SettingComponent = ({ activities }) => {
                   <Typography variant="subtitle1">Fixed due date</Typography>
 
                   <Box display="flex" flexDirection="row" gap={4}>
-                    {/* Start Time */}
                     {dueType === "fixed" && (
                       <Box>
                         <Typography variant="body2" gutterBottom>
                           Start time
                         </Typography>
+
                         <DatePicker
                           selected={startDate}
                           onChange={(date) => setStartDate(date)}
                           showTimeSelect
                           dateFormat="Pp"
-                          placeholderText="Select start time"
-                          customInput={
-                            <input
-                              style={dateInputStyle}
-                              placeholder="Select start time"
-                            />
+
+                          minDate={now}
+                          maxDate={endDate || null}
+
+                          minTime={isSameDay(startDate, now) ? now : startOfDay()}
+                          maxTime={
+                            endDate && isSameDay(startDate, endDate)
+                              ? endDate
+                              : endOfDay()
                           }
+                          customInput={<input style={dateInputStyle} />}
                         />
                       </Box>
                     )}
 
-                    {/* End Date */}
                     {dueType === "fixed" && (
                       <Box>
                         <Typography variant="body2" gutterBottom>
                           End date
                         </Typography>
+
                         <DatePicker
                           selected={endDate}
                           onChange={(date) => setEndDate(date)}
                           showTimeSelect
                           dateFormat="Pp"
-                          placeholderText="Select end date"
-                          customInput={
-                            <input
-                              style={dateInputStyle}
-                              placeholder="Select end date"
-                            />
+
+                          minDate={startDate || now}
+                          minTime={
+                            isSameDay(endDate, startDate)
+                              ? startDate
+                              : isSameDay(endDate, now)
+                                ? now
+                                : startOfDay()
                           }
+                          maxTime={endOfDay()}
+                          customInput={<input style={dateInputStyle} />}
                         />
                       </Box>
                     )}
                   </Box>
+
                 </Box>
               }
             />
@@ -3252,9 +3380,9 @@ const SettingComponent = ({ activities }) => {
             variant="contained"
             color="primary"
             sx={{ mt: 3 }}
-            disabled={!activities || activities?.length === 0}
+            disabled={isPublish || !activities || activities?.length === 0}
           >
-            Publish
+            {isPublish ? <CircularProgress size={24} color="inherit" /> : "Publish"}
           </Button>
         </Grid>
       </Grid>
@@ -3314,7 +3442,7 @@ const ContentFlowModal = ({ open, data, setOpen, setSelected, selected, setNext,
         fullWidth
         open={open}
         onClose={() => setOpen(false)}
-        maxWidth="md"
+        maxWidth="lg"
         scroll="body"
         closeAfterTransition={false}
         sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}

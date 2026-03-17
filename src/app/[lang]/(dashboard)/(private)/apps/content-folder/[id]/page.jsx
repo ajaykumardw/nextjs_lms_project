@@ -1,73 +1,81 @@
 'use client'
 
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react'
 
-import { useParams } from "next/navigation";
+import { useParams } from 'next/navigation'
 
-import { useSession } from "next-auth/react";
+import { useSession } from 'next-auth/react'
 
-import ProgramCardComponent from "@/components/program-component/CardComponent";
+import ProgramCardComponent from '@/components/program-component/CardComponent'
 
 const ContentComponent = () => {
+    const [loading, setLoading] = useState(true)
+    const [data, setData] = useState([])
+    const [activePage, setActivePage] = useState(0)
+    const [totalItems, setTotalItems] = useState(0)
 
-    const [loading, setLoading] = useState(true);
-    const [cardData, setCardData] = useState();
-    const [totalItem, setTotalItems] = useState()
+    const itemsPerPage = 6
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL;
-    const { data: session } = useSession();
-    const token = session?.user?.token;
-    const { lang: locale, id: id } = useParams();
+    const API_URL = process.env.NEXT_PUBLIC_API_URL
+    const { data: session } = useSession()
+    const token = session?.user?.token
+    const { lang: locale, id } = useParams()
 
-    const fetchCardData = async () => {
+    const getContentFolderList = async (page = 0) => {
         try {
-            setLoading(true);
+            setLoading(true)
 
-            const response = await fetch(`${API_URL}/company/content-folder/${id}`, {
-                method: 'GET',
-                headers: {
-                    Authorization: `Bearer ${token}`
+            const response = await fetch(
+                `${API_URL}/company/content-folder/${id}?page=${page}&limit=${itemsPerPage}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
                 }
-            });
+            )
 
-            const result = await response.json();
+            const result = await response.json()
 
             if (response.ok) {
-                const value = result?.data;
-                
-                setCardData(value);
-                setTotalItems(value?.length || 0);
+                const maxPage = Math.max(
+                    0,
+                    Math.ceil(result.data.totalItems / itemsPerPage) - 1
+                )
+
+                setActivePage(Math.min(page, maxPage))
+                setData(result.data.data)
+                setTotalItems(result.data.totalItems)
             }
         } catch (error) {
-            console.error('Failed to fetch card data:', error);
+            console.error('Failed to fetch card data:', error)
         } finally {
-            setLoading(false);
+            setLoading(false)
         }
-    };
+    }
 
     useEffect(() => {
-        if (API_URL && token) {
-            fetchCardData();
+        if (API_URL && token && id) {
+            getContentFolderList(0)
         }
-    }, [API_URL, token]);
+    }, [API_URL, token, id])
 
     return (
-        <>
-            <ProgramCardComponent
-                locale={locale}
-                stage={"Content Folder"}
-                currentId={id}
-                parent={"Program"}
-                formLink={`/${locale}/apps/content-folder/${id}/create`}
-                data={cardData}
-                loading={loading}
-                totalItems={totalItem}
-                nextLink={`/${locale}/apps/modules`}
-                parentCategory={`/${locale}/apps/content-folder`}
-            />
-        </>
+        <ProgramCardComponent
+            locale={locale}
+            stage="Content Folder"
+            currentId={id}
+            parent="Program"
+            formLink={`/${locale}/apps/content-folder/${id}/create`}
+            data={data}
+            loading={loading}
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+            activePage={activePage}
+            getModuleList={getContentFolderList}
+            nextLink={`/${locale}/apps/modules`}
+            parentCategory={`/${locale}/apps/content-folder`}
+        />
     )
-
 }
 
-export default ContentComponent;
+export default ContentComponent

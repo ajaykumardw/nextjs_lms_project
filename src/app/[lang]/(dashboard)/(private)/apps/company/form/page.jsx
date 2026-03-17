@@ -10,12 +10,10 @@ export default async function UserFormLayouts({ params }) {
 
   const { lang } = await params;
 
-  const locale = lang;
-
   return (
     <Grid container spacing={6}>
       <Grid size={{ xs: 12 }}>
-        <PermissionGuard locale={locale} element={'isSuperAdmin'}>
+        <PermissionGuard locale={lang} element={'isSuperAdmin'}>
           <UserFormLayout />
         </PermissionGuard>
       </Grid>

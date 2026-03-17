@@ -1,8 +1,6 @@
 
 "use client"
 
-useParams
-
 import { useEffect, useState } from 'react'
 
 import { useParams } from 'next/navigation'
@@ -14,9 +12,6 @@ import Grid from '@mui/material/Grid2'
 
 // Component Imports
 import Details from '@components/Details'
-
-// Data Imports
-import { getAcademyData } from '@/app/server/actions'
 
 const CourseDetailsPage = () => {
 

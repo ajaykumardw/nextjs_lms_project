@@ -5,11 +5,12 @@ import Grid from '@mui/material/Grid2'
 import LabelFormLayout from '@components/label-form/page';
 import PermissionGuard from '@/hocs/PermissionGuard';
 
-export default function UserFormLayouts({ params }) {
-    const locale = params.lang;
+export default async function UserFormLayouts({ params }) {
+
+    const { lang } = await params;
 
     return (
-        <PermissionGuard locale={locale} element={'isCompany'}>
+        <PermissionGuard locale={lang} element={'isCompany'}>
             <Grid container spacing={6}>
                 <Grid size={{ xs: 12 }}>
                     <LabelFormLayout />

@@ -2,12 +2,12 @@
 import PermissionGuard from '@/hocs/PermissionGuard'
 import UserList from '@/views/apps/user/list'
 
-export default function UserListApp({ params }) {
+export default async function UserListApp({ params }) {
 
-  const locale = params.lang;
+  const { lang } = await params;
 
   return (
-    <PermissionGuard locale={locale} element={'hasUserPermission'}>
+    <PermissionGuard locale={lang} element={'hasUserPermission'}>
       <UserList />
     </PermissionGuard>
   )

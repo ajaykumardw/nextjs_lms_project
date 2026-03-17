@@ -238,6 +238,11 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
                 My Module
               </MenuItem>
 
+              <MenuItem key="self_enroll_module" href={`/${locale}/apps/self-enroll`}>
+                <i className="tabler-users" style={{ marginRight: 8 }} />
+                Self Enroll Module
+              </MenuItem>
+
               <MenuItem key="courses" href={`/${locale}/apps/my-courses`}>
                 <i className="tabler-book" style={{ marginRight: 8 }} />
                 My Course
@@ -309,7 +314,6 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
           {permissArray?.isCompany && permissArray?.hasUserPermission && (
             <SubMenu label={dictionary['navigation'].user_plural} icon={<i className='tabler-user' />}>
               <MenuItem href={`/${locale}/apps/user/list`}>{dictionary['navigation'].list_plural}</MenuItem>
-              <MenuItem href={`/${locale}/apps/user/view`}>{dictionary['navigation'].view_plural}</MenuItem>
             </SubMenu>
           )}
           {permissArray?.isCompany && permissArray?.hasGroupPermission && (
@@ -322,13 +326,33 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
               <MenuItem key="Role" href={`/${locale}/apps/certificate`}>Certificate</MenuItem>
             </SubMenu>
           )}
+          {permissArray?.isCompany && (
+            <SubMenu label="Download center" icon={<i className="tabler-download" />}>
+              <MenuItem key="download_center" href={`/${locale}/apps/download-center`}>Listing</MenuItem>
+            </SubMenu>
+          )}
+          {permissArray?.isCompany && (
+            <SubMenu label="Report" icon={<i className="tabler-report" />}>
+              <MenuItem key="completion_ratio_report" href={`/${locale}/apps/completion-ratio-report`}>Completion Ratio Report</MenuItem>
+              <MenuItem key="quiz_assessment_report" href={`/${locale}/apps/quiz-assessment-report`}>Quiz Assessment Report</MenuItem>
+              <MenuItem key="scorm_report" href={`/${locale}/apps/scorm-report`}>Scorm Report</MenuItem>
+              <MenuItem key="login_report" href={`/${locale}/apps/login-report`}>Login Report</MenuItem>
+              <MenuItem key="user_report" href={`/${locale}/apps/user-report`}>User Report</MenuItem>
+              <MenuItem key="advance_training_report" href={`/${locale}/apps/advance-training-report`}>Advance Training Report</MenuItem>
+              <MenuItem key="miscellaneous_report" href={`/${locale}/apps/miscellaneous-report`}>Miscellaneous Report</MenuItem>
+            </SubMenu>
+          )}
+          {permissArray?.isSuperAdmin && (
+            <SubMenu label="Notification" icon={<i className="tabler-notification" />}>
+              <MenuItem key="notification_listing" href={`/${locale}/apps/admin/notification`}>Listing</MenuItem>
+            </SubMenu>
+          )}
           {((permissArray?.isCompany && permissArray?.hasLabelPermission) || permissArray?.isSuperAdmin) && (
             <SubMenu label="Settings" icon={<i className="tabler-settings" />}>
               {permissArray?.isSuperAdmin && (
                 [
                   <MenuItem key="language" href={`/${locale}/apps/language`}>Language</MenuItem>,
                   <MenuItem key="terminology" href={`/${locale}/apps/terminology`}>Terminology</MenuItem>,
-                  <MenuItem key="notification_templates" href={`/${locale}/apps/admin/notification`}>Notification</MenuItem>
                 ]
               )}
               {permissArray?.isCompany && permissArray?.hasLabelPermission && (

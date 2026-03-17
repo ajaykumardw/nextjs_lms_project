@@ -53,7 +53,7 @@ const RoleCards = ({ fetchRoleData, tableData }) => {
   return (
     <Grid container spacing={6}>
       {cardData.map((item, index) => (
-        <Grid key={index} xs={12} sm={6} lg={4}>
+        <Grid key={index} size={{ xs: 12, sm: 6, lg: 4 }}>
           <Card>
             <CardContent className='flex flex-col gap-4'>
               <div className='flex items-center justify-between'>
@@ -100,19 +100,19 @@ const RoleCards = ({ fetchRoleData, tableData }) => {
 
       {/* Add Role Card */}
       {permissions && permissions?.['hasRoleAddPermission'] && (
-        <Grid xs={12} sm={6} lg={4}>
+        <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
           <OpenDialogOnElementClick
             element={Card}
             elementProps={{
               className: 'cursor-pointer bs-full',
               children: (
                 <Grid container className='bs-full'>
-                  <Grid xs={5}>
+                  <Grid size={{ xs: 5 }}>
                     <div className='flex items-end justify-center bs-full'>
                       <img alt='add-role' src='/images/illustrations/characters/5.png' height={130} />
                     </div>
                   </Grid>
-                  <Grid xs={7}>
+                  <Grid size={{ xs: 7 }}>
                     <CardContent>
                       <div className='flex flex-col items-end gap-4 text-right'>
                         <Button variant='contained' size='small'>

@@ -4,7 +4,6 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { AICC, Scorm12API, Scorm2004API } from 'scorm-again';
-import axios from 'axios';
 
 const ScormPlayerLegacy = ({
     studentId,

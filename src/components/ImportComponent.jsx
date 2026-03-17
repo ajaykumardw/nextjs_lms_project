@@ -8,7 +8,7 @@ import {
     ListItem, LinearProgress, MenuItem
 } from '@mui/material'
 
-import * as XLSX from 'xlsx'
+import ExcelJS from "exceljs";
 
 import classnames from 'classnames'
 
@@ -144,53 +144,78 @@ const ImportComponent = ({ open, onClose, setMatchUserId, matchUserId }) => {
     };
 
     const { getRootProps, getInputProps } = useDropzone({
+
         multiple: false,
         maxSize: 2 * 1024 * 1024,
         accept: {
             'application/vnd.ms-excel': ['.xls'],
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
         },
-        onDrop: (acceptedFiles) => {
-            setFileInput(null)
-            setMissingHeaders([])
-            setLoading(true)
-            setProgress(0)
-            setUploadData([])
-            setSRNOArr([])
+        onDrop: async (acceptedFiles) => {
 
-            const reader = new FileReader()
+            if (!acceptedFiles?.length) return;
 
-            reader.onload = async (e) => {
-                try {
-                    const arrayBuffer = e.target.result
-                    const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' })
-                    const worksheet = workbook.Sheets[workbook.SheetNames[0]]
-                    const jsonData = XLSX.utils.sheet_to_json(worksheet)
-                    const headers = XLSX.utils.sheet_to_json(worksheet, { header: 1 })[0] || []
+            setFileInput(null);
+            setMissingHeaders([]);
+            setLoading(true);
+            setProgress(0);
+            setUploadData([]);
+            setSRNOArr([]);
 
-                    const requiredHeaders = ['SRNO', 'EmpID']
-                    const missing = requiredHeaders.filter(h => !headers.includes(h))
+            try {
 
-                    if (missing.length) {
-                        setMissingHeaders(missing)
+                const selectedFile = acceptedFiles[0];
+                const arrayBuffer = await selectedFile.arrayBuffer();
 
-                        return
-                    }
+                const workbook = new ExcelJS.Workbook();
+                
+                await workbook.xlsx.load(arrayBuffer);
 
-                    setUploadData(jsonData)
-                    setFileInput(acceptedFiles[0])
-                    await checkEmployeeId(jsonData)
-                } catch (err) {
-                    console.error(err)
-                    toast.error('Error processing Excel file')
-                } finally {
-                    setLoading(false)
+                const worksheet = workbook.worksheets[0];
+                
+                if (!worksheet) throw new Error("Excel file is empty.");
+
+                // Read header row
+                const headers = worksheet.getRow(1).values.slice(1).map(h => String(h || "").trim());
+
+                const requiredHeaders = ['SRNO', 'EmpID'];
+                const missing = requiredHeaders.filter(h => !headers.includes(h));
+
+                if (missing.length) {
+                    setMissingHeaders(missing);
+                    setLoading(false);
+                    
+                    return;
                 }
-            }
 
-            reader.readAsArrayBuffer(acceptedFiles[0])
+                // Read all rows starting from row 2
+                const jsonData = [];
+                
+                worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+                    if (rowNumber === 1) return; // skip header
+                    const rowValues = row.values.slice(1); // ExcelJS is 1-based
+                    const rowData = {};
+                    
+                    headers.forEach((header, idx) => {
+                        rowData[header] = rowValues[idx] ?? "";
+                    });
+                    jsonData.push(rowData);
+                });
+
+                setUploadData(jsonData);
+                setFileInput(selectedFile);
+
+                // Call your existing function
+                await checkEmployeeId(jsonData);
+
+            } catch (err) {
+                console.error(err);
+                toast.error("Error processing Excel file");
+            } finally {
+                setLoading(false);
+            }
         }
-    })
+    });
 
     const columns = useMemo(() => [
         columnHelper.accessor('SRNO', {

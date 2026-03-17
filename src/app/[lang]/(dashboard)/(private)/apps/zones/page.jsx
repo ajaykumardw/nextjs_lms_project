@@ -1,14 +1,15 @@
-// Do NOT add 'use client' here — this is a Server Component
-
 import PermissionGuard from '@/hocs/PermissionGuard';
 import Zones from '@views/apps/zones';
 
-export default async function ZonesApp({ params }) {
-  const locale = params.lang;
+const ZonesApp = async ({ params }) => {
+
+  const { lang } = await params;
 
   return (
-    <PermissionGuard locale={locale} element="hasZonePermission">
+    <PermissionGuard locale={lang} element="hasZonePermission">
       <Zones />
     </PermissionGuard>
   );
 }
+
+export default ZonesApp

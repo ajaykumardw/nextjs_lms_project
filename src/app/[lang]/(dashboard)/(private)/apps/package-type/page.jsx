@@ -3,10 +3,10 @@ import PackageType from '@views/apps/package-type'
 
 export default async function PackageTypeApp({ params }) {
 
-  const locale = await params?.lang
+  const { lang } = await params
 
   return (
-    <PermissionGuardServer locale={locale} element={'isSuperAdmin'}>
+    <PermissionGuardServer locale={lang} element={'isSuperAdmin'}>
       <PackageType />
     </PermissionGuardServer>
   )

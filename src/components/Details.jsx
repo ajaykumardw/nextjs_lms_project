@@ -34,9 +34,7 @@ export default function ProgramPage({ data }) {
     return `${String(date.getDate()).padStart(2, '0')} ${String(date.getMonth() + 1).padStart(2, '0')} ${date.getFullYear()}`
   }
 
-  // ======================================================
-  // 🔷 SHOW SKELETON WHILE WAITING FOR DATA
-  // ======================================================
+
   const isLoading = !data
 
   if (isLoading) {
@@ -98,10 +96,6 @@ export default function ProgramPage({ data }) {
       ? logs.reduce((sum, item) => sum + Number(item.completion_percentage || 0), 0) / logs.length
       : 0;
 
-
-  // ======================================================
-  // 🔷 MAIN PAGE RENDER WHEN DATA EXISTS
-  // ======================================================
   return (
     <Box className="p-6 space-y-5">
 

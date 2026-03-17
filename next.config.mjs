@@ -2,7 +2,11 @@
 const nextConfig = {
   basePath: process.env.BASEPATH,
   images: {
-    domains: ['localhost'], // allow images from http://localhost
+    remotePatterns: [{
+      protocol: 'http',
+      hostname: 'localhost',
+      pathname: '**',
+    },],
   },
   redirects: async () => {
     return [
@@ -18,12 +22,6 @@ const nextConfig = {
         permanent: true,
         locale: false
       },
-      {
-        source: '/((?!(?:en|fr|ar|front-pages|favicon.ico)\\b)):path',
-        destination: '/en/:path',
-        permanent: true,
-        locale: false
-      }
     ]
   }
 }
