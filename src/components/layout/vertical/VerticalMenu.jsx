@@ -111,17 +111,17 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
           icon={<i className='tabler-smart-home' />}
         >
           {(permissArray?.notUser) && (
-            <MenuItem href={`/${locale}/dashboards/crm`}>Crm</MenuItem>
+            <MenuItem href={`/${locale}/dashboard/lms`}>LMS</MenuItem>
           )}
 
           {permissArray?.isUser && (
-            <MenuItem href={`/${locale}/dashboards/user/learner`}>Learner</MenuItem>
+            <MenuItem href={`/${locale}/dashboard/user/learner`}>Learner</MenuItem>
           )}
 
-          {/* <MenuItem href={`/${locale}/dashboards/analytics`}>Analytics</MenuItem>
-          <MenuItem href={`/${locale}/dashboards/ecommerce`}>ECommerce</MenuItem>
-          <MenuItem href={`/${locale}/dashboards/academy`}>Academy</MenuItem>
-          <MenuItem href={`/${locale}/dashboards/logistics`}>Logistics</MenuItem> */}
+          {/* <MenuItem href={`/${locale}/dashboard/analytics`}>Analytics</MenuItem>
+          <MenuItem href={`/${locale}/dashboard/ecommerce`}>ECommerce</MenuItem>
+          <MenuItem href={`/${locale}/dashboard/academy`}>Academy</MenuItem>
+          <MenuItem href={`/${locale}/dashboard/logistics`}>Logistics</MenuItem> */}
         </SubMenu>
         {/* <SubMenu label="Front Pages" icon={<i className='tabler-files' />}>
           <MenuItem href='/front-pages/landing-page' target='_blank'>
@@ -260,14 +260,10 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
             </>
           )}
           {permissArray?.isCompany && (
-            <SubMenu label="Training & Program" icon={<i className="tabler-adjustments" />}>
-              <MenuItem key="Role" href={`/${locale}/apps/program`}>Training Program</MenuItem>
-            </SubMenu>
+            <MenuItem key="training_and_program" href={`/${locale}/apps/program`} icon={<i className="tabler-adjustments" />}>Training Program</MenuItem>
           )}
           {permissArray?.isCompany && permissArray?.hasRolePermission && (
-            <SubMenu label="Role & Permission" icon={<i className="tabler-lock" />}>
-              <MenuItem key="Role" href={`/${locale}/apps/role`}>Roles</MenuItem>
-            </SubMenu>
+            <MenuItem key="role_and_permission" href={`/${locale}/apps/role`} icon={<i className="tabler-lock" />}>Role & Permission</MenuItem>
           )}
           {permissArray?.isCompany && (permissArray?.hasZonePermission || permissArray?.hasRegionPermission || permissArray?.hasBranchPermission || permissArray?.hasChannelPermission || permissArray?.hasDepartmentPermission || permissArray?.hasDesignationPermission) && (
             <SubMenu label={dictionary['navigation']['manage-organization_plural']} icon={<i className='tabler-world' />}>
@@ -307,29 +303,21 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
             </SubMenu>
           )}
           {permissArray?.isSuperAdmin && (
-            <SubMenu label={"Company"} icon={<i className='tabler-user' />}>
-              <MenuItem href={`/${locale}/apps/company/list`}>List</MenuItem>
-            </SubMenu>
+            <MenuItem key={"company_listing"} href={`/${locale}/apps/company/list`} icon={<i className='tabler-user' />}>Company</MenuItem>
           )}
           {permissArray?.isCompany && permissArray?.hasUserPermission && (
-            <SubMenu label={dictionary['navigation'].user_plural} icon={<i className='tabler-user' />}>
-              <MenuItem href={`/${locale}/apps/user/list`}>{dictionary['navigation'].list_plural}</MenuItem>
-            </SubMenu>
+
+            <MenuItem href={`/${locale}/apps/user/list`} icon={<i className='tabler-user' />}>{dictionary['navigation'].user_plural}</MenuItem>
+
           )}
           {permissArray?.isCompany && permissArray?.hasGroupPermission && (
-            <SubMenu label="Groups" icon={<i className="tabler-users" />}>
-              <MenuItem key="Role" href={`/${locale}/apps/group`}>Group</MenuItem>
-            </SubMenu>
+            <MenuItem key="Groups" href={`/${locale}/apps/group`} icon={<i className="tabler-users" />}>Groups</MenuItem>
           )}
           {permissArray?.isCompany && permissArray?.hasGroupPermission && (
-            <SubMenu label="Certificate" icon={<i className="tabler-certificate" />}>
-              <MenuItem key="Role" href={`/${locale}/apps/certificate`}>Certificate</MenuItem>
-            </SubMenu>
+            <MenuItem key="Certificate" href={`/${locale}/apps/certificate`} icon={<i className="tabler-certificate" />}>Certificate</MenuItem>
           )}
           {permissArray?.isCompany && (
-            <SubMenu label="Download center" icon={<i className="tabler-download" />}>
-              <MenuItem key="download_center" href={`/${locale}/apps/download-center`}>Listing</MenuItem>
-            </SubMenu>
+            <MenuItem key="download_center" href={`/${locale}/apps/download-center`} icon={<i className="tabler-download" />}>Download center</MenuItem>
           )}
           {permissArray?.isCompany && (
             <SubMenu label="Report" icon={<i className="tabler-report" />}>
@@ -343,9 +331,8 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
             </SubMenu>
           )}
           {permissArray?.isSuperAdmin && (
-            <SubMenu label="Notification" icon={<i className="tabler-notification" />}>
-              <MenuItem key="notification_listing" href={`/${locale}/apps/admin/notification`}>Listing</MenuItem>
-            </SubMenu>
+            <MenuItem key="notification_listing" href={`/${locale}/apps/admin/notification`} icon={<i className="tabler-notification" />}>Notification</MenuItem>
+
           )}
           {((permissArray?.isCompany && permissArray?.hasLabelPermission) || permissArray?.isSuperAdmin) && (
             <SubMenu label="Settings" icon={<i className="tabler-settings" />}>

@@ -73,20 +73,20 @@ const HorizontalMenu = ({ dictionary }) => {
           menuSectionStyles: verticalMenuSectionStyles(verticalNavOptions, theme)
         }}
       >
-        <SubMenu label={dictionary['navigation'].dashboards} icon={<i className='tabler-smart-home' />}>
-          <MenuItem href={`/${locale}/dashboards/crm`} icon={<i className='tabler-chart-pie-2' />}>
+        <SubMenu label={dictionary['navigation'].dashboard} icon={<i className='tabler-smart-home' />}>
+          <MenuItem href={`/${locale}/dashboard/lms`} icon={<i className='tabler-chart-pie-2' />}>
             {dictionary['navigation'].crm}
           </MenuItem>
-          <MenuItem href={`/${locale}/dashboards/analytics`} icon={<i className='tabler-trending-up' />}>
+          <MenuItem href={`/${locale}/dashboard/analytics`} icon={<i className='tabler-trending-up' />}>
             {dictionary['navigation'].analytics}
           </MenuItem>
-          <MenuItem href={`/${locale}/dashboards/ecommerce`} icon={<i className='tabler-shopping-cart' />}>
+          <MenuItem href={`/${locale}/dashboard/ecommerce`} icon={<i className='tabler-shopping-cart' />}>
             {dictionary['navigation'].eCommerce}
           </MenuItem>
-          <MenuItem href={`/${locale}/dashboards/academy`} icon={<i className='tabler-school' />}>
+          <MenuItem href={`/${locale}/dashboard/academy`} icon={<i className='tabler-school' />}>
             {dictionary['navigation'].academy}
           </MenuItem>
-          <MenuItem href={`/${locale}/dashboards/logistics`} icon={<i className='tabler-truck' />}>
+          <MenuItem href={`/${locale}/dashboard/logistics`} icon={<i className='tabler-truck' />}>
             {dictionary['navigation'].logistics}
           </MenuItem>
         </SubMenu>

@@ -2,17 +2,17 @@
 import Grid from '@mui/material/Grid2'
 
 // Component Imports
-import DistributedBarChartOrder from '@views/dashboards/crm/DistributedBarChartOrder'
-import LineAreaYearlySalesChart from '@views/dashboards/crm/LineAreaYearlySalesChart'
+import DistributedBarChartOrder from '@views/dashboard/lms/DistributedBarChartOrder'
+import LineAreaYearlySalesChart from '@views/dashboard/lms/LineAreaYearlySalesChart'
 import CardStatVertical from '@/components/card-statistics/Vertical'
-import BarChartRevenueGrowth from '@views/dashboards/crm/BarChartRevenueGrowth'
-import EarningReportsWithTabs from '@views/dashboards/crm/EarningReportsWithTabs'
-import RadarSalesChart from '@views/dashboards/crm/RadarSalesChart'
-import SalesByCountries from '@views/dashboards/crm/SalesByCountries'
-import ProjectStatus from '@views/dashboards/crm/ProjectStatus'
-import ActiveProjects from '@views/dashboards/crm/ActiveProjects'
-import LastTransaction from '@views/dashboards/crm/LastTransaction'
-import ActivityTimeline from '@views/dashboards/crm/ActivityTimeline'
+import BarChartRevenueGrowth from '@views/dashboard/lms/BarChartRevenueGrowth'
+import EarningReportsWithTabs from '@views/dashboard/lms/EarningReportsWithTabs'
+import RadarSalesChart from '@views/dashboard/lms/RadarSalesChart'
+import SalesByCountries from '@views/dashboard/lms/SalesByCountries'
+import ProjectStatus from '@views/dashboard/lms/ProjectStatus'
+import ActiveProjects from '@views/dashboard/lms/ActiveProjects'
+import LastTransaction from '@views/dashboard/lms/LastTransaction'
+import ActivityTimeline from '@views/dashboard/lms/ActivityTimeline'
 
 // Permission Guard
 import PermissionGuard from '@/hocs/PermissionGuard'
@@ -60,7 +60,7 @@ export default function DashboardCRM({ params }) {
         <Grid size={{ xs: 12, md: 8, lg: 4 }}>
           <BarChartRevenueGrowth />
         </Grid>
-        <Grid size={{ xs: 12, lg: 8}}>
+        <Grid size={{ xs: 12, lg: 8 }}>
           <EarningReportsWithTabs />
         </Grid>
         <Grid size={{ xs: 12, md: 6, lg: 4 }}>

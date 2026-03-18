@@ -509,6 +509,7 @@ const ScheduleDialog = ({
         setDays((prev) => {
             if (type === "inc") return Number(prev) + 1;
             if (type === "dec") return Number(prev) > 1 ? Number(prev) - 1 : 1;
+            
             return prev;
         });
     };
@@ -692,6 +693,7 @@ const ScheduleDialog = ({
                     type: "manual",
                     message: "Schedule type is required"
                 });
+                
                 return;
             }
 
@@ -701,6 +703,7 @@ const ScheduleDialog = ({
                     type: "manual",
                     message: "Schedule target is required"
                 });
+                
                 return;
             }
 
@@ -915,6 +918,7 @@ const ScheduleDialog = ({
                                                 }
                                                 onChange={(e) => {
                                                     const value = e.target.value;
+                                                    
                                                     field.onChange(value);
 
                                                     if (selectScheduleTarget === "user") {
@@ -922,6 +926,7 @@ const ScheduleDialog = ({
                                                         const selectedUsers = users.filter(u =>
                                                             value.includes(u._id)
                                                         );
+                                                        
                                                         setUserCount(selectedUsers.length);
                                                     } else {
                                                         const selectedItem = createData?.[selectScheduleTarget]

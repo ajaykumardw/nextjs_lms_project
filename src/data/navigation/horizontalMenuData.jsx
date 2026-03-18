@@ -1,34 +1,34 @@
 const horizontalMenuData = dictionary => [
   // This is how you will normally render submenu
   {
-    label: dictionary['navigation'].dashboards,
+    label: dictionary['navigation'].dashboard,
     icon: 'tabler-smart-home',
     children: [
       // This is how you will normally render menu item
       {
         label: dictionary['navigation'].crm,
         icon: 'tabler-chart-pie-2',
-        href: '/dashboards/crm'
+        href: '/dashboard/lms'
       },
       {
         label: dictionary['navigation'].analytics,
         icon: 'tabler-trending-up',
-        href: '/dashboards/analytics'
+        href: '/dashboard/analytics'
       },
       {
         label: dictionary['navigation'].eCommerce,
         icon: 'tabler-shopping-cart',
-        href: '/dashboards/ecommerce'
+        href: '/dashboard/ecommerce'
       },
       {
         label: dictionary['navigation'].academy,
         icon: 'tabler-school',
-        href: '/dashboards/academy'
+        href: '/dashboard/academy'
       },
       {
         label: dictionary['navigation'].logistics,
         icon: 'tabler-truck',
-        href: '/dashboards/logistics'
+        href: '/dashboard/logistics'
       }
     ]
   },

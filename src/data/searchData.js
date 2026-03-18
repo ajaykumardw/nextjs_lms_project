@@ -2,35 +2,35 @@ const data = [
   {
     id: '1',
     name: 'CRM Dashboard',
-    url: '/dashboards/crm',
+    url: '/dashboard/lms',
     icon: 'tabler-chart-pie-2',
     section: 'Dashboards'
   },
   {
     id: '2',
     name: 'Analytics Dashboard',
-    url: '/dashboards/analytics',
+    url: '/dashboard/analytics',
     icon: 'tabler-trending-up',
     section: 'Dashboards'
   },
   {
     id: '3',
     name: 'eCommerce Dashboard',
-    url: '/dashboards/ecommerce',
+    url: '/dashboard/ecommerce',
     icon: 'tabler-shopping-cart',
     section: 'Dashboards'
   },
   {
     id: '4',
     name: 'Academy Dashboard',
-    url: '/dashboards/academy',
+    url: '/dashboard/academy',
     icon: 'tabler-school',
     section: 'Dashboards'
   },
   {
     id: '5',
     name: 'Logistics Dashboard',
-    url: '/dashboards/logistics',
+    url: '/dashboard/logistics',
     icon: 'tabler-truck',
     section: 'Dashboards'
   },

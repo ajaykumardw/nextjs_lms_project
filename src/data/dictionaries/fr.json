@@ -1,6 +1,6 @@
 {
     "navigation": {
-        "dashboards": "Tableaux de bord",
+        "dashboard": "Tableaux de bord",
         "crm": "GRC",
         "analytics": "Analytique",
         "eCommerce": "commerce électronique",

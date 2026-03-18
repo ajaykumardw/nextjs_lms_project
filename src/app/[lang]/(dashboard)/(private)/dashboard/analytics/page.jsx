@@ -2,16 +2,16 @@
 import Grid from '@mui/material/Grid2'
 
 // Components Imports
-import WebsiteAnalyticsSlider from '@views/dashboards/analytics/WebsiteAnalyticsSlider'
-import LineAreaDailySalesChart from '@views/dashboards/analytics/LineAreaDailySalesChart'
-import SalesOverview from '@views/dashboards/analytics/SalesOverview'
-import EarningReports from '@views/dashboards/analytics/EarningReports'
-import SupportTracker from '@views/dashboards/analytics/SupportTracker'
-import SalesByCountries from '@views/dashboards/analytics/SalesByCountries'
-import TotalEarning from '@views/dashboards/analytics/TotalEarning'
-import MonthlyCampaignState from '@views/dashboards/analytics/MonthlyCampaignState'
-import SourceVisits from '@views/dashboards/analytics/SourceVisits'
-import ProjectsTable from '@views/dashboards/analytics/ProjectsTable'
+import WebsiteAnalyticsSlider from '@views/dashboard/analytics/WebsiteAnalyticsSlider'
+import LineAreaDailySalesChart from '@views/dashboard/analytics/LineAreaDailySalesChart'
+import SalesOverview from '@views/dashboard/analytics/SalesOverview'
+import EarningReports from '@views/dashboard/analytics/EarningReports'
+import SupportTracker from '@views/dashboard/analytics/SupportTracker'
+import SalesByCountries from '@views/dashboard/analytics/SalesByCountries'
+import TotalEarning from '@views/dashboard/analytics/TotalEarning'
+import MonthlyCampaignState from '@views/dashboard/analytics/MonthlyCampaignState'
+import SourceVisits from '@views/dashboard/analytics/SourceVisits'
+import ProjectsTable from '@views/dashboard/analytics/ProjectsTable'
 
 // Data Imports
 import { getProfileData } from '@/app/server/actions'

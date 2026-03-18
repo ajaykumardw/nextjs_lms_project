@@ -14,17 +14,17 @@ const defaultSuggestions = [
     items: [
       {
         label: 'Analytics',
-        href: '/dashboards/analytics',
+        href: '/dashboard/analytics',
         icon: 'tabler-trending-up'
       },
       {
         label: 'CRM',
-        href: '/dashboards/crm',
+        href: '/dashboard/lms',
         icon: 'tabler-chart-pie-2'
       },
       {
         label: 'eCommerce',
-        href: '/dashboards/ecommerce',
+        href: '/dashboard/ecommerce',
         icon: 'tabler-shopping-cart'
       },
       {

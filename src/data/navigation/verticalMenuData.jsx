@@ -1,7 +1,7 @@
 const verticalMenuData = dictionary => [
   // This is how you will normally render submenu
   {
-    label: dictionary['navigation'].dashboards,
+    label: dictionary['navigation'].dashboard,
     suffix: {
       label: '5',
       color: 'error'
@@ -12,27 +12,27 @@ const verticalMenuData = dictionary => [
       {
         label: dictionary['navigation'].crm,
         icon: 'tabler-circle',
-        href: '/dashboards/crm'
+        href: '/dashboard/lms'
       },
       {
         label: dictionary['navigation'].analytics,
         icon: 'tabler-circle',
-        href: '/dashboards/analytics'
+        href: '/dashboard/analytics'
       },
       {
         label: dictionary['navigation'].eCommerce,
         icon: 'tabler-circle',
-        href: '/dashboards/ecommerce'
+        href: '/dashboard/ecommerce'
       },
       {
         label: dictionary['navigation'].academy,
         icon: 'tabler-circle',
-        href: '/dashboards/academy'
+        href: '/dashboard/academy'
       },
       {
         label: dictionary['navigation'].logistics,
         icon: 'tabler-circle',
-        href: '/dashboards/logistics'
+        href: '/dashboard/logistics'
       }
     ]
   },

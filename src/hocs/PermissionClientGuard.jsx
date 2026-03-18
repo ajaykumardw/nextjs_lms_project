@@ -66,12 +66,12 @@ export default function PermissionGuard({ children, locale, element }) {
 
                 if (permissions?.isUser) {
 
-                    redirect(`/${locale}/dashboards/user/${'learner'}`);
+                    redirect(`/${locale}/dashboard/user/${'learner'}`);
                 }
 
                 if (permissions?.notUser) {
 
-                    redirect(`/${locale}/dashboards/crm`);
+                    redirect(`/${locale}/dashboard/lms`);
                 }
 
             } else {

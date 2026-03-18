@@ -24,7 +24,7 @@ exports["default"] = void 0;
  */
 var themeConfig = {
   templateName: 'DW LMS',
-  homePageUrl: '/dashboards/crm',
+  homePageUrl: '/dashboard/lms',
   settingsCookieName: 'vuexy-mui-next-demo-1',
   mode: 'light',
 
