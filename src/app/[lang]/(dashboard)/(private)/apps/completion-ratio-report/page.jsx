@@ -41,6 +41,8 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 
 import { TabContext, TabList, TabPanel } from "@mui/lab"
 
+import DialogCloseButton from "@/components/dialogs/DialogCloseButton"
+
 import { exportToExcel } from "@/utils/exportToExcel"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
@@ -216,13 +218,15 @@ const FilterModal = ({ open, onClose, token, setFilterData, tab }) => {
 
     return (
         <Dialog
+            fullWidth
+            maxWidth='lg'
+            scroll='body'
             open={open}
             onClose={onClose}
-            fullWidth
-            maxWidth={false}
-            sx={{ alignItems: "flex-start" }}
+            sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}
             PaperProps={{ sx: { m: 0, inlineSize: "100%", borderRadius: 0 } }}
         >
+            <DialogCloseButton onClick={onClose}><i className="tabler-x" /></DialogCloseButton>
             <DialogTitle>Filter</DialogTitle>
 
             <DialogContent dividers>
@@ -327,7 +331,7 @@ const FilterModal = ({ open, onClose, token, setFilterData, tab }) => {
 
             <DialogActions sx={{ mt: 4, justifyContent: "center" }}>
                 <Button variant="outlined" onClick={handleClear} disabled={loading}>
-                    Clear
+                    Reset
                 </Button>
                 <Button variant="contained" onClick={handleSearch} disabled={loading}>
                     Search

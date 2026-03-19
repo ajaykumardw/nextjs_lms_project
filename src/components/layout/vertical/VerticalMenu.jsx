@@ -106,23 +106,26 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
         renderExpandedMenuItemIcon={{ icon: <i className='tabler-circle text-xs' /> }}
         menuSectionStyles={menuSectionStyles(verticalNavOptions, theme)}
       >
-        <SubMenu
-          label="Dashboard"
-          icon={<i className='tabler-smart-home' />}
-        >
-          {(permissArray?.notUser) && (
-            <MenuItem href={`/${locale}/dashboard/lms`}>LMS</MenuItem>
-          )}
 
-          {permissArray?.isUser && (
-            <MenuItem href={`/${locale}/dashboard/user/learner`}>Learner</MenuItem>
-          )}
+        {(permissArray?.notUser) && (
+          <MenuItem
+            key={"dashboard"}
+            href={`/${locale}/dashboard/lms`}
+            icon={<i className='tabler-smart-home' />}
+          >
+            Dashboard
+          </MenuItem>
+        )}
 
-          {/* <MenuItem href={`/${locale}/dashboard/analytics`}>Analytics</MenuItem>
-          <MenuItem href={`/${locale}/dashboard/ecommerce`}>ECommerce</MenuItem>
-          <MenuItem href={`/${locale}/dashboard/academy`}>Academy</MenuItem>
-          <MenuItem href={`/${locale}/dashboard/logistics`}>Logistics</MenuItem> */}
-        </SubMenu>
+        {permissArray?.isUser && (
+          <MenuItem
+            key={"dashboard"}
+            href={`/${locale}/dashboard/user/learner`}
+            icon={<i className='tabler-smart-home' />}
+          >
+            Dashboard
+          </MenuItem>
+        )}
         {/* <SubMenu label="Front Pages" icon={<i className='tabler-files' />}>
           <MenuItem href='/front-pages/landing-page' target='_blank'>
             Landing
@@ -320,7 +323,7 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
             <MenuItem key="download_center" href={`/${locale}/apps/download-center`} icon={<i className="tabler-download" />}>Download center</MenuItem>
           )}
           {permissArray?.isCompany && (
-            <SubMenu label="Report" icon={<i className="tabler-report" />}>
+            <SubMenu label="Reports" icon={<i className="tabler-report" />}>
               <MenuItem key="completion_ratio_report" href={`/${locale}/apps/completion-ratio-report`}>Completion Ratio Report</MenuItem>
               <MenuItem key="quiz_assessment_report" href={`/${locale}/apps/quiz-assessment-report`}>Quiz Assessment Report</MenuItem>
               <MenuItem key="scorm_report" href={`/${locale}/apps/scorm-report`}>Scorm Report</MenuItem>
