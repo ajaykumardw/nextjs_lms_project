@@ -55,26 +55,19 @@ export const db = {
       color: 'info'
     },
     {
-      title: 'Social feed post',
-      stats: 13,
-      trendNumber: 2.5,
-      avatarIcon: 'tabler-message-circle',
-      color: 'info'
-    },
-    {
       title: 'Learner analytics',
       stats: 13,
       trendNumber: 2.5,
       avatarIcon: 'tabler-chart-bar',
       color: 'info'
     },
-    {
-      title: 'Teams',
-      stats: 13,
-      trendNumber: 2.5,
-      avatarIcon: 'tabler-users',
-      color: 'info'
-    }
+    // {
+    //   title: 'Teams',
+    //   stats: 13,
+    //   trendNumber: 2.5,
+    //   avatarIcon: 'tabler-users',
+    //   color: 'info'
+    // }
   ],
   customerStats: [
     {

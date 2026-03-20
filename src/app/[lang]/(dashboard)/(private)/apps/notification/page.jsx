@@ -942,7 +942,7 @@ const ScheduleDialog = ({
                                                     <MenuItem disableRipple disableTouchRipple
                                                         sx={{
                                                             position: "sticky",
-                                                            top: 0,
+                                                            insetBlockStart: 0,
                                                             zIndex: 1,
                                                             backgroundColor: "background.paper",
                                                             cursor: "default",

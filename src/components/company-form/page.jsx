@@ -330,29 +330,29 @@ const UserFormLayout = () => {
     if (id && editData) {
 
       reset({
-        first_name: editData.first_name,
-        last_name: editData.last_name,
-        company_name: editData.company_name,
-        email: editData.email,
-        phone: editData.phone,
-        address: editData.address,
-        pincode: editData.pincode,
-        country_id: editData.country_id,
-        state_id: editData.state_id,
-        city_id: editData.city_id,
-        status: editData.status,
-        gst_no: editData.gst_no,
-        pan_no: editData.pan_no,
-        website: editData.website,
-        package_id: editData.package_id
+        first_name: editData?.first_name || "",
+        last_name: editData?.last_name || "",
+        company_name: editData?.company_name || "",
+        email: editData?.email || "",
+        phone: editData?.phone || "",
+        address: editData?.address || "",
+        pincode: editData?.pincode || "",
+        country_id: editData?.country_id || "",
+        state_id: editData?.state_id || "",
+        city_id: editData?.city_id || "",
+        status: editData?.status || "",
+        gst_no: editData?.gst_no || "",
+        pan_no: editData?.pan_no || "",
+        website: editData?.website || "",
+        package_id: editData?.package_id || ""
       });
 
       if (editData.photo) {
-        setImgSrc(`${public_url}/uploads/images/${editData.photo}`);
+        setImgSrc(`${public_url}/uploads/images/${editData?.photo}`);
       }
 
-      setCountryId(editData.country_id);
-      setStateId(editData.state_id);
+      setCountryId(editData?.country_id);
+      setStateId(editData?.state_id);
 
     }
   }, [id, editData])
@@ -695,7 +695,7 @@ const UserFormLayout = () => {
                     src={imgSrc}
                     alt="Profile"
                     className="rounded-full object-cover border"
-                    style={{ width: 100, height: 100 }}
+                    style={{ inlineSize: 100, blockSize: 100 }}
                   />
                   <div className="flex flex-col gap-2">
                     <div className="flex flex-col gap-2 w-48">

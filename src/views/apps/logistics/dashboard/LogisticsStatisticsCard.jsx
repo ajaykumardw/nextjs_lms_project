@@ -4,7 +4,7 @@ import Grid from '@mui/material/Grid2'
 // Components Imports
 import HorizontalWithBorder from '@components/card-statistics/HorizontalWithBorder'
 
-const LogisticsStatisticsCard = ({ data }) => {
+const     LogisticsStatisticsCard = ({ data }) => {
   return (
     data && (
       <Grid container spacing={6}>

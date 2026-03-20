@@ -232,34 +232,34 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
           )}
           {permissArray?.isUser && (
             <>
-              <MenuItem key="leadership" href={`/${locale}/apps/leadership`}>
-                <i className="tabler-puzzle" style={{ marginRight: 8, fontSize: '1.2rem' }} />
+              {/* <MenuItem key="leadership" href={`/${locale}/apps/leadership`}>
+                <i className="tabler-puzzle" style={{ insetInlineEnd: 8, fontSize: '1.2rem' }} />
                 Leadership
-              </MenuItem>
+              </MenuItem> */}
               <MenuItem key="module" href={`/${locale}/apps/moduleProgram`}>
-                <i className="tabler-puzzle" style={{ marginRight: 8 }} />
+                <i className="tabler-puzzle" style={{ insetInlineEnd: 8 }} />
                 My Module
               </MenuItem>
 
               <MenuItem key="self_enroll_module" href={`/${locale}/apps/self-enroll`}>
-                <i className="tabler-users" style={{ marginRight: 8 }} />
+                <i className="tabler-users" style={{ insetInlineEnd: 8 }} />
                 Self Enroll Module
               </MenuItem>
 
               <MenuItem key="courses" href={`/${locale}/apps/my-courses`}>
-                <i className="tabler-book" style={{ marginRight: 8 }} />
+                <i className="tabler-book" style={{ insetInlineEnd: 8 }} />
                 My Course
               </MenuItem>
 
               <MenuItem key="certificates" href={`/${locale}/apps/my-certificates`}>
-                <i className="tabler-certificate" style={{ marginRight: 8 }} />
+                <i className="tabler-certificate" style={{ insetInlineEnd: 8 }} />
                 Certificate
               </MenuItem>
 
-              <MenuItem key="team" href={`/${locale}/apps/my-team`}>
-                <i className="tabler-users" style={{ marginRight: 8 }} />
+              {/* <MenuItem key="team" href={`/${locale}/apps/my-team`}>
+                <i className="tabler-users" style={{ insetInlineEnd: 8 }} />
                 Team
-              </MenuItem>
+              </MenuItem> */}
             </>
           )}
           {permissArray?.isCompany && (
