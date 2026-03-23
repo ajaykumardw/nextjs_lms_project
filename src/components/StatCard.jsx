@@ -6,11 +6,11 @@ import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
 import { styled } from '@mui/material/styles'
 
-// Components
-import CustomAvatar from '@core/components/mui/Avatar'
-
 // Utils
 import classnames from 'classnames'
+
+// Components
+import CustomAvatar from '@core/components/mui/Avatar'
 
 // Styled Card (hover + border effect)
 const StyledCard = styled(Card)(({ color }) => ({

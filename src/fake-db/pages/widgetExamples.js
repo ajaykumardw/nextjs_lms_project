@@ -61,13 +61,6 @@ export const db = {
       avatarIcon: 'tabler-chart-bar',
       color: 'info'
     },
-    // {
-    //   title: 'Teams',
-    //   stats: 13,
-    //   trendNumber: 2.5,
-    //   avatarIcon: 'tabler-users',
-    //   color: 'info'
-    // }
   ],
   customerStats: [
     {

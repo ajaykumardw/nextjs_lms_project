@@ -1,14 +1,13 @@
 'use client'
 
+import dayjs from 'dayjs';
+
+import { Card, Skeleton, CardHeader, CardContent, Typography } from '@mui/material'
 import Grid from "@mui/material/Grid2"
-import Card from '@mui/material/Card'
-import CardHeader from '@mui/material/CardHeader'
-import CardContent from '@mui/material/CardContent'
-import Typography from '@mui/material/Typography'
 
 const CARD_HEIGHT = 260
 
-const RecentActivities = () => {
+const RecentActivities = ({ dashboardData, loading }) => {
     return (
         <Grid container spacing={6} alignItems="stretch">
 
@@ -27,8 +26,21 @@ const RecentActivities = () => {
                     <CardHeader title="Recent Activities" />
 
                     <CardContent sx={{ flex: 1, overflowY: 'auto' }}>
-                        <Typography>Watched React Video</Typography>
-                        <Typography>Completed Quiz</Typography>
+                        {loading ? (
+                            [...Array(5)].map((_, i) => (
+                                <Skeleton key={i} height={30} sx={{ mb: 1 }} />
+                            ))
+                        ) : dashboardData?.activityLog?.length ? (
+                            dashboardData.activityLog.map((item, index) => (
+                                <div key={index}>
+                                    <Typography>
+                                        {item?.title} - {item?.current_attempt}
+                                    </Typography>
+                                </div>
+                            ))
+                        ) : (
+                            <Typography>No activities found</Typography>
+                        )}
                     </CardContent>
                 </Card>
             </Grid>
@@ -48,7 +60,20 @@ const RecentActivities = () => {
                     <CardHeader title="Notifications" />
 
                     <CardContent sx={{ flex: 1, overflowY: 'auto' }}>
-                        <Typography>New course available</Typography>
+                        {loading ? (
+                            [...Array(5)].map((_, i) => (
+                                <Skeleton key={i} height={30} sx={{ mb: 1 }} />
+                            ))
+                        ) : dashboardData?.notificationLog?.length ? (
+                            dashboardData.notificationLog.map((item, index) => (
+                                <Typography key={index}>
+                                    {item?.template_name || ""} on{" "}
+                                    {dayjs(item?.schedule_date).format('DD MMM YYYY')}
+                                </Typography>
+                            ))
+                        ) : (
+                            <Typography>No notifications found</Typography>
+                        )}
                     </CardContent>
                 </Card>
             </Grid>

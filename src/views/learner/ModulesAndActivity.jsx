@@ -1,20 +1,20 @@
 'use client'
 
-import Grid from '@mui/material/Grid2'
-import Card from '@mui/material/Card'
-import CardHeader from '@mui/material/CardHeader'
-import CardContent from '@mui/material/CardContent'
 import dynamic from 'next/dynamic'
+
+import Grid from '@mui/material/Grid2'
+
+import { Card, Skeleton, CardHeader, CardContent, Typography } from '@mui/material'
 
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false })
 
 const CARD_HEIGHT = 420
 
-const ModulesAndActivity = () => {
-    const series = [40, 30, 20, 10]
+const ModulesAndActivity = ({ dashboardData, loading }) => {
+    const series = dashboardData?.activitySummary?.map(item => Number(item.percentage)) || []
 
     const options = {
-        labels: ['Videos', 'Quizzes', 'Docs', 'Flashcards']
+        labels: dashboardData?.activitySummary?.map(item => item.title) || []
     }
 
     return (
@@ -40,7 +40,15 @@ const ModulesAndActivity = () => {
                             overflowY: 'auto',
                         }}
                     >
-                        <Chart type="donut" series={series} options={options} />
+                        <CardContent sx={{ overflowY: 'auto' }}>
+                            {loading ? (
+                                <Skeleton variant="rounded" height={250} />
+                            ) : series.length ? (
+                                <Chart type="donut" series={series} options={options} />
+                            ) : (
+                                <Typography>No activity data</Typography>
+                            )}
+                        </CardContent>
                     </CardContent>
                 </Card>
             </Grid>
@@ -61,7 +69,24 @@ const ModulesAndActivity = () => {
 
                     {/* Scrollable content */}
                     <CardContent sx={{ flex: 1, overflowY: 'auto' }}>
-                        <p>Module List Here...</p>
+                        {loading ? (
+                            [...Array(4)].map((_, i) => (
+                                <Skeleton key={i} height={50} sx={{ mb: 2 }} />
+                            ))
+                        ) : dashboardData?.enrolledData?.length ? (
+                            dashboardData.enrolledData.map((item, index) => (
+                                <div key={item._id || index} style={{ marginBottom: '12px' }}>
+                                    <p style={{ margin: 0, fontWeight: 600 }}>
+                                        {item?.title}
+                                    </p>
+                                    <p style={{ margin: 0 }}>
+                                        {item?.description}
+                                    </p>
+                                </div>
+                            ))
+                        ) : (
+                            <Typography>No modules found</Typography>
+                        )}
                     </CardContent>
                 </Card>
             </Grid>

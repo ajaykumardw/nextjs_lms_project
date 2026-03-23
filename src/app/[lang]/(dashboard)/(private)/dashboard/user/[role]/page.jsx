@@ -20,6 +20,7 @@ const LearnerDashboard = () => {
     const token = session?.user?.token;
 
     const [dashboardData, setDashboardData] = useState();
+    const [loading, setLoading] = useState(true);
 
     const fetchDashboardData = async () => {
         try {
@@ -38,7 +39,9 @@ const LearnerDashboard = () => {
 
                 console.log("Data", data);
 
+
                 setDashboardData(data);
+                setLoading(false)
 
             }
 
@@ -59,19 +62,19 @@ const LearnerDashboard = () => {
     return (
         <Grid container spacing={6}>
             <Grid size={{ xs: 12 }}>
-                <TopStats />
+                <TopStats dashboardData={dashboardData} loading={loading} />
             </Grid>
 
             <Grid size={{ xs: 12 }}>
-                <ProgressSection />
+                <ProgressSection dashboardData={dashboardData} loading={loading} />
             </Grid>
 
             <Grid size={{ xs: 12 }}>
-                <ModulesAndActivity />
+                <ModulesAndActivity dashboardData={dashboardData} loading={loading} />
             </Grid>
 
             <Grid size={{ xs: 12 }}>
-                <RecentActivities />
+                <RecentActivities dashboardData={dashboardData} loading={loading} />
             </Grid>
         </Grid>
     )

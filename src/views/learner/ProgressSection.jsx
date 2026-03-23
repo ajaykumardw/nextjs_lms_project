@@ -1,12 +1,11 @@
 'use client'
 
 import Grid from '@mui/material/Grid2'
-import Card from '@mui/material/Card'
+import { Card, Skeleton } from '@mui/material'
 import CardHeader from '@mui/material/CardHeader'
 import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
 import LinearProgress from '@mui/material/LinearProgress'
-import Button from '@mui/material/Button'
 
 const sessions = [
     { title: 'Live React Class', date: '22 Mar', time: '10:00 AM' },
@@ -15,7 +14,7 @@ const sessions = [
 
 const CARD_HEIGHT = 260
 
-const ProgressSection = () => {
+const ProgressSection = ({ dashboardData, loading }) => {
     return (
         <Grid container spacing={6} alignItems="stretch">
 
@@ -32,9 +31,24 @@ const ProgressSection = () => {
                     }}
                 >
                     <CardContent sx={{ overflowY: 'auto' }}>
-                        <Typography variant="h6">Overall Progress</Typography>
-                        <Typography variant="h4">65%</Typography>
-                        <LinearProgress variant="determinate" value={65} />
+                        {loading ? (
+                            <>
+                                <Skeleton width={150} height={30} />
+                                <Skeleton width={80} height={40} />
+                                <Skeleton height={10} />
+                            </>
+                        ) : (
+                            <>
+                                <Typography variant="h6">Overall Progress</Typography>
+                                <Typography variant="h4">
+                                    {Number(dashboardData?.progressStatus?.completed_percentage ?? 0).toFixed(1)}%
+                                </Typography>
+                                <LinearProgress
+                                    variant="determinate"
+                                    value={Number(dashboardData?.progressStatus?.completed_percentage ?? 0)}
+                                />
+                            </>
+                        )}
                     </CardContent>
                 </Card>
             </Grid>
@@ -55,17 +69,24 @@ const ProgressSection = () => {
 
                     {/* Scrollable content */}
                     <CardContent sx={{ overflowY: 'auto', flex: 1 }}>
-                        {sessions.map((s, i) => (
-                            <div key={i} className="flex justify-between items-center mb-4">
-                                <div>
-                                    <Typography>{s.title}</Typography>
-                                    <Typography variant="body2">
-                                        {s.date} | {s.time}
-                                    </Typography>
+                        {loading ? (
+                            [...Array(3)].map((_, i) => (
+                                <Skeleton key={i} height={40} sx={{ mb: 2 }} />
+                            ))
+                        ) : dashboardData?.liveSession?.length ? (
+                            dashboardData.liveSession.map((s, i) => (
+                                <div key={i} className="flex justify-between items-center mb-4">
+                                    <div>
+                                        <Typography>{s.title}</Typography>
+                                        <Typography variant="body2">
+                                            {s.start_live_time ?? ""}
+                                        </Typography>
+                                    </div>
                                 </div>
-                                <Button variant="outlined">Join</Button>
-                            </div>
-                        ))}
+                            ))
+                        ) : (
+                            <Typography>No sessions available</Typography>
+                        )}
                     </CardContent>
                 </Card>
             </Grid>
