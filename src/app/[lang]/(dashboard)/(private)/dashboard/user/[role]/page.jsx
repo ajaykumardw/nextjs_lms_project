@@ -9,7 +9,7 @@ import { useSession } from 'next-auth/react'
 
 import Grid from '@mui/material/Grid2'
 
-import PermissionGuardClient from "@/components/PermissionGuardClient"
+import PermissionGuardClient from "@/hocs/PermissionClientGuard"
 
 // Components
 import TopStats from '@/views/learner/TopStats'

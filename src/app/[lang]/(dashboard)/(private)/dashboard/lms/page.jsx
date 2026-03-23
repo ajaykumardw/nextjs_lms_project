@@ -15,7 +15,7 @@ import {
   Divider
 } from '@mui/material'
 
-import PermissionGuardClient from '@/components/PermissionGuardClient';
+import PermissionGuardClient from '@/hocs/PermissionClientGuard';
 
 const StatCard = ({ title, value, subtitle, icon, color = 'primary.main' }) => {
 
