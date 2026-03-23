@@ -1,88 +1,259 @@
+'use client'
+
 // MUI Imports
 import Grid from '@mui/material/Grid2'
+import {
+  Card,
+  CardContent,
+  Typography,
+  Box,
+  LinearProgress,
+  Avatar,
+  Stack,
+  Divider
+} from '@mui/material'
 
-// Component Imports
-import DistributedBarChartOrder from '@views/dashboard/lms/DistributedBarChartOrder'
-import LineAreaYearlySalesChart from '@views/dashboard/lms/LineAreaYearlySalesChart'
-import CardStatVertical from '@/components/card-statistics/Vertical'
-import BarChartRevenueGrowth from '@views/dashboard/lms/BarChartRevenueGrowth'
-import EarningReportsWithTabs from '@views/dashboard/lms/EarningReportsWithTabs'
-import RadarSalesChart from '@views/dashboard/lms/RadarSalesChart'
-import SalesByCountries from '@views/dashboard/lms/SalesByCountries'
-import ProjectStatus from '@views/dashboard/lms/ProjectStatus'
-import ActiveProjects from '@views/dashboard/lms/ActiveProjects'
-import LastTransaction from '@views/dashboard/lms/LastTransaction'
-import ActivityTimeline from '@views/dashboard/lms/ActivityTimeline'
+// ==============================
+// STAT CARD
+// ==============================
+const StatCard = ({ title, value, subtitle, icon, color = 'primary.main' }) => (
+  <Card
+    sx={{
+      borderRadius: 3,
+      boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+      height: '100%'
+    }}
+  >
+    <CardContent>
+      <Stack direction="row" justifyContent="space-between" alignItems="center">
+        <Box>
+          <Typography variant="body2" color="text.secondary">
+            {title}
+          </Typography>
 
-// Permission Guard
-import PermissionGuard from '@/hocs/PermissionGuard'
+          <Typography variant="h4" fontWeight={700} mt={0.5}>
+            {value}
+          </Typography>
 
-export default function DashboardCRM({ params }) {
-  const locale = 'en';
+          {subtitle && (
+            <Typography variant="caption" color="text.secondary">
+              {subtitle}
+            </Typography>
+          )}
+        </Box>
 
+        {icon && (
+          <Avatar
+            sx={{
+              bgcolor: color,
+              width: 48,
+              height: 48,
+              borderRadius: 2,
+              '& i': {
+                fontSize: 22,
+                color: '#fff'
+              }
+            }}
+          >
+            {icon}
+          </Avatar>
+        )}
+      </Stack>
+    </CardContent>
+  </Card>
+)
+
+// ==============================
+// PROGRESS ROW
+// ==============================
+const ProgressRow = ({ name, progress }) => (
+  <Box mb={2}>
+    <Stack direction="row" justifyContent="space-between" mb={0.5}>
+      <Typography variant="body2">{name}</Typography>
+      <Typography variant="body2" fontWeight={600}>
+        {progress}%
+      </Typography>
+    </Stack>
+
+    <LinearProgress
+      variant="determinate"
+      value={progress}
+      sx={{
+        height: 8,
+        borderRadius: 5
+      }}
+    />
+  </Box>
+)
+
+// ==============================
+// ACTIVITY ITEM
+// ==============================
+const ActivityItem = ({ text }) => (
+  <Stack direction="row" spacing={2} alignItems="center" mb={1.5}>
+    <Avatar sx={{ width: 32, height: 32 }}>U</Avatar>
+    <Typography variant="body2" color="text.secondary">
+      {text}
+    </Typography>
+  </Stack>
+)
+
+// ==============================
+// DASHBOARD PAGE
+// ==============================
+export default function Dashboard() {
   return (
-    <PermissionGuard locale={locale} element="notUser">
-      <Grid container spacing={6}>
-        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
-          <DistributedBarChartOrder />
+    <Box sx={{ p: { xs: 2, md: 4 }, bgcolor: '#f9fafb', minHeight: '100vh' }}>
+
+      {/* ================= STATS ================= */}
+      <Grid container spacing={3} mb={3}>
+        <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
+          <StatCard title="Total Courses" value="120" icon={<i className="tabler-book" />} />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
-          <LineAreaYearlySalesChart />
+
+        <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
+          <StatCard title="Total Learners" value="1,250" icon={<i className="tabler-users" />} />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
-          <CardStatVertical
-            title="Total Profit"
-            subtitle="Last Week"
-            stats="1.28k"
-            avatarColor="error"
-            avatarIcon="tabler-credit-card"
-            avatarSkin="light"
-            avatarSize={44}
-            chipText="-12.2%"
-            chipColor="error"
-            chipVariant="tonal"
+
+        <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
+          <StatCard
+            title="Active Learners"
+            value="320"
+            subtitle="Today"
+            icon={<i className="tabler-activity" />}
+            color="success.main"
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
-          <CardStatVertical
-            title="Total Sales"
-            subtitle="Last Week"
-            stats="24.67k"
-            avatarColor="success"
-            avatarIcon="tabler-currency-dollar"
-            avatarSkin="light"
-            avatarSize={44}
-            chipText="+24.67%"
-            chipColor="success"
-            chipVariant="tonal"
+
+        <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
+          <StatCard
+            title="Completed Courses"
+            value="860"
+            icon={<i className="tabler-circle-check" />}
+            color="info.main"
           />
-        </Grid>
-        <Grid size={{ xs: 12, md: 8, lg: 4 }}>
-          <BarChartRevenueGrowth />
-        </Grid>
-        <Grid size={{ xs: 12, lg: 8 }}>
-          <EarningReportsWithTabs />
-        </Grid>
-        <Grid size={{ xs: 12, md: 6, lg: 4 }}>
-          <RadarSalesChart />
-        </Grid>
-        <Grid size={{ xs: 12, md: 6, lg: 4 }}>
-          <SalesByCountries />
-        </Grid>
-        <Grid size={{ xs: 12, md: 6, lg: 4 }}>
-          <ProjectStatus />
-        </Grid>
-        <Grid size={{ xs: 12, md: 6, lg: 4 }}>
-          <ActiveProjects />
-        </Grid>
-        <Grid size={{ xs: 12, md: 6 }}>
-          {/* <LastTransaction serverMode={serverMode} /> */}
-        </Grid>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <ActivityTimeline />
         </Grid>
       </Grid>
-    </PermissionGuard>
-  );
-}
 
+      {/* ================= MODULES ================= */}
+      <Grid container spacing={3} mb={3}>
+        {/* Module Activity */}
+        <Grid item size={{ xs: 12, md: 4 }}>
+          <Card sx={{ borderRadius: 3, height: '100%' }}>
+            <CardContent>
+              <Typography variant="h6" fontWeight={600} mb={2}>
+                Module Activity
+              </Typography>
+
+              <ProgressRow name="SCORM Completion" progress={75} />
+              <ProgressRow name="Quiz Pass Rate" progress={68} />
+              <ProgressRow name="Video Completion" progress={82} />
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Learner Progress */}
+        <Grid item size={{ xs: 12, md: 4 }}>
+          <Card sx={{ borderRadius: 3, height: '100%' }}>
+            <CardContent>
+              <Typography variant="h6" fontWeight={600} mb={2}>
+                Learner Progress
+              </Typography>
+
+              <ProgressRow name="Course A" progress={90} />
+              <ProgressRow name="Course B" progress={55} />
+              <ProgressRow name="Course C" progress={30} />
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Pending Tasks */}
+        <Grid item size={{ xs: 12, md: 4 }}>
+          <Card sx={{ borderRadius: 3, height: '100%' }}>
+            <CardContent>
+              <Typography variant="h6" fontWeight={600} mb={2}>
+                Pending Tasks
+              </Typography>
+
+              <Stack spacing={1}>
+                <Typography variant="body2">📘 12 Incomplete Courses</Typography>
+                <Typography variant="body2">📝 8 Pending Quizzes</Typography>
+                <Typography variant="body2">📂 5 Assignments Due</Typography>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* ================= CHARTS ================= */}
+      <Grid container spacing={3} mb={3}>
+        <Grid item size={{ xs: 12, md: 6 }}>
+          <Card sx={{ borderRadius: 3 }}>
+            <CardContent>
+              <Typography variant="h6" fontWeight={600} mb={2}>
+                Course Completion Rate
+              </Typography>
+
+              <Box height={220} display="flex" alignItems="center" justifyContent="center">
+                <Typography variant="body2" color="text.secondary">
+                  Chart Placeholder
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item size={{ xs: 12, md: 6 }}>
+          <Card sx={{ borderRadius: 3 }}>
+            <CardContent>
+              <Typography variant="h6" fontWeight={600} mb={2}>
+                Quiz Performance
+              </Typography>
+
+              <Box height={220} display="flex" alignItems="center" justifyContent="center">
+                <Typography variant="body2" color="text.secondary">
+                  Chart Placeholder
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* ================= ACTIVITY ================= */}
+      <Grid container spacing={3}>
+        {/* Activity Feed */}
+        <Grid item size={{ xs: 12, md: 6 }}>
+          <Card sx={{ borderRadius: 3 }}>
+            <CardContent>
+              <Typography variant="h6" fontWeight={600} mb={2}>
+                Recent Activity
+              </Typography>
+
+              <ActivityItem text="User started a course" />
+              <ActivityItem text="User completed a quiz" />
+              <ActivityItem text="User watched a video" />
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Leaderboard */}
+        <Grid item size={{ xs: 12, md: 6 }}>
+          <Card sx={{ borderRadius: 3 }}>
+            <CardContent>
+              <Typography variant="h6" fontWeight={600} mb={2}>
+                Leaderboard
+              </Typography>
+
+              <Stack spacing={1}>
+                <Typography variant="body2">🥇 John - 980 pts</Typography>
+                <Typography variant="body2">🥈 Sarah - 870 pts</Typography>
+                <Typography variant="body2">🥉 Alex - 820 pts</Typography>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+    </Box>
+  )
+}
