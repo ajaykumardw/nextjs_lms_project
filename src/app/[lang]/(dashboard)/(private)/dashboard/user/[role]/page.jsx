@@ -67,8 +67,7 @@ const LearnerDashboard = () => {
     }, [API_URL, token])
 
     return (
-        <PermissionGuardClient element="isUser">
-
+        <PermissionGuardClient locale={locale} element="isUser">
 
             <Grid container spacing={6}>
                 <Grid size={{ xs: 12 }}>

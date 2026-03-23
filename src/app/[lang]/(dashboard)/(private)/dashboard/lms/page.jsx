@@ -103,7 +103,6 @@ export default function Dashboard() {
   return (
     <PermissionGuardClient locale={locale} element={"notUser"}>
 
-
       <Box sx={{ p: { xs: 2, md: 4 }, bgcolor: '#f9fafb', minHeight: '100vh' }}>
 
         {/* ================= STATS ================= */}
