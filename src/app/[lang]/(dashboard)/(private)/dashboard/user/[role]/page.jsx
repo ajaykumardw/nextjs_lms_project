@@ -3,9 +3,13 @@
 
 import { useState, useEffect } from "react"
 
+import { useParams } from 'next/navigation';
+
 import { useSession } from 'next-auth/react'
 
 import Grid from '@mui/material/Grid2'
+
+import PermissionGuardClient from "@/components/PermissionGuardClient"
 
 // Components
 import TopStats from '@/views/learner/TopStats'
@@ -13,11 +17,14 @@ import ProgressSection from '@/views/learner/ProgressSection'
 import ModulesAndActivity from '@/views/learner/ModulesAndActivity'
 import RecentActivities from '@/views/learner/RecentActivities'
 
+
 const LearnerDashboard = () => {
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
     const { data: session } = useSession();
     const token = session?.user?.token;
+
+    const { lang: locale } = useParams();
 
     const [dashboardData, setDashboardData] = useState();
     const [loading, setLoading] = useState(true);
@@ -60,23 +67,28 @@ const LearnerDashboard = () => {
     }, [API_URL, token])
 
     return (
-        <Grid container spacing={6}>
-            <Grid size={{ xs: 12 }}>
-                <TopStats dashboardData={dashboardData} loading={loading} />
+        <PermissionGuardClient element="isUser">
+
+
+            <Grid container spacing={6}>
+                <Grid size={{ xs: 12 }}>
+                    <TopStats dashboardData={dashboardData} loading={loading} />
+                </Grid>
+
+                <Grid size={{ xs: 12 }}>
+                    <ProgressSection dashboardData={dashboardData} loading={loading} />
+                </Grid>
+
+                <Grid size={{ xs: 12 }}>
+                    <ModulesAndActivity dashboardData={dashboardData} loading={loading} />
+                </Grid>
+
+                <Grid size={{ xs: 12 }}>
+                    <RecentActivities dashboardData={dashboardData} loading={loading} />
+                </Grid>
             </Grid>
 
-            <Grid size={{ xs: 12 }}>
-                <ProgressSection dashboardData={dashboardData} loading={loading} />
-            </Grid>
-
-            <Grid size={{ xs: 12 }}>
-                <ModulesAndActivity dashboardData={dashboardData} loading={loading} />
-            </Grid>
-
-            <Grid size={{ xs: 12 }}>
-                <RecentActivities dashboardData={dashboardData} loading={loading} />
-            </Grid>
-        </Grid>
+        </PermissionGuardClient>
     )
 }
 
