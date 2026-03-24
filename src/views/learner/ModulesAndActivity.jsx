@@ -21,15 +21,12 @@ const ModulesAndActivity = ({ dashboardData, loading }) => {
         <Grid container spacing={6} alignItems="stretch">
 
             {/* Activity */}
-            <Grid size={{ xs: 12, md: 4 }} sx={{ display: 'flex' }}>
+            <Grid size={{ xs: 12, md: 4 }} >
                 <Card
                     sx={{
-                        height: CARD_HEIGHT,
+                        blockSize: CARD_HEIGHT,
                         minHeight: CARD_HEIGHT,
-                        maxHeight: CARD_HEIGHT,
-                        width: '100%',
-                        display: 'flex',
-                        flexDirection: 'column'
+                        inlineSize: '100%',
                     }}
                 >
                     <CardHeader title="Activity Summary" />
@@ -57,10 +54,10 @@ const ModulesAndActivity = ({ dashboardData, loading }) => {
             <Grid size={{ xs: 12, md: 8 }} sx={{ display: 'flex' }}>
                 <Card
                     sx={{
-                        height: CARD_HEIGHT,
+                        blockSize: CARD_HEIGHT,
                         minHeight: CARD_HEIGHT,
                         maxHeight: CARD_HEIGHT,
-                        width: '100%',
+                        inlineSize: '100%',
                         display: 'flex',
                         flexDirection: 'column'
                     }}
