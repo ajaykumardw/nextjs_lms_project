@@ -257,7 +257,7 @@ export default function Dashboard() {
                   <CardSkeleton />
                 ) : dashboardData?.pendingTask?.length ? (
                   dashboardData.pendingTask.map((item, i) => (
-                    <Typography key={i}>{i + 1}) {item?.title}</Typography>
+                    <Typography key={i}>{item?.count} {"pending task of"} {item?.title}</Typography>
                   ))
                 ) : <NoData />}
               </CardContent>
