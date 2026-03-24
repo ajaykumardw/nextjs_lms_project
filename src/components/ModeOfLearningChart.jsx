@@ -21,8 +21,11 @@ export default function ModeOfLearningChart({ dashboardData }) {
     const currentFY = dashboardData[0]?.currentFinancialYear;
 
     const sortedData = [...dashboardData].sort((a, b) => {
+        
         if (a.title === "Micro Learning Module") return -1;
+        
         if (b.title === "Micro Learning Module") return 1;
+        
         return 0;
     });
 
