@@ -145,7 +145,7 @@ export default function Dashboard() {
     if (API_URL && token) fetchDashboardData()
   }, [API_URL, token])
 
-  const formatNumber = (value) => Number((value ?? 0).toFixed(1))
+  const formatNumber = (value) => Number((value ?? 0).toFixed(0))
 
   const courseSeries = [
     formatNumber(dashboardData?.CourseProgressStatus?.completed_percentage),
