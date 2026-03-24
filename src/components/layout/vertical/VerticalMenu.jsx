@@ -236,23 +236,19 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
                 <i className="tabler-puzzle" style={{ insetInlineEnd: 8, fontSize: '1.2rem' }} />
                 Leadership
               </MenuItem> */}
-              <MenuItem key="module" href={`/${locale}/apps/moduleProgram`}>
-                <i className="tabler-puzzle" style={{ insetInlineEnd: 8 }} />
+              <MenuItem key="module" href={`/${locale}/apps/moduleProgram`} icon={<i className="tabler-puzzle" />}>
                 My Module
               </MenuItem>
 
-              <MenuItem key="self_enroll_module" href={`/${locale}/apps/self-enroll`}>
-                <i className="tabler-users" style={{ insetInlineEnd: 8 }} />
+              <MenuItem key="self_enroll_module" href={`/${locale}/apps/self-enroll`} icon={<i className="tabler-users" />}>
                 Self Enroll Module
               </MenuItem>
 
-              <MenuItem key="courses" href={`/${locale}/apps/my-courses`}>
-                <i className="tabler-book" style={{ insetInlineEnd: 8 }} />
+              <MenuItem key="courses" href={`/${locale}/apps/my-courses`} icon={<i className="tabler-book" />}>
                 My Course
               </MenuItem>
 
-              <MenuItem key="certificates" href={`/${locale}/apps/my-certificates`}>
-                <i className="tabler-certificate" style={{ insetInlineEnd: 8 }} />
+              <MenuItem key="certificates" href={`/${locale}/apps/my-certificates`} icon={<i className="tabler-certificate" />}>
                 Certificate
               </MenuItem>
 
