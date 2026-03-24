@@ -2,8 +2,6 @@
 
 import { useState } from 'react'
 
-import Image from 'next/image'
-
 import { useSession } from 'next-auth/react'
 
 import {
@@ -136,7 +134,7 @@ const SelfEnrollmentCard = ({
                                     },
                                 }}
                             >
-                                <Image
+                                <img
                                     src={`${ASSET_URL}/program_module/${module.image_url}`}
                                     alt={module.title}
                                     width={500}
