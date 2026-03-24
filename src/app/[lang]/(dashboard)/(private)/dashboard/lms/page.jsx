@@ -23,6 +23,8 @@ import {
 
 import PermissionGuardClient from '@/hocs/PermissionClientGuard'
 
+import ModeOfLearningChart from '@/components/ModeOfLearningChart'
+
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false })
 
 /* ================= COMPONENTS ================= */
@@ -110,9 +112,8 @@ const NoData = ({ text = 'No Data Found' }) => (
   </Box>
 )
 
-/* ================= MAIN ================= */
-
 export default function Dashboard() {
+
   const { lang: locale } = useParams()
   const API_URL = process.env.NEXT_PUBLIC_API_URL
   const { data: session } = useSession()
@@ -132,6 +133,7 @@ export default function Dashboard() {
       const value = await response.json()
 
       if (response.ok) {
+
         setDashboardData(value?.data || {})
       }
     } catch (error) {
@@ -300,6 +302,9 @@ export default function Dashboard() {
 
         {/* ================= ACTIVITY ================= */}
         <Grid container spacing={3}>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <ModeOfLearningChart dashboardData={dashboardData.modesLearning} />
+          </Grid>
           <Grid item size={{ xs: 12, md: 6 }}>
             <Card sx={{ borderRadius: 3 }}>
               <CardContent>
