@@ -68,7 +68,7 @@ const RecentActivities = ({ dashboardData, loading }) => {
                             dashboardData.notificationLog.map((item, index) => (
                                 <Typography key={index}>
                                     {item?.template_name || ""} on{" "}
-                                    {dayjs(item?.schedule_date).format('DD MMM YYYY')}
+                                    {dayjs(item?.schedule_date).format('hh:mm A DD MM YYYY')}
                                 </Typography>
                             ))
                         ) : (
