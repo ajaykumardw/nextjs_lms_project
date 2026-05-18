@@ -53,45 +53,6 @@ const RegionCards = ({ fetchRegionData, tableData }) => {
 
   return (
     <Grid container spacing={6}>
-      {cardData.map((item, index) => (
-        <Grid key={index} size={{ xs: 12, sm: 6, lg: 4 }}>
-          <Card>
-            <CardContent className='flex flex-col gap-4'>
-              <div className='flex items-center justify-between'>
-                <Typography className='flex-grow'>{`Total ${item.totalUsers} users`}</Typography>
-                <AvatarGroup total={item.totalUsers}>
-                  {item.avatars.map((img, idx) => (
-                    <Avatar key={idx} alt={item.title} src={`/images/avatars/${img}`} />
-                  ))}
-                </AvatarGroup>
-              </div>
-
-              <div className='flex justify-between items-center'>
-                <div className='flex flex-col items-start gap-1'>
-                  <Typography variant='h5'>{item.title}</Typography>
-
-                  <OpenDialogOnElementClick
-                    element={Typography}
-                    elementProps={{
-                      children: 'Edit Role',
-                      component: Link,
-                      color: 'primary',
-                      onClick: e => e.preventDefault()
-                    }}
-                    dialog={({ open, setOpen, tableData }) => (
-                      <RegionDialog open={open} setOpen={setOpen} title={item.title} fetchRegionData={fetchRegionData} tableData={tableData} />
-                    )}
-                  />
-                </div>
-
-                <IconButton>
-                  <i className='tabler-copy text-secondary' />
-                </IconButton>
-              </div>
-            </CardContent>
-          </Card>
-        </Grid>
-      ))}
 
       {/* Add Role Card */}
       {permissions && permissions?.['hasRegionAddPermission'] && (

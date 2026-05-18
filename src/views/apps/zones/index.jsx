@@ -44,7 +44,6 @@ const Zones = () => {
       if (response.ok) {
 
 
-        console.log("Data", datas);
 
         setLoading(true);
         setZoneData(datas?.data);
@@ -70,10 +69,6 @@ const Zones = () => {
       <Grid size={{ xs: 12 }}>
         <Typography variant='h4' className='mbe-1'>
           Zones List
-        </Typography>
-        <Typography>
-          A role provided access to predefined menus and features so that depending on assigned role an administrator
-          can have access to what he need
         </Typography>
       </Grid>
       <Grid size={{ xs: 12 }}>
