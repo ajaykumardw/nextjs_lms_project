@@ -129,7 +129,7 @@ const ImportUsers = ({ batch, onBack }) => {
     },
 
     onDrop: async (acceptedFiles) => {
-      
+
       if (!acceptedFiles?.length) return;
 
       setFileInput(null);
@@ -139,16 +139,16 @@ const ImportUsers = ({ batch, onBack }) => {
       setData([]);
 
       try {
-        
+
         const selectedFile = acceptedFiles[0];
         const arrayBuffer = await selectedFile.arrayBuffer();
 
         const workbook = new ExcelJS.Workbook();
-        
+
         await workbook.xlsx.load(arrayBuffer);
 
         const worksheet = workbook.worksheets[0]; // first sheet
-        
+
         if (!worksheet) throw new Error("Excel file is empty.");
 
         const requiredHeaders = [
@@ -159,57 +159,57 @@ const ImportUsers = ({ batch, onBack }) => {
         const headers = worksheet.getRow(1).values.slice(1).map(h => String(h || "").trim());
 
         const missingHeadersList = requiredHeaders.filter(h => !headers.includes(h));
-        
+
         if (missingHeadersList.length > 0) {
-        
+
           setMissingHeaders(missingHeadersList);
           setLoading(false);
-        
+
           return;
         }
 
         const jsonData = [];
-        
+
         worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-        
+
           if (rowNumber === 1) return; // skip header
-        
+
           const rowValues = row.values.slice(1); // ExcelJS rows are 1-based
           const rowData = {};
-        
+
           headers.forEach((header, idx) => {
             rowData[header] = rowValues[idx] ?? "";
           });
-        
+
           jsonData.push(rowData);
         });
 
         const rowsWithMissingValues = [];
-        
+
         jsonData.forEach((row, rowIndex) => {
-        
+
           requiredHeaders.forEach(header => {
-        
+
             const value = row[header];
-        
+
             if (value === undefined || value === null || value.toString().trim() === '') {
-        
+
               rowsWithMissingValues.push({ row: rowIndex + 2, header }); // +2: header + 1-based
             }
           });
         });
 
         if (rowsWithMissingValues.length > 0) {
-        
+
           const errorMsg = rowsWithMissingValues.map(r => `"${r.header}"`).join(', ');
           const msgError = "Missing value in row: " + errorMsg;
-        
+
           setShowError(msgError);
           setLoading(false);
-        
+
           return;
         } else {
-        
+
           setShowError();
         }
 
@@ -217,26 +217,26 @@ const ImportUsers = ({ batch, onBack }) => {
         const duplicates = new Set();
 
         jsonData.forEach(row => {
-        
-          const email = (row.Email || '').toLowerCase().trim();
-        
+
+          const email = String(row.Email || '').toLowerCase().trim();
+
           if (!email) return;
-        
+
           if (seen.has(email)) {
-        
+
             duplicates.add(email);
           } else {
-        
+
             seen.add(email);
           }
         });
 
         if (duplicates.size > 0) {
-        
+
           toast.error(`Duplicate emails found in Excel: ${Array.from(duplicates).join(', ')}`);
-        
+
           setLoading(false);
-        
+
           return;
         }
 
@@ -247,9 +247,11 @@ const ImportUsers = ({ batch, onBack }) => {
         setLoading(false);
 
       } catch (err) {
-        
+
+        console.error('Error processing the Excel file:', err);
+
         toast.error('Error in processing the Excel file.');
-      
+
         setLoading(false);
         setProgress(0);
         setUploadData([]);
@@ -258,18 +260,18 @@ const ImportUsers = ({ batch, onBack }) => {
     },
 
     onDropRejected: (rejectedFiles) => {
-      
+
       setLoading(false);
       setProgress(0);
       setUploadData([]);
       setData([]);
 
       rejectedFiles.forEach(file => {
-        
+
         file.errors.forEach(error => {
-          
+
           let msg = "";
-          
+
           switch (error.code) {
             case 'file-invalid-type':
               msg = `Invalid file type for ${file.file.name}.`;
@@ -294,6 +296,7 @@ const ImportUsers = ({ batch, onBack }) => {
   const getRoles = async () => {
     const roleData = await doGet(`company/role`);
 
+
     setRoles(roleData);
   }
 
@@ -306,7 +309,7 @@ const ImportUsers = ({ batch, onBack }) => {
 
   useEffect(() => {
     getRoles();
-  }, [getRoles]);
+  }, []);
 
   const handleUploadData = async () => {
     try {
@@ -367,6 +370,10 @@ const ImportUsers = ({ batch, onBack }) => {
 
     } catch (error) {
       console.error('Error processing the Excel file:', error);
+
+      console.log("Error", error);
+
+
       toast.error('Error in processing the Excel file.', {
         hideProgressBar: false
       });

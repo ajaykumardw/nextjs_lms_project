@@ -92,6 +92,7 @@ const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...prop
 const columnHelper = createColumnHelper()
 
 const UserListTable = ({ userData, loadData, setIsUserCardShow, getStatsCount }) => {
+  
   // States
   const [rowSelection, setRowSelection] = useState({})
   const [data, setData] = useState([])

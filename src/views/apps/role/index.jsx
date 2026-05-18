@@ -58,7 +58,7 @@ const Role = () => {
     if (URL && token) {
       fetchRoleData();
     }
-  }, [token])
+  }, [URL, token])
 
   return (
     <Grid container spacing={6}>
