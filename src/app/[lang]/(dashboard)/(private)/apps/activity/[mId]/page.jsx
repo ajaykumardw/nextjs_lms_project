@@ -8,6 +8,8 @@ import { useRouter, useParams } from "next/navigation"
 
 import Error from "next/error"
 
+import axios from "axios";
+
 import { useSession } from "next-auth/react"
 
 import ReactPlayer from 'react-player'
@@ -932,55 +934,45 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
     maxSize: fileConfig.maxSize,
     accept: fileConfig.accept,
     onDrop: async (acceptedFiles) => {
-      if (acceptedFiles && !acceptedFiles?.length) return
-      const selectedFile = acceptedFiles[0]
 
-      setFile(null)
-      setImageError('')
-      setPreview(null)
+      if (!acceptedFiles?.length) return;
 
-      if (fileConfig.type === 'SCORM Content') {
-        try {
-          const zip = await JSZip.loadAsync(selectedFile)
-          const manifestFile = zip.file("imsmanifest.xml")
+      const selectedFile = acceptedFiles[0];
 
-          if (!manifestFile) {
-            const msg = "SCORM zip must include 'imsmanifest.xml' at the root level."
+      setFile(null);
 
-            toast.error(msg)
-            setImageError(msg)
+      setImageError("");
 
-            return
-          }
+      setPreview(null);
 
-          const manifestText = await manifestFile.async("string")
-          const parser = new XMLParser({ ignoreAttributes: false })
-          const manifest = parser.parse(manifestText)
+      // SIMPLE ZIP VALIDATION ONLY
 
-          if (!manifest?.manifest) {
-            const msg = "'imsmanifest.xml' is not a valid SCORM manifest file."
+      if (fileConfig.type === "SCORM Content") {
 
-            toast.error(msg)
-            setImageError(msg)
+        const isZip =
+          selectedFile.name.toLowerCase().endsWith(".zip");
 
-            return
-          }
-        } catch (err) {
-          console.error(err)
-          const msg = "Invalid SCORM zip. Could not parse 'imsmanifest.xml'."
+        if (!isZip) {
 
-          toast.error(msg)
+          const msg = "Only ZIP files are allowed.";
 
-          setImageError(msg)
+          toast.error(msg);
 
-          return
+          setImageError(msg);
+
+          return;
         }
       }
 
-      setFile(selectedFile)
+      setFile(selectedFile);
 
-      if (fileConfig.type === 'Video') {
-        setPreview(URL.createObjectURL(selectedFile))
+      // VIDEO PREVIEW
+
+      if (fileConfig.type === "Video") {
+
+        setPreview(
+          URL.createObjectURL(selectedFile)
+        );
       }
     },
     onDropRejected: (rejectedFiles) => {
@@ -1013,7 +1005,6 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
 
     const isEdit = !!editData;
 
-    // Determine if a file is required based on conditions
     const requiresFile =
       !isYoutube &&
       !isVideo &&
@@ -1021,7 +1012,10 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
       (!file && (!isEdit || !editData?.file_url));
 
     if (requiresFile) {
-      setImageError(`Please upload a ${fileConfig.type.toLowerCase()}.`);
+
+      setImageError(
+        `Please upload a ${fileConfig.type.toLowerCase()}.`
+      );
 
       return;
     }
@@ -1029,40 +1023,75 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
     setLoading(true);
 
     try {
+
       const formData = new FormData();
 
-      formData.append('title', data.title);
-      formData.append('file_type', fileConfig.type);
+      formData.append("title", data.title);
 
-      if (file) formData.append('file', file);
-      if (isYoutube) formData.append('video_url', data.video_url);
+      formData.append("file_type", fileConfig.type);
 
-      const response = await fetch(`${API_URL}/company/activity/data/${mId}/${id}/${activityId}`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData
-      });
-
-      const value = await response.json()
-
-      if (response.ok) {
-
-        toast.success(`${fileConfig.type} uploaded successfully`, {
-          autoClose: 1000
-        });
-        fetchActivities();
-        handleClose();
-        setISOpen(false);
-      } else {
-
-        toast.error(`${value?.message}`, {
-          autoClose: 1000
-        })
-
+      if (file) {
+        formData.append("file", file);
       }
+
+      if (isYoutube) {
+        formData.append("video_url", data.video_url);
+      }
+
+      const response = await axios.post(
+        `${API_URL}/company/activity/data/${mId}/${id}/${activityId}`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data"
+          },
+
+          timeout: 0,
+
+          maxBodyLength: Infinity,
+
+          maxContentLength: Infinity,
+
+          onUploadProgress: (progressEvent) => {
+
+            if (!progressEvent.total) return;
+
+            const percent = Math.round(
+              (progressEvent.loaded * 100) /
+              progressEvent.total
+            );
+
+            console.log(`Upload Progress: ${percent}%`);
+          }
+        }
+      );
+
+      toast.success(
+        `${fileConfig.type} uploaded successfully`,
+        {
+          autoClose: 1000
+        }
+      );
+
+      fetchActivities();
+
+      handleClose();
+
+      setISOpen(false);
+
     } catch (error) {
-      toast.error('Upload failed');
+
+      console.error("UPLOAD ERROR:", error);
+
+      toast.error(
+        error?.response?.data?.message ||
+        error?.message ||
+        "Upload failed"
+      );
+
     } finally {
+
       setLoading(false);
     }
   };
