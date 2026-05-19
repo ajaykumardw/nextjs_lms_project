@@ -242,14 +242,12 @@ const UserListTable = ({ userData, loadData, setIsUserCardShow, getStatsCount })
       //     </Typography>
       //   )
       // }),
-      columnHelper.accessor('email', {
-        header: 'Email',
-        cell: ({ row }) => <Typography>{row.original.email}</Typography>
-      }),
+
       columnHelper.accessor('phone', {
         header: 'Phone',
         cell: ({ row }) => <Typography>{row.original.phone}</Typography>
       }),
+      
       columnHelper.accessor('address', {
         header: 'Address',
         cell: ({ row }) => <Typography>{row.original.address}</Typography>
