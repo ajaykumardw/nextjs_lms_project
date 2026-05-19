@@ -170,7 +170,7 @@ const Footer = ({ mode }) => {
           )}
         >
           <Typography className='text-white' variant='body2'>
-            <span>{`©2025 , Made with `}</span>
+            <span>{`©${new Date().getFullYear()}, Made with `}</span>
             <span>{` by `}</span>
             <span>DreamWeavers</span>
           </Typography>
