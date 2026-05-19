@@ -8,6 +8,8 @@ import { useRouter, useParams } from "next/navigation"
 
 import Error from "next/error"
 
+import axios from "axios";
+
 import { useSession } from "next-auth/react"
 
 import ReactPlayer from 'react-player'
