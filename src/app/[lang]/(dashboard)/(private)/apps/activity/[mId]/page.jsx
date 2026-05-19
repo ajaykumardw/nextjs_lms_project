@@ -8,8 +8,6 @@ import { useRouter, useParams } from "next/navigation"
 
 import Error from "next/error"
 
-import axios from "axios";
-
 import { useSession } from "next-auth/react"
 
 import ReactPlayer from 'react-player'
@@ -934,45 +932,55 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
     maxSize: fileConfig.maxSize,
     accept: fileConfig.accept,
     onDrop: async (acceptedFiles) => {
+      if (acceptedFiles && !acceptedFiles?.length) return
+      const selectedFile = acceptedFiles[0]
 
-      if (!acceptedFiles?.length) return;
+      setFile(null)
+      setImageError('')
+      setPreview(null)
 
-      const selectedFile = acceptedFiles[0];
+      if (fileConfig.type === 'SCORM Content') {
+        try {
+          const zip = await JSZip.loadAsync(selectedFile)
+          const manifestFile = zip.file("imsmanifest.xml")
 
-      setFile(null);
+          if (!manifestFile) {
+            const msg = "SCORM zip must include 'imsmanifest.xml' at the root level."
 
-      setImageError("");
+            toast.error(msg)
+            setImageError(msg)
 
-      setPreview(null);
+            return
+          }
 
-      // SIMPLE ZIP VALIDATION ONLY
+          const manifestText = await manifestFile.async("string")
+          const parser = new XMLParser({ ignoreAttributes: false })
+          const manifest = parser.parse(manifestText)
 
-      if (fileConfig.type === "SCORM Content") {
+          if (!manifest?.manifest) {
+            const msg = "'imsmanifest.xml' is not a valid SCORM manifest file."
 
-        const isZip =
-          selectedFile.name.toLowerCase().endsWith(".zip");
+            toast.error(msg)
+            setImageError(msg)
 
-        if (!isZip) {
+            return
+          }
+        } catch (err) {
+          console.error(err)
+          const msg = "Invalid SCORM zip. Could not parse 'imsmanifest.xml'."
 
-          const msg = "Only ZIP files are allowed.";
+          toast.error(msg)
 
-          toast.error(msg);
+          setImageError(msg)
 
-          setImageError(msg);
-
-          return;
+          return
         }
       }
 
-      setFile(selectedFile);
+      setFile(selectedFile)
 
-      // VIDEO PREVIEW
-
-      if (fileConfig.type === "Video") {
-
-        setPreview(
-          URL.createObjectURL(selectedFile)
-        );
+      if (fileConfig.type === 'Video') {
+        setPreview(URL.createObjectURL(selectedFile))
       }
     },
     onDropRejected: (rejectedFiles) => {
@@ -1005,6 +1013,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
 
     const isEdit = !!editData;
 
+    // Determine if a file is required based on conditions
     const requiresFile =
       !isYoutube &&
       !isVideo &&
@@ -1012,10 +1021,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
       (!file && (!isEdit || !editData?.file_url));
 
     if (requiresFile) {
-
-      setImageError(
-        `Please upload a ${fileConfig.type.toLowerCase()}.`
-      );
+      setImageError(`Please upload a ${fileConfig.type.toLowerCase()}.`);
 
       return;
     }
@@ -1023,75 +1029,40 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
     setLoading(true);
 
     try {
-
       const formData = new FormData();
 
-      formData.append("title", data.title);
+      formData.append('title', data.title);
+      formData.append('file_type', fileConfig.type);
 
-      formData.append("file_type", fileConfig.type);
+      if (file) formData.append('file', file);
+      if (isYoutube) formData.append('video_url', data.video_url);
 
-      if (file) {
-        formData.append("file", file);
-      }
+      const response = await fetch(`${API_URL}/company/activity/data/${mId}/${id}/${activityId}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData
+      });
 
-      if (isYoutube) {
-        formData.append("video_url", data.video_url);
-      }
+      const value = await response.json()
 
-      const response = await axios.post(
-        `${API_URL}/company/activity/data/${mId}/${id}/${activityId}`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data"
-          },
+      if (response.ok) {
 
-          timeout: 0,
-
-          maxBodyLength: Infinity,
-
-          maxContentLength: Infinity,
-
-          onUploadProgress: (progressEvent) => {
-
-            if (!progressEvent.total) return;
-
-            const percent = Math.round(
-              (progressEvent.loaded * 100) /
-              progressEvent.total
-            );
-
-            console.log(`Upload Progress: ${percent}%`);
-          }
-        }
-      );
-
-      toast.success(
-        `${fileConfig.type} uploaded successfully`,
-        {
+        toast.success(`${fileConfig.type} uploaded successfully`, {
           autoClose: 1000
-        }
-      );
+        });
+        fetchActivities();
+        handleClose();
+        setISOpen(false);
+      } else {
 
-      fetchActivities();
+        toast.error(`${value?.message}`, {
+          autoClose: 1000
+        })
 
-      handleClose();
-
-      setISOpen(false);
-
+      }
     } catch (error) {
-
-      console.error("UPLOAD ERROR:", error);
-
-      toast.error(
-        error?.response?.data?.message ||
-        error?.message ||
-        "Upload failed"
-      );
-
+      toast.error('Upload failed');
     } finally {
-
       setLoading(false);
     }
   };
