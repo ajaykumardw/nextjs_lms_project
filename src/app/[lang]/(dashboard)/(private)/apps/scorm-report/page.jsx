@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useMemo } from "react"
+import React, { useEffect, useState, useMemo } from "react"
 
 import { useRouter, useParams } from "next/navigation"
 
@@ -50,6 +50,15 @@ const TableSkeletonRow = () => (
     <TableRow>
         <TableCell>
             <Skeleton width="60%" />
+        </TableCell>
+        <TableCell>
+            <Skeleton variant="rectangular" height={20} />
+        </TableCell>
+        <TableCell>
+            <Skeleton variant="rectangular" height={20} />
+        </TableCell>
+        <TableCell>
+            <Skeleton variant="rectangular" height={20} />
         </TableCell>
         <TableCell>
             <Skeleton variant="rectangular" height={20} />
@@ -514,6 +523,231 @@ const DashboardTab = ({ onFilterClick, token, filterData, setFilterData }) => {
     );
 };
 
+const DetailScormReportTab = ({ onFilterClick, token, filterData, setFilterData }) => {
+
+    const router = useRouter();
+
+    const { lang } = useParams();
+
+    const [dashboardData, setDashboardData] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
+
+    const handleChangePage = (event, newPage) => {
+        setPage(newPage);
+    };
+
+    const handleChangeRowsPerPage = (event) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
+    };
+
+    const dashboardHeaders = [
+        { label: "Quiz Name", key: "quizName" },
+        { label: "Module Name", key: "moduleName" },
+        { label: "Assigned Learner Count", key: "allowerUserCount" },
+        { label: "Completed Learner Count", key: "completedPercent" },
+        { label: "Passed Learner Count", key: "passedLearnerCount" },
+        { label: "Module Type Name", key: "moduleTypeName" },
+        { label: "Content Folder Name", key: "contentFolderName" },
+        { label: "Program Name", key: "programName" },
+    ];
+
+    const handleExport = async () => {
+
+        if (dashboardData.length <= 2000) {
+
+            exportToExcel({
+                headers: dashboardHeaders,
+                rows: dashboardData,
+                fileName: "quiz_assessment_Report.xlsx",
+            });
+        } else {
+
+            const res = await fetch(`${API_URL}/company/export/center/create`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    reportType: "Scorm Report",
+                    visibleColumns: dashboardData.map(row =>
+                        Object.fromEntries(
+                            dashboardHeaders.map(c => [c.key, row[c.key] ?? ""])
+                        )
+                    )
+                })
+            })
+
+            const json = await res.json()
+
+            if (res.ok) {
+
+                router.push(`/${lang}/apps/download-center`)
+
+            }
+
+        }
+    };
+
+
+    const fetchDashboardReport = async () => {
+        try {
+            setLoading(true);
+
+            // Build query string from filterData
+            let queryString = "";
+
+            if (filterData && Object.keys(filterData).length > 0) {
+                queryString = "?" + new URLSearchParams(filterData).toString();
+            }
+
+            const response = await fetch(
+                `${API_URL}/company/scorm/report/detail/data${queryString}`,
+                {
+                    method: "GET",
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+
+            const value = await response.json();
+
+            if (response.ok) {
+
+                console.log("Data", value?.data);
+
+                setDashboardData(value?.data || []);
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (API_URL && token) fetchDashboardReport();
+    }, [API_URL, token, filterData]);
+
+    const paginatedData = dashboardData.slice(
+        page * rowsPerPage,
+        page * rowsPerPage + rowsPerPage
+    );
+
+
+    return (
+        <>
+            <ReportHeader title="Detail Scorm Report" onFilterClick={onFilterClick} onExport={handleExport} />
+
+            <TableContainer component={Paper}>
+                <Table>
+                    <TableHead>
+                        <TableRow>
+                            <TableCell>User</TableCell>
+                            <TableCell>Current Attempt</TableCell>
+                            <TableCell>Passed</TableCell>
+                            <TableCell>Completed</TableCell>
+                            <TableCell>Program Name</TableCell>
+                            <TableCell>Content Folder Name</TableCell>
+                            <TableCell>Module Name</TableCell>
+                            <TableCell>Activity</TableCell>
+                        </TableRow>
+                    </TableHead>
+
+                    <TableBody>
+                        {loading ? (
+                            Array.from({ length: 3 }).map((_, index) => (
+                                <TableSkeletonRow key={index} />
+                            ))
+                        ) : paginatedData.length > 0 ? (
+                            paginatedData.map((item, index) => (
+                                <React.Fragment key={index}>
+                                    {item?.activities?.map((actv, actIndex) => (
+                                        <TableRow key={`${index}-${actIndex}`}>
+                                            {/* USER INFO */}
+                                            {actIndex === 0 && (
+                                                <TableCell
+                                                    rowSpan={item.activities.length}
+                                                    sx={{
+                                                        verticalAlign: "middle",
+                                                        fontWeight: "bold",
+                                                        minWidth: 220,
+                                                    }}
+                                                >
+
+                                                    {item?.user_info?.first_name}{" "}
+                                                    {item?.user_info?.last_name}
+
+
+                                                </TableCell>
+                                            )}
+
+                                            {/* ASSIGNED */}
+                                            <TableCell>
+                                                {actv?.current_attempt || 0}
+                                            </TableCell>
+
+                                            {/* ASSIGNED */}
+                                            <TableCell>
+                                                {actv?.is_passed ? "Passed" : "Not Passed"}
+                                            </TableCell>
+
+                                            {/* COMPLETED */}
+                                            <TableCell>
+                                                {actv?.is_completed ? "Completed" : "Not Completed"}
+                                            </TableCell>
+
+                                            {/* PROGRAM */}
+                                            <TableCell>
+                                                {actv?.program_info?.title || ""}
+                                            </TableCell>
+
+                                            <TableCell>
+                                                {actv?.content_folder_info?.title || ""}
+                                            </TableCell>
+
+                                            {/* CONTENT FOLDER */}
+
+                                            <TableCell>
+                                                {actv?.module_info?.title || ""}
+                                            </TableCell>
+
+                                            <TableCell>
+                                                {actv?.activity_info?.title || "SCORM Content"}
+                                            </TableCell>
+
+                                        </TableRow>
+                                    ))}
+                                </React.Fragment>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={9} align="center">
+                                    No data found
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+
+                <TablePagination
+                    component="div"
+                    count={dashboardData.length}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    rowsPerPageOptions={[5, 10, 25, 50]}
+                />
+            </TableContainer>
+
+        </>
+    );
+};
+
 const CompletionRatioReport = () => {
 
     const { data: session } = useSession()
@@ -532,11 +766,20 @@ const CompletionRatioReport = () => {
             <TabContext value={tab}>
                 <TabList onChange={(e, v) => setTab(v)} variant="scrollable">
                     <Tab label="Scorm" value="scorm" />
+                    <Tab label="Detail Report" value="detail_report" />
                 </TabList>
 
                 <Box className="mt-4">
                     <TabPanel value="scorm" className="p-0">
                         <DashboardTab
+                            onFilterClick={() => setOpenFilter(true)}
+                            token={token}
+                            filterData={filterData}
+                            setFilterData={setFilterData}
+                        />
+                    </TabPanel>
+                    <TabPanel value="detail_report" className="p-0">
+                        <DetailScormReportTab
                             onFilterClick={() => setOpenFilter(true)}
                             token={token}
                             filterData={filterData}
