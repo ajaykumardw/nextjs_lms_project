@@ -46,6 +46,39 @@ import { exportToExcel } from "@/utils/exportToExcel"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
 
+// FORMAT DATE
+const formatDateTime = (date) => {
+    if (!date) return "";
+
+    return new Date(date).toLocaleString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+    });
+};
+
+// FORMAT DURATION => 00:00:00
+const formatDuration = (start, end) => {
+    if (!start || !end) return "00:00:00";
+
+    const diff = Math.abs(new Date(end) - new Date(start));
+
+    const hours = String(Math.floor(diff / (1000 * 60 * 60))).padStart(2, "0");
+
+    const minutes = String(
+        Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+    ).padStart(2, "0");
+
+    const seconds = String(
+        Math.floor((diff % (1000 * 60)) / 1000)
+    ).padStart(2, "0");
+
+    return `${hours}:${minutes}:${seconds}`;
+};
+
 const TableSkeletonRow = () => (
     <TableRow>
         <TableCell>
@@ -648,12 +681,15 @@ const DetailScormReportTab = ({ onFilterClick, token, filterData, setFilterData 
                         <TableRow>
                             <TableCell>User</TableCell>
                             <TableCell>Current Attempt</TableCell>
+                            <TableCell>Duration</TableCell>
                             <TableCell>Passed</TableCell>
                             <TableCell>Completed</TableCell>
                             <TableCell>Program Name</TableCell>
                             <TableCell>Content Folder Name</TableCell>
                             <TableCell>Module Name</TableCell>
                             <TableCell>Activity</TableCell>
+                            <TableCell>Start Time</TableCell>
+                            <TableCell>End Time</TableCell>
                         </TableRow>
                     </TableHead>
 
@@ -673,14 +709,27 @@ const DetailScormReportTab = ({ onFilterClick, token, filterData, setFilterData 
                                                     rowSpan={item.activities.length}
                                                     sx={{
                                                         verticalAlign: "middle",
-                                                        fontWeight: "bold",
                                                         minWidth: 220,
                                                     }}
                                                 >
 
-                                                    {item?.user_info?.first_name}{" "}
-                                                    {item?.user_info?.last_name}
+                                                    <div style={{ fontWeight: "bold" }}>
 
+                                                        {item?.user_info?.first_name}{" "}
+                                                        {item?.user_info?.last_name} {" "}
+                                                    </div>
+                                                    <div>
+
+                                                        {item?.user_info?.email}
+                                                    </div>
+                                                    <div>
+
+                                                        {item?.user_info?.phone}
+                                                    </div>
+                                                    <div>
+
+                                                        {item?.user_info?.latest_code ? item?.user_info?.latest_code.code : ""}
+                                                    </div>
 
                                                 </TableCell>
                                             )}
@@ -688,6 +737,14 @@ const DetailScormReportTab = ({ onFilterClick, token, filterData, setFilterData 
                                             {/* ASSIGNED */}
                                             <TableCell>
                                                 {actv?.current_attempt || 0}
+                                            </TableCell>
+
+                                            {/* DURATION */}
+                                            <TableCell>
+                                                {formatDuration(
+                                                    actv?.start_activity_time,
+                                                    actv?.end_activity_time
+                                                )}
                                             </TableCell>
 
                                             {/* ASSIGNED */}
@@ -717,6 +774,16 @@ const DetailScormReportTab = ({ onFilterClick, token, filterData, setFilterData 
 
                                             <TableCell>
                                                 {actv?.activity_info?.title || "SCORM Content"}
+                                            </TableCell>
+
+                                            {/* START TIME */}
+                                            <TableCell>
+                                                {formatDateTime(actv?.start_activity_time)}
+                                            </TableCell>
+
+                                            {/* END TIME */}
+                                            <TableCell>
+                                                {formatDateTime(actv?.end_activity_time)}
                                             </TableCell>
 
                                         </TableRow>
