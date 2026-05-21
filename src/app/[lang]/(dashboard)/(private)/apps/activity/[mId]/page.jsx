@@ -1047,28 +1047,28 @@ const ActivityModal = ({
       setImageError('')
       setPreview(null)
 
-      try {
+      const fileName = selectedFile.name.toLowerCase()
 
-        if (fileConfig.type === 'SCORM Content') {
-          await validateScorm(selectedFile)
-        }
+      if (
+        fileConfig.type === 'SCORM Content' &&
+        !fileName.endsWith('.zip')
+      ) {
 
-        setFile(selectedFile)
+        const msg = 'Only ZIP files are allowed.'
 
-        if (fileConfig.type === 'Video') {
-          setPreview(
-            URL.createObjectURL(selectedFile)
-          )
-        }
+        toast.error(msg)
 
-      } catch (err) {
+        setImageError(msg)
 
-        toast.error(
-          err?.message || 'Invalid SCORM package'
-        )
+        return
+      }
 
-        setImageError(
-          err?.message || 'Invalid SCORM package'
+      setFile(selectedFile)
+
+      if (fileConfig.type === 'Video') {
+
+        setPreview(
+          URL.createObjectURL(selectedFile)
         )
       }
     },
@@ -1197,8 +1197,6 @@ const ActivityModal = ({
       setISOpen(false)
 
     } catch (error) {
-
-      console.error('UPLOAD ERROR:', error)
 
       toast.error(
         error?.response?.data?.message ||
