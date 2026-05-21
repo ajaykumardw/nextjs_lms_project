@@ -12,6 +12,8 @@ import axios from "axios";
 
 import { useSession } from "next-auth/react"
 
+import { unzipSync, strFromU8 } from 'fflate'
+
 import ReactPlayer from 'react-player'
 
 import JSZip from 'jszip'
@@ -929,6 +931,46 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
 
   const fileConfig = getFileConfig()
 
+
+  const validateScorm = async (file) => {
+    try {
+
+      const buffer = await file.arrayBuffer()
+
+      const zip = unzipSync(new Uint8Array(buffer), {
+        filter: (fileName) => fileName === 'imsmanifest.xml'
+      })
+
+      const manifestFile = zip['imsmanifest.xml']
+
+      if (!manifestFile) {
+        throw new Error(
+          "SCORM zip must include imsmanifest.xml at root."
+        )
+      }
+
+      const manifestText = strFromU8(manifestFile)
+
+      const parser = new XMLParser({
+        ignoreAttributes: false
+      })
+
+      const manifest = parser.parse(manifestText)
+
+      if (!manifest?.manifest) {
+        throw new Error(
+          "Invalid SCORM manifest structure."
+        )
+      }
+
+      return true
+
+    } catch (err) {
+
+      throw err
+    }
+  }
+
   const { getRootProps, getInputProps } = useDropzone({
     multiple: false,
     maxSize: fileConfig.maxSize,
@@ -941,42 +983,17 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
       setImageError('')
       setPreview(null)
 
-      if (fileConfig.type === 'SCORM Content') {
-        try {
-          const zip = await JSZip.loadAsync(selectedFile)
-          const manifestFile = zip.file("imsmanifest.xml")
+      try {
 
-          if (!manifestFile) {
-            const msg = "SCORM zip must include 'imsmanifest.xml' at the root level."
+        await validateScorm(selectedFile)
 
-            toast.error(msg)
-            setImageError(msg)
+      } catch (err) {
 
-            return
-          }
+        toast.error(err.message)
 
-          const manifestText = await manifestFile.async("string")
-          const parser = new XMLParser({ ignoreAttributes: false })
-          const manifest = parser.parse(manifestText)
+        setImageError(err.message)
 
-          if (!manifest?.manifest) {
-            const msg = "'imsmanifest.xml' is not a valid SCORM manifest file."
-
-            toast.error(msg)
-            setImageError(msg)
-
-            return
-          }
-        } catch (err) {
-          console.error(err)
-          const msg = "Invalid SCORM zip. Could not parse 'imsmanifest.xml'."
-
-          toast.error(msg)
-
-          setImageError(msg)
-
-          return
-        }
+        return
       }
 
       setFile(selectedFile)
@@ -1048,7 +1065,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
         formData.append("video_url", data.video_url);
       }
 
-      const response = await axios.post(
+      await axios.post(
         `${API_URL}/company/activity/data/${mId}/${id}/${activityId}`,
         formData,
         {
