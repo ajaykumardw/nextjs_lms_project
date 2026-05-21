@@ -971,63 +971,6 @@ const ActivityModal = ({
 
   const fileConfig = getFileConfig()
 
-  const validateScorm = async (file) => {
-
-    try {
-
-      setValidatingScorm(true)
-
-      const buffer = await file.arrayBuffer()
-
-      const zip = unzipSync(
-        new Uint8Array(buffer)
-      )
-
-      const manifestKey = Object.keys(zip).find(
-        key =>
-          key
-            .replace(/^\/+/, '')
-            .toLowerCase() === 'imsmanifest.xml'
-      )
-
-      if (!manifestKey) {
-
-        throw new Error(
-          "SCORM zip must include 'imsmanifest.xml' at root level."
-        )
-      }
-
-      const manifestText = strFromU8(
-        zip[manifestKey]
-      )
-
-      const parser = new XMLParser({
-        ignoreAttributes: false
-      })
-
-      const manifest = parser.parse(
-        manifestText
-      )
-
-      if (!manifest?.manifest) {
-
-        throw new Error(
-          "Invalid SCORM manifest structure."
-        )
-      }
-
-      return true
-
-    } catch (err) {
-
-      throw err
-
-    } finally {
-
-      setValidatingScorm(false)
-    }
-  }
-
   const {
     getRootProps,
     getInputProps
