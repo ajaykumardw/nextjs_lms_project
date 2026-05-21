@@ -34,7 +34,7 @@ import {
 
 import Grid from "@mui/material/Grid2"
 
-import { LocalizationProvider, DateTimePicker } from "@mui/x-date-pickers";
+import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 
@@ -132,8 +132,18 @@ const TableSkeletonRow = () => (
     </TableRow>
 );
 
-const renderSelect = (label, value, setValue, options, isLocation = false) => {
+const renderSelect = ({
+    label,
+    value,
+    setValue,
+    options = [],
+    searchValue = "",
+    setSearchValue,
+    onSearch
+}) => {
     const labelId = `${label.replace(/\s+/g, "-")}-label`;
+
+    const isUserSelect = label === "User";
 
     return (
         <FormControl fullWidth size="small">
@@ -143,9 +153,17 @@ const renderSelect = (label, value, setValue, options, isLocation = false) => {
 
             <Select
                 labelId={labelId}
-                value={value}
+                value={value || ""}
                 label={label}
+                displayEmpty
                 onChange={(e) => setValue(e.target.value)}
+                MenuProps={{
+                    PaperProps: {
+                        style: {
+                            maxHeight: 350
+                        }
+                    }
+                }}
                 renderValue={(selected) => {
                     if (!selected) {
                         return (
@@ -155,50 +173,171 @@ const renderSelect = (label, value, setValue, options, isLocation = false) => {
                         );
                     }
 
-                    const item = options.find((o) =>
-                        o._id === selected
+                    // USER SELECT
+                    if (isUserSelect) {
+                        const item = options.find(
+                            (o) => o._id === selected
+                        );
+
+                        if (!item) return "";
+
+                        return `${item.first_name} ${item.last_name} (${item.latest_code})`;
+                    }
+
+                    // NORMAL SELECT
+                    const item = options.find(
+                        (o) =>
+                            o.value === selected ||
+                            o._id === selected
                     );
 
-                    return item?.title;
+                    return (
+                        item?.label ||
+                        item?.name ||
+                        item?.title ||
+                        item
+                    );
                 }}
             >
-                {options.map((opt) => (
-                    <MenuItem
-                        key={opt._id}
-                        value={opt._id}
+                {/* USER SEARCH INPUT */}
+                {isUserSelect && (
+                    <div
+                        onClick={(e) => e.stopPropagation()}
+                        onMouseDown={(e) =>
+                            e.stopPropagation()
+                        }
+                        style={{
+                            padding: 8,
+                            position: "sticky",
+                            top: 0,
+                            background: "#fff",
+                            zIndex: 1
+                        }}
                     >
-                        {opt.title}
-                    </MenuItem>
-                ))}
+                        <TextField
+                            autoFocus
+                            fullWidth
+                            size="small"
+                            placeholder="Search user..."
+                            value={searchValue}
+                            onChange={(e) => {
+                                const value =
+                                    e.target.value;
+
+                                setSearchValue(value);
+
+                                if (onSearch) {
+                                    onSearch(value);
+                                }
+                            }}
+                            onClick={(e) =>
+                                e.stopPropagation()
+                            }
+                            onMouseDown={(e) =>
+                                e.stopPropagation()
+                            }
+                            onKeyDown={(e) =>
+                                e.stopPropagation()
+                            }
+                        />
+                    </div>
+                )}
+
+                {/* USER EMPTY STATES */}
+                {isUserSelect ? (
+                    !searchValue ? (
+                        <MenuItem disabled>
+                            Search user to get results
+                        </MenuItem>
+                    ) : options.length > 0 ? (
+                        options.map((opt) => (
+                            <MenuItem
+                                key={opt._id}
+                                value={opt._id}
+                            >
+                                {opt.first_name}{" "}
+                                {opt.last_name} (
+                                {opt.latest_code})
+                            </MenuItem>
+                        ))
+                    ) : (
+                        <MenuItem disabled>
+                            No User Found
+                        </MenuItem>
+                    )
+                ) : (
+                    
+                    // NORMAL DROPDOWNS
+                    options.map((opt, index) => (
+                        <MenuItem
+                            key={
+                                opt._id ||
+                                opt.value ||
+                                index
+                            }
+                            value={
+                                opt._id ||
+                                opt.value ||
+                                opt
+                            }
+                        >
+                            {opt.label ||
+                                opt.name ||
+                                opt.title ||
+                                opt}
+                        </MenuItem>
+                    ))
+                )}
             </Select>
         </FormControl>
     );
 };
 
-const FilterModal = ({ open, onClose, setFilterData, tab, token }) => {
-
+const FilterModal = ({
+    open,
+    onClose,
+    setFilterData,
+    tab,
+    token
+}) => {
     const [fromTime, setFromTime] = useState(null);
     const [toTime, setToTime] = useState(null);
 
     const [createData, setCreateData] = useState({});
-    const [loading, setLoading] = useState(false);
 
-    const [department, setDepartment] = useState("");
-    const [program, setProgram] = useState("");
-    const [region, setRegion] = useState("");
-    const [designation, setDesignation] = useState("");
+    const [selectedUser, setSelectedUser] = useState("");
+    
+    const [selectedCompletedStatus, setSelectedCompletedStatus] =
+        useState("");
+    
+        const [selectedPassedStatus, setSelectedPassedStatus] =
+        useState("");
+    
+        const [program, setProgram] = useState("");
     const [modules, setModules] = useState("");
-    const [participationType, setParticipationType] = useState("");
+    
+    const [participationType, setParticipationType] =
+        useState("");
 
-    const fetchCreateData = async () => {
+    const [users, setUsers] = useState([]);
+    const [userSearch, setUserSearch] = useState("");
+
+    const fetchCreateData = async (search) => {
         try {
-            setLoading(true);
+
+            if (!search?.trim()) {
+                setUsers([]);
+                
+                return;
+            }
 
             const response = await fetch(
-                `${API_URL}/company/dashboard/filter/data`,
+                `${API_URL}/company/dashboard/filter/data?search=${search}`,
                 {
                     method: "GET",
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
                 }
             );
 
@@ -207,11 +346,11 @@ const FilterModal = ({ open, onClose, setFilterData, tab, token }) => {
             if (response.ok) {
 
                 setCreateData(value?.data || {});
+                setUsers(value?.data?.users || []);
+
             }
         } catch (err) {
             console.error(err);
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -222,11 +361,19 @@ const FilterModal = ({ open, onClose, setFilterData, tab, token }) => {
     const handleClear = () => {
         const clearedFilters = {
             fromTime: null,
-            toTime: null,
+            toTime: null
         };
 
         setFromTime(null);
         setToTime(null);
+
+        setSelectedUser("");
+        setSelectedCompletedStatus("");
+        setSelectedPassedStatus("");
+        setProgram("");
+        setModules("");
+        setParticipationType("");
+        setUserSearch("");
 
         setFilterData(clearedFilters);
     };
@@ -235,21 +382,35 @@ const FilterModal = ({ open, onClose, setFilterData, tab, token }) => {
         setFilterData({
             fromTime,
             toTime,
+            completedStatus: selectedCompletedStatus,
+            passedStatus: selectedPassedStatus,
+            user: selectedUser,
+            program,
+            module: modules,
+            contentFolder: participationType
         });
+
+        onClose();
     };
 
     const handleFromTimeChange = (newValue) => {
-
         setFromTime(newValue);
 
-        if (toTime && newValue && newValue.isAfter(toTime)) {
+        if (
+            toTime &&
+            newValue &&
+            newValue.isAfter(toTime)
+        ) {
             setToTime(null);
         }
     };
 
     const handleToTimeChange = (newValue) => {
-
-        if (fromTime && newValue && newValue.isBefore(fromTime)) {
+        if (
+            fromTime &&
+            newValue &&
+            newValue.isBefore(fromTime)
+        ) {
             return;
         }
 
@@ -258,86 +419,163 @@ const FilterModal = ({ open, onClose, setFilterData, tab, token }) => {
 
     return (
         <Dialog
-            fullWidth maxWidth='lg' scroll='body' open={open} onClose={onClose} sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}
-            PaperProps={{ sx: { m: 0, inlineSize: "100%", borderRadius: 0 } }}
+            fullWidth
+            maxWidth="lg"
+            scroll="body"
+            open={open}
+            onClose={onClose}
+            sx={{
+                "& .MuiDialog-paper": {
+                    overflow: "visible"
+                }
+            }}
+            PaperProps={{
+                sx: {
+                    m: 0,
+                    inlineSize: "100%",
+                    borderRadius: 0
+                }
+            }}
         >
-            <DialogCloseButton onClick={onClose}><i className="tabler-x" /></DialogCloseButton>
-            <DialogTitle>Filter</DialogTitle>
+            <DialogCloseButton onClick={onClose}>
+                <i className="tabler-x" />
+            </DialogCloseButton>
+
+            <DialogTitle>
+                Filter
+            </DialogTitle>
 
             <DialogContent dividers>
                 <Grid container spacing={2}>
-                    {(
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <Grid size={{ xs: 12, md: 4 }}>
+                            <DatePicker
+                                label="From Date"
+                                value={fromTime}
+                                onChange={handleFromTimeChange}
+                                maxDate={toTime || undefined}
+                                slotProps={{
+                                    textField: {
+                                        fullWidth: true,
+                                        size: "small"
+                                    }
+                                }}
+                            />
+                        </Grid>
+
+                        <Grid size={{ xs: 12, md: 4 }}>
+                            <DatePicker
+                                label="To Date"
+                                value={toTime}
+                                onChange={handleToTimeChange}
+                                minDate={fromTime || undefined}
+                                slotProps={{
+                                    textField: {
+                                        fullWidth: true,
+                                        size: "small"
+                                    }
+                                }}
+                            />
+                        </Grid>
+                    </LocalizationProvider>
+
+                    {tab === "detail_report" && (
+
                         <>
-                            <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                <Grid item size={{ xs: 12, md: 4 }}>
-                                    <DateTimePicker
-                                        label="From Date & Time"
-                                        value={fromTime}
-                                        onChange={handleFromTimeChange}
-                                        maxDateTime={toTime || undefined}
-                                        slotProps={{
-                                            textField: { fullWidth: true, size: "small" },
-                                        }}
-                                    />
-                                </Grid>
+                            <Grid size={{ xs: 12, md: 4 }}>
+                                {renderSelect({
+                                    label: "Module",
+                                    value: modules,
+                                    setValue: setModules,
+                                    options:
+                                        createData?.module || []
+                                })}
+                            </Grid>
 
-                                <Grid item size={{ xs: 12, md: 4 }}>
-                                    <DateTimePicker
-                                        label="To Date & Time"
-                                        value={toTime}
-                                        onChange={handleToTimeChange}
-                                        minDateTime={fromTime || undefined}
-                                        slotProps={{
-                                            textField: { fullWidth: true, size: "small" },
-                                        }}
-                                    />
-                                </Grid>
-                            </LocalizationProvider>
+                            <Grid size={{ xs: 12, md: 4 }}>
+                                {renderSelect({
+                                    label: "Program",
+                                    value: program,
+                                    setValue: setProgram,
+                                    options:
+                                        createData?.program || []
+                                })}
+                            </Grid>
 
-                            <>
-
-                                <Grid item size={{ xs: 12, md: 4 }}>
-                                    {renderSelect(
-                                        "Module",
-                                        modules,
-                                        setModules,
-                                        createData?.module || [],
-                                        true
-                                    )}
-                                </Grid>
-
-                                <Grid item size={{ xs: 12, md: 4 }}>
-                                    {renderSelect(
-                                        "Program",
-                                        program,
-                                        setProgram,
-                                        createData?.program || [],
-                                        true
-                                    )}
-                                </Grid>
-
-                                <Grid item size={{ xs: 12, md: 4 }}>
-                                    {renderSelect(
-                                        "Content Folder",
-                                        participationType,
+                            <Grid size={{ xs: 12, md: 4 }}>
+                                {renderSelect({
+                                    label: "Content Folder",
+                                    value: participationType,
+                                    setValue:
                                         setParticipationType,
-                                        createData?.contentFolder || [],
-                                        true
-                                    )}
-                                </Grid>
+                                    options:
+                                        createData?.contentFolder ||
+                                        []
+                                })}
+                            </Grid>
 
-                            </>
+                            <Grid size={{ xs: 12, md: 4 }}>
+                                {renderSelect({
+                                    label: "User",
+                                    value: selectedUser,
+                                    setValue: setSelectedUser,
+                                    options: users,
+                                    searchValue: userSearch,
+                                    setSearchValue: setUserSearch,
+                                    onSearch: fetchCreateData
+                                })}
+                            </Grid>
 
+                            <Grid size={{ xs: 12, md: 4 }}>
+                                {renderSelect({
+                                    label:
+                                        "Completed Status",
+                                    value:
+                                        selectedCompletedStatus,
+                                    setValue:
+                                        setSelectedCompletedStatus,
+                                    options:
+                                        createData?.completedData ||
+                                        []
+                                })}
+                            </Grid>
+
+                            <Grid size={{ xs: 12, md: 4 }}>
+                                {renderSelect({
+                                    label: "Passed Status",
+                                    value:
+                                        selectedPassedStatus,
+                                    setValue:
+                                        setSelectedPassedStatus,
+                                    options:
+                                        createData?.passedData ||
+                                        []
+                                })}
+                            </Grid>
                         </>
+
                     )}
+
                 </Grid>
             </DialogContent>
 
-            <DialogActions sx={{ mt: 4, justifyContent: "center" }}>
-                <Button variant="outlined" onClick={handleClear} >
+            <DialogActions
+                sx={{
+                    mt: 4,
+                    justifyContent: "center"
+                }}
+            >
+                <Button
+                    variant="outlined"
+                    onClick={handleClear}
+                >
                     Reset
                 </Button>
-                <Button variant="contained" onClick={handleSearch}>
+
+                <Button
+                    variant="contained"
+                    onClick={handleSearch}
+                >
                     Search
                 </Button>
             </DialogActions>
@@ -402,7 +640,7 @@ const DashboardTab = ({ onFilterClick, token, filterData, setFilterData }) => {
     };
 
     const dashboardHeaders = [
-        { label: "Quiz Name", key: "quizName" },
+        { label: "Scorm Name", key: "quizName" },
         { label: "Module Name", key: "moduleName" },
         { label: "Assigned Learner Count", key: "allowerUserCount" },
         { label: "Completed Learner Count", key: "completedPercent" },
@@ -419,7 +657,7 @@ const DashboardTab = ({ onFilterClick, token, filterData, setFilterData }) => {
             exportToExcel({
                 headers: dashboardHeaders,
                 rows: dashboardData,
-                fileName: "quiz_assessment_Report.xlsx",
+                fileName: "scorm_report.xlsx",
             });
         } else {
 
@@ -474,9 +712,6 @@ const DashboardTab = ({ onFilterClick, token, filterData, setFilterData }) => {
 
             if (response.ok) {
 
-                console.log("Data", value?.data);
-
-
                 setDashboardData(value?.data || []);
             }
         } catch (error) {
@@ -504,7 +739,7 @@ const DashboardTab = ({ onFilterClick, token, filterData, setFilterData }) => {
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell>Quiz Name</TableCell>
+                            <TableCell>Scorm Name</TableCell>
                             <TableCell>Module Name</TableCell>
                             <TableCell>Assigned Learner Count</TableCell>
                             <TableCell>Completed Learner Count</TableCell>
@@ -577,55 +812,98 @@ const DetailScormReportTab = ({ onFilterClick, token, filterData, setFilterData 
         setPage(0);
     };
 
-    const dashboardHeaders = [
-        { label: "Quiz Name", key: "quizName" },
-        { label: "Module Name", key: "moduleName" },
-        { label: "Assigned Learner Count", key: "allowerUserCount" },
-        { label: "Completed Learner Count", key: "completedPercent" },
-        { label: "Passed Learner Count", key: "passedLearnerCount" },
-        { label: "Module Type Name", key: "moduleTypeName" },
-        { label: "Content Folder Name", key: "contentFolderName" },
-        { label: "Program Name", key: "programName" },
-    ];
-
     const handleExport = async () => {
 
-        if (dashboardData.length <= 2000) {
+        // Flatten activities into export rows
+        const exportRows = dashboardData.flatMap((item) =>
+            (item?.activities || []).map((actv) => ({
+                user: `${item?.user_info?.first_name || ""} ${item?.user_info?.last_name || ""}`,
+                email: item?.user_info?.email || "",
+                phone: item?.user_info?.phone || "",
+                employeeCode: item?.user_info?.latest_code?.code || "",
+
+                currentAttempt: actv?.current_attempt || 0,
+
+                passed: actv?.is_passed ? "Passed" : "Not Passed",
+
+                completed: actv?.is_completed
+                    ? "Completed"
+                    : "Not Completed",
+
+                programName: actv?.program_info?.title || "",
+
+                contentFolderName:
+                    actv?.content_folder_info?.title || "",
+
+                moduleName: actv?.module_info?.title || "",
+
+                activity:
+                    actv?.activity_info?.title || "SCORM Content",
+
+                duration: formatDuration(
+                    actv?.start_activity_time,
+                    actv?.end_activity_time
+                ),
+
+                startTime: formatDateTime(
+                    actv?.start_activity_time
+                ),
+
+                endTime: formatDateTime(
+                    actv?.end_activity_time
+                ),
+            }))
+        );
+
+        const exportHeaders = [
+            { label: "User", key: "user" },
+            { label: "Email", key: "email" },
+            { label: "Phone", key: "phone" },
+            { label: "Employee Code", key: "employeeCode" },
+            { label: "Current Attempt", key: "currentAttempt" },
+            { label: "Passed", key: "passed" },
+            { label: "Completed", key: "completed" },
+            { label: "Program Name", key: "programName" },
+            { label: "Content Folder Name", key: "contentFolderName" },
+            { label: "Module Name", key: "moduleName" },
+            { label: "Activity", key: "activity" },
+            { label: "Duration", key: "duration" },
+            { label: "Start Time", key: "startTime" },
+            { label: "End Time", key: "endTime" },
+        ];
+
+        if (exportRows.length <= 2000) {
 
             exportToExcel({
-                headers: dashboardHeaders,
-                rows: dashboardData,
-                fileName: "quiz_assessment_Report.xlsx",
+                headers: exportHeaders,
+                rows: exportRows,
+                fileName: "detail_scorm_report.xlsx",
             });
+
         } else {
 
-            const res = await fetch(`${API_URL}/company/export/center/create`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    reportType: "Scorm Report",
-                    visibleColumns: dashboardData.map(row =>
-                        Object.fromEntries(
-                            dashboardHeaders.map(c => [c.key, row[c.key] ?? ""])
-                        )
-                    )
-                })
-            })
+            const res = await fetch(
+                `${API_URL}/company/export/center/create`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        reportType: "Scorm Report",
+                        visibleColumns: exportRows,
+                    }),
+                }
+            );
 
-            const json = await res.json()
+            const json = await res.json();
 
             if (res.ok) {
-
-                router.push(`/${lang}/apps/download-center`)
-
+                router.push(`/${lang}/apps/download-center`);
             }
-
         }
     };
-
 
     const fetchDashboardReport = async () => {
         try {
@@ -649,8 +927,6 @@ const DetailScormReportTab = ({ onFilterClick, token, filterData, setFilterData 
             const value = await response.json();
 
             if (response.ok) {
-
-                console.log("Data", value?.data);
 
                 setDashboardData(value?.data || []);
             }
@@ -681,13 +957,13 @@ const DetailScormReportTab = ({ onFilterClick, token, filterData, setFilterData 
                         <TableRow>
                             <TableCell>User</TableCell>
                             <TableCell>Current Attempt</TableCell>
-                            <TableCell>Duration</TableCell>
                             <TableCell>Passed</TableCell>
                             <TableCell>Completed</TableCell>
                             <TableCell>Program Name</TableCell>
                             <TableCell>Content Folder Name</TableCell>
                             <TableCell>Module Name</TableCell>
                             <TableCell>Activity</TableCell>
+                            <TableCell>Duration</TableCell>
                             <TableCell>Start Time</TableCell>
                             <TableCell>End Time</TableCell>
                         </TableRow>
@@ -739,14 +1015,6 @@ const DetailScormReportTab = ({ onFilterClick, token, filterData, setFilterData 
                                                 {actv?.current_attempt || 0}
                                             </TableCell>
 
-                                            {/* DURATION */}
-                                            <TableCell>
-                                                {formatDuration(
-                                                    actv?.start_activity_time,
-                                                    actv?.end_activity_time
-                                                )}
-                                            </TableCell>
-
                                             {/* ASSIGNED */}
                                             <TableCell>
                                                 {actv?.is_passed ? "Passed" : "Not Passed"}
@@ -774,6 +1042,14 @@ const DetailScormReportTab = ({ onFilterClick, token, filterData, setFilterData 
 
                                             <TableCell>
                                                 {actv?.activity_info?.title || "SCORM Content"}
+                                            </TableCell>
+
+                                            {/* DURATION */}
+                                            <TableCell>
+                                                {formatDuration(
+                                                    actv?.start_activity_time,
+                                                    actv?.end_activity_time
+                                                )}
                                             </TableCell>
 
                                             {/* START TIME */}
@@ -826,6 +1102,12 @@ const CompletionRatioReport = () => {
     const [filterData, setFilterData] = useState({
         fromTime: "",
         toTime: "",
+        completedStatus: "",
+        passedStatus: "",
+        user: "",
+        program: "",
+        module: "",
+        contentFolder: ""
     })
 
     return (

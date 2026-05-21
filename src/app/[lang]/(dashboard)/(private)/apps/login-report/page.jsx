@@ -33,7 +33,7 @@ import {
 
 import Grid from "@mui/material/Grid2"
 
-import { LocalizationProvider, DateTimePicker } from "@mui/x-date-pickers";
+import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 
@@ -228,26 +228,32 @@ const FilterModal = ({ open, onClose, setFilterData, tab, token }) => {
                     {(
                         <>
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                <Grid item size={{ xs: 12, md: 4 }}>
-                                    <DateTimePicker
-                                        label="From Date & Time"
+                                <Grid size={{ xs: 12, md: 4 }}>
+                                    <DatePicker
+                                        label="From Date"
                                         value={fromTime}
                                         onChange={handleFromTimeChange}
-                                        maxDateTime={toTime || undefined}
+                                        maxDate={toTime || undefined}
                                         slotProps={{
-                                            textField: { fullWidth: true, size: "small" },
+                                            textField: {
+                                                fullWidth: true,
+                                                size: "small"
+                                            }
                                         }}
                                     />
                                 </Grid>
 
-                                <Grid item size={{ xs: 12, md: 4 }}>
-                                    <DateTimePicker
-                                        label="To Date & Time"
+                                <Grid size={{ xs: 12, md: 4 }}>
+                                    <DatePicker
+                                        label="To Date"
                                         value={toTime}
                                         onChange={handleToTimeChange}
-                                        minDateTime={fromTime || undefined}
+                                        minDate={fromTime || undefined}
                                         slotProps={{
-                                            textField: { fullWidth: true, size: "small" },
+                                            textField: {
+                                                fullWidth: true,
+                                                size: "small"
+                                            }
                                         }}
                                     />
                                 </Grid>
