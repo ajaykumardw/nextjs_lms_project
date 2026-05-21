@@ -808,23 +808,35 @@ const ShowFileModal = ({ open, setOpen, docURL }) => {
   )
 }
 
-const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, activityId, fetchActivities }) => {
+const ActivityModal = ({
+  open,
+  id,
+  setISOpen,
+  editData,
+  API_URL,
+  token,
+  mId,
+  activityId,
+  fetchActivities
+}) => {
 
-  const { lang } = useParams();
+  const { lang } = useParams()
+
+  const router = useRouter()
 
   const [preview, setPreview] = useState()
-  const [imageError, setImageError] = useState()
+  const [imageError, setImageError] = useState('')
   const [loading, setLoading] = useState(false)
   const [file, setFile] = useState()
+  const [validatingScorm, setValidatingScorm] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   const isYoutube = id == '688723af5dd97f4ccae68836'
   const isVideo = id == '688723af5dd97f4ccae68835'
   const isScrom = id == '688723af5dd97f4ccae68837'
-  const isQuiz = id == '68886902954c4d9dc7a379bd';
-
-  const router = useRouter();
+  const isQuiz = id == '68886902954c4d9dc7a379bd'
 
   const schema = object({
     title: pipe(
@@ -838,7 +850,10 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
       ? pipe(
         minLength(1, 'Video URL is required'),
         maxLength(200, 'Video URL too long'),
-        regex(/^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/[^\s]+$/, 'Enter a valid YouTube URL')
+        regex(
+          /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/[^\s]+$/,
+          'Enter a valid YouTube URL'
+        )
       )
       : pipe()
   })
@@ -859,33 +874,43 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
   })
 
   useEffect(() => {
+
     if (editData && open) {
 
       if (isYoutube || isVideo) {
+
         reset({
           title: editData?.video_data?.title || '',
           video_url: editData?.video_data?.video_url || '',
           live_session_type: ''
         })
+
       } else if (isScrom) {
+
         reset({
-          title: editData?.scorm_data?.title,
+          title: editData?.scorm_data?.title || '',
           video_url: '',
           live_session_type: ''
         })
+
       } else {
+
         reset({
           title: editData?.title || '',
           video_url: '',
           live_session_type: ''
         })
+
         setPreview(editData?.file_url)
       }
     }
-  }, [editData, id, open, isYoutube, isVideo, reset])
+
+  }, [editData, open])
 
   const getFileConfig = () => {
+
     if (id === '688723af5dd97f4ccae68834') {
+
       return {
         accept: {
           'application/pdf': ['.pdf'],
@@ -899,65 +924,93 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
     }
 
     if (id === '688723af5dd97f4ccae68835') {
+
       return {
-        accept: { 'video/mp4': ['.mp4'] },
+        accept: {
+          'video/mp4': ['.mp4']
+        },
         maxSize: 500 * 1024 * 1024,
         type: 'Video'
       }
     }
 
     if (id === '688723af5dd97f4ccae68837') {
+
       return {
-        accept: { 'application/zip': ['.zip'] },
+        accept: {
+          'application/zip': ['.zip']
+        },
         maxSize: 500 * 1024 * 1024,
         type: 'SCORM Content'
       }
     }
 
     if (id === '688723af5dd97f4ccae68836') {
-      return { type: 'Youtube videos' }
+      return {
+        type: 'Youtube videos'
+      }
     }
 
     if (isQuiz) {
+
       return {
-        accept: { 'application/zip': ['.zip'] },
+        accept: {
+          'application/zip': ['.zip']
+        },
         maxSize: 500 * 1024 * 1024,
         type: 'Objective Quiz'
       }
     }
 
-    return { accept: {}, maxSize: 0, type: '' }
+    return {
+      accept: {},
+      maxSize: 0,
+      type: ''
+    }
   }
 
   const fileConfig = getFileConfig()
 
-
   const validateScorm = async (file) => {
+
     try {
+
+      setValidatingScorm(true)
 
       const buffer = await file.arrayBuffer()
 
-      const zip = unzipSync(new Uint8Array(buffer), {
-        filter: (fileName) => fileName === 'imsmanifest.xml'
-      })
+      const zip = unzipSync(
+        new Uint8Array(buffer)
+      )
 
-      const manifestFile = zip['imsmanifest.xml']
+      const manifestKey = Object.keys(zip).find(
+        key =>
+          key
+            .replace(/^\/+/, '')
+            .toLowerCase() === 'imsmanifest.xml'
+      )
 
-      if (!manifestFile) {
+      if (!manifestKey) {
+
         throw new Error(
-          "SCORM zip must include imsmanifest.xml at root."
+          "SCORM zip must include 'imsmanifest.xml' at root level."
         )
       }
 
-      const manifestText = strFromU8(manifestFile)
+      const manifestText = strFromU8(
+        zip[manifestKey]
+      )
 
       const parser = new XMLParser({
         ignoreAttributes: false
       })
 
-      const manifest = parser.parse(manifestText)
+      const manifest = parser.parse(
+        manifestText
+      )
 
       if (!manifest?.manifest) {
+
         throw new Error(
           "Invalid SCORM manifest structure."
         )
@@ -968,15 +1021,26 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
     } catch (err) {
 
       throw err
+
+    } finally {
+
+      setValidatingScorm(false)
     }
   }
 
-  const { getRootProps, getInputProps } = useDropzone({
+  const {
+    getRootProps,
+    getInputProps
+  } = useDropzone({
+
     multiple: false,
     maxSize: fileConfig.maxSize,
     accept: fileConfig.accept,
+
     onDrop: async (acceptedFiles) => {
-      if (acceptedFiles && !acceptedFiles?.length) return
+
+      if (!acceptedFiles?.length) return
+
       const selectedFile = acceptedFiles[0]
 
       setFile(null)
@@ -985,43 +1049,58 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
 
       try {
 
-        await validateScorm(selectedFile)
+        if (fileConfig.type === 'SCORM Content') {
+          await validateScorm(selectedFile)
+        }
+
+        setFile(selectedFile)
+
+        if (fileConfig.type === 'Video') {
+          setPreview(
+            URL.createObjectURL(selectedFile)
+          )
+        }
 
       } catch (err) {
 
-        toast.error(err.message)
+        toast.error(
+          err?.message || 'Invalid SCORM package'
+        )
 
-        setImageError(err.message)
-
-        return
-      }
-
-      setFile(selectedFile)
-
-      if (fileConfig.type === 'Video') {
-        setPreview(URL.createObjectURL(selectedFile))
+        setImageError(
+          err?.message || 'Invalid SCORM package'
+        )
       }
     },
+
     onDropRejected: (rejectedFiles) => {
+
       rejectedFiles.forEach(file => {
+
         file.errors.forEach(error => {
+
           let msg = ''
 
           switch (error.code) {
+
             case 'file-invalid-type':
               msg = `Invalid file type for ${fileConfig.type}.`
               break
+
             case 'file-too-large':
               msg = `File is too large. Max allowed size is ${fileConfig.maxSize / (1024 * 1024)}MB.`
               break
+
             case 'too-many-files':
               msg = `Only one ${fileConfig.type} can be uploaded.`
               break
+
             default:
-              msg = `There was an issue with the uploaded file.`
+              msg = 'There was an issue with the uploaded file.'
           }
 
           toast.error(msg)
+
           setImageError(msg)
         })
       })
@@ -1030,39 +1109,45 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
 
   const handleDataSave = async (data) => {
 
-    const isEdit = !!editData;
+    const isEdit = !!editData
 
     const requiresFile =
       !isYoutube &&
       !isVideo &&
       !isScrom &&
-      (!file && (!isEdit || !editData?.file_url));
+      (!file && (!isEdit || !editData?.file_url))
 
     if (requiresFile) {
 
       setImageError(
         `Please upload a ${fileConfig.type.toLowerCase()}.`
-      );
+      )
 
-      return;
+      return
     }
 
-    setLoading(true);
+    setLoading(true)
 
     try {
 
-      const formData = new FormData();
+      const formData = new FormData()
 
-      formData.append("title", data.title);
+      formData.append('title', data.title)
 
-      formData.append("file_type", fileConfig.type);
+      formData.append(
+        'file_type',
+        fileConfig.type
+      )
 
       if (file) {
-        formData.append("file", file);
+        formData.append('file', file)
       }
 
       if (isYoutube) {
-        formData.append("video_url", data.video_url);
+        formData.append(
+          'video_url',
+          data.video_url
+        )
       }
 
       await axios.post(
@@ -1071,7 +1156,7 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data"
+            'Content-Type': 'multipart/form-data'
           },
 
           timeout: 0,
@@ -1082,97 +1167,94 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
 
           onUploadProgress: (progressEvent) => {
 
-            if (!progressEvent.total) return;
+            if (!progressEvent.total) return
 
             const percent = Math.round(
               (progressEvent.loaded * 100) /
               progressEvent.total
-            );
+            )
 
-            console.log(`Upload Progress: ${percent}%`);
+            setUploadProgress(percent)
+
+            console.log(
+              `Upload Progress: ${percent}%`
+            )
           }
         }
-      );
+      )
 
       toast.success(
         `${fileConfig.type} uploaded successfully`,
         {
           autoClose: 1000
         }
-      );
+      )
 
-      fetchActivities();
+      fetchActivities()
 
-      handleClose();
+      handleClose()
 
-      setISOpen(false);
+      setISOpen(false)
 
     } catch (error) {
 
-      console.error("UPLOAD ERROR:", error);
+      console.error('UPLOAD ERROR:', error)
 
       toast.error(
         error?.response?.data?.message ||
         error?.message ||
-        "Upload failed"
-      );
+        'Upload failed'
+      )
 
     } finally {
 
-      setLoading(false);
+      setLoading(false)
+      setUploadProgress(0)
     }
-  };
+  }
 
   const handleClose = () => {
+
     setFile()
     setPreview()
-    setImageError()
-    reset({ title: '', video_url: '', live_session_type: '' })
+    setImageError('')
+    setUploadProgress(0)
+
+    reset({
+      title: '',
+      video_url: '',
+      live_session_type: ''
+    })
+
     setISOpen(false)
   }
 
   const onClose = () => {
-    setIsModalOpen(false);
+    setIsModalOpen(false)
   }
 
   return (
-    <Dialog open={open} fullWidth maxWidth="lg" sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}>
-      <DialogCloseButton onClick={handleClose} disableRipple>
-        <i className="tabler-x"></i>
-      </DialogCloseButton>
+    <Dialog
+      open={open}
+      fullWidth
+      maxWidth="lg"
+    >
+      <DialogTitle>
+        Upload {fileConfig.type}
+      </DialogTitle>
 
-      <DialogTitle>Upload {fileConfig.type}</DialogTitle>
+      <form
+        onSubmit={handleSubmit(handleDataSave)}
+        noValidate
+      >
+        <DialogContent>
 
-      <form onSubmit={handleSubmit(handleDataSave)} noValidate>
-        <DialogContent sx={{ maxHeight: '80vh', overflowY: 'auto' }}>
           <Grid container spacing={5}>
 
-            {isQuiz && (
-              <Box py={4} sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-                <Grid container spacing={4} justifyContent="center" alignItems="center">
-
-                  <QuizCard
-                    title="Import from Spreadsheet"
-                    onClick={() => {
-                      setIsModalOpen(true)
-                    }}
-                  />
-                  <QuizCard
-                    title="Create Manually"
-                    onClick={() => {
-                      router.replace(`/${lang}/apps/quiz/${mId}/${activityId}`)
-                    }}
-                  />
-
-                </Grid>
-              </Box>
-            )}
-
             {!isQuiz && (
-              <Grid item size={{ xs: 12 }}>
+              <Grid item size={{ xs: 12, }}>
                 <Controller
                   name="title"
-                  defaultValue=""
                   control={control}
                   render={({ field }) => (
                     <CustomTextField
@@ -1181,7 +1263,9 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
                       label="Title*"
                       placeholder="Enter title"
                       error={!!errors.title}
-                      helperText={errors.title?.message}
+                      helperText={
+                        errors.title?.message
+                      }
                     />
                   )}
                 />
@@ -1189,133 +1273,122 @@ const ActivityModal = ({ open, id, setISOpen, editData, API_URL, token, mId, act
             )}
 
             {!isYoutube && !isQuiz && (
-              <Grid item size={{ xs: 12 }}>
-                <Typography variant="body1" fontWeight={500} gutterBottom>
-                  {fileConfig.type} <span>*</span>
+
+              <Grid item size={{ xs: 12, }}>
+
+                <Typography
+                  variant="body1"
+                  fontWeight={500}
+                  gutterBottom
+                >
+                  {fileConfig.type} *
                 </Typography>
 
-                <AppReactDropzone>
-                  <div
-                    {...getRootProps()}
-                    style={{
-                      minHeight: '150px',
-                      border: '2px dashed #ccc',
-                      padding: '1rem',
-                      borderRadius: '8px',
-                      textAlign: 'center',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '1rem'
-                    }}
-                  >
-                    <input {...getInputProps()} />
-                    <Avatar variant="rounded" className="bs-12 is-12 mbe-1">
-                      <i className="tabler-upload" />
-                    </Avatar>
+                <div
+                  {...getRootProps()}
+                  style={{
+                    minHeight: '150px',
+                    border: '2px dashed #ccc',
+                    padding: '1rem',
+                    borderRadius: '8px',
+                    textAlign: 'center',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '1rem'
+                  }}
+                >
+                  <input {...getInputProps()} />
 
+                  <Avatar variant="rounded">
+                    <i className="tabler-upload" />
+                  </Avatar>
+
+                  <Typography variant="body2">
+
+                    {fileConfig.type === 'Document' &&
+                      'Allowed *.pdf, *.pptx, *.docx, *.doc. Max 5MB'}
+
+                    {fileConfig.type === 'Video' &&
+                      'Allowed *.mp4. Max 500MB'}
+
+                    {fileConfig.type === 'SCORM Content' &&
+                      'Allowed *.zip with imsmanifest.xml. Max 500MB'}
+                  </Typography>
+
+                  {validatingScorm && (
                     <Typography variant="body2">
-                      {fileConfig.type === 'Document' && 'Allowed *.pdf, *.pptx, *.docx, *.doc. Max 5MB'}
-                      {fileConfig.type === 'Video' && 'Allowed *.mp4. Max 500MB'}
-                      {fileConfig.type === 'SCORM Content' && 'Allowed *.zip. Must include imsmanifest.xml. Max 500MB'}
+                      Validating SCORM package...
                     </Typography>
+                  )}
 
-                    {(file || editData?.file_url) && (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-                        <Avatar variant="rounded" sx={{ bgcolor: '#f5f5f5', color: '#0A2E73', width: 48, height: 48 }}>
-                          <i className="tabler-file" />
-                        </Avatar>
+                  {(file || editData?.file_url) && (
 
-                        <Typography variant="body2" fontWeight={500}>
-                          {file?.name || editData?.file_url}
-                        </Typography>
+                    <Box>
 
-                        <Typography variant="caption" color="textSecondary">
-                          {file && `${(file.size / 1024 / 1024).toFixed(2)} MB`}
-                        </Typography>
-                      </div>
-                    )}
-
-                    {imageError && (
-                      <Typography variant="caption" color="var(--mui-palette-error-main)" sx={{ mt: 1 }}>
-                        {imageError}
+                      <Typography variant="body2">
+                        {file?.name || editData?.file_url}
                       </Typography>
-                    )}
-                  </div>
-                </AppReactDropzone>
+
+                      {file && (
+                        <Typography variant="caption">
+                          {(file.size / 1024 / 1024).toFixed(2)} MB
+                        </Typography>
+                      )}
+                    </Box>
+                  )}
+
+                  {imageError && (
+                    <Typography
+                      variant="caption"
+                      color="error"
+                    >
+                      {imageError}
+                    </Typography>
+                  )}
+                </div>
               </Grid>
             )}
 
-            {(isYoutube || isVideo) && (
-              <>
-                {isYoutube && (
-
-                  <>
-                    <Grid item size={{ xs: 12 }}>
-                      <Controller
-                        name="video_url"
-                        control={control}
-                        render={({ field }) => (
-                          <CustomTextField
-                            {...field}
-                            fullWidth
-                            label="Video URL*"
-                            placeholder="Enter YouTube video URL"
-                            error={!!errors.video_url}
-                            helperText={errors.video_url?.message}
-                          />
-                        )}
-                      />
-                    </Grid>
-                  </>
-                )}
-
-                <>
-
-                  {ReactPlayer.canPlay(preview ? preview : (isVideo ? `${assert_url}/activity/${watch('video_url')}` : watch('video_url'))) && (
-                    <Grid item size={{ xs: 12 }}>
-                      <Typography variant="subtitle1" gutterBottom>Video Preview</Typography>
-                      <Box sx={{ position: 'relative', width: '100%', height: '300px', borderRadius: 2, overflow: 'hidden', boxShadow: 1 }}>
-                        <ReactPlayer
-                          url={preview ? preview : (isVideo ? `${assert_url}/activity/${watch('video_url')}` : watch('video_url'))}
-                          controls
-                          width="100%"
-                          height="100%"
-                          style={{ position: 'absolute', top: 0, left: 0 }}
-                        />
-                      </Box>
-                    </Grid>
-                  )}
-                </>
-
-              </>
+            {loading && (
+              <Grid item size={{ xs: 12, }}>
+                <Typography variant="body2">
+                  Upload Progress: {uploadProgress}%
+                </Typography>
+              </Grid>
             )}
           </Grid>
 
-          <DialogActions sx={{
-            justifyContent: 'center',
-            gap: 2,
-            mt: 4
-          }}>
+          <DialogActions
+            sx={{
+              justifyContent: 'center',
+              gap: 2,
+              mt: 4
+            }}
+          >
             <Button
               type="submit"
               variant="contained"
-              disabled={loading}
-              sx={{ height: 40, position: 'relative' }}
+              disabled={
+                loading || validatingScorm
+              }
             >
-              {loading ? (
-                <CircularProgress size={24} sx={{
-                  color: 'white', position: 'absolute', top: '50%', left: '50%',
-                  mt: '-12px', ml: '-12px'
-                }} />
-              ) : 'Submit'}
+              {loading
+                ? <CircularProgress size={22} />
+                : 'Submit'}
             </Button>
-            <Button variant="tonal" color="error" onClick={handleClose}>Cancel</Button>
+
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={handleClose}
+            >
+              Cancel
+            </Button>
           </DialogActions>
         </DialogContent>
       </form>
-      <ImportQuizModal open={isModalOpen} onClose={onClose} activityId={activityId} handleClose={handleClose} />
     </Dialog>
   )
 }
