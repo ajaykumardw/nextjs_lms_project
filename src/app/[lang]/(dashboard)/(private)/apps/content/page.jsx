@@ -288,8 +288,6 @@ const ProgramPage = () => {
 
           const log = activity?.logs?.[0]
 
-
-
           const isCompleted = (log?.is_completed && Number(log?.completion_percentage) >= 100) || (log?.scorm_data?.lessonStatus === "passed" || log?.scorm_data?.lessonStatus === "incomplete")
           const prevActivity = data.activities[index - 1]
           const prevLog = prevActivity?.logs?.[0]
