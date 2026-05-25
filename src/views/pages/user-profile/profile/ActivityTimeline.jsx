@@ -1,105 +1,382 @@
 'use client'
 
+import { useState } from 'react'
+
+import { useForm } from 'react-hook-form'
+
+// Valibot
+import { valibotResolver } from '@hookform/resolvers/valibot'
+
+import {
+  object,
+  string,
+  pipe,
+  minLength,
+  maxLength,
+  regex,
+  forward,
+  partialCheck
+} from 'valibot'
+
+import { useSession } from 'next-auth/react'
+
+import { toast } from 'react-toastify'
+
 // MUI Imports
 import Card from '@mui/material/Card'
 import CardHeader from '@mui/material/CardHeader'
 import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
-import TimelineItem from '@mui/lab/TimelineItem'
-import TimelineSeparator from '@mui/lab/TimelineSeparator'
-import TimelineConnector from '@mui/lab/TimelineConnector'
-import TimelineContent from '@mui/lab/TimelineContent'
-import TimelineDot from '@mui/lab/TimelineDot'
-import Avatar from '@mui/material/Avatar'
-import AvatarGroup from '@mui/material/AvatarGroup'
-import { styled } from '@mui/material/styles'
-import MuiTimeline from '@mui/lab/Timeline'
+import Grid from '@mui/material/Grid2'
+import Button from '@mui/material/Button'
+import InputAdornment from '@mui/material/InputAdornment'
+import IconButton from '@mui/material/IconButton'
 
-//Component Imports
-import CustomAvatar from '@core/components/mui/Avatar'
+// Custom Component
+import CustomTextField from '@/@core/components/mui/TextField'
 
-// Styled Components
-const Timeline = styled(MuiTimeline)({
-  '& .MuiTimelineItem-root': {
-    '&:before': {
-      display: 'none'
+// Password Regex
+const passwordRegex =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*[\d\W])(?!.*\s).{8,}$/
+
+// Schema
+const ChangePasswordSchema = forward(
+  object({
+    current_password: pipe(
+      string(),
+      minLength(1, 'Current password is required'),
+      maxLength(
+        100,
+        'Current password can be a maximum of 100 characters'
+      )
+    ),
+
+    new_password: pipe(
+      string(),
+      minLength(8, 'Password must be at least 8 characters'),
+      maxLength(
+        100,
+        'Password can be a maximum of 100 characters'
+      ),
+      regex(
+        passwordRegex,
+        'Password must contain uppercase, lowercase, and number/symbol'
+      )
+    ),
+
+    confirm_password: pipe(
+      string(),
+      minLength(1, 'Confirm password is required'),
+      maxLength(
+        100,
+        'Confirm password can be a maximum of 100 characters'
+      )
+    )
+  }),
+
+  ['confirm_password'],
+
+  partialCheck(
+    [['new_password'], ['confirm_password']],
+    input => input.new_password === input.confirm_password,
+    'Passwords do not match'
+  )
+)
+
+const ChangePassword = () => {
+  const { data: session } = useSession()
+
+  const token = session?.user?.token
+
+  const API_URL = process.env.NEXT_PUBLIC_API_URL
+
+  const [isCurrentPasswordShown, setIsCurrentPasswordShown] =
+    useState(false)
+
+  const [isNewPasswordShown, setIsNewPasswordShown] =
+    useState(false)
+
+  const [isConfirmPasswordShown, setIsConfirmPasswordShown] =
+    useState(false)
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting }
+  } = useForm({
+    resolver: valibotResolver(ChangePasswordSchema),
+
+    mode: 'onSubmit',
+
+    defaultValues: {
+      current_password: '',
+      new_password: '',
+      confirm_password: ''
+    }
+  })
+
+  const onSubmit = async data => {
+    try {
+      console.log('FORM DATA =>', data)
+
+      const response = await fetch(
+        `${API_URL}/company/user/profile/change/password`,
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+
+          body: JSON.stringify(data)
+        }
+      )
+
+      const result = await response.json()
+
+      console.log('API RESPONSE =>', result)
+
+      if (response.ok) {
+        toast.success('Password changed successfully', {
+          autoClose: 1000
+        })
+
+        reset()
+      } else {
+        toast.error(
+          result?.message || 'Failed to change password',
+          {
+            autoClose: 1000
+          }
+        )
+      }
+    } catch (error) {
+      console.log('ERROR =>', error)
+
+      toast.error(
+        'An error occurred while changing the password',
+        {
+          autoClose: 1000
+        }
+      )
     }
   }
-})
 
-const ActivityTimeline = () => {
   return (
     <Card>
       <CardHeader
-        title='Activity Timeline'
-        avatar={<i className='tabler-chart-bar text-textSecondary' />}
+        title='Change Password'
+        avatar={
+          <i className='tabler-lock text-textSecondary' />
+        }
         titleTypographyProps={{ variant: 'h5' }}
       />
+
       <CardContent>
-        <Timeline>
-          <TimelineItem>
-            <TimelineSeparator>
-              <TimelineDot color='primary' />
-              <TimelineConnector />
-            </TimelineSeparator>
-            <TimelineContent>
-              <div className='flex items-center justify-between flex-wrap gap-x-4 pbe-[7px]'>
-                <Typography className='text-textPrimary font-medium'>12 Invoices have been paid</Typography>
-                <Typography variant='caption'>12 min ago</Typography>
-              </div>
-              <Typography className='mbe-2'>Invoices have been paid to the company.</Typography>
-              <div className='flex'>
-                <div className='flex gap-2.5 items-center pli-2.5 bg-actionHover plb-[0.3125rem] rounded'>
-                  <img alt='invoice.pdf' src='/images/icons/pdf-document.png' className='bs-5' />
-                  <Typography className='font-medium'>invoice.pdf</Typography>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <Grid container spacing={6}>
+            {/* Current Password */}
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <CustomTextField
+                {...register('current_password')}
+                fullWidth
+                label='Current Password'
+                type={
+                  isCurrentPasswordShown
+                    ? 'text'
+                    : 'password'
+                }
+                placeholder='············'
+                error={!!errors.current_password}
+                helperText={
+                  errors.current_password?.message
+                }
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position='end'>
+                        <IconButton
+                          edge='end'
+                          onClick={() =>
+                            setIsCurrentPasswordShown(
+                              !isCurrentPasswordShown
+                            )
+                          }
+                          onMouseDown={e =>
+                            e.preventDefault()
+                          }
+                        >
+                          <i
+                            className={
+                              isCurrentPasswordShown
+                                ? 'tabler-eye-off'
+                                : 'tabler-eye'
+                            }
+                          />
+                        </IconButton>
+                      </InputAdornment>
+                    )
+                  }
+                }}
+              />
+            </Grid>
+
+            {/* New Password */}
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <CustomTextField
+                {...register('new_password')}
+                fullWidth
+                label='New Password'
+                type={
+                  isNewPasswordShown
+                    ? 'text'
+                    : 'password'
+                }
+                placeholder='············'
+                error={!!errors.new_password}
+                helperText={
+                  errors.new_password?.message
+                }
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position='end'>
+                        <IconButton
+                          edge='end'
+                          onClick={() =>
+                            setIsNewPasswordShown(
+                              !isNewPasswordShown
+                            )
+                          }
+                          onMouseDown={e =>
+                            e.preventDefault()
+                          }
+                        >
+                          <i
+                            className={
+                              isNewPasswordShown
+                                ? 'tabler-eye-off'
+                                : 'tabler-eye'
+                            }
+                          />
+                        </IconButton>
+                      </InputAdornment>
+                    )
+                  }
+                }}
+              />
+            </Grid>
+
+            {/* Confirm Password */}
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <CustomTextField
+                {...register('confirm_password')}
+                fullWidth
+                label='Confirm New Password'
+                type={
+                  isConfirmPasswordShown
+                    ? 'text'
+                    : 'password'
+                }
+                placeholder='············'
+                error={!!errors.confirm_password}
+                helperText={
+                  errors.confirm_password?.message
+                }
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position='end'>
+                        <IconButton
+                          edge='end'
+                          onClick={() =>
+                            setIsConfirmPasswordShown(
+                              !isConfirmPasswordShown
+                            )
+                          }
+                          onMouseDown={e =>
+                            e.preventDefault()
+                          }
+                        >
+                          <i
+                            className={
+                              isConfirmPasswordShown
+                                ? 'tabler-eye-off'
+                                : 'tabler-eye'
+                            }
+                          />
+                        </IconButton>
+                      </InputAdornment>
+                    )
+                  }
+                }}
+              />
+            </Grid>
+
+            {/* Password Requirements */}
+            <Grid
+              size={{ xs: 12 }}
+              className='flex flex-col gap-4'
+            >
+              <Typography variant='h6'>
+                Password Requirements:
+              </Typography>
+
+              <div className='flex flex-col gap-4'>
+                <div className='flex items-center gap-2.5'>
+                  <i className='tabler-circle-filled text-[8px]' />
+                  Minimum 8 characters long
+                </div>
+
+                <div className='flex items-center gap-2.5'>
+                  <i className='tabler-circle-filled text-[8px]' />
+                  At least one uppercase and one lowercase
+                  letter
+                </div>
+
+                <div className='flex items-center gap-2.5'>
+                  <i className='tabler-circle-filled text-[8px]' />
+                  At least one number or special character
+                </div>
+
+                <div className='flex items-center gap-2.5'>
+                  <i className='tabler-circle-filled text-[8px]' />
+                  Spaces are not allowed
                 </div>
               </div>
-            </TimelineContent>
-          </TimelineItem>
-          <TimelineItem>
-            <TimelineSeparator>
-              <TimelineDot color='success' />
-              <TimelineConnector />
-            </TimelineSeparator>
-            <TimelineContent>
-              <div className='flex items-center justify-between flex-wrap gap-x-4 pbe-[7px]'>
-                <Typography className='text-textPrimary font-medium'>Client Meeting</Typography>
-                <Typography variant='caption'>45 min ago</Typography>
-              </div>
-              <Typography className='mbe-2'>Project meeting with john @10:15am</Typography>
-              <div className='flex items-center gap-2.5'>
-                <CustomAvatar src='/images/avatars/1.png' size={32} />
-                <div>
-                  <Typography className='font-medium' variant='body2'>
-                    Lester McCarthy (Client)
-                  </Typography>
-                  <Typography variant='body2'>CEO of Pixinvent</Typography>
-                </div>
-              </div>
-            </TimelineContent>
-          </TimelineItem>
-          <TimelineItem>
-            <TimelineSeparator>
-              <TimelineDot color='info' />
-              <TimelineConnector />
-            </TimelineSeparator>
-            <TimelineContent>
-              <div className='flex items-center justify-between flex-wrap gap-x-4 pbe-[7px]'>
-                <Typography className='text-textPrimary font-medium'>Create a new project for client</Typography>
-                <Typography variant='caption'>2 Day Ago</Typography>
-              </div>
-              <Typography className='mbe-2'>6 team members in a project</Typography>
-              <AvatarGroup total={6}>
-                <Avatar alt='Remy Sharp' src='/images/avatars/1.png' />
-                <Avatar alt='Travis Howard' src='/images/avatars/2.png' />
-                <Avatar alt='Cindy Baker' src='/images/avatars/3.png' />
-              </AvatarGroup>
-            </TimelineContent>
-          </TimelineItem>
-        </Timeline>
+            </Grid>
+
+            {/* Buttons */}
+            <Grid
+              size={{ xs: 12 }}
+              className='flex gap-4'
+            >
+              <Button
+                variant='contained'
+                type='submit'
+                disabled={isSubmitting}
+              >
+                {isSubmitting
+                  ? 'Saving...'
+                  : 'Save Changes'}
+              </Button>
+
+              <Button
+                variant='tonal'
+                color='secondary'
+                type='button'
+                onClick={() => reset()}
+              >
+                Reset
+              </Button>
+            </Grid>
+          </Grid>
+        </form>
       </CardContent>
     </Card>
   )
 }
 
-export default ActivityTimeline
+export default ChangePassword

@@ -1,46 +1,71 @@
-// Next Imports
+'use client'
+
+import { useEffect, useState } from 'react'
+
 import dynamic from 'next/dynamic'
+
+import { useSession } from 'next-auth/react'
 
 // Component Imports
 import UserProfile from '@views/pages/user-profile'
 
-// Data Imports
-import { getProfileData } from '@/app/server/actions'
-
 const ProfileTab = dynamic(() => import('@views/pages/user-profile/profile'))
-const TeamsTab = dynamic(() => import('@views/pages/user-profile/teams'))
-const ProjectsTab = dynamic(() => import('@views/pages/user-profile/projects'))
-const ConnectionsTab = dynamic(() => import('@views/pages/user-profile/connections'))
 
 // Vars
 const tabContentList = data => ({
-  profile: <ProfileTab data={data?.users.profile} />,
-  teams: <TeamsTab data={data?.users.teams} />,
-  projects: <ProjectsTab data={data?.users.projects} />,
-  connections: <ConnectionsTab data={data?.users.connections} />
+  profile: <ProfileTab data={data?.user} />,
 })
 
-/**
- * ! If you need data using an API call, uncomment the below API code, update the `process.env.API_URL` variable in the
- * ! `.env` file found at root of your project and also update the API endpoints like `/pages/profile` in below example.
- * ! Also, remove the above server action import and the action itself from the `src/app/server/actions.ts` file to clean up unused code
- * ! because we've used the server action for getting our static data.
- */
-/* const getProfileData = async () => {
-  // Vars
-  const res = await fetch(`${process.env.API_URL}/pages/profile`)
+const ProfilePage = () => {
 
-  if (!res.ok) {
-    throw new Error('Failed to fetch profileData')
+  const API_URL = process.env.NEXT_PUBLIC_API_URL
+  const { data: session } = useSession()
+  const token = session?.user?.token
+
+  const [profileData, setProfileData] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  const getProfileDataFun = async () => {
+    try {
+
+      const res = await fetch(`${API_URL}/company/user/profile/data`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      if (res.ok) {
+
+        const data = await res.json()
+
+        setProfileData(data?.data)
+        setLoading(false)
+
+      }
+
+    } catch (error) {
+      console.error(error)
+    } finally {
+
+      setLoading(false)
+    }
   }
 
-  return res.json()
-} */
-const ProfilePage = async () => {
-  // Vars
-  const data = await getProfileData()
+  useEffect(() => {
 
-  return <UserProfile data={data} tabContentList={tabContentList(data)} />
+    if (token) {
+      getProfileDataFun()
+    }
+  }, [token, API_URL])
+
+  if (loading) return <div>Loading...</div>
+
+  return (
+    <UserProfile
+      data={profileData}
+      tabContentList={tabContentList(profileData)}
+    />
+  )
 }
 
 export default ProfilePage

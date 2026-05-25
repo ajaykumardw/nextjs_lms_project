@@ -23,21 +23,7 @@ const renderList = list => {
   )
 }
 
-const renderTeams = teams => {
-  return (
-    teams.length > 0 &&
-    teams.map((item, index) => {
-      return (
-        <div key={index} className='flex items-center flex-wrap gap-2'>
-          <Typography className='font-medium'>
-            {item.property.charAt(0).toUpperCase() + item.property.slice(1)}
-          </Typography>
-          <Typography>{item.value.charAt(0).toUpperCase() + item.value.slice(1)}</Typography>
-        </div>
-      )
-    })
-  )
-}
+const renderTeams = teams => teams?.length > 0 && <div className='flex flex-wrap gap-2'>{teams.map((item, index) => <div key={index} className='px-2 py-1 rounded border'><Typography className='font-medium'>{item.name.charAt(0).toUpperCase() + item.name.slice(1)}</Typography></div>)}</div>
 
 const AboutOverview = ({ data }) => {
   return (
@@ -49,31 +35,39 @@ const AboutOverview = ({ data }) => {
               <Typography className='uppercase' variant='body2' color='text.disabled'>
                 About
               </Typography>
-              {data?.about && renderList(data?.about)}
+
+              <div className='flex items-center gap-2'>
+                <i className='tabler-user' />
+                <div className='flex items-center flex-wrap gap-2'>
+                  <Typography className='font-medium'>
+                    {`${data?.first_name?.toUpperCase()} ${data?.last_name?.toUpperCase()}`}
+                  </Typography>
+                </div>
+              </div>
+
+              <div className='flex items-center gap-2'>
+                <i className='tabler-mail' />
+                <div className='flex items-center flex-wrap gap-2'>
+                  <Typography className='font-medium'>
+                    {data?.email}
+                  </Typography>
+                </div>
+              </div>
+
+              <div className='flex items-center gap-2'>
+                <i className='tabler-device-mobile' />
+                <div className='flex items-center flex-wrap gap-2'>
+                  <Typography className='font-medium'>
+                    {data?.phone}
+                  </Typography>
+                </div>
+              </div>
             </div>
             <div className='flex flex-col gap-4'>
               <Typography className='uppercase' variant='body2' color='text.disabled'>
-                Contacts
+                Roles
               </Typography>
-              {data?.contacts && renderList(data?.contacts)}
-            </div>
-            <div className='flex flex-col gap-4'>
-              <Typography className='uppercase' variant='body2' color='text.disabled'>
-                Teams
-              </Typography>
-              {data?.teams && renderTeams(data?.teams)}
-            </div>
-          </CardContent>
-        </Card>
-      </Grid>
-      <Grid size={{ xs: 12 }}>
-        <Card>
-          <CardContent className='flex flex-col gap-6'>
-            <div className='flex flex-col gap-4'>
-              <Typography className='uppercase' variant='body2' color='text.disabled'>
-                Overview
-              </Typography>
-              {data?.overview && renderList(data?.overview)}
+              {data?.roles && renderTeams(data?.roles)}
             </div>
           </CardContent>
         </Card>

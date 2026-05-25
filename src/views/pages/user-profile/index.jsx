@@ -24,7 +24,7 @@ const UserProfile = ({ tabContentList, data }) => {
   return (
     <Grid container spacing={6}>
       <Grid size={{ xs: 12 }}>
-        <UserProfileHeader data={data?.profileHeader} />
+        <UserProfileHeader data={data?.user} />
       </Grid>
       {activeTab === undefined ? null : (
         <Grid size={{ xs: 12 }} className='flex flex-col gap-6'>
@@ -39,7 +39,8 @@ const UserProfile = ({ tabContentList, data }) => {
                 }
                 value='profile'
               />
-              <Tab
+              
+              {/* <Tab
                 label={
                   <div className='flex items-center gap-1.5'>
                     <i className='tabler-layout-grid text-lg' />
@@ -47,7 +48,7 @@ const UserProfile = ({ tabContentList, data }) => {
                   </div>
                 }
                 value='projects'
-              />
+              /> */}
 
             </CustomTabList>
 
