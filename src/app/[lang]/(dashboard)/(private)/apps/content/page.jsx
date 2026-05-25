@@ -220,7 +220,9 @@ const ProgramPage = () => {
   }
 
   const handleActivityClick = (canOpen, url) => {
+
     if (!canOpen) {
+
       toast.error('Please complete the previous activity first.', { autoClose: 1000 })
 
       return
@@ -228,62 +230,6 @@ const ProgramPage = () => {
 
     handleStartActivity(url)
 
-  }
-
-  const downloadCertificate = async (certificateData, activity) => {
-
-    setActivityData(activity);
-
-    if (!certificateData?.backgroundImage) {
-      toast.error("Invalid certificate data")
-
-      return
-    }
-
-    try {
-      setCertificateData(certificateData)
-
-      requestAnimationFrame(() => {
-        setTimeout(async () => {
-          if (!certificateRef.current) {
-            toast.error("Certificate not rendered")
-
-            return
-          }
-
-          const canvas = await html2canvas(certificateRef.current, {
-            scale: 2,
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: null,
-          })
-
-          const imgData = canvas.toDataURL('image/png')
-
-          const pdf = new jsPDF('landscape', 'mm', 'a4')
-
-          pdf.addImage(imgData, 'PNG', 10, 10, 277, 190)
-
-          const pdfBlob = pdf.output('blob')
-          const url = URL.createObjectURL(pdfBlob)
-
-          const link = document.createElement('a')
-
-          link.href = url
-          link.download = `${activity.name}-certificate.pdf`
-          document.body.appendChild(link)
-          link.click()
-          document.body.removeChild(link)
-
-          URL.revokeObjectURL(url)
-
-        }, 500)
-      })
-
-    } catch (err) {
-      console.error("Certificate Error:", err)
-      toast.error("Certificate download failed")
-    }
   }
 
   if (loading) return null
@@ -341,6 +287,9 @@ const ProgramPage = () => {
           const label = activity?.name || moduleTypeLabel?.[moduleTypeId]
 
           const log = activity?.logs?.[0]
+
+
+
           const isCompleted = (log?.is_completed && Number(log?.completion_percentage) >= 100) || (log?.scorm_data?.lessonStatus === "passed" || log?.scorm_data?.lessonStatus === "incomplete")
           const prevActivity = data.activities[index - 1]
           const prevLog = prevActivity?.logs?.[0]
@@ -348,7 +297,7 @@ const ProgramPage = () => {
           const certificateSelected = activity?.moduleSetting?.selectedCertificateId
           const prevCompleted = (prevLog?.is_completed && Number(prevLog?.completion_percentage) >= 100) || prevLog?.scorm_data?.lessonStatus === 'passed'
           const isOrdered = settingData?.orderType === 'ordered'
-          const canOpen = !isOrdered || index === 0 || prevCompleted
+          const canOpen = (!isOrdered || index === 0 || prevCompleted)
 
           const url = `/${locale}/apps/content-data?type=${docType[activity?.module_type_id]}&activityId=${activity?._id}&moduleId=${moduleId}&contentFolderId=${content_folder_id}&moduleTypeId=${activity?.module_type_id}`
           const isDisabled = isCompleted && moduleTypeId == "688723af5dd97f4ccae68837";
@@ -359,25 +308,26 @@ const ProgramPage = () => {
                 <Typography fontWeight={600}>{label}</Typography>
                 <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1 }}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                    {isCompleted && (
+
+                    {/* {isCompleted && (
                       <Box sx={{ px: 1.5, py: 0.5, borderRadius: 1, backgroundColor: "#e6f4ea", border: "1px solid #2e7d32" }}>
                         <Typography sx={{ color: "#2e7d32", fontWeight: 500, fontSize: "0.75rem", whiteSpace: "nowrap" }}>
                           Completed on {formatCompleteDate(log.completed_at_time)}
                         </Typography>
                       </Box>
-                    )}
+                    )} */}
                     <Button
                       variant="contained"
                       color={isCompleted ? "success" : "primary"}
                       disabled={isDisabled}
                       onClick={() => handleActivityClick(canOpen, url)}
-                      sx={{ textTransform: "none", height: 32, px: 2, fontSize: "0.75rem", borderRadius: 1 }}
+                      sx={{ textTransform: "none", blockSize: 32, px: 2, fontSize: "0.75rem", borderRadius: 1 }}
                     >
                       {isCompleted ? "Completed" : "In Progress"}
                     </Button>
                   </Box>
 
-                  {isCompleted && isCertificate && (
+                  {/* {isCompleted && isCertificate && (
                     <Box
                       onClick={() => downloadCertificate(certificateSelected, activity)}
                       sx={{
@@ -395,7 +345,7 @@ const ProgramPage = () => {
                         Download Certificate
                       </Typography>
                     </Box>
-                  )}
+                  )} */}
                 </Box>
               </CardContent>
             </Card>
