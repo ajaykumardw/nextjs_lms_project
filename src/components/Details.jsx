@@ -89,7 +89,7 @@ export default function ProgramPage({ data }) {
     )
   }
 
-  const logs = data?.courseDetails?.activity_logs || [];
+  const logs = data?.courses || [];
 
   const avgCompletion =
     logs.length > 0
@@ -172,12 +172,7 @@ export default function ProgramPage({ data }) {
         (
           data?.courses?.map((item, index) => {
 
-            // Calculate average completion
-            const logs = item?.activity_logs || [];
-
-            const avgCompletion = logs.length
-              ? logs.reduce((sum, l) => sum + Number(l.completion_percentage || 0), 0) / logs.length
-              : 0;
+            const avgCompletion = Number(item.completion_percentage);
 
             // Determine status
             let status = "Pending";
