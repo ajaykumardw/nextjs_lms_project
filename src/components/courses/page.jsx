@@ -46,13 +46,18 @@ const Courses = () => {
       const value = await response.json()
 
       if (response.ok) {
+
         const result = value?.data || []
 
-        // Tab list data
         const course_data = result.map(item => ({
           label: item?.title,
           iconPosition: 'start',
-          value: item?.title, // 👈 unique key
+          value: item?.title,
+          has_completed: item?.has_completed,
+          certificates: item?.certificates,
+          content_folder_completed_at: item?.content_folder_completed_at,
+          completion_percentage: item?.completion_percentage,
+          checkCertificate: item?.checkCertificate,
         }))
 
         setCourseData(course_data)
@@ -64,7 +69,12 @@ const Courses = () => {
             _id: val?._id,
             tutorImg: val?.image_url,
             courseTitle: val?.title,
+            certificates: val?.certificates,
             tags: 'Web',
+            has_completed: val?.has_completed,
+            content_folder_completed_at: val?.content_folder_completed_at,
+            completion_percentage: val?.completion_percentage,
+            checkCertificate: val?.checkCertificate,
           }))
 
           return acc
