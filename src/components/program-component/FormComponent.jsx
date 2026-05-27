@@ -166,11 +166,9 @@ const FormComponent = ({
       setValue('description', editData?.description || '')
       setValue('live_session_type', editData?.live_session_id || '')
 
-      // Edit mode certificate selection
-      if (editData?.certificateId) {
-        setCheckCertificate(true)
-        setSelectedCertificateId(editData.certificateId)
-      }
+      setCheckCertificate(editData?.checkCertificate || false)
+      setSelectedCertificateId(editData?.certificateId || null)
+
     }
   }, [editData, setValue])
 
@@ -238,7 +236,7 @@ const FormComponent = ({
   const onSubmit = async value => {
     if (!file && !editData?.image_url) {
       setImageError('Image is required')
-      
+
       return
     } else {
       setImageError('')
@@ -263,9 +261,9 @@ const FormComponent = ({
     if (stage === 'Content Folder' && selectedCertificateId && checkCertificate) {
 
       formData.append('certificateId', selectedCertificateId)
-    } 
-    
-    if(stage === 'Content Folder' && !selectedCertificateId && checkCertificate){
+    }
+
+    if (stage === 'Content Folder' && !selectedCertificateId && checkCertificate) {
 
       toast.error('Please select a certificate or uncheck the certificate option', {
         autoClose: 1000
@@ -517,7 +515,7 @@ const FormComponent = ({
                   >
                     {certificateData.map((item, index) => {
                       const cardId = item._id ?? index
-                      
+
                       const isSelected =
                         selectedCertificateId === cardId
 
