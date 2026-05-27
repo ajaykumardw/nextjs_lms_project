@@ -261,6 +261,9 @@ const FormComponent = ({
     if (stage === 'Content Folder' && selectedCertificateId && checkCertificate) {
 
       formData.append('certificateId', selectedCertificateId)
+    } else {
+
+      formData.append('certificateId', NonNimport('valibot').ullableIssue)
     }
 
     if (stage === 'Content Folder' && !selectedCertificateId && checkCertificate) {
