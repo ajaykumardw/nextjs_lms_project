@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef, forwardRef } from 'react'
+import { useEffect, useState, } from 'react'
 
 import { useParams, useSearchParams } from 'next/navigation'
 
@@ -17,100 +17,17 @@ import {
   Button,
 } from '@mui/material'
 
-import Grid from "@mui/material/Grid2"
-
 import { toast } from 'react-toastify'
 
-import html2canvas from 'html2canvas'
-
-import jsPDF from 'jspdf'
-
-function formatCompleteDate(dateString) {
-  if (!dateString) return ''
-  const date = new Date(dateString)
-
-  return date.toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
-}
-
-const assert_url = process.env.NEXT_PUBLIC_ASSETS_URL || ''
-
-const DownloadCertificate = forwardRef(({ certificateData, userName, quizName, date, activityData }, ref) => {
-  return (
-    <Grid size={{ xs: 12 }}>
-      <Box position="relative" ref={ref}>
-        <Box
-          sx={{
-            backgroundImage: `url(${assert_url}/frames/${certificateData.backgroundImage})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            borderRadius: 2,
-          }}
-        >
-          <div style={{ padding: '38px 35px', aspectRatio: '1.41/1' }}>
-            {certificateData?.logoURL && (
-              <Box textAlign="center">
-                <img
-                  src={`${assert_url}/company_logo/${certificateData?.logoURL}`}
-                  alt="Logo"
-                  width={80}
-                  height={40}
-                  style={{ objectFit: 'contain' }}
-                />
-              </Box>
-            )}
-
-            <Box textAlign="center" mt={2}>
-              <Typography variant="h6" fontWeight="bold">{certificateData?.title}</Typography>
-              <Typography>{certificateData?.content}</Typography>
-              <Typography variant="h6" fontWeight="bold">{userName}</Typography>
-              <Typography>{certificateData?.content2}</Typography>
-              <Typography variant="h6" fontWeight="bold">{activityData?.name}</Typography>
-              <Typography variant="body2" color="text.secondary">On {formatCompleteDate(date)}</Typography>
-            </Box>
-
-            <Box mt={6} display="flex" justifyContent={(certificateData?.signatureName && certificateData?.signatureName2) ? "space-between" : "center"} gap={4}>
-              {certificateData?.signatureName && (
-                <Box textAlign="center">
-                  <img
-                    src={`${assert_url}/signature/${certificateData?.signatureURL || 'signature1.png'}`}
-                    alt="Signature 1"
-                    width={50}
-                    height={20}
-                  />
-                  <Typography fontWeight="bold">{certificateData?.signatureName}</Typography>
-                  <Typography variant="body2">{certificateData?.signatureContent}</Typography>
-                </Box>
-              )}
-              {certificateData?.signatureName2 && (
-                <Box textAlign="center">
-                  <img
-                    src={`${assert_url}/signature/${certificateData?.signatureURL2 || 'signature1.png'}`}
-                    alt="Signature 2"
-                    width={50}
-                    height={20}
-                  />
-                  <Typography fontWeight="bold">{certificateData?.signatureName2}</Typography>
-                  <Typography variant="body2">{certificateData?.signatureContent2}</Typography>
-                </Box>
-              )}
-            </Box>
-          </div>
-        </Box>
-      </Box>
-    </Grid>
-  )
-})
-
 const ProgramPage = () => {
+
   const paramData = useSearchParams()
   const moduleId = paramData.get('id')
   const content_folder_id = paramData.get('content-folder-id')
+
   const API_URL = process.env.NEXT_PUBLIC_API_URL
   const ASSET_URL = process.env.NEXT_PUBLIC_ASSETS_URL
+
   const { lang: locale } = useParams()
   const { data: session } = useSession()
   const token = session?.user?.token
@@ -118,9 +35,6 @@ const ProgramPage = () => {
   const [data, setData] = useState()
   const [loading, setLoading] = useState(true)
   const [settingData, setSettingData] = useState()
-  const [certificateData, setCertificateData] = useState(null)
-  const [activityData, setActivityData] = useState()
-  const certificateRef = useRef(null)
 
   const fetchActivity = async () => {
     try {
@@ -261,7 +175,7 @@ const ProgramPage = () => {
           <Box
             component="img"
             src={data?.moduleInfo?.image_url ? `${ASSET_URL}/program_module/${data?.moduleInfo?.image_url}` : '/placeholder.png'}
-            sx={{ width: 260, height: 230, borderRadius: 2, objectFit: 'cover' }}
+            sx={{ inlineSize: 260, blockSize: 230, borderRadius: 2, objectFit: 'cover' }}
           />
           <Box className="flex flex-col gap-3">
             <Stack direction="row" spacing={2}>
@@ -286,13 +200,10 @@ const ProgramPage = () => {
           const moduleTypeId = activity?.module_type_id;
           const label = activity?.name || moduleTypeLabel?.[moduleTypeId]
 
-          const log = activity?.logs?.[0]
-
-          const isCompleted = (log?.is_completed && Number(log?.completion_percentage) >= 100) || (log?.scorm_data?.lessonStatus === "passed" || log?.scorm_data?.lessonStatus === "incomplete")
+          const isCompleted = (activity?.has_completed)
           const prevActivity = data.activities[index - 1]
           const prevLog = prevActivity?.logs?.[0]
-          const isCertificate = activity?.moduleSetting?.certificateEnabled
-          const certificateSelected = activity?.moduleSetting?.selectedCertificateId
+
           const prevCompleted = (prevLog?.is_completed && Number(prevLog?.completion_percentage) >= 100) || prevLog?.scorm_data?.lessonStatus === 'passed'
           const isOrdered = settingData?.orderType === 'ordered'
           const canOpen = (!isOrdered || index === 0 || prevCompleted)
@@ -307,13 +218,6 @@ const ProgramPage = () => {
                 <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1 }}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
 
-                    {/* {isCompleted && (
-                      <Box sx={{ px: 1.5, py: 0.5, borderRadius: 1, backgroundColor: "#e6f4ea", border: "1px solid #2e7d32" }}>
-                        <Typography sx={{ color: "#2e7d32", fontWeight: 500, fontSize: "0.75rem", whiteSpace: "nowrap" }}>
-                          Completed on {formatCompleteDate(log.completed_at_time)}
-                        </Typography>
-                      </Box>
-                    )} */}
                     <Button
                       variant="contained"
                       color={isCompleted ? "success" : "primary"}
@@ -325,25 +229,7 @@ const ProgramPage = () => {
                     </Button>
                   </Box>
 
-                  {/* {isCompleted && isCertificate && (
-                    <Box
-                      onClick={() => downloadCertificate(certificateSelected, activity)}
-                      sx={{
-                        px: 1.5,
-                        py: 0.5,
-                        borderRadius: 1,
-                        border: "1px solid",
-                        borderColor: "primary.main",
-                        cursor: "pointer",
-                        transition: "all 0.2s ease",
-                        "&:hover": { backgroundColor: "primary.main", "& .text": { color: "#fff" } },
-                      }}
-                    >
-                      <Typography className="text" sx={{ fontSize: "0.75rem", fontWeight: 500, color: "primary.main", whiteSpace: "nowrap" }}>
-                        Download Certificate
-                      </Typography>
-                    </Box>
-                  )} */}
+
                 </Box>
               </CardContent>
             </Card>
@@ -351,19 +237,6 @@ const ProgramPage = () => {
         })}
       </Box>
 
-      {/* Hidden certificate rendering for download */}
-      {certificateData && activityData && (
-        <Box sx={{ position: 'absolute', left: '-9999px', top: 0 }}>
-          <DownloadCertificate
-            ref={certificateRef}
-            activityData={activityData}
-            certificateData={certificateData}
-            userName={session?.user?.name}
-            quizName={data?.moduleInfo?.title}
-            date={new Date()}
-          />
-        </Box>
-      )}
     </Box>
   )
 }
