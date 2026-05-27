@@ -263,7 +263,9 @@ const FormComponent = ({
     if (stage === 'Content Folder' && selectedCertificateId && checkCertificate) {
 
       formData.append('certificateId', selectedCertificateId)
-    } else {
+    } 
+    
+    if(stage === 'Content Folder' && !selectedCertificateId && checkCertificate){
 
       toast.error('Please select a certificate or uncheck the certificate option', {
         autoClose: 1000
