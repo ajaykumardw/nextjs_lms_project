@@ -238,7 +238,7 @@ const Courses = ({ searchValue, type }) => {
 
 
       if (!input) {
-        
+
         return
       }
 
@@ -427,41 +427,46 @@ const Courses = ({ searchValue, type }) => {
                           </Typography>
                         </Box>
 
-                        <LinearProgress
-                          variant='determinate'
-                          value={Number(course?.completion_percentage || 0)}
-                          sx={{
-                            height: 10,
-                            borderRadius: 10,
-
-                            '& .MuiLinearProgress-bar': {
-                              borderRadius: 10
-                            }
-                          }}
-                        />
-
                         {/* DOWNLOAD BUTTON */}
                         {course?.has_completed &&
                           course?.checkCertificate && (
-                            <Button
-                              fullWidth
-                              variant='contained'
-                              onClick={e => {
-                                e.preventDefault()
-                                e.stopPropagation()
 
-                                handleDownloadCertificate(course)
-                              }}
-                              sx={{
-                                mt: 3,
-                                borderRadius: '12px',
-                                textTransform: 'none',
-                                fontWeight: 600,
-                                py: 1.2
-                              }}
-                            >
-                              Download Certificate
-                            </Button>
+                            <>
+
+                              <LinearProgress
+                                variant='determinate'
+                                value={Number(course?.completion_percentage || 0)}
+                                sx={{
+                                  height: 10,
+                                  borderRadius: 10,
+
+                                  '& .MuiLinearProgress-bar': {
+                                    borderRadius: 10
+                                  }
+                                }}
+                              />
+                              
+                              <Button
+                                fullWidth
+                                variant='contained'
+                                onClick={e => {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+
+                                  handleDownloadCertificate(course)
+                                }}
+                                sx={{
+                                  mt: 3,
+                                  borderRadius: '12px',
+                                  textTransform: 'none',
+                                  fontWeight: 600,
+                                  py: 1.2
+                                }}
+                              >
+                                Download Certificate
+                              </Button>
+
+                            </>
                           )}
                       </Box>
                     )}
