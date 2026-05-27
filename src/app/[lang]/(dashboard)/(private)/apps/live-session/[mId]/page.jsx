@@ -949,7 +949,7 @@ const BasicsComponent = ({ token, mId, setShowPresenterSelector, selectedPresent
                     <form onSubmit={handleSubmit(moduleSettingSave)}>
 
                         <Typography variant="subtitle1" gutterBottom>
-                            On completion of Module launch the following
+                            On completion of Module launch the followings
                         </Typography>
 
                         <Box display="flex" flexDirection="column" gap={3}>
