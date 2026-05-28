@@ -1,37 +1,60 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 
 import Image from 'next/image'
 
-import Dialog from '@mui/material/Dialog'
-
-import DialogContent from '@mui/material/DialogContent'
-
-import DialogActions from '@mui/material/DialogActions'
-
-import Button from '@mui/material/Button'
+import {
+    Dialog,
+    DialogActions,
+    DialogContent,
+    Button,
+    Box
+} from '@mui/material'
 
 import { jsPDF } from 'jspdf'
+import html2canvas from 'html2canvas'
 
 import Card from '@mui/material/Card'
-
 import CardContent from '@mui/material/CardContent'
-
 import Typography from '@mui/material/Typography'
-
 import Grid from '@mui/material/Grid2'
 
 import DialogCloseButton from './dialogs/DialogCloseButton'
 
 const badgeIcon = '/images/apps/academy/badge.png'
-const certificateImage = '/images/apps/academy/sample.png'
 
-const CertificateCard = ({ searchValue }) => {
+const assetsUrl = process.env.NEXT_PUBLIC_ASSETS_URL || ''
+
+// ----------------------
+// HELPERS
+// ----------------------
+
+function formatEnrollDate(dateString) {
+    if (!dateString) return '-'
+
+    return new Date(dateString).toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+    })
+}
+
+const CertificateCard = ({ searchValue = [], userName }) => {
     const [open, setOpen] = useState(false)
     const [selectedCertificate, setSelectedCertificate] = useState(null)
 
+    const certificateRef = useRef(null)
+
+    // ----------------------
+    // MODAL
+    // ----------------------
+
     const handleOpen = certificate => {
+
+        console.log("Certificate", certificate);
+        
+
         setSelectedCertificate(certificate)
         setOpen(true)
     }
@@ -41,26 +64,34 @@ const CertificateCard = ({ searchValue }) => {
         setSelectedCertificate(null)
     }
 
-    const handleDownload = async (imagePath) => {
+    // ----------------------
+    // DOWNLOAD PDF
+    // ----------------------
+
+    const handleDownload = async () => {
         try {
+            if (!certificateRef.current) return
+
+            const canvas = await html2canvas(certificateRef.current, {
+                scale: 2,
+                useCORS: true
+            })
+
+            const imgData = canvas.toDataURL('image/png')
+
             const pdf = new jsPDF('landscape', 'pt', 'a4')
-            const imageUrl = `${window.location.origin}${imagePath}`
 
-            const response = await fetch(imageUrl)
-            const blob = await response.blob()
+            const pdfWidth = pdf.internal.pageSize.getWidth()
+            const pdfHeight = pdf.internal.pageSize.getHeight()
 
-            const reader = new FileReader()
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
 
-            reader.onloadend = () => {
-                const imgData = reader.result
-                const pageWidth = pdf.internal.pageSize.getWidth()
-                const pageHeight = pdf.internal.pageSize.getHeight()
+            pdf.save(
+                `${selectedCertificate?.title || 'certificate'}.pdf`
+            )
 
-                pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight)
-                pdf.save('certificate.pdf')
-            }
+            handleClose();
 
-            reader.readAsDataURL(blob)
         } catch (error) {
             console.error('Error generating PDF:', error)
         }
@@ -68,91 +99,261 @@ const CertificateCard = ({ searchValue }) => {
 
     return (
         <>
-            <Typography variant="h5" fontWeight={600} sx={{ mb: 4 }}>
+            <Typography variant='h5' fontWeight={600} sx={{ mb: 4 }}>
                 My Certificates
             </Typography>
 
-            <Grid container spacing={9}>
-                {searchValue.map((certificate, index) => (
-                    <Grid item key={index} size={{ xs: 12, sm: 6, md: 3, lg: 4 }}>
+            <Grid container spacing={6}>
+                {searchValue?.map((certificate, index) => (
+                    <Grid
+                        key={index}
+                        size={{ xs: 12, sm: 6, md: 4, lg: 4 }}
+                    >
                         <Card
                             onClick={() => handleOpen(certificate)}
-                            className="cursor-pointer rounded-xl shadow-md transition-all duration-300 hover:shadow-lg hover:scale-[1.02] hover:border-primary"
+                            className='cursor-pointer rounded-xl shadow-md transition-all duration-300 hover:shadow-lg hover:scale-[1.02]'
                             sx={{
-                                p: 0,
                                 border: '1px solid #e0e0e0',
                                 borderRadius: 3,
-                                overflow: 'hidden',
+                                overflow: 'hidden'
                             }}
                         >
-                            <div
-                                style={{
-                                    minHeight: '60px',
-                                    background: 'linear-gradient(to right, #e2d9fb, #e9e4ff)',
+                            {/* Header */}
+                            <Box
+                                sx={{
+                                    minHeight: 70,
+                                    background:
+                                        'linear-gradient(to right, #e2d9fb, #e9e4ff)',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    padding: '16px',
+                                    p: 2
                                 }}
                             >
-                                <Image src={badgeIcon} alt="Badge" width={40} height={40} />
-                                <Typography variant="h6" fontWeight={600} sx={{ ml: 2 }} className="text-primary">
+                                <Image
+                                    src={badgeIcon}
+                                    alt='Badge'
+                                    width={40}
+                                    height={40}
+                                />
+
+                                <Typography
+                                    variant='h6'
+                                    fontWeight={600}
+                                    sx={{ ml: 2 }}
+                                    className='text-primary'
+                                >
                                     {certificate?.title || 'Certificate'}
                                 </Typography>
-                            </div>
+                            </Box>
 
+                            {/* Content */}
                             <CardContent sx={{ p: 3 }}>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 24px' }}>
-                                    <div style={{ inlineSize: 'calc(50% - 12px)' }}>
-                                        <Typography variant="body2" color="text.secondary">
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        flexWrap: 'wrap',
+                                        gap: '10px 24px'
+                                    }}
+                                >
+                                    <Box sx={{ width: 'calc(50% - 12px)' }}>
+                                        <Typography
+                                            variant='body2'
+                                            color='text.secondary'
+                                        >
                                             <strong>Issued By:</strong>{' '}
-                                            {certificate.issued_by}
+                                            {certificate?.user?.first_name}{' '}
+                                            {certificate?.user?.last_name}
                                         </Typography>
-                                    </div>
-                                    <div style={{ inlineSize: 'calc(50% - 12px)' }}>
-                                        <Typography variant="body2" color="text.secondary">
-                                            <strong>Valid till:</strong>{' '}
-                                            {certificate.valid_till === '_' ? '-' : certificate.valid_till}
+                                    </Box>
+
+                                    <Box sx={{ width: 'calc(50% - 12px)' }}>
+                                        <Typography
+                                            variant='body2'
+                                            color='text.secondary'
+                                        >
+                                            <strong>Issued on:</strong>{' '}
+                                            {formatEnrollDate(
+                                                certificate?.module_completed_at ||
+                                                certificate?.content_folder_completed_at
+                                            )}
                                         </Typography>
-                                    </div>
-                                    <div style={{ inlineSize: 'calc(50% - 12px)' }}>
-                                        <Typography variant="body2" color="text.secondary">
-                                            <strong>Issued on:</strong> {certificate.issued_on}
-                                        </Typography>
-                                    </div>
-                                    <div style={{ inlineSize: 'calc(50% - 12px)' }}>
-                                        <Typography variant="body2" color="text.secondary">
-                                            <strong>Certificate type:</strong> {certificate.certificate_type}
-                                        </Typography>
-                                    </div>
-                                </div>
+                                    </Box>
+                                </Box>
                             </CardContent>
                         </Card>
                     </Grid>
                 ))}
             </Grid>
 
-            {/* Modal Dialog */}
-            <Dialog open={open} onClose={handleClose} sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }} maxWidth="md" fullWidth>
+            {/* ---------------------- */}
+            {/* CERTIFICATE MODAL */}
+            {/* ---------------------- */}
+
+            <Dialog
+                open={open}
+                onClose={handleClose}
+                maxWidth='lg'
+                fullWidth
+                sx={{
+                    '& .MuiDialog-paper': {
+                        overflow: 'visible'
+                    }
+                }}
+            >
                 <DialogCloseButton onClick={handleClose} disableRipple>
-                    <i className="tabler-x" />
+                    <i className='tabler-x' />
                 </DialogCloseButton>
-                <DialogContent sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                    <Image
-                        src={certificateImage}
-                        alt="Certificate"
-                        className="p-8"
-                        width={800}
-                        height={600}
-                        style={{ inlineSize: '100%', blockSize: 'auto', borderRadius: '8px' }}
-                    />
+
+                <DialogContent
+                    sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        p: 3,
+                        background: '#f5f5f5'
+                    }}
+                >
+                    <Box position='relative' ref={certificateRef}>
+                        <Box
+                            sx={{
+                                backgroundImage: `url(${assetsUrl}/frames/${selectedCertificate?.certificates?.backgroundImage})`,
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                                borderRadius: 2,
+                                mt: 1,
+                                width: '1000px',
+                                overflow: 'hidden'
+                            }}
+                        >
+                            <div
+                                style={{
+                                    padding: '38px 35px',
+                                    aspectRatio: '1.41/1'
+                                }}
+                            >
+                                {selectedCertificate?.certificates?.logoURL && (
+                                    <Box textAlign='center'>
+                                        <img
+                                            src={`${assetsUrl}/company_logo/${selectedCertificate?.certificates?.logoURL}`}
+                                            alt='Logo'
+                                            width={120}
+                                            height={60}
+                                            style={{ objectFit: 'contain' }}
+                                        />
+                                    </Box>
+                                )}
+
+                                <Box textAlign='center' mt={4}>
+                                    <Typography variant='h4' fontWeight='bold'>
+                                        {selectedCertificate?.certificates?.title}
+                                    </Typography>
+
+                                    <Typography mt={2} fontSize={18}>
+                                        {selectedCertificate?.certificates?.content}
+                                    </Typography>
+
+                                    <Typography
+                                        variant='h3'
+                                        fontWeight='bold'
+                                        mt={3}
+                                    >
+                                        {userName}
+                                    </Typography>
+
+                                    <Typography mt={2} fontSize={18}>
+                                        {selectedCertificate?.certificates?.content2}
+                                    </Typography>
+
+                                    <Typography
+                                        variant='h4'
+                                        fontWeight='bold'
+                                        mt={2}
+                                    >
+                                        {selectedCertificate?.title}
+                                    </Typography>
+
+                                    <Typography
+                                        variant='body1'
+                                        color='text.secondary'
+                                        mt={2}
+                                    >
+                                        On {formatEnrollDate(selectedCertificate?.module_completed_at ||
+                                            selectedCertificate?.content_folder_completed_at)}
+                                    </Typography>
+                                </Box>
+
+                                <Box
+                                    mt={10}
+                                    display='flex'
+                                    justifyContent={
+                                        selectedCertificate?.certificates?.signatureName &&
+                                            selectedCertificate?.certificates?.signatureName2
+                                            ? 'space-between'
+                                            : 'center'
+                                    }
+                                    gap={4}
+                                >
+                                    {selectedCertificate?.certificates?.signatureName && (
+                                        <Box textAlign='center'>
+                                            <img
+                                                src={`${assetsUrl}/signature/${selectedCertificate?.certificates?.signatureURL ||
+                                                    'signature1.png'
+                                                    }`}
+                                                alt='Signature 1'
+                                                width={120}
+                                                height={60}
+                                            />
+
+                                            <Typography fontWeight='bold'>
+                                                {selectedCertificate?.certificates?.signatureName}
+                                            </Typography>
+
+                                            <Typography variant='body2'>
+                                                {selectedCertificate?.certificates?.signatureContent}
+                                            </Typography>
+                                        </Box>
+                                    )}
+
+                                    {selectedCertificate?.certificates?.signatureName2 && (
+                                        <Box textAlign='center'>
+                                            <img
+                                                src={`${assetsUrl}/signature/${selectedCertificate?.certificates?.signatureURL2 ||
+                                                    'signature1.png'
+                                                    }`}
+                                                alt='Signature 2'
+                                                width={120}
+                                                height={60}
+                                            />
+
+                                            <Typography fontWeight='bold'>
+                                                {selectedCertificate?.certificates?.signatureName2}
+                                            </Typography>
+
+                                            <Typography variant='body2'>
+                                                {selectedCertificate?.certificates?.signatureContent2}
+                                            </Typography>
+                                        </Box>
+                                    )}
+                                </Box>
+                            </div>
+                        </Box>
+                    </Box>
                 </DialogContent>
-                <DialogActions sx={{ justifyContent: 'center', pb: 3 }}>
+
+                {/* Actions */}
+                <DialogActions
+                    sx={{
+                        justifyContent: 'center',
+                        pb: 3,
+                        mt: 5,
+                        mb: 2
+                    }}
+                >
                     <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={() => handleDownload(certificateImage)}
+                        variant='contained'
+                        color='primary'
+                        onClick={handleDownload}
                     >
-                        Download
+                        Download Certificate
                     </Button>
                 </DialogActions>
             </Dialog>
