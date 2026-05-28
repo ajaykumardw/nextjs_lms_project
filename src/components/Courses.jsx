@@ -402,34 +402,34 @@ const Courses = ({ searchValue, type }) => {
                     )}
 
                     {/* PROGRESS */}
-                    {type === 0 && (
-                      <Box mt={3}>
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            mb: 1
-                          }}
-                        >
-                          <Typography
-                            variant='body2'
-                            color='text.secondary'
+                    {type === 0 && course?.has_completed &&
+                      course?.checkCertificate && (
+                        <Box mt={3}>
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              mb: 1
+                            }}
                           >
-                            Progress
-                          </Typography>
+                            <Typography
+                              variant='body2'
+                              color='text.secondary'
+                            >
+                              Progress
+                            </Typography>
 
-                          <Typography
-                            variant='body2'
-                            fontWeight={700}
-                            color='primary.main'
-                          >
-                            {Number(course?.completion_percentage || 0)}%
-                          </Typography>
-                        </Box>
+                            <Typography
+                              variant='body2'
+                              fontWeight={700}
+                              color='primary.main'
+                            >
+                              {Number(course?.completion_percentage || 0)}%
+                            </Typography>
+                          </Box>
 
-                        {/* DOWNLOAD BUTTON */}
-                        {course?.has_completed &&
-                          course?.checkCertificate && (
+                          {/* DOWNLOAD BUTTON */}
+                          {(
 
                             <>
 
@@ -445,7 +445,7 @@ const Courses = ({ searchValue, type }) => {
                                   }
                                 }}
                               />
-                              
+
                               <Button
                                 fullWidth
                                 variant='contained'
@@ -468,8 +468,8 @@ const Courses = ({ searchValue, type }) => {
 
                             </>
                           )}
-                      </Box>
-                    )}
+                        </Box>
+                      )}
                   </Box>
 
                   {/* TYPE 1 FOOTER */}
