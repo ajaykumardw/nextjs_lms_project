@@ -43,10 +43,12 @@ const UserProfileHeader = ({ data }) => {
             <Typography variant='h4'>{data?.first_name} {data?.last_name}</Typography>
             <div className='flex flex-wrap gap-6 justify-center sm:justify-normal'>
               {data?.designation && (
-
                 <div className='flex items-center gap-2'>
-                  {data?.designationIcon && <i className={data?.designationIcon} />}
-                  <Typography className='font-medium'>{data?.designation}</Typography>
+                  {<i className="tabler-briefcase" />}
+
+                  <Typography className='font-medium'>
+                    {data?.designation?.name}
+                  </Typography>
                 </div>
               )}
               <div className='flex items-center gap-2'>
