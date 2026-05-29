@@ -218,7 +218,7 @@ const ImportUsers = ({ batch, onBack }) => {
 
         jsonData.forEach(row => {
 
-          const email = String(row.Email || '').toLowerCase().trim();
+          const email = String((row?.Email?.text ? row?.Email?.text : row.Email || '')).toLowerCase().trim();
 
           if (!email) return;
 
@@ -230,6 +230,7 @@ const ImportUsers = ({ batch, onBack }) => {
             seen.add(email);
           }
         });
+
 
         if (duplicates.size > 0) {
 
