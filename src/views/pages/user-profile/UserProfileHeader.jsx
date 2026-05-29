@@ -6,6 +6,8 @@ import Typography from '@mui/material/Typography'
 
 import CustomAvatar from '@core/components/mui/Avatar';
 
+import { getInitials } from '@/utils/getInitials'
+
 const UserProfileHeader = ({ data }) => {
 
   const assert_url = process.env.NEXT_PUBLIC_ASSETS_URL || ''
