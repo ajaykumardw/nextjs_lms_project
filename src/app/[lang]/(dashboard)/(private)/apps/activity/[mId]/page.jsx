@@ -3768,6 +3768,8 @@ const AcitivityCard = () => {
       if (response.ok) {
 
         const value = result?.data;
+        
+        console.log("Val", value)
 
         setData(value)
       }

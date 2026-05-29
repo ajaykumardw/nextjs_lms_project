@@ -232,10 +232,11 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
           )}
           {permissArray?.isUser && (
             <>
-              <MenuItem key="leadership" href={`/${locale}/apps/leadership`}>
+
+              {/* <MenuItem key="leadership" href={`/${locale}/apps/leadership`}>
                 <i className="tabler-puzzle" style={{ insetInlineEnd: 8, fontSize: '1.2rem' }} />
                 Leadership
-              </MenuItem>
+              </MenuItem> */}
               
               {/* <MenuItem key="module" href={`/${locale}/apps/moduleProgram`} icon={<i className="tabler-puzzle" />}>
                 My Module

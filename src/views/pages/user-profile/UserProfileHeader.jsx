@@ -23,6 +23,7 @@ const UserProfileHeader = ({ data }) => {
         />
       )
     } else {
+      
       return (
         <CustomAvatar sx={{ width: 120, height: 120 }}>
           {getInitials(fullName)}

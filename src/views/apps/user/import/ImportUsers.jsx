@@ -153,7 +153,7 @@ const ImportUsers = ({ batch, onBack }) => {
 
         const requiredHeaders = [
           'SRNO', 'Email', 'FirstName', 'LastName', 'PhoneNo', 'Password', 'ParticipationType',
-          'EmpID', 'Address', 'Country', 'State', 'City', 'PinCode', 'LicenseNo', 'Status'
+          'EmpID', 'Country', 'State', 'City', 'PinCode', 'LicenseNo', 'Status'
         ];
 
         const headers = worksheet.getRow(1).values.slice(1).map(h => String(h || "").trim());
@@ -723,7 +723,33 @@ const ImportUsers = ({ batch, onBack }) => {
             ) : (
 
               <Alert severity='info'>
-                Note: Allowed only Excel files with *.xls or *.xlsx extension.
+                <div>
+                  <strong>Note:</strong> Only Excel files with <code>.xls</code> or{' '}
+                  <code>.xlsx</code> extensions are allowed.
+                </div>
+
+                <br />
+
+                <div>
+                  <strong>Compulsory fields:</strong>
+                  <ul style={{ marginTop: 4, paddingLeft: 20 }}>
+                    <li>SRNO</li>
+                    <li>First Name</li>
+                    <li>Last Name</li>
+                    <li>Email</li>
+                    <li>Password</li>
+                    <li>Phone</li>
+                    <li>Address</li>
+                    <li>Participation Type</li>
+                    <li>Emp ID</li>
+                    <li>Country</li>
+                    <li>State</li>
+                    <li>City</li>
+                    <li>Pin code</li>
+                    <li>License no</li>
+                    <li>Status</li>
+                  </ul>
+                </div>
               </Alert>
             )}
 
