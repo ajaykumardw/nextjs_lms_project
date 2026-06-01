@@ -108,28 +108,27 @@ const UserFormLayout = () => {
                 minLength(6, 'Password min length should be 6'),
                 maxLength(255, 'Password can be a maximum of 255 characters')
             ),
-        country_id: pipe(
+        country_id: optional(
             string(),
-            minLength(1, 'Country is required')
         ),
-        state_id: pipe(
+        state_id: optional(
             string(),
-            minLength(1, 'State is required')
         ),
-        city_id: pipe(
+        city_id: optional(
             string(),
-            minLength(1, 'City is required')
         ),
-        address: pipe(
+        address: optional(
             string(),
-            minLength(1, 'Address is required'),
             maxLength(1000, 'Address can be a maximum of 1000 characters')
         ),
-        pincode: pipe(
+        pincode: optional(
             string(),
-            minLength(6, 'Pincode should have min length of 6'),
-            maxLength(10, 'Pincode max length is of 10 digit'),
-            custom((value) => /^\d+$/.test(value), 'Pincode must contain digits only')
+            custom(
+                value =>
+                    value === '' ||
+                    (/^\d+$/.test(value) && value.length >= 6 && value.length <= 10),
+                'Pincode must be 6-10 digits and contain digits only'
+            )
         ),
         phone: pipe(
             string(),
@@ -211,9 +210,6 @@ const UserFormLayout = () => {
     })
 
     const handleClickShowPassword = () => setFormData(show => ({ ...show, isPasswordShown: !show.isPasswordShown }))
-
-    const handleClickShowConfirmPassword = () =>
-        setFormData(show => ({ ...show, isConfirmPasswordShown: !show.isConfirmPasswordShown }))
 
     // const [formData, setFormData] = useState(initialData)
     const [imgSrc, setImgSrc] = useState('/images/avatars/11.png');
@@ -400,7 +396,7 @@ const UserFormLayout = () => {
 
             if (editData.roles?.length > 0) {
                 const rolesIds = editData.roles.map((role) => role.role_id);
-                
+
                 setUserRoles(rolesIds);
                 setValue('roles', rolesIds);
             }
@@ -408,14 +404,14 @@ const UserFormLayout = () => {
             if (editData.zone_id) {
                 setSelectZone(editData.zone_id);
             }
-            
+
             if (editData.region_id) {
                 setSelectedRegion(editData.region_id);
             }
 
             if (editData.branch_id && createData?.branch) {
                 const branchData = createData?.branch.filter((b) => b.regionId == editData.region_id) || [];
-                
+
                 setSelectedBranch(branchData);
             }
         }
@@ -807,7 +803,7 @@ const UserFormLayout = () => {
                                     <CustomTextField
                                         {...field}
                                         fullWidth
-                                        label="Address*"
+                                        label="Address"
                                         placeholder="Address"
                                         multiline
                                         rows={1}
@@ -826,7 +822,7 @@ const UserFormLayout = () => {
                                         {...field}
                                         select
                                         fullWidth
-                                        label="Country*"
+                                        label="Country"
                                         onChange={(e) => {
                                             const selectedCountryId = e.target.value;
 
@@ -856,7 +852,7 @@ const UserFormLayout = () => {
                                         {...field}
                                         select
                                         fullWidth
-                                        label="State*"
+                                        label="State"
                                         onChange={(e) => {
                                             const selectStateId = e.target.value;
 
@@ -884,7 +880,7 @@ const UserFormLayout = () => {
                                         {...field}
                                         select
                                         fullWidth
-                                        label="City*"
+                                        label="City"
                                         error={!!errors.city_id}
                                         helperText={errors.city_id?.message}
                                     >
@@ -905,7 +901,7 @@ const UserFormLayout = () => {
                                         {...field}
                                         fullWidth
                                         type="number"
-                                        label="Pincode*"
+                                        label="Pincode"
                                         placeholder="Pincode"
                                         error={!!errors.pincode}
                                         helperText={errors.pincode?.message}
@@ -1166,7 +1162,7 @@ const UserFormLayout = () => {
                                             value={field.value ?? ""}
                                             onChange={(e) => {
                                                 const rawValue = e.target.value;
-                                                
+
                                                 const value =
                                                     rawValue === "undefined" || !rawValue ? "" : rawValue;
 
@@ -1208,7 +1204,7 @@ const UserFormLayout = () => {
                                             onChange={(e) => {
                                                 const rawValue = e.target.value;
                                                 const value = rawValue === "undefined" || !rawValue ? "" : rawValue;
-                                                
+
                                                 field.onChange(value);
                                             }}
                                             error={!!errors.branch_id}

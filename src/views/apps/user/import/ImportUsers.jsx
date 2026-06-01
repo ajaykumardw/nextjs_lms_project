@@ -104,7 +104,6 @@ const ImportUsers = ({ batch, onBack }) => {
   const [roles, setRoles] = useState([]); // Progress state
   const { data: session } = useSession();
   const { doGet, doPost } = useApi();
-  const [selectedRoles, setSelectedRoles] = useState([]);
   const [showError, setShowError] = useState();
   const [userRoles, setUserRoles] = useState([]);
 
@@ -153,7 +152,7 @@ const ImportUsers = ({ batch, onBack }) => {
 
         const requiredHeaders = [
           'SRNO', 'Email', 'FirstName', 'LastName', 'PhoneNo', 'Password', 'ParticipationType',
-          'EmpID', 'Country', 'State', 'City', 'PinCode', 'LicenseNo', 'Status'
+          'EmpID',   'Status'
         ];
 
         const headers = worksheet.getRow(1).values.slice(1).map(h => String(h || "").trim());
@@ -739,14 +738,8 @@ const ImportUsers = ({ batch, onBack }) => {
                     <li>Email</li>
                     <li>Password</li>
                     <li>Phone</li>
-                    <li>Address</li>
                     <li>Participation Type</li>
                     <li>Emp ID</li>
-                    <li>Country</li>
-                    <li>State</li>
-                    <li>City</li>
-                    <li>Pin code</li>
-                    <li>License no</li>
                     <li>Status</li>
                   </ul>
                 </div>
