@@ -237,7 +237,7 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
                 <i className="tabler-puzzle" style={{ insetInlineEnd: 8, fontSize: '1.2rem' }} />
                 Leadership
               </MenuItem> */}
-              
+
               {/* <MenuItem key="module" href={`/${locale}/apps/moduleProgram`} icon={<i className="tabler-puzzle" />}>
                 My Module
               </MenuItem> */}
@@ -352,6 +352,11 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
               {permissArray?.isCompany && (
                 <MenuItem href={`/${locale}/apps/setting/certificate`}>Certificate</MenuItem>
               )}
+              {
+                permissArray?.isCompany && (
+                  <MenuItem href={`/${locale}/apps/admin/leaderboard`}>Leaderboard</MenuItem>
+                )
+              }
             </SubMenu>
           )}
           {/* <SubMenu label={"Pages"} icon={<i className='tabler-file' />}>
