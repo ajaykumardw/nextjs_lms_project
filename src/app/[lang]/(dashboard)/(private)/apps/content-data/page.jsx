@@ -138,7 +138,9 @@ const ContentData = () => {
 
       const json = await res.json().catch(() => null);
 
-      setSurveyModalOpen(json?.data?.completed || false);
+      const values = json?.data;
+
+      setSurveyModalOpen(values?.is_survey_completed && values?.completed);
 
       return { ok: res.ok, status: res.status, data: json?.data };
     } catch (error) {
@@ -162,9 +164,9 @@ const ContentData = () => {
 
       if (response.ok) {
 
-        const value = result?.data?.completed || false;
+        const values = result?.data;
 
-        setSurveyModalOpen(value);
+        setSurveyModalOpen(values?.is_survey_completed && values?.completed);
       }
 
     } catch (error) {
@@ -297,9 +299,11 @@ const ContentData = () => {
           console.warn('markComplete saveInsertQuizData failed', res);
         }
 
-        if (res?.ok && res?.data?.completed) {
+        const values = res?.data;
 
-          setSurveyModalOpen(res?.data?.completed)
+        if (res?.ok) {
+
+          setSurveyModalOpen(values?.is_survey_completed && values?.completed)
 
           return;
         }
@@ -313,9 +317,11 @@ const ContentData = () => {
           console.warn('markComplete saveInsertFieldData failed', res);
         }
 
-        if (res?.ok && res?.data?.completed) {
+        const values = res?.data;
 
-          setSurveyModalOpen(res?.data?.completed)
+        if (res?.ok) {
+
+          setSurveyModalOpen(values?.is_survey_completed && values?.completed)
 
           return;
         }
