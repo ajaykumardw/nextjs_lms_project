@@ -23,6 +23,7 @@ import { toast } from 'react-toastify'
 import PermissionGuardClient from "@/hocs/PermissionClientGuard";
 
 export default function GamificationPointsPage() {
+
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
     const { lang: locale } = useParams()
@@ -43,7 +44,7 @@ export default function GamificationPointsPage() {
             setLoading(true);
 
             const response = await fetch(
-                `${API_URL}/admin/leaderboard/data`,
+                `${API_URL}/company/leaderboard/data`,
                 {
                     method: "GET",
                     headers: {
@@ -116,7 +117,7 @@ export default function GamificationPointsPage() {
 
             if (value === "" || value === null || value === undefined) {
                 newErrors[label_id] = "This field is required.";
-                
+
                 return;
             }
 
@@ -135,7 +136,7 @@ export default function GamificationPointsPage() {
 
         try {
             const response = await fetch(
-                `${API_URL}/admin/leaderboard/config`,
+                `${API_URL}/company/leaderboard/config`,
                 {
                     method: "POST",
                     headers: {

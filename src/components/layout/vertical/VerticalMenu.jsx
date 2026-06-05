@@ -335,6 +335,15 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
             <MenuItem key="notification_listing" href={`/${locale}/apps/admin/notification`} icon={<i className="tabler-notification" />}>Notification</MenuItem>
 
           )}
+          {
+            permissArray?.isCompany && (
+              <SubMenu label="Leadership & badges" icon={<i className="tabler-trophy" />}>
+
+                <MenuItem href={`/${locale}/apps/admin/leaderboard`}>Leaderboard</MenuItem>
+                <MenuItem href={`/${locale}/apps/admin/contest-badges`}>Contest & Badges</MenuItem>
+              </SubMenu>
+            )
+          }
           {((permissArray?.isCompany && permissArray?.hasLabelPermission) || permissArray?.isSuperAdmin) && (
             <SubMenu label="Settings" icon={<i className="tabler-settings" />}>
               {permissArray?.isSuperAdmin && (
@@ -352,11 +361,6 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
               {permissArray?.isCompany && (
                 <MenuItem href={`/${locale}/apps/setting/certificate`}>Certificate</MenuItem>
               )}
-              {
-                permissArray?.isCompany && (
-                  <MenuItem href={`/${locale}/apps/admin/leaderboard`}>Leaderboard</MenuItem>
-                )
-              }
             </SubMenu>
           )}
           {/* <SubMenu label={"Pages"} icon={<i className='tabler-file' />}>
