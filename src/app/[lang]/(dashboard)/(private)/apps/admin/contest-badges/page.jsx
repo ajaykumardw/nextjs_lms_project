@@ -28,6 +28,7 @@ import {
 } from "@mui/material";
 
 import Grid from "@mui/material/Grid2";
+import { toast } from "react-toastify";
 
 const formatDateTime = (dateString) => {
     const date = new Date(dateString);
@@ -120,6 +121,32 @@ const ContestBadgesPage = () => {
         (page - 1) * pageSize,
         page * pageSize
     );
+
+    const handleDeleteContestBage = async (id) => {
+        try {
+
+            const response = await fetch(`${API_URL}/company/contest/badge/delete/${id}`, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            })
+
+            if (response.ok) {
+
+                toast.success("Contest badge deleted successfully", {
+                    autoClose: 1000
+                })
+
+                fetchContestBadge?.()
+
+            }
+
+        } catch (error) {
+
+            throw new Error(error)
+        }
+    }
 
     if (loading) {
         return (
@@ -488,6 +515,7 @@ const ContestBadgesPage = () => {
                                         <IconButton
                                             color="error"
                                             size="small"
+                                            onClick={() => handleDeleteContestBage(row?._id)}
                                         >
                                             <i
                                                 className="tabler-trash"
