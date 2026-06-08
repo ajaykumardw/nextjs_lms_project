@@ -310,29 +310,35 @@ const ContentData = () => {
 
         const values = res?.data;
 
-        if (res?.ok) {
+        if (!res.ok) {
 
-          setSurveyModalOpen(values?.is_survey_completed && values?.completed)
+          toast.error('Failed to save progress before marking complete', {
+            autoClose: 1000
+          });
+
+          return;
 
         }
+
+        setSurveyModalOpen(values?.is_survey_completed && values?.completed)
 
 
       } else {
         const res = await saveInsertFieldData(fieldData);
 
         if (!res.ok) {
-          toast.error('Failed to save progress before marking complete');
-          console.warn('markComplete saveInsertFieldData failed', res);
+
+          toast.error('Failed to save progress before marking complete', {
+            autoClose: 1000
+          });
+
+          return;
+
         }
 
         const values = res?.data;
 
-        if (res?.ok) {
-
-          setSurveyModalOpen(values?.is_survey_completed && values?.completed)
-
-        }
-
+        setSurveyModalOpen(values?.is_survey_completed && values?.completed)
       }
 
       console.log("Reported");
