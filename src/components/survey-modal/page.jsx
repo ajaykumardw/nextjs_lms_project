@@ -53,6 +53,9 @@ const SurveyModalComponent = ({ open, setOpen, moduleId }) => {
 
     useEffect(() => {
 
+        console.log("Open", open);
+        
+
         if (!surveyData || !open) return
 
         console.log("Data", surveyData);
