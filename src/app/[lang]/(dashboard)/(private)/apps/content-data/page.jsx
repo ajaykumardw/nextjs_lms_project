@@ -140,7 +140,11 @@ const ContentData = () => {
 
       const values = json?.data;
 
-      setSurveyModalOpen(values?.is_survey_completed && values?.completed);
+      if (res.ok) {
+
+        setSurveyModalOpen(values?.is_survey_completed && values?.completed);
+      }
+
 
       return { ok: res.ok, status: res.status, data: json?.data };
     } catch (error) {
@@ -175,6 +179,7 @@ const ContentData = () => {
   }
 
   const saveFieldData = async (payload) => {
+
 
     const url = `${API_URL}/user/activity/set/report/data/${moduleId}/${contentFolderId}/${activityId}/${moduleTypeId}`;
 
@@ -214,7 +219,11 @@ const ContentData = () => {
 
     if (fieldAutosaveTimer.current) clearTimeout(fieldAutosaveTimer.current);
 
+
+
     fieldAutosaveTimer.current = setTimeout(() => {
+
+
       saveFieldData(fieldData).then((res) => {
         if (!res.ok) {
           console.warn('Field autosave failed', res);
