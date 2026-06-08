@@ -44,7 +44,7 @@ const SurveyModalComponent = ({ open, setOpen, moduleId }) => {
             .then(res => res.json())
             .then(res => {
 
-                console.log("Survey", surveyData, moduleId)
+                console.log("Survey 1", res?.data, moduleId)
 
                 setSurveyData(res?.data)
             })
