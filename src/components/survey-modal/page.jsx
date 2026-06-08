@@ -42,7 +42,12 @@ const SurveyModalComponent = ({ open, setOpen, moduleId }) => {
             headers: { Authorization: `Bearer ${token}` },
         })
             .then(res => res.json())
-            .then(res => setSurveyData(res?.data))
+            .then(res => {
+
+                console.log("Survey", surveyData, moduleId)
+
+                setSurveyData(res?.data)
+            })
             .catch(console.error)
     }, [token, moduleId])
 
@@ -51,7 +56,7 @@ const SurveyModalComponent = ({ open, setOpen, moduleId }) => {
         if (!surveyData || !open) return
 
         setIsMandatory(!!surveyData?.moduleSetting?.mandatory)
-        
+
         setOpen(!!surveyData?.moduleSetting?.feedbackSurveyEnabled)
     }, [surveyData, open, setOpen])
 
@@ -92,6 +97,7 @@ const SurveyModalComponent = ({ open, setOpen, moduleId }) => {
             const result = await response.json()
 
             if (response.ok) {
+
                 toast.success("Survey submitted successfully", {
                     autoClose: 1000
                 })
