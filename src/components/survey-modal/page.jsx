@@ -44,8 +44,6 @@ const SurveyModalComponent = ({ open, setOpen, moduleId }) => {
             .then(res => res.json())
             .then(res => {
 
-                console.log("Survey 1", res?.data, moduleId)
-
                 setSurveyData(res?.data)
             })
             .catch(console.error)
@@ -53,26 +51,20 @@ const SurveyModalComponent = ({ open, setOpen, moduleId }) => {
 
     useEffect(() => {
 
-        console.log("Open", open);
-
-
         if (!surveyData || !open) return
-
-        console.log("Data", surveyData);
-
 
         setIsMandatory(!!surveyData?.moduleSetting?.mandatory)
 
         setOpen(!!surveyData?.moduleSetting?.feedbackSurveyEnabled)
     }, [surveyData, open, setOpen])
 
-    // useEffect(() => {
+    useEffect(() => {
 
-    //     if (surveyData && surveyData?.is_survey_done && !!surveyData?.is_survey_completed == false) {
-    //         setOpen(true);
-    //     }
+        if (surveyData && surveyData?.is_survey_done && !!surveyData?.is_survey_completed == false) {
+            setOpen(true);
+        }
 
-    // }, [surveyData])
+    }, [surveyData])
 
     const {
         handleSubmit,

@@ -337,6 +337,9 @@ const ContentData = () => {
 
       }
 
+      console.log("Reported");
+      
+
       toast.success('Activity completed successfully', { autoClose: 1000 });
       router.push(`/${locale}/apps/content?id=${moduleId}&content-folder-id=${contentFolderId}`);
     } catch (err) {
