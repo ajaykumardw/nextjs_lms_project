@@ -51,7 +51,8 @@ const SurveyModalComponent = ({ open, setOpen, moduleId }) => {
         if (!surveyData || !open) return
 
         setIsMandatory(!!surveyData?.moduleSetting?.mandatory)
-        // setOpen(!!surveyData?.moduleSetting?.feedbackSurveyEnabled)
+        
+        setOpen(!!surveyData?.moduleSetting?.feedbackSurveyEnabled)
     }, [surveyData, open, setOpen])
 
     useEffect(() => {
@@ -94,7 +95,8 @@ const SurveyModalComponent = ({ open, setOpen, moduleId }) => {
                 toast.success("Survey submitted successfully", {
                     autoClose: 1000
                 })
-                // setOpen(false)
+
+                setOpen(false)
             }
         } catch (error) {
             console.error(error)
