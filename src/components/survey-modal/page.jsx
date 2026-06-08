@@ -54,7 +54,7 @@ const SurveyModalComponent = ({ open, setOpen, moduleId }) => {
     useEffect(() => {
 
         console.log("Open", open);
-        
+
 
         if (!surveyData || !open) return
 
@@ -66,13 +66,13 @@ const SurveyModalComponent = ({ open, setOpen, moduleId }) => {
         setOpen(!!surveyData?.moduleSetting?.feedbackSurveyEnabled)
     }, [surveyData, open, setOpen])
 
-    useEffect(() => {
+    // useEffect(() => {
 
-        if (surveyData && surveyData?.is_survey_done && !!surveyData?.is_survey_completed == false) {
-            setOpen(true);
-        }
+    //     if (surveyData && surveyData?.is_survey_done && !!surveyData?.is_survey_completed == false) {
+    //         setOpen(true);
+    //     }
 
-    }, [surveyData])
+    // }, [surveyData])
 
     const {
         handleSubmit,
