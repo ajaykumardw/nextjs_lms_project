@@ -55,6 +55,9 @@ const SurveyModalComponent = ({ open, setOpen, moduleId }) => {
 
         if (!surveyData || !open) return
 
+        console.log("Data", surveyData);
+
+
         setIsMandatory(!!surveyData?.moduleSetting?.mandatory)
 
         setOpen(!!surveyData?.moduleSetting?.feedbackSurveyEnabled)
