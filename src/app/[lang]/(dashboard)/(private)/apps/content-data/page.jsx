@@ -124,8 +124,6 @@ const ContentData = () => {
 
       if (!API_URL || !token) {
 
-        console.warn('Missing API_URL or token for postJson', { url });
-
         return { ok: false, error: 'missing credentials' };
 
       }
@@ -148,8 +146,6 @@ const ContentData = () => {
 
       return { ok: res.ok, status: res.status, data: json?.data };
     } catch (error) {
-
-      console.error('postJson error', error);
 
       return { ok: false, error };
 
@@ -340,9 +336,6 @@ const ContentData = () => {
 
         setSurveyModalOpen(values?.is_survey_completed && values?.completed)
       }
-
-      console.log("Reported");
-
 
       toast.success('Activity completed successfully', { autoClose: 1000 });
       router.push(`/${locale}/apps/content?id=${moduleId}&content-folder-id=${contentFolderId}`);
