@@ -54,6 +54,8 @@ const SurveyModalComponent = ({ open, setOpen, moduleId }) => {
             .then(res => res.json())
             .then(res => {
 
+                console.log("Surv data", res?.data)
+
                 setSurveyData(res?.data)
             })
             .catch(console.error)
@@ -63,9 +65,9 @@ const SurveyModalComponent = ({ open, setOpen, moduleId }) => {
 
         if (!surveyData || !open) return
 
-        setIsMandatory(!!surveyData?.moduleSetting?.mandatory)
+        setIsMandatory(!!surveyData?.module_setting?.mandatory)
 
-        console.log("Survey open", !!surveyData?.moduleSetting?.feedbackSurveyEnabled, !!surveyData?.completed)
+        console.log("Survey open", !!surveyData?.module_setting?.feedbackSurveyEnabled, !!surveyData?.completed)
 
         setOpen(!!surveyData?.moduleSetting?.feedbackSurveyEnabled && !!surveyData?.completed)
     }, [surveyData, open, setOpen])
