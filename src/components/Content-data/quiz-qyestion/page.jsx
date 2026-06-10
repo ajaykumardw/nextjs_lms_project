@@ -377,10 +377,12 @@ const QuizStaticLayout = ({
       const res = await saveInsertQuizData(attemptedRef.current); // use ref
 
       if (res?.ok) {
+        
+        const values = res?.data;
 
-        if (res?.data?.completed) {
+        if (values?.is_survey_completed && values?.completed) {
 
-          setSurveyModalOpen(res?.data?.completed)
+          setSurveyModalOpen(true);
 
           return;
         }
