@@ -140,8 +140,6 @@ const ContentData = () => {
 
       if (res.ok) {
 
-        console.log("values 1", values?.is_survey_completed, values?.completed)
-
         setSurveyModalOpen(values?.is_survey_completed && values?.completed);
       }
 
@@ -167,8 +165,6 @@ const ContentData = () => {
       if (response.ok) {
 
         const values = result?.data;
-
-        console.log("values 2", values?.is_survey_completed, values?.completed)
 
         setSurveyModalOpen(values?.is_survey_completed && values?.completed);
       }
@@ -320,8 +316,6 @@ const ContentData = () => {
 
         }
 
-        console.log("values 3", values?.is_survey_completed, values?.completed)
-
         setSurveyModalOpen(values?.is_survey_completed && values?.completed)
 
 
@@ -339,8 +333,6 @@ const ContentData = () => {
         }
 
         const values = res?.data;
-
-        console.log("values 4", values?.is_survey_completed, values?.completed)
 
         setSurveyModalOpen(values?.is_survey_completed && values?.completed)
       }
