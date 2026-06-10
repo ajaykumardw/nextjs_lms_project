@@ -39,7 +39,7 @@ const SurveyModalComponent = ({ open, setOpen, moduleId }) => {
 
         if (open) {
 
-            console.log("Open");
+            setOpen(open)
 
         }
 
@@ -56,8 +56,6 @@ const SurveyModalComponent = ({ open, setOpen, moduleId }) => {
 
                 const value = res?.data;
 
-                console.log("Value", value)
-
                 setSurveyData(value)
             })
             .catch(console.error)
@@ -65,11 +63,11 @@ const SurveyModalComponent = ({ open, setOpen, moduleId }) => {
 
     useEffect(() => {
 
-        if (!surveyData || !open) return
+        if (!surveyData) return
 
         setIsMandatory(!!surveyData?.module_setting?.mandatory)
 
-    }, [surveyData, open])
+    }, [surveyData])
 
     const {
         handleSubmit,
