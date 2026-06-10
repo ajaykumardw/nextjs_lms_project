@@ -47,7 +47,7 @@ const SurveyModalComponent = ({ open, setOpen, moduleId }) => {
                 setSurveyData(res?.data)
             })
             .catch(console.error)
-    }, [token, moduleId])
+    }, [token, moduleId, open])
 
     useEffect(() => {
 
