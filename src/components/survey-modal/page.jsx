@@ -36,6 +36,16 @@ const SurveyModalComponent = ({ open, setOpen, moduleId }) => {
     const [isMandatory, setIsMandatory] = useState(false)
 
     useEffect(() => {
+
+        if (open) {
+
+            console.log("Open");
+
+        }
+
+    }, [open])
+
+    useEffect(() => {
         if (!token || !moduleId) return
 
         fetch(`${API_URL}/user/survey/report/${moduleId}`, {
@@ -54,6 +64,8 @@ const SurveyModalComponent = ({ open, setOpen, moduleId }) => {
         if (!surveyData || !open) return
 
         setIsMandatory(!!surveyData?.moduleSetting?.mandatory)
+
+        console.log("Survey open", !!surveyData?.moduleSetting?.feedbackSurveyEnabled, !!surveyData?.completed)
 
         setOpen(!!surveyData?.moduleSetting?.feedbackSurveyEnabled && !!surveyData?.completed)
     }, [surveyData, open, setOpen])
