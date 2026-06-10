@@ -42,7 +42,7 @@ const SurveyModalComponent = ({ open, setOpen, moduleId }) => {
             headers: { Authorization: `Bearer ${token}` },
         })
             .then(res => res.json())
-            .then(res => {
+            .then(res => {  
 
                 setSurveyData(res?.data)
             })
@@ -57,14 +57,6 @@ const SurveyModalComponent = ({ open, setOpen, moduleId }) => {
 
         setOpen(!!surveyData?.moduleSetting?.feedbackSurveyEnabled)
     }, [surveyData, open, setOpen])
-
-    useEffect(() => {
-
-        if (surveyData && surveyData?.is_survey_done && !!surveyData?.is_survey_completed == false) {
-            setOpen(true);
-        }
-
-    }, [surveyData])
 
     const {
         handleSubmit,

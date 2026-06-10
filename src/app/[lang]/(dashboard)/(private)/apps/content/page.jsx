@@ -193,48 +193,93 @@ const ProgramPage = () => {
       </Card>
 
       <Box>
-        <Typography variant="h6" mb={2}>Activities</Typography>
+        <Typography variant="h6" mb={2}>
+          Activities
+        </Typography>
 
-        {data?.activities?.map((activity, index) => {
+        {!data?.activities?.length ? (
+          <Typography>No Activities Found</Typography>
+        ) : (
+          data.activities.map((activity, index) => {
+            const moduleTypeId = activity?.module_type_id;
 
-          const moduleTypeId = activity?.module_type_id;
-          const label = activity?.name || moduleTypeLabel?.[moduleTypeId]
+            const label =
+              activity?.name || moduleTypeLabel?.[moduleTypeId] || "Untitled Activity";
 
-          const isCompleted = (activity?.has_completed)
-          const prevActivity = data.activities[index - 1]
-          const prevLog = prevActivity?.logs?.[0]
+            const isCompleted = Boolean(activity?.has_completed);
 
-          const prevCompleted = (prevLog?.is_completed && Number(prevLog?.completion_percentage) >= 100) || prevLog?.scorm_data?.lessonStatus === 'passed'
-          const isOrdered = settingData?.orderType === 'ordered'
-          const canOpen = (!isOrdered || index === 0 || prevCompleted)
+            const prevActivity = data.activities?.[index - 1];
+            const prevLog = prevActivity?.logs?.[0];
 
-          const url = `/${locale}/apps/content-data?type=${docType[activity?.module_type_id]}&activityId=${activity?._id}&moduleId=${moduleId}&contentFolderId=${content_folder_id}&moduleTypeId=${activity?.module_type_id}`
-          const isDisabled = isCompleted && moduleTypeId == "688723af5dd97f4ccae68837";
+            const prevCompleted =
+              Boolean(
+                prevLog?.is_completed &&
+                Number(prevLog?.completion_percentage) >= 100
+              ) || prevLog?.scorm_data?.lessonStatus === "passed";
 
-          return (
-            <Card key={index} className="mb-3">
-              <CardContent sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 2 }}>
-                <Typography fontWeight={600}>{label}</Typography>
-                <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1 }}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+            const isOrdered = settingData?.orderType === "ordered";
 
-                    <Button
-                      variant="contained"
-                      color={isCompleted ? "success" : "primary"}
-                      disabled={isDisabled}
-                      onClick={() => handleActivityClick(canOpen, url)}
-                      sx={{ textTransform: "none", blockSize: 32, px: 2, fontSize: "0.75rem", borderRadius: 1 }}
+            const canOpen =
+              !isOrdered || index === 0 || prevCompleted;
+
+            const url = `/${locale}/apps/content-data?type=${docType?.[moduleTypeId]
+              }&activityId=${activity?._id}&moduleId=${moduleId}&contentFolderId=${content_folder_id}&moduleTypeId=${moduleTypeId}`;
+
+            const isDisabled =
+              isCompleted &&
+              moduleTypeId === "688723af5dd97f4ccae68837";
+
+            return (
+              <Card key={activity?._id || index} className="mb-3">
+                <CardContent
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 2,
+                  }}
+                >
+                  <Typography fontWeight={600}>
+                    {label}
+                  </Typography>
+
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-end",
+                      gap: 1,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1.5,
+                      }}
                     >
-                      {isCompleted ? "Completed" : "In Progress"}
-                    </Button>
+                      <Button
+                        variant="contained"
+                        color={isCompleted ? "success" : "primary"}
+                        disabled={isDisabled}
+                        onClick={() => handleActivityClick(canOpen, url)}
+                        sx={{
+                          textTransform: "none",
+                          height: 32,
+                          px: 2,
+                          fontSize: "0.75rem",
+                          borderRadius: 1,
+                        }}
+                      >
+                        {isCompleted ? "Completed" : "In Progress"}
+                      </Button>
+                    </Box>
                   </Box>
-
-
-                </Box>
-              </CardContent>
-            </Card>
-          )
-        })}
+                </CardContent>
+              </Card>
+            );
+          })
+        )}
       </Box>
 
     </Box>
