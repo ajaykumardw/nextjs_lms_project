@@ -53,9 +53,9 @@ const SurveyModalComponent = ({ open, setOpen, moduleId }) => {
 
         if (!surveyData || !open) return
 
-        setIsMandatory(!!surveyData?.moduleSetting?.mandatory && !!surveyData?.completed)
+        setIsMandatory(!!surveyData?.moduleSetting?.mandatory)
 
-        setOpen(!!surveyData?.moduleSetting?.feedbackSurveyEnabled)
+        setOpen(!!surveyData?.moduleSetting?.feedbackSurveyEnabled && !!surveyData?.completed)
     }, [surveyData, open, setOpen])
 
     const {
@@ -83,8 +83,6 @@ const SurveyModalComponent = ({ open, setOpen, moduleId }) => {
                     })
                 }
             )
-
-            const result = await response.json()
 
             if (response.ok) {
 
