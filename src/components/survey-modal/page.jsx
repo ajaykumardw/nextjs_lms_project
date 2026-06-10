@@ -56,7 +56,9 @@ const SurveyModalComponent = ({ open, setOpen, moduleId }) => {
 
                 const value = res?.data;
 
-                setSurveyData(res?.data)
+                console.log("Value", value)
+
+                setSurveyData(value)
             })
             .catch(console.error)
     }, [token, moduleId])
