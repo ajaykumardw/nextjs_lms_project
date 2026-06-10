@@ -42,7 +42,7 @@ const SurveyModalComponent = ({ open, setOpen, moduleId }) => {
             headers: { Authorization: `Bearer ${token}` },
         })
             .then(res => res.json())
-            .then(res => {  
+            .then(res => {
 
                 setSurveyData(res?.data)
             })
@@ -53,7 +53,7 @@ const SurveyModalComponent = ({ open, setOpen, moduleId }) => {
 
         if (!surveyData || !open) return
 
-        setIsMandatory(!!surveyData?.moduleSetting?.mandatory)
+        setIsMandatory(!!surveyData?.moduleSetting?.mandatory && !!surveyData?.completed)
 
         setOpen(!!surveyData?.moduleSetting?.feedbackSurveyEnabled)
     }, [surveyData, open, setOpen])
