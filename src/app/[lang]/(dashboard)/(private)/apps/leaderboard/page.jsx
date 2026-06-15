@@ -66,8 +66,6 @@ export default function MultiContestDashboardUnified() {
 
                 const value = result?.data;
 
-                console.log("Value", value)
-
                 setData(value)
 
             }
