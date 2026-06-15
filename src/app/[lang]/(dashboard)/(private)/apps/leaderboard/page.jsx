@@ -454,7 +454,7 @@ export default function MultiContestDashboardUnified() {
                                             boxShadow: '0 -4px 20px rgba(234,179,8,0.05)'
                                         }}>
                                             <Typography variant="body1" fontWeight="900" sx={{ color: 'text.primary', fontSize: { xs: '14px', sm: '16px' } }}>{currentContest?.leaderboard?.[0]?.totalPoints} pts</Typography>
-                                            <Box sx={{ color: '#ca8a04', fontSize: '11px', fontWeight: 700, bgcolor: isDark ? 'rgba(234,179,8,0.15)' : '#fff', px: 1, py: 0.2, borderRadius: '6px', border: '1px solid rgba(250,204,21,0.2)' }}>🏆 {0}</Box>
+                                            <Box sx={{ color: '#ca8a04', fontSize: '11px', fontWeight: 700, bgcolor: isDark ? 'rgba(234,179,8,0.15)' : '#fff', px: 1, py: 0.2, borderRadius: '6px', border: '1px solid rgba(250,204,21,0.2)' }}>🏆 {currentContest?.badge_earned?.length}</Box>
                                         </Box>
                                     )
                                 }
