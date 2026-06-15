@@ -326,7 +326,12 @@ export default function MultiContestDashboardUnified() {
                                     <Typography variant="h5" fontWeight="800" sx={{ color: 'text.primary', letterSpacing: '-0.02em' }}>
                                         Welcome back, {currentContest?.currentUser?.first_name} {currentContest?.currentUser?.last_name}
                                     </Typography>
-                                    <Box sx={{ bgcolor: isDark ? 'rgba(59,130,246,0.15)' : '#eff6ff', color: '#2563eb', px: 1.5, py: 0.4, borderRadius: '6px', fontSize: '11px', fontWeight: 700, border: '1px solid', borderColor: isDark ? 'rgba(59,130,246,0.3)' : '#bfdbfe' }}>Active Session</Box>
+                                    {
+                                        currentContest?.contest_status === "Live" && (
+
+                                            <Box sx={{ bgcolor: isDark ? 'rgba(59,130,246,0.15)' : '#eff6ff', color: '#2563eb', px: 1.5, py: 0.4, borderRadius: '6px', fontSize: '11px', fontWeight: 700, border: '1px solid', borderColor: isDark ? 'rgba(59,130,246,0.3)' : '#bfdbfe' }}>Active Session</Box>
+                                        )
+                                    }
                                 </Stack>
                                 <Typography
                                     variant="body2"
