@@ -233,8 +233,7 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
           {permissArray?.isUser && (
             <>
 
-              <MenuItem key="leaderboard" href={`/${locale}/apps/leaderboard`}>
-                <i className="tabler-puzzle" style={{ insetInlineEnd: 8, fontSize: '1.2rem' }} />
+              <MenuItem key="leaderboard" href={`/${locale}/apps/leaderboard`} icon={<i className="tabler-puzzle" style={{ insetInlineEnd: 8, fontSize: '1.2rem' }} />}>
                 Leaderboard
               </MenuItem>
 
