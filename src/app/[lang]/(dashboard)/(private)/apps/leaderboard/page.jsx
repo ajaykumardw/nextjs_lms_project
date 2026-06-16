@@ -412,23 +412,26 @@ export default function MultiContestDashboardUnified() {
                                     </Badge>
                                     <Typography variant="body2" fontWeight="700" sx={{ color: 'text.primary', mt: 1, fontSize: { xs: '12px', sm: '14px' }, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>{currentContest?.leaderboard?.[1].first_name} {currentContest?.leaderboard?.[1].last_name}</Typography>
                                 </Box>
-                                <Box sx={{
-                                    width: '100%',
-                                    height: 120,
-                                    background: isDark ? 'linear-gradient(180deg, rgba(148,163,184,0.1) 0%, rgba(148,163,184,0.02) 100%)' : 'linear-gradient(180deg, #f1f5f9 0%, rgba(241,245,249,0.2) 100%)',
-                                    border: '1px solid',
-                                    borderColor: isDark ? 'rgba(148,163,184,0.2)' : '#e2e8f0',
-                                    borderBottom: 'none',
-                                    borderRadius: '12px 12px 0 0',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: 0.5
-                                }}>
-                                    <Typography variant="body2" fontWeight="800" sx={{ color: 'text.primary', fontSize: { xs: '12px', sm: '14px' } }}>{0} pts</Typography>
-                                    <Typography sx={{ color: 'text.secondary', fontSize: '11px', fontWeight: 600 }}>🎖️ {currentContest?.podium?.rank2?.badges}</Typography>
-                                </Box>
+                                {
+                                    currentContest?.leaderboard?.[1] && (
+                                        <Box sx={{
+                                            width: '100%',
+                                            height: 120,
+                                            background: isDark ? 'linear-gradient(180deg, rgba(148,163,184,0.1) 0%, rgba(148,163,184,0.02) 100%)' : 'linear-gradient(180deg, #f1f5f9 0%, rgba(241,245,249,0.2) 100%)',
+                                            border: '1px solid',
+                                            borderColor: isDark ? 'rgba(148,163,184,0.2)' : '#e2e8f0',
+                                            borderBottom: 'none',
+                                            borderRadius: '12px 12px 0 0',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: 0.5
+                                        }}>
+                                            <Typography variant="body2" fontWeight="800" sx={{ color: 'text.primary', fontSize: { xs: '12px', sm: '14px' } }}>{currentContest?.leaderboard?.[1]?.totalPoints} pts</Typography>
+                                            <Typography sx={{ color: 'text.secondary', fontSize: '11px', fontWeight: 600 }}>🎖️ {currentContest?.leaderboard?.[1]?.badge_earned?.length}</Typography>
+                                        </Box>
+                                    )}
                             </Box>
 
                             {/* RANK 1 */}
@@ -473,22 +476,25 @@ export default function MultiContestDashboardUnified() {
                                     </Badge>
                                     <Typography variant="body2" fontWeight="700" sx={{ color: 'text.primary', mt: 1, fontSize: { xs: '12px', sm: '14px' }, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>{currentContest?.leaderboard?.[2]?.first_name} {currentContest?.leaderboard?.[2]?.last_name}</Typography>
                                 </Box>
-                                <Box sx={{
-                                    width: '100%',
-                                    height: 100,
-                                    background: isDark ? 'linear-gradient(180deg, rgba(234,88,12,0.08) 0%, rgba(234,88,12,0.01) 100%)' : 'linear-gradient(180deg, #ffedd5 0%, rgba(255,237,213,0.2) 100%)',
-                                    border: '1px solid rgba(234,88,12,0.2)',
-                                    borderBottom: 'none',
-                                    borderRadius: '12px 12px 0 0',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: 0.5
-                                }}>
-                                    <Typography variant="body2" fontWeight="800" sx={{ color: 'text.primary', fontSize: { xs: '12px', sm: '14px' } }}>{currentContest?.leaderboard?.[2]?.totalPoints} pts</Typography>
-                                    <Typography sx={{ color: 'text.secondary', fontSize: '11px', fontWeight: 600 }}>🎖️ {currentContest?.podium?.rank3?.badges}</Typography>
-                                </Box>
+                                {
+                                    currentContest?.leaderboard?.[2] && (
+                                        <Box sx={{
+                                            width: '100%',
+                                            height: 100,
+                                            background: isDark ? 'linear-gradient(180deg, rgba(234,88,12,0.08) 0%, rgba(234,88,12,0.01) 100%)' : 'linear-gradient(180deg, #ffedd5 0%, rgba(255,237,213,0.2) 100%)',
+                                            border: '1px solid rgba(234,88,12,0.2)',
+                                            borderBottom: 'none',
+                                            borderRadius: '12px 12px 0 0',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: 0.5
+                                        }}>
+                                            <Typography variant="body2" fontWeight="800" sx={{ color: 'text.primary', fontSize: { xs: '12px', sm: '14px' } }}>{currentContest?.leaderboard?.[2]?.totalPoints} pts</Typography>
+                                            <Typography sx={{ color: 'text.secondary', fontSize: '11px', fontWeight: 600 }}>🎖️ {currentContest?.leaderboard?.[2]?.badge_earned?.length}</Typography>
+                                        </Box>
+                                    )}
                             </Box>
 
                         </Box>
