@@ -37,7 +37,8 @@ const QuizStaticLayout = ({
   isInstruction = false,
   log,
   saveInsertQuizData = async () => ({ ok: false }),
-  setSurveyModalOpen
+  setSurveyModalOpen,
+  setIsQuizClose
 }) => {
   const theme = useTheme();
   const { lang: locale } = useParams();
@@ -377,7 +378,7 @@ const QuizStaticLayout = ({
       const res = await saveInsertQuizData(attemptedRef.current); // use ref
 
       if (res?.ok) {
-        
+
         const values = res?.data;
 
         if (values?.is_survey_completed && values?.completed) {
@@ -388,7 +389,9 @@ const QuizStaticLayout = ({
         }
 
         toast.success("Quiz completed successfully!", { autoClose: 1000 });
-        router.push(`/${locale}/apps/content?id=${moduleId}&content-folder-id=${contentFolderId}`);
+
+        setIsQuizClose(true)
+
       } else {
         toast.error("Failed to save quiz. Please try again.");
       }

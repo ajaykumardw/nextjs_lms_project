@@ -1,462 +1,262 @@
-"use client";
+'use client'; // This ensures the component runs on the client side
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 
-const questions = [
-  {
-    id: 1,
-    question: "Which language is used by Next.js?",
-    options: ["Python", "Java", "JavaScript", "PHP"],
-  },
-];
+import { useParams } from 'next/navigation';
 
-export default function QuizSeperateComponent() {
-  const [currentQuestion] = useState(0);
+import { Card, CardHeader, CardContent, Typography, Button, CardActions, Divider } from "@mui/material";
 
-  const [selected, setSelected] = useState("");
+import Grid from "@mui/material/Grid2";
 
-  const [timeLeft, setTimeLeft] = useState(3600);
+import { format } from 'date-fns';
 
-  const [tabSwitches, setTabSwitches] = useState(0);
+import { getLocalizedUrl } from "@/utils/i18n";
+import DefaultExamInstructions from '@/components/QuizInstruction/page';
 
-  const [fullscreenViolations, setFullscreenViolations] = useState(0);
+const ExamTest = () => {
+  const { lang: locale } = useParams();
+  const [examSet, setExamSet] = useState(null);
+  const [batchData, setBatchData] = useState(null);
+  const [studentExamResults, setStudentExamResults] = useState(null);
+  const [remainingAttempts, setRemainingAttempts] = useState(0)
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
 
-  const [saveStatus, setSaveStatus] = useState("Saved");
+  const [isClient, setIsClient] = useState(false);
 
-  const enterFullscreen = async () => {
-    try {
-      if (!document.fullscreenElement) {
-        await document.documentElement.requestFullscreen();
+  const mockData = {
+    batch: {
+      id: 1,
+      batch_name: "React Batch 2026",
+      login_restrict: 3,
+
+      assessment_start_datetime: new Date("2026-06-29T09:00:00"),
+      assessment_end_datetime: new Date("2026-12-31T11:59:59"),
+
+      theory_exam_set: {
+        id: 101,
+        set_name: "React Final Assessment",
+        exam_duration: 60,
+        total_questions: 50,
+        instruction: `
+      <div>
+        <h3>Exam Instructions</h3>
+        <ol>
+          <li>The exam duration is 60 minutes.</li>
+          <li>The exam contains 50 questions.</li>
+          <li>Each question carries equal marks.</li>
+          <li>There is no negative marking.</li>
+          <li>Do not refresh or close the browser during the exam.</li>
+          <li>Click Submit before the timer expires.</li>
+        </ol>
+      </div>
+      `
       }
-    } catch (err) {
-      console.log(err);
-    }
+    },
+
+    student_exam_set_results: [
+      {
+        id: 1,
+        student_id: 1001,
+        exam_set_id: 101,
+        total_attempts: 1,
+        score: 38,
+        status: "IN_PROGRESS",
+        created_at: new Date(),
+        updated_at: new Date()
+      }
+    ],
+
+    feedback_submitted: false
+  };
+
+  const getExamInstructions = async () => {
+    // Simulate API delay
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    const data = mockData;
+
+    console.log("Mock API Response:", data);
+
+    setBatchData(data.batch);
+
+    setStudentExamResults(
+      data.student_exam_set_results
+        ? data.student_exam_set_results.find(
+          (studentResult) =>
+            studentResult.exam_set_id ===
+            data.batch.theory_exam_set.id
+        )
+        : null
+    );
+
+    setExamSet(data.batch.theory_exam_set);
+
+    setFeedbackSubmitted(data.feedback_submitted);
   };
 
   useEffect(() => {
-    enterFullscreen();
-  }, []);
+    console.log('studentExamResults updated:', studentExamResults);
+  }, [studentExamResults])
 
   useEffect(() => {
-    const handleFullscreen = async () => {
-      if (!document.fullscreenElement) {
-        setFullscreenViolations((p) => p + 1);
+    console.log('remainingAttempts updated:', remainingAttempts);
+  }, [remainingAttempts])
 
-        alert("Fullscreen is required for this exam.");
+  useEffect(() => {
 
-        try {
-          await document.documentElement.requestFullscreen();
-        } catch (e) { }
+    if (batchData?.login_restrict && studentExamResults?.total_attempts) {
+      setRemainingAttempts(batchData.login_restrict - studentExamResults.total_attempts <= 0 ? 0 : batchData.login_restrict - studentExamResults.total_attempts)
+    } else if (batchData?.login_restrict) {
+      setRemainingAttempts(batchData.login_restrict)
+    }
+
+  }, [batchData, studentExamResults])
+
+  const [currentTime, setCurrentTime] = useState();
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (batchData && batchData?.assessment_start_datetime) {
+        const now = new Date();
+
+        // Update the current time state
+        setCurrentTime(now); // Update current time in Asia/Kolkata timezone
       }
-    };
+    }, 1000); // Update every second
 
-    document.addEventListener("fullscreenchange", handleFullscreen);
+    return () => clearInterval(interval); // Clean up the interval when the component unmounts
+  }, [batchData]);
 
-    return () =>
-      document.removeEventListener("fullscreenchange", handleFullscreen);
+  // Set isClient to true once the component has mounted on the client-side
+  useEffect(() => {
+    setIsClient(true);
+    getExamInstructions();
   }, []);
 
-  useEffect(() => {
-    const handleBlur = () => {
-      setTabSwitches((p) => p + 1);
-    };
+  const handleStartExam = (url) => {
+    if (typeof window === "undefined") return;
 
-    window.addEventListener("blur", handleBlur);
+    const newWindow = window.open(
+      url,
+      "_blank",
+      `width=${window.screen.availWidth},
+     height=${window.screen.availHeight},
+     toolbar=1,
+     location=0,
+     scrollbars=no,
+     resizable=no`
+    );
 
-    return () => window.removeEventListener("blur", handleBlur);
-  }, []);
+    if (!newWindow) return;
 
-  useEffect(() => {
-    const unload = (e) => {
+    // Disable right-click
+    newWindow.document.addEventListener("contextmenu", (e) => {
       e.preventDefault();
-      e.returnValue = "";
-    };
+    });
 
-    window.addEventListener("beforeunload", unload);
+    // Disable text selection
+    newWindow.document.body.style.userSelect = "none";
 
-    return () => {
-      window.removeEventListener("beforeunload", unload);
-    };
-  }, []);
-
-  useEffect(() => {
-    const block = (e) => {
+    // Disable keyboard shortcuts
+    newWindow.document.addEventListener("keydown", (e) => {
       if (
         e.key === "F12" ||
-        (e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(e.key.toUpperCase())) ||
-        (e.ctrlKey && ["U", "S", "P", "C", "V", "X"].includes(e.key.toUpperCase()))
+        e.key === "F1" ||
+        (e.ctrlKey &&
+          e.shiftKey &&
+          (e.key === "I" || e.key === "J" || e.key === "C")) ||
+        (e.ctrlKey && e.key === "U")
       ) {
         e.preventDefault();
       }
-    };
+    });
 
-    window.addEventListener("keydown", block);
+    // Update remaining attempts
+    setRemainingAttempts((prev) => (prev > 0 ? prev - 1 : 0));
+  };
 
-    return () => window.removeEventListener("keydown", block);
-  }, []);
+  // Disable resizing the window (it's already in the `window.open()` options, but you can reinforce it)
+  // newWindow.resizeTo(1024, 750);
 
-  useEffect(() => {
-    const prevent = (e) => e.preventDefault();
 
-    document.addEventListener("copy", prevent);
-    document.addEventListener("paste", prevent);
-    document.addEventListener("cut", prevent);
+  // Ensure the code below only runs client-side
+  if (!isClient) {
+    return null; // Return nothing while waiting for the component to mount
+  }
 
-    return () => {
-      document.removeEventListener("copy", prevent);
-      document.removeEventListener("paste", prevent);
-      document.removeEventListener("cut", prevent);
-    };
-  }, []);
-
-  const MAX_VIOLATIONS = 3;
-
-  useEffect(() => {
-    if (tabSwitches + fullscreenViolations >= MAX_VIOLATIONS) {
-      alert("Too many violations. Exam submitted.");
-
-      // submitExam();
-    }
-  }, [tabSwitches, fullscreenViolations]);
-
-  
-
-  // --------------------------
-  // Timer
-  // --------------------------
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          alert("Exam Finished");
-
-          return 0;
-        }
-
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  // --------------------------
-  // Tab Detection
-  // --------------------------
-
-  useEffect(() => {
-    const handleVisibility = () => {
-      if (document.hidden) {
-        setTabSwitches((p) => p + 1);
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibility);
-
-    return () =>
-      document.removeEventListener(
-        "visibilitychange",
-        handleVisibility
-      );
-  }, []);
-
-  // --------------------------
-  // Fullscreen Detection
-  // --------------------------
-
-  useEffect(() => {
-    const handleFullscreen = () => {
-      if (!document.fullscreenElement) {
-        setFullscreenViolations((p) => p + 1);
-      }
-    };
-
-    document.addEventListener(
-      "fullscreenchange",
-      handleFullscreen
-    );
-
-    return () =>
-      document.removeEventListener(
-        "fullscreenchange",
-        handleFullscreen
-      );
-  }, []);
-
-  // --------------------------
-  // Disable Right Click
-  // --------------------------
-
-  useEffect(() => {
-    const prevent = (e) => e.preventDefault();
-
-    document.addEventListener("contextmenu", prevent);
-
-    return () =>
-      document.removeEventListener("contextmenu", prevent);
-  }, []);
-
-  // --------------------------
-  // Auto Save Simulation
-  // --------------------------
-
-  useEffect(() => {
-    setSaveStatus("Saving...");
-
-    const t = setTimeout(() => {
-      setSaveStatus("Saved");
-    }, 1000);
-
-    return () => clearTimeout(t);
-  }, [selected]);
-
-  const minutes = Math.floor(timeLeft / 60);
-
-  const seconds = timeLeft % 60;
+  // Construct the exam page URL dynamically based on the current locale
+  const examPageUrl = window.location.origin + getLocalizedUrl('/examination', locale);
 
   return (
-    <div className="min-h-screen bg-slate-100">
-
-      {/* Header */}
-
-      <div className="sticky top-0 bg-white shadow-md z-50">
-
-        <div className="max-w-7xl mx-auto p-5 flex justify-between items-center">
-
-          <div>
-
-            <h1 className="text-2xl font-bold">
-              Online Examination
-            </h1>
-
-            <p className="text-sm text-gray-500">
-              Candidate Dashboard
-            </p>
-
-          </div>
-
-          <div className="flex gap-8">
-
-            <div>
-              <p className="text-xs text-gray-500">
-                Remaining Time
-              </p>
-
-              <p className="font-bold text-red-600 text-xl">
-                {minutes}:{seconds.toString().padStart(2, "0")}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-xs text-gray-500">
-                Auto Save
-              </p>
-
-              <p className="font-semibold text-green-600">
-                {saveStatus}
-              </p>
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
-
-      <div className="max-w-7xl mx-auto grid grid-cols-12 gap-6 p-6">
-
-        {/* Left */}
-
-        <div className="col-span-9">
-
-          {/* Alerts */}
-
-          <div className="grid grid-cols-2 gap-4 mb-6">
-
-            <div className="bg-yellow-100 border border-yellow-400 p-4 rounded">
-
-              <h2 className="font-bold">
-                Tab Switches
-              </h2>
-
-              <p className="text-3xl">
-                {tabSwitches}
-              </p>
-
-            </div>
-
-            <div className="bg-red-100 border border-red-400 p-4 rounded">
-
-              <h2 className="font-bold">
-                Fullscreen Violations
-              </h2>
-
-              <p className="text-3xl">
-                {fullscreenViolations}
-              </p>
-
-            </div>
-
-          </div>
-
-          {/* Progress */}
-
-          <div className="mb-5">
-
-            <div className="flex justify-between">
-
-              <span>
-                Question {currentQuestion + 1}
-              </span>
-
-              <span>
-                1 / 50
-              </span>
-
-            </div>
-
-            <div className="w-full h-3 rounded bg-gray-300 mt-2">
-
-              <div
-                className="bg-blue-600 h-3 rounded"
-                style={{ width: "2%" }}
-              />
-
-            </div>
-
-          </div>
-
-          {/* Question */}
-
-          <div className="bg-white rounded-xl shadow-lg p-8">
-
-            <h2 className="text-xl font-bold mb-8">
-
-              {questions[currentQuestion].question}
-
-            </h2>
-
-            <div className="space-y-5">
-
-              {questions[currentQuestion].options.map((item) => (
-
-                <label
-                  key={item}
-                  className={`border rounded-xl p-5 flex cursor-pointer transition
-
-                  ${selected === item
-                      ? "border-blue-600 bg-blue-50"
-                      : "border-gray-300"
-                    }
-                  `}
-                >
-
-                  <input
-                    type="radio"
-                    className="mr-4"
-                    checked={selected === item}
-                    onChange={() => setSelected(item)}
-                  />
-
-                  {item}
-
-                </label>
-
-              ))}
-
-            </div>
-
-            <div className="flex justify-between mt-10">
-
-              <button
-                className="px-6 py-3 rounded bg-gray-200 hover:bg-gray-300"
-              >
-                Previous
-              </button>
-
-              <button
-                className="px-6 py-3 rounded bg-blue-600 text-white hover:bg-blue-700"
-              >
-                Next
-              </button>
-
-            </div>
-
-          </div>
-
-        </div>
-
-        {/* Right Sidebar */}
-
-        <div className="col-span-3">
-
-          <div className="bg-white shadow rounded-xl p-5 sticky top-28">
-
-            <h2 className="font-bold text-lg mb-5">
-              Question Palette
-            </h2>
-
-            <div className="grid grid-cols-5 gap-3">
-
-              {Array.from({ length: 50 }).map((_, index) => (
-
-                <button
-                  key={index}
-                  className={`h-11 rounded-lg border
-
-                  ${index === currentQuestion
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-100"
-                    }
-                  `}
-                >
-                  {index + 1}
-                </button>
-
-              ))}
-
-            </div>
-
-            <button className="w-full mt-8 py-4 rounded-xl bg-green-600 text-white font-bold hover:bg-green-700">
-              Submit Exam
-            </button>
-
-            <div className="mt-8 border-t pt-5 space-y-3 text-sm">
-
-              <div className="flex justify-between">
-
-                <span>Total Questions</span>
-
-                <span>50</span>
-
-              </div>
-
-              <div className="flex justify-between">
-
-                <span>Answered</span>
-
-                <span>0</span>
-
-              </div>
-
-              <div className="flex justify-between">
-
-                <span>Remaining</span>
-
-                <span>50</span>
-
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
-
-    </div>
-  );
+    <Grid container spacing={6}>
+      <Grid item size={{ xs: 12 }}>
+        <Card>
+          <CardHeader title="Exam" />
+          <CardContent>
+            <Typography variant='h5' className='mbe-2'>
+              {examSet?.set_name}
+            </Typography>
+            <Grid container>
+              <Grid item size={{ xs: 12, sm: 6 }} className='flex flex-col pie-5 gap-[26px]'>
+                <div className='flex items-center gap-2.5'>
+                  <div className='flex'>
+                    <i className='tabler-clock text-xl text-textSecondary' />
+                  </div>
+                  <Typography color='text.secondary'>Exam Duration: {examSet?.exam_duration} Minutes</Typography>
+                </div>
+                <div className='flex items-center gap-2.5'>
+                  <div className='flex'>
+                    <i className='tabler-calendar-time text-xl text-textSecondary' />
+                  </div>
+                  <Typography color='text.secondary'>Exam Start Date Time: {batchData?.assessment_start_datetime ? format(batchData.assessment_start_datetime, 'dd-MMM-yyyy hh:mm a') : ""}</Typography>
+                </div>
+                <div className='flex items-center gap-2.5'>
+                  <div className='flex'>
+                    <i className='tabler-calendar-time text-xl text-textSecondary' />
+                  </div>
+                  <Typography color='text.secondary'>Current Date Time: {currentTime ? format(currentTime, 'dd-MMM-yyyy hh:mm a') : ""}</Typography>
+                </div>
+              </Grid>
+              <Grid item size={{ xs: 12, sm: 6 }} className='flex flex-col max-sm:mbs-[26px] sm:ps-5 sm:border-s gap-[26px]'>
+                <div className='flex items-center gap-2.5'>
+                  <div className='flex'>
+                    <i className='tabler-align-left text-xl text-textSecondary' />
+                  </div>
+                  <Typography color='text.secondary'>Total Questions: {examSet?.total_questions}</Typography>
+                </div>
+                <div className='flex items-center gap-2.5'>
+                  <div className='flex'>
+                    <i className='tabler-calendar-time text-xl text-textSecondary' />
+                  </div>
+                  <Typography color='text.secondary'>Exam End Date Time: {batchData?.assessment_end_datetime ? format(batchData.assessment_end_datetime, 'dd-MMM-yyyy hh:mm a') : ""}</Typography>
+                </div>
+                <div className='flex items-center gap-2.5'>
+                  <div className='flex'>
+                    <i className='tabler-calendar-time text-xl text-textSecondary' />
+                  </div>
+                  <Typography color='text.secondary'>Remaining Attempts: {remainingAttempts}</Typography>
+                </div>
+              </Grid>
+            </Grid>
+            <Divider className='mbs-7 mbe-7' />
+            <Typography variant='h5' className='mbe-2'>Instructions</Typography>
+            <Grid item size={{ xs: 12 }}>{examSet?.instruction || <DefaultExamInstructions />}</Grid>
+
+          </CardContent>
+          {examSet && remainingAttempts > 0 && batchData?.assessment_start_datetime && new Date(batchData?.assessment_start_datetime) <= new Date() &&
+            batchData?.assessment_end_datetime && new Date() <= new Date(batchData?.assessment_end_datetime) && !feedbackSubmitted && (
+              <CardActions>
+                <Button variant="contained" onClick={() => handleStartExam(examPageUrl)}>
+                  {batchData.login_restrict && remainingAttempts < batchData.login_restrict ? 'Resume Exam' : 'Start Exam'}
+                </Button>
+              </CardActions>
+            )
+          }
+
+        </Card>
+      </Grid>
+    </Grid>
+  )
 }
+
+export default ExamTest;

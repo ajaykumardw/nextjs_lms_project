@@ -19,6 +19,8 @@ import {
 
 import { toast } from 'react-toastify'
 
+import { getLocalizedUrl } from "@/utils/i18n";
+
 const ProgramPage = () => {
 
   const paramData = useSearchParams()
@@ -35,6 +37,10 @@ const ProgramPage = () => {
   const [data, setData] = useState()
   const [loading, setLoading] = useState(true)
   const [settingData, setSettingData] = useState()
+
+  const [isClient, setIsClient] = useState(false);
+
+  const [remainingAttempts, setRemainingAttempts] = useState(0)
 
   const fetchActivity = async () => {
     try {
@@ -74,11 +80,21 @@ const ProgramPage = () => {
   }
 
   useEffect(() => {
-    if (API_URL && token && moduleId) {
-      fetchActivity()
-      fetchSurveyData()
-    }
-  }, [API_URL, token, moduleId])
+    const loadData = async () => {
+      if (!API_URL || !token || !moduleId) return;
+
+      setLoading(true);
+
+      await Promise.all([
+        fetchActivity(),
+        fetchSurveyData(),
+      ]);
+
+      setLoading(false);
+    };
+
+    loadData();
+  }, [API_URL, token, moduleId]);
 
   const moduleTypeLabel = {
     '688723af5dd97f4ccae68834': 'Documents & Slides',
@@ -116,24 +132,20 @@ const ProgramPage = () => {
       const contentFolderId = params.get('contentFolderId');
       const moduleTypeId = params.get('moduleTypeId');
 
-      const response = await fetch(`${API_URL}/user/activity/new/attempt/${moduleId}/${contentFolderId}/${activityId}/${moduleTypeId}`, {
+      await fetch(`${API_URL}/user/activity/new/attempt/${moduleId}/${contentFolderId}/${activityId}/${moduleTypeId}`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`
         }
       })
 
-      if (response.ok) {
-
-        window.location.href = url
-      }
-
     } catch (error) {
-      throw new Error(error)
+      console.error(error);
+      toast.error("Unable to start activity.");
     }
   }
 
-  const handleActivityClick = (canOpen, url) => {
+  const handleStartExam = (canOpen, url, pageUrl) => {
 
     if (!canOpen) {
 
@@ -142,8 +154,49 @@ const ProgramPage = () => {
       return
     }
 
-    handleStartActivity(url)
+    if (typeof window !== "undefined") {
+      // Open a new window with the given URL, and additional window options
 
+      handleStartActivity(pageUrl)
+
+      const newWindow = window.open(url, '_blank', "width=" + window.screen.availWidth + ",height=" + window.screen.availHeight + ",toolbar=1,location=0,scrollbars=no,resizable=no");
+
+      // Check if the window opened successfully
+      if (newWindow) {
+        // Disable right-click and context menu in the new window
+        newWindow.document.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+        });
+
+        // Disable text selection in the new window
+        newWindow.document.body.style.userSelect = 'none';
+
+        // Disable certain keyboard shortcuts like F12 (inspect) and Ctrl+Shift+I, Ctrl+Shift+J
+        newWindow.document.addEventListener('keydown', (e) => {
+          // Block F12, Ctrl+Shift+I, Ctrl+Shift+J, F1 (help)
+          if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) || e.key === 'F1') {
+            e.preventDefault();
+          }
+        });
+
+        // Decrease remaining attempts temporarily here; ideally, this should be done after exam submission
+        setRemainingAttempts(prev => prev > 0 ? prev - 1 : 0);
+
+        // Disable resizing the window (it's already in the `window.open()` options, but you can reinforce it)
+        // newWindow.resizeTo(1024, 750);
+      } else {
+        alert('Popup blocked. Please allow popups for this site.');
+      }
+    }
+  };
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Ensure the code below only runs client-side
+  if (!isClient) {
+    return null; // Return nothing while waiting for the component to mount
   }
 
   if (loading) return null
@@ -222,12 +275,20 @@ const ProgramPage = () => {
             const canOpen =
               !isOrdered || index === 0 || prevCompleted;
 
-            const url = `/${locale}/apps/content-data?type=${docType?.[moduleTypeId]
+            const pageURL = `/${locale}/apps/content-data?type=${docType?.[moduleTypeId]
               }&activityId=${activity?._id}&moduleId=${moduleId}&contentFolderId=${content_folder_id}&moduleTypeId=${moduleTypeId}`;
 
             const isDisabled =
               isCompleted &&
               moduleTypeId === "688723af5dd97f4ccae68837";
+
+            const examPageUrl =
+              window.location.origin +
+              getLocalizedUrl(
+                `/activity?type=${docType?.[moduleTypeId]
+                }&activityId=${activity?._id}&moduleId=${moduleId}&contentFolderId=${content_folder_id}&moduleTypeId=${moduleTypeId}`,
+                locale
+              );
 
             return (
               <Card key={activity?._id || index} className="mb-3">
@@ -262,7 +323,7 @@ const ProgramPage = () => {
                         variant="contained"
                         color={isCompleted ? "success" : "primary"}
                         disabled={isDisabled}
-                        onClick={() => handleActivityClick(canOpen, url)}
+                        onClick={() => handleStartExam(canOpen, examPageUrl, pageURL)}
                         sx={{
                           textTransform: "none",
                           height: 32,
