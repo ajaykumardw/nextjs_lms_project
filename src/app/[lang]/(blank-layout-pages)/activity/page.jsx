@@ -172,16 +172,9 @@ const ContentData = () => {
             if (res.ok) {
 
                 setSurveyModalOpen(values?.is_survey_completed && values?.completed);
+
             }
 
-            setTimeout(() => {
-                window.removeEventListener(
-                    "beforeunload",
-                    beforeUnloadHandlerRef.current
-                );
-
-                window.close();
-            }, 300);
 
             return { ok: res.ok, status: res.status, data: json?.data };
         } catch (error) {
@@ -395,6 +388,7 @@ const ContentData = () => {
 
                 window.close();
             }, 300);
+
         } catch (err) {
             console.error('handleMarkComplete error', err);
             toast.error('Could not mark activity complete');
@@ -612,15 +606,20 @@ const ContentData = () => {
         }
     }, [isQuizClose])
 
-    return (
-        <Box sx={{
-            p: { xs: 1, sm: 2, md: 3 },
-            userSelect: "none",
-            WebkitUserSelect: "none",
-            filter: blurred ? "blur(20px)" : "none",
-            pointerEvents: blurred ? "none" : "auto"
+    const disableBlur =
+        types === "youtube-video" ||
+        types === "scrom-content";
 
-        }}>
+    return (
+        <Box
+            sx={{
+                p: { xs: 1, sm: 2, md: 3 },
+                userSelect: "none",
+                WebkitUserSelect: "none",
+                filter: blurred && !disableBlur ? "blur(20px)" : "none",
+                pointerEvents: blurred && !disableBlur ? "none" : "auto"
+            }}
+        >
             {!ready ? (
                 <Skeleton height={200} />
             ) : (
