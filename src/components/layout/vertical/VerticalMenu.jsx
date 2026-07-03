@@ -249,6 +249,10 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
                 My Course
               </MenuItem>
 
+              <MenuItem key="module_in_progress" href={`/${locale}/apps/my-modules/in-progress`} icon={<i className="tabler-folder" />}>
+                Module in progress
+              </MenuItem>
+
               <MenuItem key="my_program" href={`/${locale}/apps/my-program`} icon={<i className="tabler-folder" />}>
                 My Program
               </MenuItem>

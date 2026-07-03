@@ -1,72 +1,120 @@
 'use client'
 
-// MUI Imports
+import { useRouter } from 'next/navigation'
+
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
+import Box from '@mui/material/Box'
+import Chip from '@mui/material/Chip'
 import { styled } from '@mui/material/styles'
 
-// Utils
-import classnames from 'classnames'
+import classNames from 'classnames'
 
-// Components
 import CustomAvatar from '@core/components/mui/Avatar'
 
-// Styled Card (hover + border effect)
-const StyledCard = styled(Card)(({ color }) => ({
-    insetBlockEnd: `2px solid var(--mui-palette-${color}-light)`,
-    transition: 'all 0.3s ease',
+const StyledCard = styled(Card)(({ theme }) => ({
+    borderRadius: 20,
+    height: '100%',
+    border: `1px solid ${theme.palette.divider}`,
+    boxShadow: theme.shadows[1],
+    transition: 'all .3s ease',
 
     '&:hover': {
-        insetBlockEnd: `3px solid var(--mui-palette-${color}-main)`,
-        boxShadow: 'var(--mui-customShadows-lg)',
-        transform: 'translateY(-2px)'
+        transform: 'translateY(-6px)',
+        boxShadow: theme.shadows[8]
     }
 }))
 
-const StatCard = props => {
-    const {
-        title,
-        stats,
-        icon = 'ri-bar-chart-line',
-        color = 'primary',
-        trendNumber
-    } = props
+const StatCard = ({
+    title,
+    stats,
+    icon = 'tabler-book',
+    color = 'primary',
+    trendNumber,
+    url
+}) => {
+
+    const router = useRouter()
+
+    const trendColor =
+        trendNumber > 0
+            ? 'success'
+            : trendNumber < 0
+                ? 'error'
+                : 'warning'
 
     return (
-        <StyledCard color={color}>
-            <CardContent className="flex flex-col gap-2">
-
-                {/* Top Row */}
-                <div className="flex items-center gap-4">
-                    <CustomAvatar skin="light" color={color} variant="rounded">
-                        <i className={classnames(icon, 'text-[24px]')} />
+        <StyledCard
+            onClick={() => router.push(url)}
+        >
+            <CardContent sx={{ p: 3.5 }}>
+                <Box
+                    display="flex"
+                    justifyContent="space-between"
+                    alignItems="flex-start"
+                >
+                    <CustomAvatar
+                        skin="light"
+                        color={color}
+                        sx={{
+                            width: 60,
+                            height: 60,
+                            borderRadius: '18px'
+                        }}
+                    >
+                        <i
+                            className={classNames(icon)}
+                            style={{ fontSize: 28 }}
+                        />
                     </CustomAvatar>
 
-                    <Typography variant="h4">{stats}</Typography>
-                </div>
-
-                {/* Bottom */}
-                <div className="flex flex-col">
-                    <Typography variant="body1">{title}</Typography>
-
                     {trendNumber !== undefined && (
-                        <div className="flex items-center gap-2">
-                            <Typography
-                                variant="body2"
-                                className="font-medium"
-                                color={trendNumber >= 0 ? 'success.main' : 'error.main'}
-                            >
-                                {trendNumber >= 0 ? '+' : ''}
-                                {trendNumber}%
-                            </Typography>
-
-                            <Typography variant="caption" color="text.disabled">
-                                vs last week
-                            </Typography>
-                        </div>
+                        <Chip
+                            size="small"
+                            color={trendColor}
+                            variant="soft"
+                            label={
+                                trendNumber > 0
+                                    ? `+${trendNumber}%`
+                                    : `${trendNumber}%`
+                            }
+                        />
                     )}
-                </div>
+                </Box>
+
+                <Box mt={4}>
+                    <Typography
+                        color="text.secondary"
+                        sx={{
+                            fontSize: 14,
+                            fontWeight: 500,
+                            mb: 0.5
+                        }}
+                    >
+                        {title}
+                    </Typography>
+
+                    <Typography
+                        sx={{
+                            fontSize: 36,
+                            fontWeight: 700,
+                            lineHeight: 1
+                        }}
+                    >
+                        {stats}
+                    </Typography>
+                </Box>
+
+                {trendNumber !== undefined && (
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mt: 2 }}
+                    >
+                        Compared to last week
+                    </Typography>
+                )}
             </CardContent>
         </StyledCard>
     )

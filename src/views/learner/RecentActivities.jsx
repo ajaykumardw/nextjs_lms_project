@@ -1,83 +1,204 @@
 'use client'
 
-import dayjs from 'dayjs';
+import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
 
-import { Card, Skeleton, CardHeader, CardContent, Typography } from '@mui/material'
-import Grid from "@mui/material/Grid2"
+import Grid from '@mui/material/Grid2'
+import {
+    Card,
+    CardContent,
+    Typography,
+    Skeleton,
+    Box,
+    Stack,
+    Avatar,
+    Chip,
+    Button,
+    Divider
+} from '@mui/material'
 
-const CARD_HEIGHT = 260
+dayjs.extend(relativeTime)
 
 const RecentActivities = ({ dashboardData, loading }) => {
     return (
-        <Grid container spacing={6} alignItems="stretch">
-
-            {/* Recent Activities */}
-            <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex' }}>
+        <Grid container spacing={4}>
+            <Grid size={{ xs: 12 }}>
                 <Card
                     sx={{
-                        blockSize: CARD_HEIGHT,
-                        minHeight: CARD_HEIGHT,
-                        maxHeight: CARD_HEIGHT,
-                        inlineSize: '100%',
-                        display: 'flex',
-                        flexDirection: 'column'
+                        height: '100%',
+                        borderRadius: 3,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        boxShadow: 2,
+                        overflow: 'hidden',
+                        transition: '.3s',
+
+                        '&:hover': {
+                            boxShadow: 6
+                        }
                     }}
                 >
-                    <CardHeader title="Recent Activities" />
-
-                    <CardContent sx={{ flex: 1, overflowY: 'auto' }}>
-                        {loading ? (
-                            [...Array(5)].map((_, i) => (
-                                <Skeleton key={i} height={30} sx={{ mb: 1 }} />
-                            ))
-                        ) : dashboardData?.activityLog?.length ? (
-                            dashboardData.activityLog.map((item, index) => (
-                                <div key={index}>
-                                    <Typography>
-                                        {item?.title} - {item?.current_attempt}
-                                    </Typography>
-                                </div>
-                            ))
-                        ) : (
-                            <Typography>No activities found</Typography>
-                        )}
-                    </CardContent>
-                </Card>
-            </Grid>
-
-            {/* Notifications */}
-            <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex' }}>
-                <Card
-                    sx={{
-                        blockSize: CARD_HEIGHT,
-                        minHeight: CARD_HEIGHT,
-                        maxHeight: CARD_HEIGHT,
-                        inlineSize: '100%',
-                        display: 'flex',
-                        flexDirection: 'column'
-                    }}
-                >
-                    <CardHeader title="Notifications" />
-
-                    <CardContent sx={{ flex: 1, overflowY: 'auto' }}>
-                        {loading ? (
-                            [...Array(5)].map((_, i) => (
-                                <Skeleton key={i} height={30} sx={{ mb: 1 }} />
-                            ))
-                        ) : dashboardData?.notificationLog?.length ? (
-                            dashboardData.notificationLog.map((item, index) => (
-                                <Typography key={index}>
-                                    {item?.template_name || ""} on{" "}
-                                    {dayjs(item?.schedule_date).format('hh:mm A DD MM YYYY')}
+                    <CardContent sx={{ p: 3 }}>
+                        <Stack
+                            direction="row"
+                            justifyContent="space-between"
+                            alignItems="center"
+                            mb={3}
+                        >
+                            <Box>
+                                <Typography
+                                    variant="h6"
+                                    fontWeight={700}
+                                >
+                                    Recent Activities
                                 </Typography>
-                            ))
-                        ) : (
-                            <Typography>No notifications found</Typography>
-                        )}
+
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                >
+                                    Your latest learning updates
+                                </Typography>
+                            </Box>
+
+                            <Button
+                                size="small"
+                                variant="text"
+                            >
+                                View All
+                            </Button>
+                        </Stack>
+
+                        <Box
+                            sx={{
+                                maxHeight: 380,
+                                overflowY: 'auto',
+                                pr: 1,
+
+                                '&::-webkit-scrollbar': {
+                                    width: 6
+                                },
+
+                                '&::-webkit-scrollbar-thumb': {
+                                    backgroundColor: '#cbd5e1',
+                                    borderRadius: 20
+                                },
+
+                                '&::-webkit-scrollbar-thumb:hover': {
+                                    backgroundColor: '#94a3b8'
+                                }
+                            }}
+                        >
+                            {loading ? (
+                                [...Array(5)].map((_, i) => (
+                                    <Skeleton
+                                        key={i}
+                                        variant="rounded"
+                                        height={80}
+                                        sx={{
+                                            mb: 2,
+                                            borderRadius: 3
+                                        }}
+                                    />
+                                ))
+                            ) : dashboardData?.activityLog?.length ? (
+                                dashboardData.activityLog.map((item, index) => (
+                                    <Box key={index}>
+                                        <Stack
+                                            direction="row"
+                                            spacing={2}
+                                            alignItems="center"
+                                            sx={{
+                                                py: 2,
+                                                px: 1,
+                                                borderRadius: 2,
+                                                transition: '.2s',
+
+                                                '&:hover': {
+                                                    bgcolor: 'action.hover'
+                                                }
+                                            }}
+                                        >
+                                            <Avatar
+                                                sx={{
+                                                    inlineSize: 48,
+                                                    blockSize: 48,
+                                                }}
+                                            >
+                                                <i className="tabler-check" />
+                                            </Avatar>
+
+                                            <Box flex={1}>
+                                                <Typography
+                                                    fontWeight={600}
+                                                    fontSize={15}
+                                                >
+                                                    {item.title}
+                                                </Typography>
+
+                                                <Typography
+                                                    variant="body2"
+                                                    color="text.secondary"
+                                                    mt={0.3}
+                                                >
+                                                    Started at{' '}
+                                                    {
+                                                        item.start_activity_time
+                                                    }
+                                                </Typography>
+
+                                                <Typography
+                                                    variant="caption"
+                                                    color="text.secondary"
+                                                >
+                                                    Attempt #{item.current_attempt}
+                                                </Typography>
+                                            </Box>
+
+                                            <Chip
+                                                label="Completed"
+                                                size="small"
+                                                color="success"
+                                                variant="filled"
+                                                sx={{
+                                                    fontWeight: 600,
+                                                    borderRadius: 1.5
+                                                }}
+                                            />
+                                        </Stack>
+
+                                        {index !==
+                                            dashboardData.activityLog.length - 1 && (
+                                                <Divider />
+                                            )}
+                                    </Box>
+                                ))
+                            ) : (
+                                <Box
+                                    sx={{
+                                        py: 8,
+                                        textAlign: 'center'
+                                    }}
+                                >
+                                    <Typography
+                                        variant="body1"
+                                        color="text.secondary"
+                                    >
+                                        No recent activities
+                                    </Typography>
+
+                                    <Typography
+                                        variant="body2"
+                                        color="text.disabled"
+                                    >
+                                        Your completed activities will appear here.
+                                    </Typography>
+                                </Box>
+                            )}
+                        </Box>
                     </CardContent>
                 </Card>
             </Grid>
-
         </Grid>
     )
 }

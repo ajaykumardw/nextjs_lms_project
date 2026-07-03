@@ -44,9 +44,6 @@ const LearnerDashboard = () => {
 
                 const data = value?.data;
 
-                console.log("Data", data);
-
-
                 setDashboardData(data);
                 setLoading(false)
 

@@ -6,21 +6,38 @@ import Grid from '@mui/material/Grid2'
 import {
     Card,
     Skeleton,
-    CardHeader,
     CardContent,
     Typography,
-    Box
+    Box,
+    Avatar,
+    Chip,
+    Stack,
+    Button
 } from '@mui/material'
 
 const Chart = dynamic(() => import('react-apexcharts'), {
     ssr: false
 })
 
-const CARD_HEIGHT = 420
+const cardStyle = {
+    height: '100%',
+    borderRadius: 4,
+    border: '1px solid',
+    borderColor: 'divider',
+    boxShadow: 1,
+    transition: 'all .25s ease',
+
+    '&:hover': {
+        transform: 'translateY(-4px)',
+        boxShadow: 6
+    }
+}
 
 const ModulesAndActivity = ({ dashboardData, loading }) => {
     const series =
-        dashboardData?.activitySummary?.map(item => Number(item.percentage)) || []
+        dashboardData?.activitySummary?.map(item =>
+            +item.percentage.toFixed(2)
+        ) || [];
 
     const options = {
         chart: {
@@ -28,145 +45,275 @@ const ModulesAndActivity = ({ dashboardData, loading }) => {
                 show: false
             }
         },
+
         labels:
             dashboardData?.activitySummary?.map(item => item.title) || [],
+
         legend: {
             position: 'bottom',
-            fontSize: '13px'
+            fontSize: '14px'
         },
+
         dataLabels: {
-            enabled: true
+            enabled: false
         },
+
+        stroke: {
+            width: 0
+        },
+
         plotOptions: {
             pie: {
-                expandOnClick: true,
                 donut: {
-                    size: '70%'
-                }
-            }
-        },
-        responsive: [
-            {
-                breakpoint: 768,
-                options: {
-                    legend: {
-                        position: 'bottom'
+                    size: '78%',
+
+                    labels: {
+                        show: true,
+
+                        total: {
+                            show: true,
+                            label: 'Activity'
+                        }
                     }
                 }
             }
-        ]
+        }
     }
 
     return (
-        <Grid container spacing={6} alignItems="stretch">
-            {/* Activity Summary */}
-            <Grid size={{ xs: 12, md: 5 }}>
-                <Card
-                    sx={{
-                        height: CARD_HEIGHT,
-                        display: 'flex',
-                        flexDirection: 'column'
-                    }}
-                >
-                    <CardHeader title="Activity Summary" />
+        <Grid container spacing={4} alignItems="stretch">
 
-                    <CardContent
-                        sx={{
-                            flex: 1,
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            overflow: 'hidden'
-                        }}
-                    >
-                        {loading ? (
-                            <Skeleton
-                                variant="rounded"
-                                width="100%"
-                                height={300}
-                            />
-                        ) : series.length ? (
-                            <Box
-                                sx={{
-                                    width: '100%',
-                                    height: '100%',
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    alignItems: 'center'
-                                }}
-                            >
-                                <Chart
-                                    options={options}
-                                    series={series}
-                                    type="donut"
-                                    width="100%"
-                                    height={320}
-                                />
+            {/* Activity Summary */}
+
+            <Grid size={{ xs: 12, md: 5 }}>
+
+                <Card sx={cardStyle}>
+
+                    <CardContent>
+
+                        <Stack
+                            direction="row"
+                            justifyContent="space-between"
+                            alignItems="center"
+                            mb={3}
+                        >
+                            <Box>
+
+                                <Typography
+                                    variant="h6"
+                                    fontWeight={700}
+                                >
+                                    Activity Summary
+                                </Typography>
+
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                >
+                                    Overall learning activity
+                                </Typography>
+
                             </Box>
+                        </Stack>
+
+                        {loading ? (
+
+                            <Box textAlign="center">
+
+                                <Skeleton
+                                    variant="circular"
+                                    width={220}
+                                    height={220}
+                                    sx={{ mx: 'auto' }}
+                                />
+
+                                <Skeleton
+                                    width={180}
+                                    sx={{ mt: 3, mx: 'auto' }}
+                                />
+
+                            </Box>
+
+                        ) : series.length ? (
+
+                            <Chart
+                                options={options}
+                                series={series}
+                                type="donut"
+                                height={340}
+                            />
+
                         ) : (
-                            <Typography>No activity data</Typography>
+
+                            <Typography
+                                color="text.secondary"
+                                align="center"
+                            >
+                                No activity data available
+                            </Typography>
+
                         )}
+
                     </CardContent>
+
                 </Card>
+
             </Grid>
 
             {/* Learning Modules */}
+
             <Grid size={{ xs: 12, md: 7 }}>
-                <Card
-                    sx={{
-                        height: CARD_HEIGHT,
-                        display: 'flex',
-                        flexDirection: 'column'
-                    }}
-                >
-                    <CardHeader title="Learning Modules" />
 
-                    <CardContent
-                        sx={{
-                            flex: 1,
-                            overflowY: 'auto'
-                        }}
-                    >
-                        {loading ? (
-                            [...Array(5)].map((_, index) => (
-                                <Skeleton
-                                    key={index}
-                                    height={60}
-                                    sx={{ mb: 2 }}
-                                />
-                            ))
-                        ) : dashboardData?.enrolledData?.length ? (
-                            dashboardData.enrolledData.map((item, index) => (
-                                <Box
-                                    key={item._id || index}
-                                    sx={{
-                                        mb: 2,
-                                        pb: 1,
-                                        borderBottom: theme =>
-                                            `1px solid ${theme.palette.divider}`
-                                    }}
+                <Card sx={cardStyle}>
+
+                    <CardContent>
+
+                        <Stack
+                            direction="row"
+                            justifyContent="space-between"
+                            alignItems="center"
+                            mb={3}
+                        >
+                            <Box>
+
+                                <Typography
+                                    variant="h6"
+                                    fontWeight={700}
                                 >
-                                    <Typography
-                                        variant="subtitle1"
-                                        fontWeight={600}
-                                    >
-                                        {item?.title}
-                                    </Typography>
+                                    Learning Modules
+                                </Typography>
 
-                                    <Typography
-                                        variant="body2"
-                                        color="text.secondary"
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                >
+                                    Your enrolled modules
+                                </Typography>
+
+                            </Box>
+
+                            <Button
+                                size="small"
+                                variant="text"
+                            >
+                                View All
+                            </Button>
+
+                        </Stack>
+
+                        <Box
+                            sx={{
+                                maxHeight: 360,
+                                overflowY: 'auto',
+                                pr: 1
+                            }}
+                        >
+
+                            {loading ? (
+
+                                [...Array(5)].map((_, index) => (
+
+                                    <Skeleton
+                                        key={index}
+                                        variant="rounded"
+                                        height={90}
+                                        sx={{
+                                            mb: 2,
+                                            borderRadius: 3
+                                        }}
+                                    />
+
+                                ))
+
+                            ) : dashboardData?.enrolledData?.length ? (
+
+                                dashboardData.enrolledData.map((item, index) => (
+
+                                    <Card
+                                        key={item._id || index}
+                                        variant="outlined"
+                                        sx={{
+                                            p: 2,
+                                            mb: 2,
+                                            borderRadius: 3,
+                                            transition: '.25s',
+
+                                            '&:hover': {
+                                                boxShadow: 3,
+                                                transform: 'translateX(4px)'
+                                            }
+                                        }}
                                     >
-                                        {item?.description}
-                                    </Typography>
-                                </Box>
-                            ))
-                        ) : (
-                            <Typography>No modules found</Typography>
-                        )}
+
+                                        <Stack
+                                            direction="row"
+                                            spacing={2}
+                                            alignItems="flex-start"
+                                        >
+
+                                            <Avatar
+
+                                            >
+                                                <i className="tabler-book" />
+                                            </Avatar>
+
+                                            <Box flex={1}>
+
+                                                <Stack
+                                                    direction="row"
+                                                    justifyContent="space-between"
+                                                    alignItems="center"
+                                                >
+
+                                                    <Typography
+                                                        fontWeight={700}
+                                                    >
+                                                        {item.title}
+                                                    </Typography>
+
+                                                    <Chip
+                                                        label="Active"
+                                                        color="success"
+                                                        size="small"
+                                                    />
+
+                                                </Stack>
+
+                                                <Typography
+                                                    variant="body2"
+                                                    color="text.secondary"
+                                                    sx={{ mt: .5 }}
+                                                >
+                                                    {item.description}
+                                                </Typography>
+
+                                            </Box>
+
+                                        </Stack>
+
+                                    </Card>
+
+                                ))
+
+                            ) : (
+
+                                <Typography
+                                    color="text.secondary"
+                                    align="center"
+                                >
+                                    No learning modules found.
+                                </Typography>
+
+                            )}
+
+                        </Box>
+
                     </CardContent>
+
                 </Card>
+
             </Grid>
+
         </Grid>
     )
 }

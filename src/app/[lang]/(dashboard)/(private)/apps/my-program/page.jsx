@@ -237,7 +237,7 @@ export default function ProgramsDashboard() {
             </Typography>
 
             <Typography color="text.secondary" mb={5}>
-                Browse programs and quickly access content content_folders.
+                Complete your learning, one step at a time.
             </Typography>
 
             {paginatedPrograms?.map((program) => (
