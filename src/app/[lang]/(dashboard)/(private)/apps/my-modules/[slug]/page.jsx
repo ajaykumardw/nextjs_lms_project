@@ -47,7 +47,7 @@ const MyModulePage = () => {
 
     const currentModules = useMemo(() => {
         const start = (page - 1) * PAGE_SIZE
-        
+
         return moduleData?.slice(start, start + PAGE_SIZE)
     }, [moduleData, page])
 
@@ -170,7 +170,11 @@ const MyModulePage = () => {
                                         variant="body2"
                                         color="text.secondary"
                                     >
-                                        {currentStatus[slug] || "In progress"}
+                                        {module?.completion_percentage === 100
+                                            ? 'Completed'
+                                            : module?.completion_percentage > 0
+                                                ? 'In Progress'
+                                                : 'Not Started'}
                                     </Typography>
                                 </Box>
                             </CardContent>
@@ -183,9 +187,9 @@ const MyModulePage = () => {
                                     width: `${module?.completion_percentage}%`,
                                     height: 3,
                                     bgcolor:
-                                        slug === 'completed'
+                                        module?.completion_percentage === 100
                                             ? '#4caf50'
-                                            : slug === 'in-progress'
+                                            : module?.completion_percentage > 0
                                                 ? '#ffb300'
                                                 : '#ccc'
                                 }}
