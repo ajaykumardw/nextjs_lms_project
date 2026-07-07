@@ -179,7 +179,7 @@ const ProgramCardComponent = ({
         const data = {
             "688219557b6953e899cb57d2": `${nextLink}/${itemId}`,
             "688219557b6953e899cb57d3": `/${locale}/apps/live-session/${itemId}`,
-            "688219557b6953e899cb57d4": `/${locale}/apps/ilt-page/${itemId}`
+            "6a4ca7a0665e1e8f61a88848": `/${locale}/apps/ilt-training/${itemId}`
         }
 
         return data?.[moduleTypeId] || `${nextLink}/${itemId}`
@@ -352,7 +352,7 @@ const ProgramCardComponent = ({
                     </MenuItem>
                     <MenuItem
                         onClick={() => {
-                          
+
                             handleMenuClose();
                         }}
                     >
