@@ -91,7 +91,7 @@ const fuzzyFilter = (row, columnId, value, addMeta) => {
 
 const columnHelper = createColumnHelper()
 
-const ImportUsers = ({ batch, onBack }) => {
+const ImportUsers = ({ batch, onBack, userData }) => {
 
   const [data, setData] = useState([]);
   const [uploadData, setUploadData] = useState([]);
@@ -152,7 +152,7 @@ const ImportUsers = ({ batch, onBack }) => {
 
         const requiredHeaders = [
           'SRNO', 'Email', 'FirstName', 'LastName', 'PhoneNo', 'Password', 'ParticipationType',
-          'EmpID',   'Status'
+          'EmpID', 'Status'
         ];
 
         const headers = worksheet.getRow(1).values.slice(1).map(h => String(h || "").trim());
@@ -455,6 +455,18 @@ const ImportUsers = ({ batch, onBack }) => {
               {row.original.PhoneNo}
             </Typography>
             <Typography variant='body2' color='#FF0000'>{row.original?.errors?.phone}</Typography>
+          </div>
+        )
+      }),
+
+      columnHelper.accessor('Reporting Manager', {
+        header: 'reporting_manager_id',
+        cell: ({ row }) => (
+          <div className="flex flex-col">
+            <Typography color='text.primary' >
+              {row.original.reporting_manager_id}
+            </Typography>
+            <Typography variant='body2' color="#FF0000">{row.original?.errors?.reporting_manager_id}</Typography>
           </div>
         )
       }),

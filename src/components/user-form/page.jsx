@@ -101,6 +101,7 @@ const UserFormLayout = () => {
             maxLength(255, 'Email can be a maximum of 255 characters')
         ),
         alternative_email: optional(string()),
+        reporting_manager_id: optional(string()),
         password: id
             ? optional(string())
             : pipe(
@@ -206,7 +207,8 @@ const UserFormLayout = () => {
         website: '',
         status: false,
         roles: [],
-        user_code: ''
+        user_code: '',
+        reporting_manager_id: ''
     })
 
     const handleClickShowPassword = () => setFormData(show => ({ ...show, isPasswordShown: !show.isPasswordShown }))
@@ -253,8 +255,8 @@ const UserFormLayout = () => {
             branch_id: '',
             designation_id: '',
             department_id: '',
-            alternative_email: ''
-
+            alternative_email: '',
+            reporting_manager_id: ""
         }
     });
 
@@ -318,6 +320,7 @@ const UserFormLayout = () => {
 
     const loadData = async () => {
         try {
+
             const countryData = await doGet(`admin/countries`);
             const designationData = await doGet(`admin/designations?status=true`);
             const zoneData = await doGet(`company/zone`);
@@ -325,6 +328,11 @@ const UserFormLayout = () => {
             const departmentData = await doGet('company/department')
             const participationTypesData = await doGet(`admin/participation_types?status=true`);
             const roleData = await doGet(`company/role`);
+            const userData = await doGet('admin/company');
+
+            const allowedUser = userData?.company?.filter(
+                u => u?._id?.toString() !== id?.toString()
+            );
 
             setCreateData(prevData => ({
                 ...prevData,
@@ -333,6 +341,7 @@ const UserFormLayout = () => {
                 department: departmentData,
                 zones: zoneData, // same here
                 branch: branchData,
+                users: allowedUser,
                 participation_types: participationTypesData, // same here
                 roles: roleData, // same here
             }));
@@ -379,6 +388,7 @@ const UserFormLayout = () => {
                 employee_type: editData.employee_type ?? '',
                 user_code: editData.emp_id ?? '',
                 zone_id: editData.zone_id ?? '',
+                reporting_manager_id: editData?.reporting_manager_id ?? '',
                 region_id: editData.region_id ?? '',
                 branch_id: editData.branch_id ?? '',
                 dob: editData.dob
@@ -1239,6 +1249,31 @@ const UserFormLayout = () => {
                                         error={!!errors.website}
                                         helperText={errors.website?.message}
                                     />
+                                )}
+                            />
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 4 }}>
+
+
+                            {/* Status */}
+                            <Controller
+                                name="reporting_manager_id"
+                                control={control}
+                                render={({ field }) => (
+                                    <CustomTextField
+                                        {...field}
+                                        select
+                                        fullWidth
+                                        label="Reporting Manager"
+                                        error={!!errors.reporting_manager_id}
+                                        helperText={errors.reporting_manager_id?.message}
+                                    >
+                                        {createData?.users?.map((u, index) => (
+
+                                            <MenuItem key={index} value={u?._id}>{u?.first_name} {u?.last_name} ({u?.emp_id})</MenuItem>
+                                        ))}
+
+                                    </CustomTextField>
                                 )}
                             />
                         </Grid>

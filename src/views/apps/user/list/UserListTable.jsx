@@ -91,8 +91,8 @@ const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...prop
 // Column Definitions
 const columnHelper = createColumnHelper()
 
-const UserListTable = ({ userData, loadData, setIsUserCardShow, getStatsCount }) => {
-  
+const UserListTable = ({ userData, loadData, setIsUserCardShow, getStatsCount, createData }) => {
+
   // States
   const [rowSelection, setRowSelection] = useState({})
   const [data, setData] = useState([])
@@ -247,14 +247,14 @@ const UserListTable = ({ userData, loadData, setIsUserCardShow, getStatsCount })
         header: 'Phone',
         cell: ({ row }) => <Typography>{row.original.phone}</Typography>
       }),
-      
+
       columnHelper.accessor('address', {
         header: 'Address',
         cell: ({ row }) => <Typography>{row.original.address}</Typography>
       }),
-      columnHelper.accessor('role', {
-        header: 'Role',
-        cell: ({ row }) => <Typography>{row.original.role}</Typography>
+      columnHelper.accessor('reporting_manager', {
+        header: 'Reporting Manager',
+        cell: ({ row }) => <Typography>{row?.original?.reporting_manager_id?.first_name} {row?.original?.reporting_manager_id?.last_name}</Typography>
       }),
       columnHelper.accessor('emp_id', {
         header: 'Employee ID',
@@ -385,7 +385,7 @@ const UserListTable = ({ userData, loadData, setIsUserCardShow, getStatsCount })
   return (
     <>
       {openImportWindow ? (
-        <ImportUsers batch={[]} onBack={onBack} />
+        <ImportUsers batch={[]} onBack={onBack} userData={userData} />
       ) : (
         <Card >
           {/* <CardHeader title='Filters' className='pbe-4' /> */}
