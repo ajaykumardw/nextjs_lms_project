@@ -1,6 +1,10 @@
-"use client"
+"use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, {
+  useEffect,
+  useMemo,
+  useState
+} from "react";
 
 import {
   Button,
@@ -20,23 +24,33 @@ import {
   Checkbox,
   ListItemText,
   CircularProgress
-} from '@mui/material';
+} from "@mui/material";
 
 import ExcelJS from "exceljs";
 
-import { useDropzone } from 'react-dropzone';
+import { useDropzone } from "react-dropzone";
 
-import { toast } from 'react-toastify';
+import { toast } from "react-toastify";
 
-import { object, string, minLength, array } from 'valibot';
+import {
+  object,
+  string,
+  minLength,
+  array
+} from "valibot";
 
-import { useForm, Controller } from 'react-hook-form';
+import {
+  useForm,
+  Controller
+} from "react-hook-form";
 
-import { valibotResolver } from '@hookform/resolvers/valibot';
+import {
+  valibotResolver
+} from "@hookform/resolvers/valibot";
 
-import classnames from 'classnames';
+import classnames from "classnames";
 
-import { useSession } from 'next-auth/react';
+import { useSession } from "next-auth/react";
 
 import {
   createColumnHelper,
@@ -48,1034 +62,3055 @@ import {
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
+  useReactTable
+} from "@tanstack/react-table";
 
-import { rankItem } from '@tanstack/match-sorter-utils';
+import { rankItem } from "@tanstack/match-sorter-utils";
 
-import CustomTextField from '@core/components/mui/TextField';
+import CustomTextField from "@core/components/mui/TextField";
 
-import CustomAvatar from '@core/components/mui/Avatar';
+import CustomAvatar from "@core/components/mui/Avatar";
 
-import { useApi } from '../../../../utils/api';
+import { useApi } from "../../../../utils/api";
 
-import tableStyles from '@core/styles/table.module.css';
+import tableStyles from "@core/styles/table.module.css";
 
-import AppReactDropzone from '@/libs/styles/AppReactDropzone';
+import AppReactDropzone from "@/libs/styles/AppReactDropzone";
 
-import TablePaginationComponent from '@/components/TablePaginationComponent';
+import TablePaginationComponent from "@/components/TablePaginationComponent";
 
-import ImportSuccessDialog from '@/components/dialogs/user/import-success-dialog/page';
+import ImportSuccessDialog from "@/components/dialogs/user/import-success-dialog/page";
+
 
 const CHUNK_SIZE = 1;
 
+const columnHelper =
+  createColumnHelper();
+
+
 const schema = object({
   roles: array(
-    string([minLength(1, 'Each role must be at least 1 character')]),
-    [minLength(1, 'At least one role must be selected')]
+    string([
+      minLength(
+        1,
+        "Each role must be at least 1 character"
+      )
+    ]),
+    [
+      minLength(
+        1,
+        "At least one role must be selected"
+      )
+    ]
   )
 });
 
-const fuzzyFilter = (row, columnId, value, addMeta) => {
-  // Rank the item
-  const itemRank = rankItem(row.getValue(columnId), value)
 
-  // Store the itemRank info
+const fuzzyFilter = (
+  row,
+  columnId,
+  value,
+  addMeta
+) => {
+
+  const itemRank = rankItem(
+    row.getValue(columnId),
+    value
+  );
+
   addMeta({
     itemRank
-  })
+  });
 
-  // Return if the item should be filtered in/out
-  return itemRank.passed
-}
+  return itemRank.passed;
+};
 
-const columnHelper = createColumnHelper()
 
-const ImportUsers = ({ batch, onBack, userData }) => {
+/*
+|--------------------------------------------------------------------------
+| GET ACTUAL CELL VALUE
+|--------------------------------------------------------------------------
+|
+| Supports:
+| 1. Normal string
+| 2. Number
+| 3. Excel hyperlink
+| 4. mailto hyperlink
+| 5. Rich text
+| 6. Formula result
+|
+*/
 
-  const [data, setData] = useState([]);
-  const [uploadData, setUploadData] = useState([]);
-  const [missingHeadersData, setMissingHeaders] = useState([]);
-  const [fileInput, setFileInput] = useState(null);
-  const [loading, setLoading] = useState(false); // Loading state
-  const [isProgress, setIsProgress] = useState(false); // Loading state
-  const [openSuccessDialog, setOpenSuccessDialog] = useState(false); // Loading state
-  const [progress, setProgress] = useState(0); // Progress state
-  const [roles, setRoles] = useState([]); // Progress state
-  const { data: session } = useSession();
-  const { doGet, doPost } = useApi();
-  const [showError, setShowError] = useState();
-  const [userRoles, setUserRoles] = useState([]);
+const getCellValue = (
+  value
+) => {
 
-  const token = session?.user?.token;
+  if (
+    value === null ||
+    value === undefined
+  ) {
+    return "";
+  }
+
+
+  // ---------------------------------------------
+  // Excel Hyperlink
+  // ---------------------------------------------
+
+  if (
+    typeof value === "object" &&
+    value.hyperlink
+  ) {
+
+    // If visible text exists,
+    // use visible text first
+
+    if (
+      value.text !== undefined &&
+      value.text !== null
+    ) {
+
+      return String(
+        value.text
+      ).trim();
+
+    }
+
+
+    let hyperlink =
+      String(
+        value.hyperlink
+      ).trim();
+
+
+    // mailto:john@example.com
+
+    if (
+      hyperlink
+        .toLowerCase()
+        .startsWith("mailto:")
+    ) {
+
+      return hyperlink
+        .replace(
+          /^mailto:/i,
+          ""
+        )
+        .split("?")[0]
+        .trim();
+
+    }
+
+
+    return hyperlink;
+
+  }
+
+
+  // ---------------------------------------------
+  // Rich Text
+  // ---------------------------------------------
+
+  if (
+    typeof value === "object" &&
+    Array.isArray(
+      value.richText
+    )
+  ) {
+
+    return value.richText
+      .map(
+        item =>
+          item.text || ""
+      )
+      .join("")
+      .trim();
+
+  }
+
+
+  // ---------------------------------------------
+  // Formula Result
+  // ---------------------------------------------
+
+  if (
+    typeof value === "object" &&
+    value.result !== undefined
+  ) {
+
+    return String(
+      value.result ?? ""
+    ).trim();
+
+  }
+
+
+  // ---------------------------------------------
+  // Normal String / Number
+  // ---------------------------------------------
+
+  return String(
+    value
+  ).trim();
+
+};
+
+
+/*
+|--------------------------------------------------------------------------
+| EMAIL VALUE
+|--------------------------------------------------------------------------
+|
+| This function specifically handles email values.
+|
+*/
+
+const getEmailValue = (
+  value
+) => {
+
+  if (
+    value === null ||
+    value === undefined
+  ) {
+    return "";
+  }
+
+
+  // Excel hyperlink
+
+  if (
+    typeof value === "object" &&
+    value.hyperlink
+  ) {
+
+    let email =
+      value.text ||
+      value.hyperlink ||
+      "";
+
+
+    email =
+      String(
+        email
+      ).trim();
+
+
+    // mailto:user@example.com
+
+    if (
+      email
+        .toLowerCase()
+        .startsWith("mailto:")
+    ) {
+
+      email =
+        email
+          .replace(
+            /^mailto:/i,
+            ""
+          )
+          .split("?")[0];
+
+    }
+
+
+    return email.trim();
+
+  }
+
+
+  // Rich text
+
+  if (
+    typeof value === "object" &&
+    Array.isArray(
+      value.richText
+    )
+  ) {
+
+    return value.richText
+      .map(
+        item =>
+          item.text || ""
+      )
+      .join("")
+      .trim();
+
+  }
+
+
+  // Formula
+
+  if (
+    typeof value === "object" &&
+    value.result !== undefined
+  ) {
+
+    return String(
+      value.result ?? ""
+    ).trim();
+
+  }
+
+
+  // Normal string
+
+  return String(
+    value
+  ).trim();
+
+};
+
+
+/*
+|--------------------------------------------------------------------------
+| EMAIL VALIDATION
+|--------------------------------------------------------------------------
+*/
+
+const isValidEmail = (
+  email
+) => {
+
+  const emailRegex =
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  return emailRegex.test(
+    email
+  );
+
+};
+
+
+const ImportUsers = ({
+  batch,
+  onBack,
+  userData
+}) => {
+
+  const [data, setData] =
+    useState([]);
+
+  const [uploadData, setUploadData] =
+    useState([]);
+
+  const [missingHeadersData, setMissingHeaders] =
+    useState([]);
+
+  const [fileInput, setFileInput] =
+    useState(null);
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [isProgress, setIsProgress] =
+    useState(false);
+
+  const [openSuccessDialog, setOpenSuccessDialog] =
+    useState(false);
+
+  const [progress, setProgress] =
+    useState(0);
+
+  const [roles, setRoles] =
+    useState([]);
+
+  const [showError, setShowError] =
+    useState("");
+
+  const [userRoles, setUserRoles] =
+    useState([]);
+
+
+  const {
+    data: session
+  } = useSession();
+
+
+  const {
+    doGet
+  } = useApi();
+
+
+  const token =
+    session?.user?.token;
+
 
   const {
     control,
-    formState: { errors }
+    formState: {
+      errors
+    }
   } = useForm({
-    resolver: valibotResolver(schema),
+
+    resolver:
+      valibotResolver(
+        schema
+      ),
+
     defaultValues: {
       roles: []
     }
+
   });
 
-  const { getRootProps, getInputProps } = useDropzone({
+
+  /*
+  |--------------------------------------------------------------------------
+  | CHECK ANY ERROR
+  |--------------------------------------------------------------------------
+  */
+
+  const hasUploadErrors =
+    useMemo(() => {
+
+      return uploadData.some(
+        row =>
+          Object.keys(
+            row?.errors || {}
+          ).length > 0
+      );
+
+    }, [
+      uploadData
+    ]);
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | DROPZONE
+  |--------------------------------------------------------------------------
+  */
+
+  const {
+    getRootProps,
+    getInputProps
+  } = useDropzone({
+
     multiple: false,
-    maxSize: 2 * 1024 * 1024, // 2MB
+
+    maxSize:
+      2 * 1024 * 1024,
 
     accept: {
-      'application/vnd.ms-excel': ['.xls'],
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
+
+      "application/vnd.ms-excel": [
+        ".xls"
+      ],
+
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
+        ".xlsx"
+      ]
+
     },
 
-    onDrop: async (acceptedFiles) => {
-      if (!acceptedFiles?.length) return;
 
-      setFileInput(null);
-      setMissingHeaders([]);
-      setShowError('');
-      setLoading(true);
-      setProgress(0);
-      setData([]);
-      setUploadData([]);
+    onDrop:
+      async (
+        acceptedFiles
+      ) => {
 
-      try {
-        const selectedFile = acceptedFiles[0];
-
-        const arrayBuffer = await selectedFile.arrayBuffer();
-
-        const workbook = new ExcelJS.Workbook();
-
-        await workbook.xlsx.load(arrayBuffer);
-
-        const worksheet = workbook.worksheets[0];
-
-        if (!worksheet) {
-          throw new Error('Excel file is empty.');
-        }
-
-        // Required Excel headers
-        const requiredHeaders = [
-          'SRNO',
-          'Email',
-          'FirstName',
-          'LastName',
-          'PhoneNo',
-          'Password',
-          'ParticipationType',
-          'EmpID',
-          'Status'
-        ];
-
-        // Get headers from first row
-        const headers = worksheet
-          .getRow(1)
-          .values
-          .slice(1)
-          .map((header) => String(header || '').trim());
-
-        // Check missing headers
-        const missingHeadersList = requiredHeaders.filter(
-          (header) => !headers.includes(header)
-        );
-
-        if (missingHeadersList.length > 0) {
-          setMissingHeaders(missingHeadersList);
-          setLoading(false);
-
+        if (
+          !acceptedFiles?.length
+        ) {
           return;
         }
 
-        // Convert Excel rows to JSON
-        const jsonData = [];
 
-        worksheet.eachRow(
-          {
-            includeEmpty: false
-          },
-          (row, rowNumber) => {
-            // Skip header row
-            if (rowNumber === 1) return;
+        const selectedFile =
+          acceptedFiles[0];
 
-            const rowValues = row.values.slice(1);
 
-            const rowData = {};
+        setFileInput(null);
 
-            headers.forEach((header, index) => {
-              rowData[header] = rowValues[index] ?? '';
-            });
+        setMissingHeaders([]);
 
-            jsonData.push(rowData);
-          }
-        );
+        setShowError("");
 
-        // ---------------------------------------------------
-        // 1. Validate required field values
-        // ---------------------------------------------------
+        setLoading(true);
 
-        const rowsWithMissingValues = [];
+        setProgress(0);
 
-        jsonData.forEach((row, rowIndex) => {
-          requiredHeaders.forEach((header) => {
-            const value = row[header];
+        setData([]);
 
-            let actualValue = value;
+        setUploadData([]);
 
-            // Handle ExcelJS rich/text values
-            if (value && typeof value === 'object') {
-              actualValue = value.text || value.result || '';
-            }
 
-            if (
-              actualValue === undefined ||
-              actualValue === null ||
-              String(actualValue).trim() === ''
-            ) {
-              rowsWithMissingValues.push({
-                row: rowIndex + 2,
-                header
-              });
-            }
-          });
-        });
+        try {
 
-        if (rowsWithMissingValues.length > 0) {
-          const errorMsg = rowsWithMissingValues
-            .map(
-              (item) =>
-                `Row ${item.row}: Missing value in "${item.header}"`
-            )
-            .join(', ');
+          /*
+          |--------------------------------------------------------------------------
+          | READ EXCEL
+          |--------------------------------------------------------------------------
+          */
 
-          setShowError(errorMsg);
-          setLoading(false);
+          const arrayBuffer =
+            await selectedFile
+              .arrayBuffer();
 
-          return;
-        }
 
-        // ---------------------------------------------------
-        // 2. Validate Reporting Manager
-        // ---------------------------------------------------
+          const workbook =
+            new ExcelJS.Workbook();
 
-        const invalidReportingManagers = [];
 
-        jsonData.forEach((row, index) => {
-          let reportingManagerEmpId = row?.ReportingManager;
-
-          // Handle ExcelJS cell object
-          if (
-            reportingManagerEmpId &&
-            typeof reportingManagerEmpId === 'object'
-          ) {
-            reportingManagerEmpId =
-              reportingManagerEmpId.text ||
-              reportingManagerEmpId.result ||
-              '';
-          }
-
-          reportingManagerEmpId = String(
-            reportingManagerEmpId || ''
-          )
-            .trim()
-            .toLowerCase();
-
-          // Find Reporting Manager using EmpID
-          const manager = userData?.find(
-            (user) =>
-              String(user?.emp_id || '')
-                .trim()
-                .toLowerCase() === reportingManagerEmpId
+          await workbook.xlsx.load(
+            arrayBuffer
           );
 
-          // Reporting Manager not found
-          if (!manager) {
-            invalidReportingManagers.push({
-              row: index + 2,
-              empId: reportingManagerEmpId
-            });
+
+          const worksheet =
+            workbook
+              .worksheets[0];
+
+
+          if (!worksheet) {
+
+            throw new Error(
+              "Excel file is empty."
+            );
+
+          }
+
+
+          /*
+          |--------------------------------------------------------------------------
+          | REQUIRED HEADERS
+          |--------------------------------------------------------------------------
+          |
+          | ReportingManager is intentionally NOT here
+          | because it is optional.
+          |
+          */
+
+          const requiredHeaders = [
+
+            "SRNO",
+
+            "Email",
+
+            "FirstName",
+
+            "LastName",
+
+            "PhoneNo",
+
+            "Password",
+
+            "ParticipationType",
+
+            "EmpID",
+
+            "Status"
+
+          ];
+
+
+          /*
+          |--------------------------------------------------------------------------
+          | GET HEADERS
+          |--------------------------------------------------------------------------
+          */
+
+          const headers =
+            worksheet
+              .getRow(1)
+              .values
+              .slice(1)
+              .map(
+                header =>
+                  String(
+                    header || ""
+                  ).trim()
+              );
+
+
+          /*
+          |--------------------------------------------------------------------------
+          | MISSING HEADERS
+          |--------------------------------------------------------------------------
+          */
+
+          const missingHeadersList =
+            requiredHeaders.filter(
+              header =>
+                !headers.includes(
+                  header
+                )
+            );
+
+
+          if (
+            missingHeadersList.length >
+            0
+          ) {
+
+            setMissingHeaders(
+              missingHeadersList
+            );
+
+            setLoading(false);
 
             return;
+
           }
 
-          // Store matched manager _id for backend
-          row.reporting_manager_id = manager._id;
 
-          // Store matched manager name for displaying in table
-          row.reporting_manager_name = [
-            manager.first_name,
-            manager.last_name
-          ]
-            .filter(Boolean)
-            .join(' ');
-        });
+          /*
+          |--------------------------------------------------------------------------
+          | EXCEL TO JSON
+          |--------------------------------------------------------------------------
+          */
 
-        // Show Reporting Manager errors
-        if (invalidReportingManagers.length > 0) {
-          const errorMsg = invalidReportingManagers
-            .map(
-              (item) =>
-                `Row ${item.row}: Reporting Manager EmpID "${item.empId}" does not exist`
-            )
-            .join(', ');
+          const jsonData = [];
 
-          setShowError(errorMsg);
-          setLoading(false);
 
-          return;
-        }
+          worksheet.eachRow(
+            {
+              includeEmpty: false
+            },
 
-        // ---------------------------------------------------
-        // 3. Check duplicate emails inside Excel
-        // ---------------------------------------------------
+            (
+              row,
+              rowNumber
+            ) => {
 
-        const seen = new Set();
-        const duplicates = new Set();
+              if (
+                rowNumber === 1
+              ) {
+                return;
+              }
 
-        jsonData.forEach((row) => {
-          let email = row?.Email;
 
-          // Handle ExcelJS cell object
-          if (email && typeof email === 'object') {
-            email = email.text || email.result || '';
-          }
+              const rowValues =
+                row.values
+                  .slice(1);
 
-          email = String(email || '')
-            .toLowerCase()
-            .trim();
 
-          if (!email) return;
+              const rowData = {
 
-          if (seen.has(email)) {
-            duplicates.add(email);
-          } else {
-            seen.add(email);
-          }
-        });
+                excelRowNumber:
+                  rowNumber,
 
-        // Show duplicate email error
-        if (duplicates.size > 0) {
-          toast.error(
-            `Duplicate emails found in Excel: ${Array.from(duplicates).join(', ')}`
+                errors: {}
+
+              };
+
+
+              headers.forEach(
+                (
+                  header,
+                  index
+                ) => {
+
+                  /*
+                  | Keep ORIGINAL value.
+                  | Do NOT replace value with error.
+                  */
+
+                  rowData[header] =
+                    rowValues[index] ??
+                    "";
+
+                }
+              );
+
+
+              jsonData.push(
+                rowData
+              );
+
+            }
           );
 
+
+          /*
+          |--------------------------------------------------------------------------
+          | REQUIRED FIELD VALIDATION
+          |--------------------------------------------------------------------------
+          */
+
+          jsonData.forEach(
+            row => {
+
+              requiredHeaders.forEach(
+                header => {
+
+                  let value;
+
+
+                  /*
+                  | Email has special handling
+                  | because it can be a hyperlink.
+                  */
+
+                  if (
+                    header === "Email"
+                  ) {
+
+                    value =
+                      getEmailValue(
+                        row[header]
+                      );
+
+                  } else {
+
+                    value =
+                      getCellValue(
+                        row[header]
+                      );
+
+                  }
+
+
+                  if (
+                    String(
+                      value || ""
+                    ).trim() === ""
+                  ) {
+
+                    row.errors[header] =
+                      `Missing value in "${header}"`;
+
+                  }
+
+                }
+              );
+
+            }
+          );
+
+
+          /*
+          |--------------------------------------------------------------------------
+          | EMAIL VALIDATION
+          |--------------------------------------------------------------------------
+          |
+          | Email can be:
+          | - Normal string
+          | - Excel hyperlink
+          | - mailto hyperlink
+          |
+          */
+
+          jsonData.forEach(
+            row => {
+
+              const email =
+                getEmailValue(
+                  row?.Email
+                );
+
+
+              /*
+              | Empty email is already
+              | handled by required validation.
+              */
+
+              if (!email) {
+                return;
+              }
+
+
+              /*
+              | Validate email format
+              */
+
+              if (
+                !isValidEmail(
+                  email
+                )
+              ) {
+
+                row.errors.Email =
+                  "Please enter a valid email address";
+
+              }
+
+            }
+          );
+
+
+          /*
+          |--------------------------------------------------------------------------
+          | DUPLICATE EMAIL VALIDATION
+          |--------------------------------------------------------------------------
+          */
+
+          const emailRows =
+            new Map();
+
+
+          jsonData.forEach(
+            (
+              row,
+              index
+            ) => {
+
+              const email =
+                getEmailValue(
+                  row?.Email
+                )
+                  .trim()
+                  .toLowerCase();
+
+
+              if (!email) {
+                return;
+              }
+
+
+              if (
+                !emailRows.has(
+                  email
+                )
+              ) {
+
+                emailRows.set(
+                  email,
+                  []
+                );
+
+              }
+
+
+              emailRows
+                .get(email)
+                .push(index);
+
+            }
+          );
+
+
+          emailRows.forEach(
+            (
+              rowIndexes,
+              email
+            ) => {
+
+              if (
+                rowIndexes.length >
+                1
+              ) {
+
+                rowIndexes.forEach(
+                  index => {
+
+                    jsonData[index]
+                      .errors.Email =
+                      `Duplicate email "${email}" found in Excel`;
+
+                  }
+                );
+
+              }
+
+            }
+          );
+
+
+          /*
+          |--------------------------------------------------------------------------
+          | REPORTING MANAGER VALIDATION
+          |--------------------------------------------------------------------------
+          |
+          | ReportingManager is OPTIONAL.
+          |
+          | Empty:
+          |   VALID
+          |
+          | Provided:
+          |   Must match userData.emp_id
+          |
+          */
+
+          jsonData.forEach(
+            row => {
+
+              const reportingManagerEmpId =
+                getCellValue(
+                  row?.ReportingManager
+                )
+                  .trim();
+
+
+              /*
+              |--------------------------------------------------------------------------
+              | EMPTY REPORTING MANAGER
+              |--------------------------------------------------------------------------
+              |
+              | Empty is allowed.
+              |
+              */
+
+              if (
+                !reportingManagerEmpId
+              ) {
+
+                delete row
+                  .errors
+                  .ReportingManager;
+
+
+                row.reporting_manager_id =
+                  null;
+
+
+                row.reporting_manager_name =
+                  "";
+
+
+                return;
+
+              }
+
+
+              /*
+              |--------------------------------------------------------------------------
+              | FIND USER BY EMP ID
+              |--------------------------------------------------------------------------
+              */
+
+              const manager =
+                userData?.find(
+                  user => {
+
+                    const userEmpId =
+                      String(
+                        user?.emp_id ||
+                        ""
+                      )
+                        .trim()
+                        .toLowerCase();
+
+
+                    return (
+                      userEmpId ===
+                      reportingManagerEmpId
+                        .toLowerCase()
+                    );
+
+                  }
+                );
+
+
+              /*
+              |--------------------------------------------------------------------------
+              | MANAGER NOT FOUND
+              |--------------------------------------------------------------------------
+              */
+
+              if (!manager) {
+
+                row.errors.ReportingManager =
+                  `Reporting Manager EmpID "${reportingManagerEmpId}" does not exist`;
+
+
+                row.reporting_manager_id =
+                  null;
+
+
+                row.reporting_manager_name =
+                  "";
+
+
+                return;
+
+              }
+
+
+              /*
+              |--------------------------------------------------------------------------
+              | MANAGER FOUND
+              |--------------------------------------------------------------------------
+              */
+
+              delete row
+                .errors
+                .ReportingManager;
+
+
+              row.reporting_manager_id =
+                manager._id;
+
+
+              row.reporting_manager_name =
+                [
+                  manager.first_name,
+                  manager.last_name
+                ]
+                  .filter(Boolean)
+                  .join(" ");
+
+            }
+          );
+
+
+          /*
+          |--------------------------------------------------------------------------
+          | SET DATA
+          |--------------------------------------------------------------------------
+          |
+          | Always show the uploaded data.
+          | Errors are stored separately.
+          |
+          */
+
+          setUploadData(
+            jsonData
+          );
+
+          setData(
+            jsonData
+          );
+
+          setFileInput(
+            selectedFile
+          );
+
+          setProgress(100);
+
           setLoading(false);
 
-          return;
+
+        } catch (error) {
+
+          console.error(
+            "Error processing Excel:",
+            error
+          );
+
+
+          toast.error(
+            error?.message ||
+            "Error in processing the Excel file."
+          );
+
+
+          setLoading(false);
+
+          setProgress(0);
+
+          setUploadData([]);
+
+          setData([]);
+
+          setFileInput(null);
+
         }
 
-        // ---------------------------------------------------
-        // 4. Everything is valid
-        // ---------------------------------------------------
+      },
 
-        setShowError('');
-        setData([]);
-        setUploadData(jsonData);
-        setFileInput(selectedFile);
-        setProgress(100);
-        setLoading(false);
 
-      } catch (err) {
-        console.error(
-          'Error processing the Excel file:',
-          err
-        );
-
-        toast.error(
-          'Error in processing the Excel file.'
-        );
+    onDropRejected:
+      rejectedFiles => {
 
         setLoading(false);
+
         setProgress(0);
+
         setUploadData([]);
+
         setData([]);
+
         setFileInput(null);
-      }
-    },
 
-    // ---------------------------------------------------
-    // File rejection
-    // ---------------------------------------------------
 
-    onDropRejected: (rejectedFiles) => {
-      setLoading(false);
-      setProgress(0);
-      setUploadData([]);
-      setData([]);
-      setFileInput(null);
+        rejectedFiles.forEach(
+          file => {
 
-      rejectedFiles.forEach((file) => {
-        file.errors.forEach((error) => {
-          let msg = '';
+            file.errors.forEach(
+              error => {
 
-          switch (error.code) {
-            case 'file-invalid-type':
-              msg = `Invalid file type for ${file.file.name}.`;
-              break;
+                let msg = "";
 
-            case 'file-too-large':
-              msg = `File ${file.file.name} is too large. Maximum size is 2 MB.`;
-              break;
 
-            case 'too-many-files':
-              msg = 'Too many files selected.';
-              break;
+                switch (
+                error.code
+                ) {
 
-            default:
-              msg = `Error with file ${file.file.name}.`;
+                  case "file-invalid-type":
+
+                    msg =
+                      `Invalid file type for ${file.file.name}.`;
+
+                    break;
+
+
+                  case "file-too-large":
+
+                    msg =
+                      `File ${file.file.name} is too large. Maximum size is 2 MB.`;
+
+                    break;
+
+
+                  case "too-many-files":
+
+                    msg =
+                      "Too many files selected.";
+
+                    break;
+
+
+                  default:
+
+                    msg =
+                      `Error with file ${file.file.name}.`;
+
+                }
+
+
+                toast.error(
+                  msg
+                );
+
+              }
+            );
+
           }
+        );
 
-          toast.error(msg, {
-            hideProgressBar: false
-          });
+      }
 
-          // Only keep this if setImageError exists in your component
-          setImageError(msg);
-        });
-      });
-    }
   });
 
-  const getRoles = async () => {
-    const roleData = await doGet(`company/role`);
 
+  /*
+  |--------------------------------------------------------------------------
+  | GET ROLES
+  |--------------------------------------------------------------------------
+  */
 
-    setRoles(roleData);
-  }
+  const getRoles =
+    async () => {
 
-  const handleRemoveFile = () => {
-    setData([]);
-    setFileInput(null)
-    setUploadData([]);
-    setLoading(false);
-  }
+      try {
 
-  useEffect(() => {
-    getRoles();
-  }, []);
-
-  const handleUploadData = async () => {
-    try {
-
-      if (userRoles.length == 0) {
-
-        setShowError(`Please choose the role first`)
-        setLoading(false);
-
-        return;
-
-      } else {
-        setShowError()
-      }
-
-      setIsProgress(true);
-
-      const jsonData = uploadData;
-
-      const totalChunks = Math.ceil(jsonData.length / CHUNK_SIZE);
-
-      const final_url = `${process.env.NEXT_PUBLIC_API_URL}/admin/users/import`;
-
-      for (let i = 0; i < totalChunks; i++) {
-        const chunk = jsonData.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
-
-        const res = await fetch(final_url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify({ chunk, roles: userRoles }),
-        });
-
-        const result = await res.json();
-
-        if (!res.ok) {
-
-          console.log("Result error", result?.message);
-
-          throw new Error(result.message || 'Import failed');
-        }
-
-        const percent = Math.round(((i + 1) / totalChunks) * 100);
-
-        setData(prev => [...prev, ...result.data.data]);
-
-        setProgress(percent);
-
-        if (percent == 100) {
-          setOpenSuccessDialog(true);
-          setUploadData([]);
-          setUserRoles([]);
-          setIsProgress(false);
-        }
-      }
-
-    } catch (error) {
-      console.error('Error processing the Excel file:', error);
-
-      console.log("Error", error);
-
-
-      toast.error('Error in processing the Excel file.', {
-        hideProgressBar: false
-      });
-
-      setLoading(false); // End loading
-      setProgress(0); // Reset progress on error
-      setUploadData([]);
-      setData([]);
-      setIsProgress(false);
-    }
-
-  }
-
-  const columns = useMemo(
-    () => [
-      {
-        id: 'serialNumber', // Serial number column
-        header: 'S.No.',
-        cell: ({ row }) => <Typography>{row.original.SRNO}</Typography>
-      },
-      columnHelper.accessor('Import Status', {
-        header: 'Imported',
-        cell: ({ row }) => {
-          const hasErrors =
-            row.original?.errors &&
-            Object.keys(row.original.errors).length > 0;
-
-          return (
-            <CustomAvatar
-              skin="light"
-              color={!hasErrors ? 'success' : 'error'}
-            >
-              <i
-                className={
-                  !hasErrors
-                    ? 'tabler-circle-check'
-                    : 'tabler-circle-x'
-                }
-              />
-            </CustomAvatar>
+        const roleData =
+          await doGet(
+            "company/role"
           );
-        }
-      }),
-
-      columnHelper.accessor('FirstName', {
-        header: 'First Name',
-        cell: ({ row }) => (
-          <div className='flex items-center gap-4'>
-            <div className='flex flex-col'>
-              <Typography color='text.primary' >
-                {row.original.FirstName}
-              </Typography>
-              <Typography variant='body2' color="error">{row.original?.error}</Typography>
-            </div>
-          </div>
-        )
-      }),
 
 
-      columnHelper.accessor('LastName', {
-        header: 'Last Name',
-        cell: ({ row }) => (
-          <div className="flex flex-col">
-            <Typography color='text.primary' >
-              {row.original.LastName}
-            </Typography>
-            <Typography variant='body2'>{row.original?.error}</Typography>
-          </div>
-        )
-      }),
+        setRoles(
+          roleData
+        );
 
-      columnHelper.accessor('Email', {
-        header: 'Email',
-        cell: ({ row }) => (
-          <div className="flex flex-col">
-            <Typography color='text.primary' >
-              {row.original.Email}
-            </Typography>
-            <Typography variant='body2' color='#FF0000'>{row.original?.errors?.email}</Typography>
-          </div>
-        )
-      }),
-      columnHelper.accessor('PhoneNo', {
-        header: 'Phone',
-        cell: ({ row }) => (
-          <div className="flex flex-col">
-            <Typography color='text.primary' >
-              {row.original.PhoneNo}
-            </Typography>
-            <Typography variant='body2' color='#FF0000'>{row.original?.errors?.phone}</Typography>
-          </div>
-        )
-      }),
 
-      columnHelper.accessor('reporting_manager_name', {
-        header: 'Reporting Manager',
-        cell: ({ row }) => (
-          <div className="flex flex-col">
-            <Typography color="text.primary">
-              {row.original.reporting_manager_name}
-            </Typography>
+      } catch (error) {
 
-            <Typography
-              variant="body2"
-              color="#FF0000"
-            >
-              {row.original?.errors?.reporting_manager_id}
-            </Typography>
-          </div>
-        )
-      }),
+        console.error(
+          "Error fetching roles:",
+          error
+        );
 
-      columnHelper.accessor('EmpId', {
-        header: 'EmpID',
-        cell: ({ row }) => (
-          <div className="flex flex-col">
-            <Typography color='text.primary' >
-              {row.original.EmpID}
-            </Typography>
-            <Typography variant='body2' color="#FF0000">{row.original?.errors?.emp_id}</Typography>
-          </div>
-        )
-      }),
-
-      columnHelper.accessor('Country', {
-        header: 'Country',
-        cell: ({ row }) => (
-          <div className="flex flex-col">
-            <Typography color='text.primary' >
-              {row.original.Country}
-            </Typography>
-            <Typography variant='body2' color="#FF0000">{row.original?.errors?.country}</Typography>
-          </div>
-        )
-      }),
-
-      columnHelper.accessor('State', {
-        header: 'State',
-        cell: ({ row }) => (
-          <div className="flex flex-col">
-            <Typography color='text.primary' >
-              {row.original.State}
-            </Typography>
-            <Typography variant='body2' color="#FF0000">{row.original?.errors?.state}</Typography>
-          </div>
-        )
-      }),
-
-      columnHelper.accessor('City', {
-        header: 'City',
-        cell: ({ row }) => (
-          <div className="flex flex-col">
-            <Typography color='text.primary' >
-              {row.original.City}
-            </Typography>
-            <Typography variant='body2' color="#FF0000">{row.original?.errors?.city}</Typography>
-          </div>
-        )
-      }),
-
-      columnHelper.accessor('Designation', {
-        header: 'Designation',
-        cell: ({ row }) => (
-          <div className="flex flex-col">
-            <Typography color='text.primary' >
-              {row.original.Designation}
-            </Typography>
-            <Typography variant='body2' color="#FF0000">{row.original?.errors?.designation}</Typography>
-          </div>
-        )
-      }),
-
-      columnHelper.accessor('Department', {
-        header: 'Designation',
-        cell: ({ row }) => (
-          <div className="flex flex-col">
-            <Typography color='text.primary' >
-              {row.original.Department}
-            </Typography>
-            <Typography variant='body2' color="#FF0000">{row.original?.errors?.department}</Typography>
-          </div>
-        )
-      }),
-
-      columnHelper.accessor('ParticipationType', {
-        header: 'ParticipationType',
-        cell: ({ row }) => (
-          <div className="flex flex-col">
-            <Typography color='text.primary' >
-              {row.original.ParticipationType}
-            </Typography>
-            <Typography variant='body2' color="#FF0000">{row.original?.errors?.participationType}</Typography>
-          </div>
-        )
-      }),
-
-      columnHelper.accessor('EmployeeType', {
-        header: 'EmployeeType',
-        cell: ({ row }) => (
-          <div className="flex flex-col">
-            <Typography color='text.primary' >
-              {row.original.EmployeeType}
-            </Typography>
-            <Typography variant='body2' color="#FF0000">{row.original?.errors?.employeeType}</Typography>
-          </div>
-        )
-      }),
-
-      columnHelper.accessor('Zone', {
-        header: 'Zone',
-        cell: ({ row }) => (
-          <div className="flex flex-col">
-            <Typography color='text.primary' >
-              {row.original.Zone}
-            </Typography>
-            <Typography variant='body2' color="#FF0000">{row.original?.errors?.zone}</Typography>
-          </div>
-        )
-      }),
-
-      columnHelper.accessor('Region', {
-        header: 'Region',
-        cell: ({ row }) => (
-          <div className="flex flex-col">
-            <Typography color='text.primary' >
-              {row.original.Region}
-            </Typography>
-            <Typography variant='body2' color="#FF0000">{row.original?.errors?.zone}</Typography>
-          </div>
-        )
-      }),
-
-      columnHelper.accessor('Branch', {
-        header: 'Branch',
-        cell: ({ row }) => (
-          <div className="flex flex-col">
-            <Typography color='text.primary' >
-              {row.original.Branch}
-            </Typography>
-            <Typography variant='body2' color="#FF0000">{row.original?.errors?.zone}</Typography>
-          </div>
-        )
-      }),
-
-      columnHelper.accessor('Status', {
-        header: 'Status',
-        cell: ({ row }) => (
-          <div className="flex flex-col">
-            <Typography color='text.primary' >
-              {row.original.Status}
-            </Typography>
-          </div>
-        )
-      }),
-    ],
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
-  )
-
-  const table = useReactTable({
-    data: data,
-    columns,
-    filterFns: {
-      fuzzy: fuzzyFilter
-    },
-    initialState: {
-      pagination: {
-        pageSize: 10
       }
+
+    };
+
+
+  useEffect(
+    () => {
+
+      getRoles();
+
     },
-    enableRowSelection: true,
-    globalFilterFn: fuzzyFilter,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
-    getFacetedMinMaxValues: getFacetedMinMaxValues()
-  })
+    []
+  );
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | REMOVE FILE
+  |--------------------------------------------------------------------------
+  */
+
+  const handleRemoveFile =
+    () => {
+
+      setData([]);
+
+      setFileInput(null);
+
+      setUploadData([]);
+
+      setLoading(false);
+
+      setProgress(0);
+
+      setShowError("");
+
+      setMissingHeaders([]);
+
+    };
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | START IMPORT
+  |--------------------------------------------------------------------------
+  */
+
+  const handleUploadData =
+    async () => {
+
+      try {
+
+        /*
+        |--------------------------------------------------------------------------
+        | DO NOT IMPORT IF ERRORS EXIST
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+          hasUploadErrors
+        ) {
+
+          setShowError(
+            "Please fix all errors before starting the import."
+          );
+
+          return;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | ROLE REQUIRED
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+          userRoles.length === 0
+        ) {
+
+          setShowError(
+            "Please choose the role first"
+          );
+
+          return;
+
+        }
+
+
+        setShowError("");
+
+        setIsProgress(true);
+
+
+        const totalChunks =
+          Math.ceil(
+            uploadData.length /
+            CHUNK_SIZE
+          );
+
+
+        const final_url =
+          `${process.env.NEXT_PUBLIC_API_URL}/admin/users/import`;
+
+
+        for (
+          let i = 0;
+          i < totalChunks;
+          i++
+        ) {
+
+          const chunk =
+            uploadData.slice(
+              i * CHUNK_SIZE,
+              (i + 1) *
+              CHUNK_SIZE
+            );
+
+
+          const res =
+            await fetch(
+              final_url,
+              {
+
+                method:
+                  "POST",
+
+                headers: {
+
+                  "Content-Type":
+                    "application/json",
+
+                  Authorization:
+                    `Bearer ${token}`
+
+                },
+
+                body:
+                  JSON.stringify({
+
+                    chunk,
+
+                    roles:
+                      userRoles
+
+                  })
+
+              }
+            );
+
+
+          const result =
+            await res.json();
+
+
+          if (!res.ok) {
+
+            throw new Error(
+              result?.message ||
+              "Import failed"
+            );
+
+          }
+
+
+          const percent =
+            Math.round(
+              (
+                (i + 1) /
+                totalChunks
+              ) *
+              100
+            );
+
+
+          setProgress(
+            percent
+          );
+
+
+          if (
+            percent === 100
+          ) {
+
+            setOpenSuccessDialog(
+              true
+            );
+
+            setUploadData([]);
+
+            setUserRoles([]);
+
+            setIsProgress(false);
+
+          }
+
+        }
+
+
+      } catch (error) {
+
+        console.error(
+          "Import error:",
+          error
+        );
+
+
+        toast.error(
+          error?.message ||
+          "Error in processing the Excel file."
+        );
+
+
+        setIsProgress(false);
+
+      }
+
+    };
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | VALUE + ERROR COMPONENT
+  |--------------------------------------------------------------------------
+  |
+  | IMPORTANT:
+  | Error is rendered BELOW the actual value.
+  | Error is RED.
+  | Error does NOT replace the value.
+  |
+  */
+
+  const FieldValueWithError = ({
+    value,
+    error
+  }) => {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+          minWidth: '150px'
+        }}
+      >
+        {/* Actual value */}
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.primary'
+          }}
+        >
+          {value !== undefined &&
+            value !== null &&
+            String(value).trim() !== ''
+            ? String(value)
+            : '-'}
+        </Typography>
+
+        {/* Error - RED */}
+        {error && (
+          <Typography
+            variant="caption"
+            sx={{
+              color: '#d32f2f !important',
+              mt: 0.5,
+              display: 'block',
+              fontWeight: 500,
+              lineHeight: 1.4,
+              whiteSpace: 'normal'
+            }}
+          >
+            {error}
+          </Typography>
+        )}
+      </div>
+    );
+  };
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | TABLE COLUMNS
+  |--------------------------------------------------------------------------
+  */
+
+  const columns =
+    useMemo(
+      () => [
+
+        /*
+        |--------------------------------------------------------------------------
+        | SRNO
+        |--------------------------------------------------------------------------
+        */
+
+        {
+
+          id:
+            "serialNumber",
+
+          header:
+            "S.No.",
+
+          cell:
+            ({
+              row
+            }) => (
+
+              <FieldValueWithError
+
+                value={
+                  row.original?.SRNO
+                }
+
+                error={
+                  row.original
+                    ?.errors
+                    ?.SRNO
+                }
+
+              />
+
+            )
+
+        },
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | IMPORT STATUS
+        |--------------------------------------------------------------------------
+        */
+
+        columnHelper.accessor(
+          "Import Status",
+          {
+
+            header:
+              "Imported",
+
+            cell:
+              ({
+                row
+              }) => {
+
+                const hasErrors =
+                  Object.keys(
+                    row.original
+                      ?.errors ||
+                    {}
+                  ).length > 0;
+
+
+                return (
+
+                  <CustomAvatar
+
+                    skin="light"
+
+                    color={
+                      hasErrors
+                        ? "error"
+                        : "success"
+                    }
+
+                  >
+
+                    <i
+
+                      className={
+                        hasErrors
+                          ? "tabler-circle-x"
+                          : "tabler-circle-check"
+                      }
+
+                    />
+
+                  </CustomAvatar>
+
+                );
+
+              }
+
+          }
+        ),
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | FIRST NAME
+        |--------------------------------------------------------------------------
+        */
+
+        columnHelper.accessor(
+          "FirstName",
+          {
+
+            header:
+              "First Name",
+
+            cell:
+              ({
+                row
+              }) => (
+
+                <FieldValueWithError
+
+                  value={
+                    row.original
+                      ?.FirstName
+                  }
+
+                  error={
+                    row.original
+                      ?.errors
+                      ?.FirstName
+                  }
+
+                />
+
+              )
+
+          }
+        ),
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | LAST NAME
+        |--------------------------------------------------------------------------
+        */
+
+        columnHelper.accessor(
+          "LastName",
+          {
+
+            header:
+              "Last Name",
+
+            cell:
+              ({
+                row
+              }) => (
+
+                <FieldValueWithError
+
+                  value={
+                    row.original
+                      ?.LastName
+                  }
+
+                  error={
+                    row.original
+                      ?.errors
+                      ?.LastName
+                  }
+
+                />
+
+              )
+
+          }
+        ),
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | EMAIL
+        |--------------------------------------------------------------------------
+        */
+
+        columnHelper.accessor(
+          "Email",
+          {
+
+            header:
+              "Email",
+
+            cell:
+              ({
+                row
+              }) => (
+
+                <FieldValueWithError
+
+                  /*
+                  | IMPORTANT:
+                  | Show actual email value.
+                  | Handle hyperlink correctly.
+                  */
+
+                  value={
+                    getEmailValue(
+                      row.original
+                        ?.Email
+                    )
+                  }
+
+                  error={
+                    row.original
+                      ?.errors
+                      ?.Email
+                  }
+
+                />
+
+              )
+
+          }
+        ),
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | PHONE
+        |--------------------------------------------------------------------------
+        */
+
+        columnHelper.accessor(
+          "PhoneNo",
+          {
+
+            header:
+              "Phone",
+
+            cell:
+              ({
+                row
+              }) => (
+
+                <FieldValueWithError
+
+                  value={
+                    row.original
+                      ?.PhoneNo
+                  }
+
+                  error={
+                    row.original
+                      ?.errors
+                      ?.PhoneNo
+                  }
+
+                />
+
+              )
+
+          }
+        ),
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | REPORTING MANAGER
+        |--------------------------------------------------------------------------
+        |
+        | Empty is allowed.
+        |
+        */
+
+        columnHelper.accessor(
+          "ReportingManager",
+          {
+
+            header:
+              "Reporting Manager",
+
+            cell:
+              ({
+                row
+              }) => (
+
+                <FieldValueWithError
+
+                  /*
+                  | Show original Excel value.
+                  | Do NOT show reporting_manager_name
+                  | because user wants the actual value.
+                  */
+
+                  value={
+                    getCellValue(
+                      row.original
+                        ?.ReportingManager
+                    )
+                  }
+
+                  error={
+                    row.original
+                      ?.errors
+                      ?.ReportingManager
+                  }
+
+                />
+
+              )
+
+          }
+        ),
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | EMP ID
+        |--------------------------------------------------------------------------
+        */
+
+        columnHelper.accessor(
+          "EmpID",
+          {
+
+            header:
+              "Emp ID",
+
+            cell:
+              ({
+                row
+              }) => (
+
+                <FieldValueWithError
+
+                  value={
+                    row.original
+                      ?.EmpID
+                  }
+
+                  error={
+                    row.original
+                      ?.errors
+                      ?.EmpID
+                  }
+
+                />
+
+              )
+
+          }
+        ),
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | COUNTRY
+        |--------------------------------------------------------------------------
+        */
+
+        columnHelper.accessor(
+          "Country",
+          {
+
+            header:
+              "Country",
+
+            cell:
+              ({
+                row
+              }) => (
+
+                <FieldValueWithError
+
+                  value={
+                    row.original
+                      ?.Country
+                  }
+
+                  error={
+                    row.original
+                      ?.errors
+                      ?.Country
+                  }
+
+                />
+
+              )
+
+          }
+        ),
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | STATE
+        |--------------------------------------------------------------------------
+        */
+
+        columnHelper.accessor(
+          "State",
+          {
+
+            header:
+              "State",
+
+            cell:
+              ({
+                row
+              }) => (
+
+                <FieldValueWithError
+
+                  value={
+                    row.original
+                      ?.State
+                  }
+
+                  error={
+                    row.original
+                      ?.errors
+                      ?.State
+                  }
+
+                />
+
+              )
+
+          }
+        ),
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | CITY
+        |--------------------------------------------------------------------------
+        */
+
+        columnHelper.accessor(
+          "City",
+          {
+
+            header:
+              "City",
+
+            cell:
+              ({
+                row
+              }) => (
+
+                <FieldValueWithError
+
+                  value={
+                    row.original
+                      ?.City
+                  }
+
+                  error={
+                    row.original
+                      ?.errors
+                      ?.City
+                  }
+
+                />
+
+              )
+
+          }
+        ),
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | DESIGNATION
+        |--------------------------------------------------------------------------
+        */
+
+        columnHelper.accessor(
+          "Designation",
+          {
+
+            header:
+              "Designation",
+
+            cell:
+              ({
+                row
+              }) => (
+
+                <FieldValueWithError
+
+                  value={
+                    row.original
+                      ?.Designation
+                  }
+
+                  error={
+                    row.original
+                      ?.errors
+                      ?.Designation
+                  }
+
+                />
+
+              )
+
+          }
+        ),
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | DEPARTMENT
+        |--------------------------------------------------------------------------
+        */
+
+        columnHelper.accessor(
+          "Department",
+          {
+
+            header:
+              "Department",
+
+            cell:
+              ({
+                row
+              }) => (
+
+                <FieldValueWithError
+
+                  value={
+                    row.original
+                      ?.Department
+                  }
+
+                  error={
+                    row.original
+                      ?.errors
+                      ?.Department
+                  }
+
+                />
+
+              )
+
+          }
+        ),
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | PARTICIPATION TYPE
+        |--------------------------------------------------------------------------
+        */
+
+        columnHelper.accessor(
+          "ParticipationType",
+          {
+
+            header:
+              "ParticipationType",
+
+            cell:
+              ({
+                row
+              }) => (
+
+                <FieldValueWithError
+
+                  value={
+                    row.original
+                      ?.ParticipationType
+                  }
+
+                  error={
+                    row.original
+                      ?.errors
+                      ?.ParticipationType
+                  }
+
+                />
+
+              )
+
+          }
+        ),
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | EMPLOYEE TYPE
+        |--------------------------------------------------------------------------
+        */
+
+        columnHelper.accessor(
+          "EmployeeType",
+          {
+
+            header:
+              "EmployeeType",
+
+            cell:
+              ({
+                row
+              }) => (
+
+                <FieldValueWithError
+
+                  value={
+                    row.original
+                      ?.EmployeeType
+                  }
+
+                  error={
+                    row.original
+                      ?.errors
+                      ?.EmployeeType
+                  }
+
+                />
+
+              )
+
+          }
+        ),
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | ZONE
+        |--------------------------------------------------------------------------
+        */
+
+        columnHelper.accessor(
+          "Zone",
+          {
+
+            header:
+              "Zone",
+
+            cell:
+              ({
+                row
+              }) => (
+
+                <FieldValueWithError
+
+                  value={
+                    row.original
+                      ?.Zone
+                  }
+
+                  error={
+                    row.original
+                      ?.errors
+                      ?.Zone
+                  }
+
+                />
+
+              )
+
+          }
+        ),
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | REGION
+        |--------------------------------------------------------------------------
+        */
+
+        columnHelper.accessor(
+          "Region",
+          {
+
+            header:
+              "Region",
+
+            cell:
+              ({
+                row
+              }) => (
+
+                <FieldValueWithError
+
+                  value={
+                    row.original
+                      ?.Region
+                  }
+
+                  error={
+                    row.original
+                      ?.errors
+                      ?.Region
+                  }
+
+                />
+
+              )
+
+          }
+        ),
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | BRANCH
+        |--------------------------------------------------------------------------
+        */
+
+        columnHelper.accessor(
+          "Branch",
+          {
+
+            header:
+              "Branch",
+
+            cell:
+              ({
+                row
+              }) => (
+
+                <FieldValueWithError
+
+                  value={
+                    row.original
+                      ?.Branch
+                  }
+
+                  error={
+                    row.original
+                      ?.errors
+                      ?.Branch
+                  }
+
+                />
+
+              )
+
+          }
+        ),
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | STATUS
+        |--------------------------------------------------------------------------
+        */
+
+        columnHelper.accessor(
+          "Status",
+          {
+
+            header:
+              "Status",
+
+            cell:
+              ({
+                row
+              }) => (
+
+                <FieldValueWithError
+
+                  value={
+                    row.original
+                      ?.Status
+                  }
+
+                  error={
+                    row.original
+                      ?.errors
+                      ?.Status
+                  }
+
+                />
+
+              )
+
+          }
+        )
+
+      ],
+
+      []
+    );
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | TABLE
+  |--------------------------------------------------------------------------
+  */
+
+  const table =
+    useReactTable({
+
+      data,
+
+      columns,
+
+      filterFns: {
+
+        fuzzy:
+          fuzzyFilter
+
+      },
+
+      initialState: {
+
+        pagination: {
+
+          pageSize:
+            10
+
+        }
+
+      },
+
+      enableRowSelection:
+        true,
+
+      globalFilterFn:
+        fuzzyFilter,
+
+      getCoreRowModel:
+        getCoreRowModel(),
+
+      getFilteredRowModel:
+        getFilteredRowModel(),
+
+      getSortedRowModel:
+        getSortedRowModel(),
+
+      getPaginationRowModel:
+        getPaginationRowModel(),
+
+      getFacetedRowModel:
+        getFacetedRowModel(),
+
+      getFacetedUniqueValues:
+        getFacetedUniqueValues(),
+
+      getFacetedMinMaxValues:
+        getFacetedMinMaxValues()
+
+    });
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | TABLE UI
+  |--------------------------------------------------------------------------
+  */
 
   const tableItems = (
-    <>
-      <div className='overflow-x-auto'>
-        <table className={tableStyles.table}>
-          <thead>
-            {table.getHeaderGroups().map(headerGroup => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map(header => (
-                  <th key={header.id}>
-                    {header.isPlaceholder ? null : (
-                      <>
-                        <div
-                          className={classnames({
-                            'flex items-center': header.column.getIsSorted(),
-                            'cursor-pointer select-none': header.column.getCanSort()
-                          })}
-                          onClick={header.column.getToggleSortingHandler()}
-                        >
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                          {(
-                            {
-                              asc: <i className="tabler-chevron-up text-xl" />,
-                              desc: <i className="tabler-chevron-down text-xl" />
-                            }[header.column.getIsSorted?.()] ?? null
-                          )}
 
-                        </div>
-                      </>
-                    )}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          {table.getFilteredRowModel().rows.length === 0 ? (
-            <tbody>
-              <tr>
-                <td colSpan={table.getVisibleFlatColumns().length} className='text-center'>
-                  No data available
-                </td>
-              </tr>
-            </tbody>
-          ) : (
-            <tbody>
-              {table
-                .getRowModel()
-                .rows.slice(0, table.getState().pagination.pageSize)
-                .map(row => {
-                  return (
-                    <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
-                      {row.getVisibleCells().map(cell => (
-                        <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-                      ))}
-                    </tr>
-                  )
-                })}
-            </tbody>
-          )}
-        </table>
-      </div>
-      <TablePagination
-        component={() => <TablePaginationComponent table={table} />}
-        count={table.getFilteredRowModel().rows.length}
-        rowsPerPage={table.getState().pagination.pageSize}
-        page={table.getState().pagination.pageIndex}
-        onPageChange={(_, page) => {
-          table.setPageIndex(page)
-        }}
-      />
-    </>
-  )
-
-  return (
     <>
-      <Card>
-        <CardHeader
-          title='Import Users'
-          action={
-            <Button onClick={onBack} variant="outlined" color="primary" size='small'>
-              Back
-            </Button>
+
+      <div
+        className="overflow-x-auto"
+      >
+
+        <table
+          className={
+            tableStyles.table
           }
-          className='pbe-4'
-        />
-        <CardContent>
-          <div className="flex gap-2 flex-col">
-            {showError ? (
-              <Alert severity='error'>
-                {showError}
-              </Alert>
-            ) : (
+        >
 
-              <Alert severity='info'>
-                <div>
-                  <strong>Note:</strong> Only Excel files with <code>.xls</code> or{' '}
-                  <code>.xlsx</code> extensions are allowed.
-                </div>
+          <thead>
 
-                <br />
+            {
+              table
+                .getHeaderGroups()
+                .map(
+                  headerGroup => (
 
-                <div>
-                  <strong>Compulsory fields:</strong>
-                  <ul style={{ marginTop: 4, paddingLeft: 20 }}>
-                    <li>SRNO</li>
-                    <li>First Name</li>
-                    <li>Last Name</li>
-                    <li>Email</li>
-                    <li>Password</li>
-                    <li>Phone</li>
-                    <li>Participation Type</li>
-                    <li>Emp ID</li>
-                    <li>Status</li>
-                  </ul>
-                </div>
-              </Alert>
-            )}
-
-            {missingHeadersData.length > 0 &&
-              <Alert severity='error'
-                action={
-                  <IconButton size='small' color='inherit' aria-label='close' onClick={() => setMissingHeaders([])}>
-                    <i className='tabler-x' />
-                  </IconButton>
-                }
-              >
-                <AlertTitle>Missing Headers:</AlertTitle>
-                {missingHeadersData.join(', ')}
-              </Alert>
-            }
-            <Typography>Use the same format as given below :<Button className='ml-2' variant='contained' href="/sample/users_import.xlsx" download="Users Sample File">Download</Button></Typography>
-            <Controller
-              name="roles"
-              control={control}
-              defaultValue={[]} // ensure it's initialized as an array
-              render={({ field }) => (
-                <CustomTextField
-                  {...field}
-                  select
-                  fullWidth
-                  label="Assign role*"
-                  value={userRoles}  // array of role IDs
-                  error={!!errors.roles}
-                  helperText={errors.roles?.message}
-                  slotProps={{
-                    select: {
-                      multiple: true,
-                      onChange: (event) => {
-                        const value = event.target.value;
-
-                        setUserRoles(value);
-                        field.onChange(value); // update react-hook-form state
-                      },
-                      renderValue: (selectedIds) => {
-                        const selectedNames = roles.filter(role => selectedIds.includes(role._id)).map(role => role.name);
-
-                        return selectedNames.join(', ');
+                    <tr
+                      key={
+                        headerGroup.id
                       }
-                    }
-                  }}
-                >
-                  {roles?.length > 0 ? (
-                    roles.map((role, index) => (
-                      <MenuItem key={index} value={role._id}>
-                        <Checkbox checked={userRoles.includes(role._id)} />
-                        <ListItemText primary={role.name} />
-                      </MenuItem>
-                    ))
-                  ) : (
-                    <MenuItem disabled>No roles</MenuItem>
-                  )}
-                </CustomTextField>
+                    >
 
-              )}
-            />
-          </div>
-        </CardContent>
-        <div className='overflow-x-auto'>
-          <table className={tableStyles.table}>
-            <thead>
-              {/* <tr>
-                {batch ?
-                  ExpectedStudentExcelHeadersWithoutBatchId.map((header, index) => (
-                    <th key={index}>{header}</th>
-                  ))
-                  :
-                  ExpectedStudentExcelHeaders.map((header, index) => (
-                    <th key={index}>{header}</th>
-                  ))
-                }
-              </tr> */}
-            </thead>
-            <tbody>
-              {/* <tr>
-                <td colSpan={ExpectedStudentExcelHeaders.length} className='text-center'></td>
-              </tr> */}
-            </tbody>
-          </table>
-        </div>
-        <CardContent>
-          <AppReactDropzone>
-            <div {...getRootProps({ className: 'dropzone' })}>
-              <input {...getInputProps()} />
-              <div className='flex items-center flex-col'>
-                <Avatar variant='rounded' className='bs-12 is-12 mbe-9'>
-                  <i className='tabler-upload' />
-                </Avatar>
-                <Typography variant='h4' className='mbe-2.5'>
-                  Drop files here or click to upload.
-                </Typography>
-                <Typography>Allowed *.xls, *.xlsx</Typography>
-                <Typography>Max 1 file and max size of 2 MB</Typography>
-              </div>
-            </div>
-            {loading && (
-              <div className='flex items-center gap-3'>
-                <div className='is-full'>
-                  <LinearProgress variant='determinate' color='success' value={progress} />
-                </div>
-                <Typography variant='body2' color='text.secondary' className='font-medium'>{`${progress}%`}</Typography>
-              </div>
-            )}
-            {fileInput ? (
-              <>
-                <List>
-                  <ListItem>
-                    <div className='file-details'>
-                      <div className='file-preview'><i className='vscode-icons-file-type-excel w-6 h-6' /></div>
-                      <div>
-                        <Typography className='file-name'>{fileInput.name}</Typography>
-                        <Typography className='file-size' variant='body2'>
-                          {Math.round(fileInput.size / 100) / 10 > 1000
-                            ? `${(Math.round(fileInput.size / 100) / 10000).toFixed(1)} mb`
-                            : `${(Math.round(fileInput.size / 100) / 10).toFixed(1)} kb`}
-                        </Typography>
-                      </div>
-                    </div>
-                    <IconButton onClick={() => handleRemoveFile()}>
-                      <i className='tabler-x text-xl' />
-                    </IconButton>
-                  </ListItem>
-                </List>
-                <div className='flex gap-4 mt-4'>
-                  <Button variant='contained' color='warning' onClick={handleRemoveFile} endIcon={<i className='tabler-trash' />}>
-                    Remove
-                  </Button>
+                      {
+                        headerGroup.headers
+                          .map(
+                            header => (
 
-                  <Button variant='contained' onClick={handleUploadData} disabled={uploadData.length === 0 || isProgress} startIcon={<i className='tabler-send' />}>
-                    {isProgress ? (
-                      <CircularProgress
-                        size={24}
-                        sx={{
-                          color: 'white',
-                          position: 'absolute',
-                          top: '50%',
-                          left: '50%',
-                          marginTop: '-12px',
-                          marginLeft: '-12px',
-                        }}
-                      />
-                    ) : (
-                      'Start Import'
-                    )}
-                  </Button>
-                  {/* <Button color='error' variant='outlined'  onClick={handleRemoveFile}>
-                    Remove All
-                  </Button>
-                  <Button variant='contained' onClick={handleUploadData} disabled={uploadData.length === 0}>Import Users</Button> */}
-                </div>
-              </>
-            ) : null}
-          </AppReactDropzone>
-        </CardContent>
-        {data.length > 0 ? tableItems : ''}
-      </Card >
-      <ImportSuccessDialog open={openSuccessDialog} setOpen={setOpenSuccessDialog} />
+                              <th
+                                key={
+                                  header.id
+                                }
+                              >
+
+                                {
+                                  header.isPlaceholder
+                                    ? null
+                                    : (
+
+                                      <div
+
+                                        className={classnames({
+
+                                          "flex items-center":
+                                            header.column
+                                              .getIsSorted(),
+
+                                          "cursor-pointer select-none":
+                                            header.column
+                                              .getCanSort()
+
+                                        })}
+
+                                        onClick={
+                                          header.column
+                                            .getToggleSortingHandler()
+                                        }
+
+                                      >
+
+                                        {
+                                          flexRender(
+
+                                            header.column
+                                              .columnDef
+                                              .header,
+
+                                            header.getContext()
+
+                                          )
+                                        }
+
+                                      </div>
+
+                                    )
+                                }
+
+                              </th>
+
+                            )
+                          )
+                      }
+
+                    </tr>
+
+                  )
+                )
+            }
+
+          </thead>
+
+
+          <tbody>
+
+            {
+              table
+                .getRowModel()
+                .rows
+                .map(
+                  row => (
+
+                    <tr
+                      key={
+                        row.id
+                      }
+                    >
+
+                      {
+                        row
+                          .getVisibleCells()
+                          .map(
+                            cell => (
+
+                              <td
+                                key={
+                                  cell.id
+                                }
+                              >
+
+                                {
+                                  flexRender(
+
+                                    cell.column
+                                      .columnDef
+                                      .cell,
+
+                                    cell.getContext()
+
+                                  )
+                                }
+
+                              </td>
+
+                            )
+                          )
+                      }
+
+                    </tr>
+
+                  )
+                )
+            }
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+
+      <TablePagination
+
+        component={() => (
+
+          <TablePaginationComponent
+            table={
+              table
+            }
+          />
+
+        )}
+
+        count={
+          table
+            .getFilteredRowModel()
+            .rows.length
+        }
+
+        rowsPerPage={
+          table
+            .getState()
+            .pagination
+            .pageSize
+        }
+
+        page={
+          table
+            .getState()
+            .pagination
+            .pageIndex
+        }
+
+        onPageChange={
+          (
+            _,
+            page
+          ) => {
+
+            table.setPageIndex(
+              page
+            );
+
+          }
+        }
+
+      />
+
     </>
 
   );
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | RETURN
+  |--------------------------------------------------------------------------
+  */
+
+  return (
+
+    <>
+
+      <Card>
+
+        <CardHeader
+
+          title="Import Users"
+
+          action={
+
+            <Button
+
+              onClick={
+                onBack
+              }
+
+              variant="outlined"
+
+              color="primary"
+
+              size="small"
+
+            >
+
+              Back
+
+            </Button>
+
+          }
+
+        />
+
+        <CardContent>
+
+          {
+            !showError && (
+
+              <Alert
+                severity="info"
+              >
+
+                <div>
+
+                  <strong>
+                    Note:
+                  </strong>
+
+                  {' '}
+
+                  Only Excel files with{' '}
+
+                  <code>
+                    .xls
+                  </code>
+
+                  {' '}or{' '}
+
+                  <code>
+                    .xlsx
+                  </code>
+
+                  {' '}extensions are allowed.
+
+                </div>
+
+
+                <br />
+
+
+                <div>
+
+                  <strong>
+                    Compulsory fields:
+                  </strong>
+
+
+                  <ul
+                    style={{
+                      marginTop:
+                        4,
+
+                      paddingLeft:
+                        20
+                    }}
+                  >
+
+                    <li>
+                      SRNO
+                    </li>
+
+                    <li>
+                      First Name
+                    </li>
+
+                    <li>
+                      Last Name
+                    </li>
+
+                    <li>
+                      Email
+                    </li>
+
+                    <li>
+                      Password
+                    </li>
+
+                    <li>
+                      Phone
+                    </li>
+
+                    <li>
+                      Participation Type
+                    </li>
+
+                    <li>
+                      Emp ID
+                    </li>
+
+                    <li>
+                      Status
+                    </li>
+
+                  </ul>
+
+                </div>
+
+              </Alert>
+
+            )
+          }
+
+          {
+            showError && (
+
+              <Alert
+                severity="error"
+                sx={{
+                  mb: 2
+                }}
+              >
+
+                {showError}
+
+              </Alert>
+
+            )
+          }
+
+
+          {
+            missingHeadersData.length >
+            0 && (
+
+              <Alert
+                severity="error"
+                sx={{
+                  mt: 2,
+                  mb: 2
+                }}
+              >
+
+                <AlertTitle>
+                  Missing Headers
+                </AlertTitle>
+
+                {
+                  missingHeadersData.join(
+                    ", "
+                  )
+                }
+
+              </Alert>
+
+            )
+          }
+
+
+          <Controller
+
+            name="roles"
+
+            control={control}
+
+            render={({
+              field
+            }) => (
+
+              <CustomTextField
+
+                {...field}
+
+                select
+
+                fullWidth
+
+                label="Assign role*"
+
+                value={
+                  userRoles
+                }
+
+                error={
+                  !!errors.roles
+                }
+
+                helperText={
+                  errors.roles?.message
+                }
+
+                slotProps={{
+
+                  select: {
+
+                    multiple:
+                      true,
+
+                    onChange:
+                      event => {
+
+                        const value =
+                          event.target
+                            .value;
+
+
+                        setUserRoles(
+                          value
+                        );
+
+
+                        field.onChange(
+                          value
+                        );
+
+                      },
+
+                    renderValue:
+                      selectedIds => {
+
+                        return roles
+                          .filter(
+                            role =>
+                              selectedIds
+                                .includes(
+                                  role._id
+                                )
+                          )
+                          .map(
+                            role =>
+                              role.name
+                          )
+                          .join(
+                            ", "
+                          );
+
+                      }
+
+                  }
+
+                }}
+
+              >
+
+                {
+                  roles?.map(
+                    role => (
+
+                      <MenuItem
+
+                        key={
+                          role._id
+                        }
+
+                        value={
+                          role._id
+                        }
+
+                      >
+
+                        <Checkbox
+
+                          checked={
+                            userRoles.includes(
+                              role._id
+                            )
+                          }
+
+                        />
+
+                        <ListItemText
+                          primary={
+                            role.name
+                          }
+                        />
+
+                      </MenuItem>
+
+                    )
+                  )
+                }
+
+              </CustomTextField>
+
+            )}
+
+          />
+
+        </CardContent>
+
+
+        <CardContent>
+
+          <AppReactDropzone>
+
+            <div
+              {...getRootProps({
+                className:
+                  "dropzone"
+              })}
+            >
+
+              <input
+                {...getInputProps()}
+              />
+
+
+              <div
+                className="flex items-center flex-col"
+              >
+
+                <Avatar
+                  variant="rounded"
+                  className="bs-12 is-12 mbe-9"
+                >
+
+                  <i className="tabler-upload" />
+
+                </Avatar>
+
+
+                <Typography
+                  variant="h4"
+                  className="mbe-2.5"
+                >
+
+                  Drop files here or click to upload.
+
+                </Typography>
+
+
+                <Typography>
+
+                  Allowed *.xls, *.xlsx
+
+                </Typography>
+
+
+                <Typography>
+
+                  Max 1 file and max size of 2 MB
+
+                </Typography>
+
+              </div>
+
+            </div>
+
+
+            {
+              loading && (
+
+                <div
+                  className="flex items-center gap-3 mt-3"
+                >
+
+                  <div
+                    className="is-full"
+                  >
+
+                    <LinearProgress
+
+                      variant="determinate"
+
+                      value={
+                        progress
+                      }
+
+                    />
+
+                  </div>
+
+
+                  <Typography>
+
+                    {
+                      `${progress}%`
+                    }
+
+                  </Typography>
+
+                </div>
+
+              )
+            }
+
+
+            {
+              fileInput && (
+
+                <>
+
+                  <List>
+
+                    <ListItem>
+
+                      <div
+                        className="file-details"
+                      >
+
+                        <Typography>
+
+                          {
+                            fileInput.name
+                          }
+
+                        </Typography>
+
+                      </div>
+
+
+                      <IconButton
+                        onClick={
+                          handleRemoveFile
+                        }
+                      >
+
+                        <i className="tabler-x" />
+
+                      </IconButton>
+
+                    </ListItem>
+
+                  </List>
+
+
+                  <div
+                    className="flex gap-4 mt-4"
+                  >
+
+                    <Button
+
+                      variant="contained"
+
+                      color="warning"
+
+                      onClick={
+                        handleRemoveFile
+                      }
+
+                    >
+
+                      Remove
+
+                    </Button>
+
+
+                    <Button
+
+                      variant="contained"
+
+                      onClick={
+                        handleUploadData
+                      }
+
+                      disabled={
+
+                        uploadData.length ===
+                        0 ||
+
+                        hasUploadErrors ||
+
+                        isProgress
+
+                      }
+
+                    >
+
+                      {
+                        isProgress
+                          ? (
+                            <CircularProgress
+                              size={24}
+                              color="inherit"
+                            />
+                          )
+                          : hasUploadErrors
+                            ? "Fix Errors Before Import"
+                            : "Start Import"
+                      }
+
+                    </Button>
+
+                  </div>
+
+                </>
+
+              )
+            }
+
+          </AppReactDropzone>
+
+        </CardContent>
+
+
+        {
+          (
+            data.length > 0 ||
+            uploadData.length > 0
+          ) && (
+
+            <CardContent>
+
+              {tableItems}
+
+            </CardContent>
+
+          )
+        }
+
+      </Card>
+
+
+      <ImportSuccessDialog
+
+        open={
+          openSuccessDialog
+        }
+
+        setOpen={
+          setOpenSuccessDialog
+        }
+
+      />
+
+    </>
+
+  );
+
 };
+
 
 export default ImportUsers;
