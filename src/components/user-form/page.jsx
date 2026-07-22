@@ -58,7 +58,7 @@ import SkeletonFormComponent from '../skeleton/form/page'
 import CustomTextField from '@core/components/mui/TextField'
 import PermissionGuard from '@/hocs/PermissionClientGuard'
 
-const UserFormLayout = () => {
+const   UserFormLayout = () => {
 
     const URL = process.env.NEXT_PUBLIC_API_URL
     const public_url = process.env.NEXT_PUBLIC_ASSETS_URL;

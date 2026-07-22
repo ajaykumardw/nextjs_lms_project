@@ -19,7 +19,6 @@ import Switch from '@mui/material/Switch';
 // -------------------- External Libraries --------------------
 import { toast } from 'react-toastify';
 import classnames from 'classnames';
-import { rankItem } from '@tanstack/match-sorter-utils';
 
 // -------------------- React Table Imports --------------------
 import {
@@ -31,7 +30,6 @@ import {
   getFacetedRowModel,
   getFacetedUniqueValues,
   getFacetedMinMaxValues,
-  getPaginationRowModel,
   getSortedRowModel
 } from '@tanstack/react-table';
 
@@ -56,19 +54,6 @@ import tableStyles from '@core/styles/table.module.css';
 
 import { usePermissionList } from '@/utils/getPermission';
 
-const fuzzyFilter = (row, columnId, value, addMeta) => {
-  // Rank the item
-  const itemRank = rankItem(row.getValue(columnId), value)
-
-  // Store the itemRank info
-  addMeta({
-    itemRank
-  })
-
-  // Return if the item should be filtered in/out
-  return itemRank.passed
-}
-
 const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...props }) => {
   // States
   const [value, setValue] = useState(initialValue)
@@ -91,12 +76,22 @@ const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...prop
 // Column Definitions
 const columnHelper = createColumnHelper()
 
-const UserListTable = ({ userData, loadData, setIsUserCardShow, getStatsCount, createData }) => {
+const UserListTable = ({
+  userData,
+  totalUsers,
+  page,
+  pageSize,
+  search,
+  setSearch,
+  setPage,
+  setPageSize,
+  loadData,
+  setIsUserCardShow,
+  getStatsCount
+}) => {
 
   // States
   const [rowSelection, setRowSelection] = useState({})
-  const [data, setData] = useState([])
-  const [filteredData, setFilteredData] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
   const [open, setOpen] = useState(false)
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false)
@@ -171,13 +166,6 @@ const UserListTable = ({ userData, loadData, setIsUserCardShow, getStatsCount, c
     });
   };
 
-  useEffect(() => {
-    if (userData) {
-      setData(userData);
-      setFilteredData(userData);
-    }
-  }, [userData])
-
   // Hooks
   const { lang: locale } = useParams()
 
@@ -220,29 +208,6 @@ const UserListTable = ({ userData, loadData, setIsUserCardShow, getStatsCount, c
         )
       }),
 
-      // columnHelper.accessor('role', {
-      //   header: 'Role',
-      //   cell: ({ row }) => (
-      //     <div className='flex items-center gap-2'>
-      //       <Icon
-      //         className={userRoleObj[row.original.role].icon}
-      //         sx={{ color: `var(--mui-palette-${userRoleObj[row.original.role].color}-main)` }}
-      //       />
-      //       <Typography className='capitalize' color='text.primary'>
-      //         {row.original.role}
-      //       </Typography>
-      //     </div>
-      //   )
-      // }),
-      // columnHelper.accessor('currentPlan', {
-      //   header: 'Plan',
-      //   cell: ({ row }) => (
-      //     <Typography className='capitalize' color='text.primary'>
-      //       {row.original.currentPlan}
-      //     </Typography>
-      //   )
-      // }),
-
       columnHelper.accessor('phone', {
         header: 'Phone',
         cell: ({ row }) => <Typography>{row.original.phone}</Typography>
@@ -264,21 +229,21 @@ const UserListTable = ({ userData, loadData, setIsUserCardShow, getStatsCount, c
         header: 'Status',
         cell: ({ row }) => (
           <div className='flex items-center gap-3'>
-            <FormControlLabel control={
-              <Switch
-                defaultChecked={row.original.status}
-                color="success"
-                onChange={(e) => {
-                  handleStatusChange(row.original.id, e.target.checked);
-                }}
-                size="medium" />} />
-            {/* <Chip
-              variant='tonal'
-              label={row.original.status ? "Active" : "Inactive"}
-              size='small'
-              color={userStatusObj[row.original.status ? "active" : "inactive"]}
-              className='capitalize'
-            /> */}
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={Boolean(row.original.status)}
+                  color='success'
+                  onChange={e => {
+                    handleStatusChange(
+                      row.original._id,
+                      e.target.checked
+                    )
+                  }}
+                  size='medium'
+                />
+              }
+            />
           </div>
         )
       }),
@@ -340,35 +305,29 @@ const UserListTable = ({ userData, loadData, setIsUserCardShow, getStatsCount, c
 
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [data, filteredData, permissions]
+    [permissions]
   )
 
   const table = useReactTable({
-    data: filteredData,
+    data: userData,
     columns,
-    filterFns: {
-      fuzzy: fuzzyFilter
-    },
+
     state: {
-      rowSelection,
-      globalFilter
+      rowSelection
     },
-    initialState: {
-      pagination: {
-        pageSize: 10
-      }
-    },
-    enableRowSelection: true, //enable row selection for all rows
-    // enableRowSelection: row => row.original.age > 18, // or enable row selection conditionally per row
-    globalFilterFn: fuzzyFilter,
+
+    enableRowSelection: true,
+
     onRowSelectionChange: setRowSelection,
+
     getCoreRowModel: getCoreRowModel(),
-    onGlobalFilterChange: setGlobalFilter,
-    getFilteredRowModel: getFilteredRowModel(),
+
     getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+
     getFacetedRowModel: getFacetedRowModel(),
+
     getFacetedUniqueValues: getFacetedUniqueValues(),
+
     getFacetedMinMaxValues: getFacetedMinMaxValues()
   })
 
@@ -393,18 +352,26 @@ const UserListTable = ({ userData, loadData, setIsUserCardShow, getStatsCount, c
           <div className='flex justify-between flex-col items-start md:flex-row md:items-center p-6 border-bs gap-4'>
             <CustomTextField
               select
-              value={table.getState().pagination.pageSize}
-              onChange={e => table.setPageSize(Number(e.target.value))}
+              value={pageSize}
+              onChange={e => {
+                const newPageSize = Number(e.target.value)
+
+                setPageSize(newPageSize)
+                setPage(0)
+              }}
               className='max-sm:is-full sm:is-[70px]'
             >
-              <MenuItem value='10'>10</MenuItem>
-              <MenuItem value='25'>25</MenuItem>
-              <MenuItem value='50'>50</MenuItem>
+              <MenuItem value={10}>10</MenuItem>
+              <MenuItem value={25}>25</MenuItem>
+              <MenuItem value={50}>50</MenuItem>
             </CustomTextField>
             <div className='flex flex-col sm:flex-row max-sm:is-full items-start sm:items-center gap-4'>
               <DebouncedInput
-                value={globalFilter ?? ''}
-                onChange={value => setGlobalFilter(String(value))}
+                value={search}
+                onChange={value => {
+                  setSearch(String(value))
+                  setPage(0)
+                }}
                 placeholder='Search User'
                 className='max-sm:is-full'
               />
@@ -473,12 +440,14 @@ const UserListTable = ({ userData, loadData, setIsUserCardShow, getStatsCount, c
                 <tbody>
                   {table
                     .getRowModel()
-                    .rows.slice(0, table.getState().pagination.pageSize)
+                    .rows
                     .map(row => {
                       return (
                         <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
                           {row.getVisibleCells().map(cell => (
-                            <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                            <td key={cell.id}>
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </td>
                           ))}
                         </tr>
                       )
@@ -488,13 +457,14 @@ const UserListTable = ({ userData, loadData, setIsUserCardShow, getStatsCount, c
             </table>
           </div>
           <TablePagination
-            component={() => <TablePaginationComponent table={table} />}
-            count={table.getFilteredRowModel().rows.length}
-            rowsPerPage={table.getState().pagination.pageSize}
-            page={table.getState().pagination.pageIndex}
-            onPageChange={(_, page) => {
-              table.setPageIndex(page)
+            component='div'
+            count={totalUsers}
+            rowsPerPage={pageSize}
+            page={page}
+            onPageChange={(_, newPage) => {
+              setPage(newPage)
             }}
+            rowsPerPageOptions={[10, 25, 50]}
           />
           <UpdatePasswordDialog open={open} setOpen={setOpen} data={user} />
           <DeleteUserDialog open={openDeleteDialog} setOpen={setOpenDeleteDialog} type='delete-account' user={user} loadData={loadData} />

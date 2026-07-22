@@ -122,124 +122,252 @@ const ImportUsers = ({ batch, onBack, userData }) => {
   const { getRootProps, getInputProps } = useDropzone({
     multiple: false,
     maxSize: 2 * 1024 * 1024, // 2MB
+
     accept: {
       'application/vnd.ms-excel': ['.xls'],
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
     },
 
     onDrop: async (acceptedFiles) => {
-
       if (!acceptedFiles?.length) return;
 
       setFileInput(null);
       setMissingHeaders([]);
+      setShowError('');
       setLoading(true);
       setProgress(0);
       setData([]);
+      setUploadData([]);
 
       try {
-
         const selectedFile = acceptedFiles[0];
+
         const arrayBuffer = await selectedFile.arrayBuffer();
 
         const workbook = new ExcelJS.Workbook();
 
         await workbook.xlsx.load(arrayBuffer);
 
-        const worksheet = workbook.worksheets[0]; // first sheet
+        const worksheet = workbook.worksheets[0];
 
-        if (!worksheet) throw new Error("Excel file is empty.");
+        if (!worksheet) {
+          throw new Error('Excel file is empty.');
+        }
 
+        // Required Excel headers
         const requiredHeaders = [
-          'SRNO', 'Email', 'FirstName', 'LastName', 'PhoneNo', 'Password', 'ParticipationType',
-          'EmpID', 'Status'
+          'SRNO',
+          'Email',
+          'FirstName',
+          'LastName',
+          'PhoneNo',
+          'Password',
+          'ParticipationType',
+          'EmpID',
+          'Status'
         ];
 
-        const headers = worksheet.getRow(1).values.slice(1).map(h => String(h || "").trim());
+        // Get headers from first row
+        const headers = worksheet
+          .getRow(1)
+          .values
+          .slice(1)
+          .map((header) => String(header || '').trim());
 
-        const missingHeadersList = requiredHeaders.filter(h => !headers.includes(h));
+        // Check missing headers
+        const missingHeadersList = requiredHeaders.filter(
+          (header) => !headers.includes(header)
+        );
 
         if (missingHeadersList.length > 0) {
-
           setMissingHeaders(missingHeadersList);
           setLoading(false);
 
           return;
         }
 
+        // Convert Excel rows to JSON
         const jsonData = [];
 
-        worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+        worksheet.eachRow(
+          {
+            includeEmpty: false
+          },
+          (row, rowNumber) => {
+            // Skip header row
+            if (rowNumber === 1) return;
 
-          if (rowNumber === 1) return; // skip header
+            const rowValues = row.values.slice(1);
 
-          const rowValues = row.values.slice(1); // ExcelJS rows are 1-based
-          const rowData = {};
+            const rowData = {};
 
-          headers.forEach((header, idx) => {
-            rowData[header] = rowValues[idx] ?? "";
-          });
+            headers.forEach((header, index) => {
+              rowData[header] = rowValues[index] ?? '';
+            });
 
-          jsonData.push(rowData);
-        });
+            jsonData.push(rowData);
+          }
+        );
+
+        // ---------------------------------------------------
+        // 1. Validate required field values
+        // ---------------------------------------------------
 
         const rowsWithMissingValues = [];
 
         jsonData.forEach((row, rowIndex) => {
-
-          requiredHeaders.forEach(header => {
-
+          requiredHeaders.forEach((header) => {
             const value = row[header];
 
-            if (value === undefined || value === null || value.toString().trim() === '') {
+            let actualValue = value;
 
-              rowsWithMissingValues.push({ row: rowIndex + 2, header }); // +2: header + 1-based
+            // Handle ExcelJS rich/text values
+            if (value && typeof value === 'object') {
+              actualValue = value.text || value.result || '';
+            }
+
+            if (
+              actualValue === undefined ||
+              actualValue === null ||
+              String(actualValue).trim() === ''
+            ) {
+              rowsWithMissingValues.push({
+                row: rowIndex + 2,
+                header
+              });
             }
           });
         });
 
         if (rowsWithMissingValues.length > 0) {
+          const errorMsg = rowsWithMissingValues
+            .map(
+              (item) =>
+                `Row ${item.row}: Missing value in "${item.header}"`
+            )
+            .join(', ');
 
-          const errorMsg = rowsWithMissingValues.map(r => `"${r.header}"`).join(', ');
-          const msgError = "Missing value in row: " + errorMsg;
-
-          setShowError(msgError);
+          setShowError(errorMsg);
           setLoading(false);
 
           return;
-        } else {
-
-          setShowError();
         }
+
+        // ---------------------------------------------------
+        // 2. Validate Reporting Manager
+        // ---------------------------------------------------
+
+        const invalidReportingManagers = [];
+
+        jsonData.forEach((row, index) => {
+          let reportingManagerEmpId = row?.ReportingManager;
+
+          // Handle ExcelJS cell object
+          if (
+            reportingManagerEmpId &&
+            typeof reportingManagerEmpId === 'object'
+          ) {
+            reportingManagerEmpId =
+              reportingManagerEmpId.text ||
+              reportingManagerEmpId.result ||
+              '';
+          }
+
+          reportingManagerEmpId = String(
+            reportingManagerEmpId || ''
+          )
+            .trim()
+            .toLowerCase();
+
+          // Find Reporting Manager using EmpID
+          const manager = userData?.find(
+            (user) =>
+              String(user?.emp_id || '')
+                .trim()
+                .toLowerCase() === reportingManagerEmpId
+          );
+
+          // Reporting Manager not found
+          if (!manager) {
+            invalidReportingManagers.push({
+              row: index + 2,
+              empId: reportingManagerEmpId
+            });
+
+            return;
+          }
+
+          // Store matched manager _id for backend
+          row.reporting_manager_id = manager._id;
+
+          // Store matched manager name for displaying in table
+          row.reporting_manager_name = [
+            manager.first_name,
+            manager.last_name
+          ]
+            .filter(Boolean)
+            .join(' ');
+        });
+
+        // Show Reporting Manager errors
+        if (invalidReportingManagers.length > 0) {
+          const errorMsg = invalidReportingManagers
+            .map(
+              (item) =>
+                `Row ${item.row}: Reporting Manager EmpID "${item.empId}" does not exist`
+            )
+            .join(', ');
+
+          setShowError(errorMsg);
+          setLoading(false);
+
+          return;
+        }
+
+        // ---------------------------------------------------
+        // 3. Check duplicate emails inside Excel
+        // ---------------------------------------------------
 
         const seen = new Set();
         const duplicates = new Set();
 
-        jsonData.forEach(row => {
+        jsonData.forEach((row) => {
+          let email = row?.Email;
 
-          const email = String((row?.Email?.text ? row?.Email?.text : row.Email || '')).toLowerCase().trim();
+          // Handle ExcelJS cell object
+          if (email && typeof email === 'object') {
+            email = email.text || email.result || '';
+          }
+
+          email = String(email || '')
+            .toLowerCase()
+            .trim();
 
           if (!email) return;
 
           if (seen.has(email)) {
-
             duplicates.add(email);
           } else {
-
             seen.add(email);
           }
         });
 
-
+        // Show duplicate email error
         if (duplicates.size > 0) {
-
-          toast.error(`Duplicate emails found in Excel: ${Array.from(duplicates).join(', ')}`);
+          toast.error(
+            `Duplicate emails found in Excel: ${Array.from(duplicates).join(', ')}`
+          );
 
           setLoading(false);
 
           return;
         }
 
+        // ---------------------------------------------------
+        // 4. Everything is valid
+        // ---------------------------------------------------
+
+        setShowError('');
         setData([]);
         setUploadData(jsonData);
         setFileInput(selectedFile);
@@ -247,46 +375,60 @@ const ImportUsers = ({ batch, onBack, userData }) => {
         setLoading(false);
 
       } catch (err) {
+        console.error(
+          'Error processing the Excel file:',
+          err
+        );
 
-        console.error('Error processing the Excel file:', err);
-
-        toast.error('Error in processing the Excel file.');
+        toast.error(
+          'Error in processing the Excel file.'
+        );
 
         setLoading(false);
         setProgress(0);
         setUploadData([]);
         setData([]);
+        setFileInput(null);
       }
     },
 
-    onDropRejected: (rejectedFiles) => {
+    // ---------------------------------------------------
+    // File rejection
+    // ---------------------------------------------------
 
+    onDropRejected: (rejectedFiles) => {
       setLoading(false);
       setProgress(0);
       setUploadData([]);
       setData([]);
+      setFileInput(null);
 
-      rejectedFiles.forEach(file => {
-
-        file.errors.forEach(error => {
-
-          let msg = "";
+      rejectedFiles.forEach((file) => {
+        file.errors.forEach((error) => {
+          let msg = '';
 
           switch (error.code) {
             case 'file-invalid-type':
               msg = `Invalid file type for ${file.file.name}.`;
               break;
+
             case 'file-too-large':
-              msg = `File ${file.file.name} is too large.`;
+              msg = `File ${file.file.name} is too large. Maximum size is 2 MB.`;
               break;
+
             case 'too-many-files':
-              msg = `Too many files selected.`;
+              msg = 'Too many files selected.';
               break;
+
             default:
               msg = `Error with file ${file.file.name}.`;
           }
 
-          toast.error(msg, { hideProgressBar: false });
+          toast.error(msg, {
+            hideProgressBar: false
+          });
+
+          // Only keep this if setImageError exists in your component
           setImageError(msg);
         });
       });
@@ -397,14 +539,23 @@ const ImportUsers = ({ batch, onBack, userData }) => {
       columnHelper.accessor('Import Status', {
         header: 'Imported',
         cell: ({ row }) => {
-          const hasErrors = row.original?.errors && Object.keys(row.original.errors).length > 0;
+          const hasErrors =
+            row.original?.errors &&
+            Object.keys(row.original.errors).length > 0;
 
           return (
-            <Typography color='text.primary'>
-              <CustomAvatar skin='light' color={!hasErrors ? 'success' : 'error'}>
-                <i className={!hasErrors ? 'tabler-circle-check' : 'tabler-circle-x'} />
-              </CustomAvatar>
-            </Typography>
+            <CustomAvatar
+              skin="light"
+              color={!hasErrors ? 'success' : 'error'}
+            >
+              <i
+                className={
+                  !hasErrors
+                    ? 'tabler-circle-check'
+                    : 'tabler-circle-x'
+                }
+              />
+            </CustomAvatar>
           );
         }
       }),
@@ -459,14 +610,20 @@ const ImportUsers = ({ batch, onBack, userData }) => {
         )
       }),
 
-      columnHelper.accessor('Reporting Manager', {
-        header: 'reporting_manager_id',
+      columnHelper.accessor('reporting_manager_name', {
+        header: 'Reporting Manager',
         cell: ({ row }) => (
           <div className="flex flex-col">
-            <Typography color='text.primary' >
-              {row.original.reporting_manager_id}
+            <Typography color="text.primary">
+              {row.original.reporting_manager_name}
             </Typography>
-            <Typography variant='body2' color="#FF0000">{row.original?.errors?.reporting_manager_id}</Typography>
+
+            <Typography
+              variant="body2"
+              color="#FF0000"
+            >
+              {row.original?.errors?.reporting_manager_id}
+            </Typography>
           </div>
         )
       }),
