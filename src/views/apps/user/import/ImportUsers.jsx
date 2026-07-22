@@ -130,15 +130,6 @@ const fuzzyFilter = (
 |--------------------------------------------------------------------------
 | GET ACTUAL CELL VALUE
 |--------------------------------------------------------------------------
-|
-| Supports:
-| 1. Normal string
-| 2. Number
-| 3. Excel hyperlink
-| 4. mailto hyperlink
-| 5. Rich text
-| 6. Formula result
-|
 */
 
 const getCellValue = (
@@ -153,17 +144,16 @@ const getCellValue = (
   }
 
 
-  // ---------------------------------------------
-  // Excel Hyperlink
-  // ---------------------------------------------
+  /*
+  |--------------------------------------------------------------------------
+  | Excel Hyperlink
+  |--------------------------------------------------------------------------
+  */
 
   if (
     typeof value === "object" &&
     value.hyperlink
   ) {
-
-    // If visible text exists,
-    // use visible text first
 
     if (
       value.text !== undefined &&
@@ -182,8 +172,6 @@ const getCellValue = (
         value.hyperlink
       ).trim();
 
-
-    // mailto:john@example.com
 
     if (
       hyperlink
@@ -207,9 +195,11 @@ const getCellValue = (
   }
 
 
-  // ---------------------------------------------
-  // Rich Text
-  // ---------------------------------------------
+  /*
+  |--------------------------------------------------------------------------
+  | Rich Text
+  |--------------------------------------------------------------------------
+  */
 
   if (
     typeof value === "object" &&
@@ -229,9 +219,11 @@ const getCellValue = (
   }
 
 
-  // ---------------------------------------------
-  // Formula Result
-  // ---------------------------------------------
+  /*
+  |--------------------------------------------------------------------------
+  | Formula Result
+  |--------------------------------------------------------------------------
+  */
 
   if (
     typeof value === "object" &&
@@ -245,9 +237,11 @@ const getCellValue = (
   }
 
 
-  // ---------------------------------------------
-  // Normal String / Number
-  // ---------------------------------------------
+  /*
+  |--------------------------------------------------------------------------
+  | Normal String / Number
+  |--------------------------------------------------------------------------
+  */
 
   return String(
     value
@@ -260,9 +254,6 @@ const getCellValue = (
 |--------------------------------------------------------------------------
 | EMAIL VALUE
 |--------------------------------------------------------------------------
-|
-| This function specifically handles email values.
-|
 */
 
 const getEmailValue = (
@@ -277,7 +268,11 @@ const getEmailValue = (
   }
 
 
-  // Excel hyperlink
+  /*
+  |--------------------------------------------------------------------------
+  | Excel Hyperlink
+  |--------------------------------------------------------------------------
+  */
 
   if (
     typeof value === "object" &&
@@ -295,8 +290,6 @@ const getEmailValue = (
         email
       ).trim();
 
-
-    // mailto:user@example.com
 
     if (
       email
@@ -320,7 +313,11 @@ const getEmailValue = (
   }
 
 
-  // Rich text
+  /*
+  |--------------------------------------------------------------------------
+  | Rich Text
+  |--------------------------------------------------------------------------
+  */
 
   if (
     typeof value === "object" &&
@@ -340,7 +337,11 @@ const getEmailValue = (
   }
 
 
-  // Formula
+  /*
+  |--------------------------------------------------------------------------
+  | Formula
+  |--------------------------------------------------------------------------
+  */
 
   if (
     typeof value === "object" &&
@@ -354,7 +355,11 @@ const getEmailValue = (
   }
 
 
-  // Normal string
+  /*
+  |--------------------------------------------------------------------------
+  | Normal String
+  |--------------------------------------------------------------------------
+  */
 
   return String(
     value
@@ -479,6 +484,106 @@ const ImportUsers = ({
 
   /*
   |--------------------------------------------------------------------------
+  | VALIDATE REPORTING MANAGER
+  |--------------------------------------------------------------------------
+  |
+  | IMPORTANT:
+  |
+  | Do NOT use paginated userData here.
+  |
+  | userData only contains the current page.
+  |
+  | Instead, search the complete employee list
+  | from backend using EmpID.
+  |
+  |--------------------------------------------------------------------------
+  */
+
+  const validateReportingManager =
+    async (
+      empId
+    ) => {
+
+      if (
+        !empId?.trim()
+      ) {
+
+        return {
+          valid: true,
+          manager: null
+        };
+
+      }
+
+
+      try {
+
+        const response =
+          await doGet(
+            `admin/validate-reporting-manager?emp_id=${encodeURIComponent(
+              empId.trim()
+            )}`
+          );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Expected response
+        |--------------------------------------------------------------------------
+        |
+        | {
+        |   valid: true,
+        |   manager: {
+        |     _id: "...",
+        |     first_name: "John",
+        |     last_name: "Doe"
+        |   }
+        | }
+        |
+        |--------------------------------------------------------------------------
+        */
+
+
+        if (
+          response?.valid === true &&
+          response?.manager
+        ) {
+
+          return {
+            valid: true,
+            manager:
+              response.manager
+          };
+
+        }
+
+
+        return {
+          valid: false,
+          manager: null
+        };
+
+      } catch (error) {
+
+        console.error(
+          "Error validating reporting manager:",
+          error
+        );
+
+
+        return {
+          valid: false,
+          manager: null,
+          error: true
+        };
+
+      }
+
+    };
+
+
+  /*
+  |--------------------------------------------------------------------------
   | DROPZONE
   |--------------------------------------------------------------------------
   */
@@ -514,7 +619,9 @@ const ImportUsers = ({
         if (
           !acceptedFiles?.length
         ) {
+
           return;
+
         }
 
 
@@ -564,7 +671,9 @@ const ImportUsers = ({
               .worksheets[0];
 
 
-          if (!worksheet) {
+          if (
+            !worksheet
+          ) {
 
             throw new Error(
               "Excel file is empty."
@@ -577,10 +686,6 @@ const ImportUsers = ({
           |--------------------------------------------------------------------------
           | REQUIRED HEADERS
           |--------------------------------------------------------------------------
-          |
-          | ReportingManager is intentionally NOT here
-          | because it is optional.
-          |
           */
 
           const requiredHeaders = [
@@ -678,7 +783,9 @@ const ImportUsers = ({
               if (
                 rowNumber === 1
               ) {
+
                 return;
+
               }
 
 
@@ -702,11 +809,6 @@ const ImportUsers = ({
                   header,
                   index
                 ) => {
-
-                  /*
-                  | Keep ORIGINAL value.
-                  | Do NOT replace value with error.
-                  */
 
                   rowData[header] =
                     rowValues[index] ??
@@ -738,11 +840,6 @@ const ImportUsers = ({
 
                   let value;
 
-
-                  /*
-                  | Email has special handling
-                  | because it can be a hyperlink.
-                  */
 
                   if (
                     header === "Email"
@@ -785,12 +882,6 @@ const ImportUsers = ({
           |--------------------------------------------------------------------------
           | EMAIL VALIDATION
           |--------------------------------------------------------------------------
-          |
-          | Email can be:
-          | - Normal string
-          | - Excel hyperlink
-          | - mailto hyperlink
-          |
           */
 
           jsonData.forEach(
@@ -802,19 +893,14 @@ const ImportUsers = ({
                 );
 
 
-              /*
-              | Empty email is already
-              | handled by required validation.
-              */
+              if (
+                !email
+              ) {
 
-              if (!email) {
                 return;
+
               }
 
-
-              /*
-              | Validate email format
-              */
 
               if (
                 !isValidEmail(
@@ -855,8 +941,12 @@ const ImportUsers = ({
                   .toLowerCase();
 
 
-              if (!email) {
+              if (
+                !email
+              ) {
+
                 return;
+
               }
 
 
@@ -914,116 +1004,44 @@ const ImportUsers = ({
           | REPORTING MANAGER VALIDATION
           |--------------------------------------------------------------------------
           |
-          | ReportingManager is OPTIONAL.
+          | IMPORTANT:
           |
-          | Empty:
-          |   VALID
+          | userData is PAGINATED.
           |
-          | Provided:
-          |   Must match userData.emp_id
+          | Therefore, DO NOT do:
           |
+          | userData.find(...)
+          |
+          | Instead:
+          |
+          | API -> find manager by emp_id
+          |
+          |--------------------------------------------------------------------------
           */
 
-          jsonData.forEach(
-            row => {
+          for (
+            const row of jsonData
+          ) {
 
-              const reportingManagerEmpId =
-                getCellValue(
-                  row?.ReportingManager
-                )
-                  .trim();
-
-
-              /*
-              |--------------------------------------------------------------------------
-              | EMPTY REPORTING MANAGER
-              |--------------------------------------------------------------------------
-              |
-              | Empty is allowed.
-              |
-              */
-
-              if (
-                !reportingManagerEmpId
-              ) {
-
-                delete row
-                  .errors
-                  .ReportingManager;
+            const reportingManagerEmpId =
+              getCellValue(
+                row?.ReportingManager
+              ).trim();
 
 
-                row.reporting_manager_id =
-                  null;
+            /*
+            |--------------------------------------------------------------------------
+            | EMPTY REPORTING MANAGER
+            |--------------------------------------------------------------------------
+            |
+            | Empty is allowed.
+            |
+            |--------------------------------------------------------------------------
+            */
 
-
-                row.reporting_manager_name =
-                  "";
-
-
-                return;
-
-              }
-
-
-              /*
-              |--------------------------------------------------------------------------
-              | FIND USER BY EMP ID
-              |--------------------------------------------------------------------------
-              */
-
-              const manager =
-                userData?.find(
-                  user => {
-
-                    const userEmpId =
-                      String(
-                        user?.emp_id ||
-                        ""
-                      )
-                        .trim()
-                        .toLowerCase();
-
-
-                    return (
-                      userEmpId ===
-                      reportingManagerEmpId
-                        .toLowerCase()
-                    );
-
-                  }
-                );
-
-
-              /*
-              |--------------------------------------------------------------------------
-              | MANAGER NOT FOUND
-              |--------------------------------------------------------------------------
-              */
-
-              if (!manager) {
-
-                row.errors.ReportingManager =
-                  `Reporting Manager EmpID "${reportingManagerEmpId}" does not exist`;
-
-
-                row.reporting_manager_id =
-                  null;
-
-
-                row.reporting_manager_name =
-                  "";
-
-
-                return;
-
-              }
-
-
-              /*
-              |--------------------------------------------------------------------------
-              | MANAGER FOUND
-              |--------------------------------------------------------------------------
-              */
+            if (
+              !reportingManagerEmpId
+            ) {
 
               delete row
                 .errors
@@ -1031,29 +1049,92 @@ const ImportUsers = ({
 
 
               row.reporting_manager_id =
-                manager._id;
+                null;
 
 
               row.reporting_manager_name =
-                [
-                  manager.first_name,
-                  manager.last_name
-                ]
-                  .filter(Boolean)
-                  .join(" ");
+                "";
+
+
+              continue;
 
             }
-          );
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | FIND MANAGER FROM BACKEND
+            |--------------------------------------------------------------------------
+            */
+
+            const managerResponse =
+              await validateReportingManager(
+                reportingManagerEmpId
+              );
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | MANAGER NOT FOUND
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+              !managerResponse.valid
+            ) {
+
+              row.errors.ReportingManager =
+                `Reporting Manager EmpID "${reportingManagerEmpId}" does not exist`;
+
+
+              row.reporting_manager_id =
+                null;
+
+
+              row.reporting_manager_name =
+                "";
+
+
+              continue;
+
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | MANAGER FOUND
+            |--------------------------------------------------------------------------
+            */
+
+            const manager =
+              managerResponse.manager;
+
+
+            delete row
+              .errors
+              .ReportingManager;
+
+
+            row.reporting_manager_id =
+              manager?._id ||
+              null;
+
+
+            row.reporting_manager_name =
+              [
+                manager?.first_name,
+                manager?.last_name
+              ]
+                .filter(Boolean)
+                .join(" ");
+
+          }
 
 
           /*
           |--------------------------------------------------------------------------
           | SET DATA
           |--------------------------------------------------------------------------
-          |
-          | Always show the uploaded data.
-          | Errors are stored separately.
-          |
           */
 
           setUploadData(
@@ -1361,7 +1442,9 @@ const ImportUsers = ({
             await res.json();
 
 
-          if (!res.ok) {
+          if (
+            !res.ok
+          ) {
 
             throw new Error(
               result?.message ||
@@ -1430,59 +1513,68 @@ const ImportUsers = ({
   |--------------------------------------------------------------------------
   | VALUE + ERROR COMPONENT
   |--------------------------------------------------------------------------
-  |
-  | IMPORTANT:
-  | Error is rendered BELOW the actual value.
-  | Error is RED.
-  | Error does NOT replace the value.
-  |
   */
 
   const FieldValueWithError = ({
     value,
     error
   }) => {
+
     return (
+
       <div
         style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-start',
-          minWidth: '150px'
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-start",
+          minWidth: "150px"
         }}
       >
-        {/* Actual value */}
+
         <Typography
           variant="body2"
           sx={{
-            color: 'text.primary'
+            color: "text.primary"
           }}
         >
-          {value !== undefined &&
-            value !== null &&
-            String(value).trim() !== ''
-            ? String(value)
-            : '-'}
+
+          {
+            value !== undefined &&
+              value !== null &&
+              String(value).trim() !== ""
+              ? String(value)
+              : "-"
+          }
+
         </Typography>
 
-        {/* Error - RED */}
-        {error && (
-          <Typography
-            variant="caption"
-            sx={{
-              color: '#d32f2f !important',
-              mt: 0.5,
-              display: 'block',
-              fontWeight: 500,
-              lineHeight: 1.4,
-              whiteSpace: 'normal'
-            }}
-          >
-            {error}
-          </Typography>
-        )}
+
+        {
+          error && (
+
+            <Typography
+              variant="caption"
+              sx={{
+                color: "#d32f2f !important",
+                mt: 0.5,
+                display: "block",
+                fontWeight: 500,
+                lineHeight: 1.4,
+                whiteSpace: "normal"
+              }}
+            >
+
+              {error}
+
+            </Typography>
+
+          )
+        }
+
       </div>
+
     );
+
   };
 
 
@@ -1496,14 +1588,7 @@ const ImportUsers = ({
     useMemo(
       () => [
 
-        /*
-        |--------------------------------------------------------------------------
-        | SRNO
-        |--------------------------------------------------------------------------
-        */
-
         {
-
           id:
             "serialNumber",
 
@@ -1533,12 +1618,6 @@ const ImportUsers = ({
 
         },
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | IMPORT STATUS
-        |--------------------------------------------------------------------------
-        */
 
         columnHelper.accessor(
           "Import Status",
@@ -1575,13 +1654,11 @@ const ImportUsers = ({
                   >
 
                     <i
-
                       className={
                         hasErrors
                           ? "tabler-circle-x"
                           : "tabler-circle-check"
                       }
-
                     />
 
                   </CustomAvatar>
@@ -1593,12 +1670,6 @@ const ImportUsers = ({
           }
         ),
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | FIRST NAME
-        |--------------------------------------------------------------------------
-        */
 
         columnHelper.accessor(
           "FirstName",
@@ -1633,12 +1704,6 @@ const ImportUsers = ({
         ),
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | LAST NAME
-        |--------------------------------------------------------------------------
-        */
-
         columnHelper.accessor(
           "LastName",
           {
@@ -1672,12 +1737,6 @@ const ImportUsers = ({
         ),
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | EMAIL
-        |--------------------------------------------------------------------------
-        */
-
         columnHelper.accessor(
           "Email",
           {
@@ -1691,12 +1750,6 @@ const ImportUsers = ({
               }) => (
 
                 <FieldValueWithError
-
-                  /*
-                  | IMPORTANT:
-                  | Show actual email value.
-                  | Handle hyperlink correctly.
-                  */
 
                   value={
                     getEmailValue(
@@ -1718,12 +1771,6 @@ const ImportUsers = ({
           }
         ),
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | PHONE
-        |--------------------------------------------------------------------------
-        */
 
         columnHelper.accessor(
           "PhoneNo",
@@ -1758,15 +1805,6 @@ const ImportUsers = ({
         ),
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | REPORTING MANAGER
-        |--------------------------------------------------------------------------
-        |
-        | Empty is allowed.
-        |
-        */
-
         columnHelper.accessor(
           "ReportingManager",
           {
@@ -1780,12 +1818,6 @@ const ImportUsers = ({
               }) => (
 
                 <FieldValueWithError
-
-                  /*
-                  | Show original Excel value.
-                  | Do NOT show reporting_manager_name
-                  | because user wants the actual value.
-                  */
 
                   value={
                     getCellValue(
@@ -1807,12 +1839,6 @@ const ImportUsers = ({
           }
         ),
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | EMP ID
-        |--------------------------------------------------------------------------
-        */
 
         columnHelper.accessor(
           "EmpID",
@@ -1847,12 +1873,6 @@ const ImportUsers = ({
         ),
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | COUNTRY
-        |--------------------------------------------------------------------------
-        */
-
         columnHelper.accessor(
           "Country",
           {
@@ -1885,12 +1905,6 @@ const ImportUsers = ({
           }
         ),
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | STATE
-        |--------------------------------------------------------------------------
-        */
 
         columnHelper.accessor(
           "State",
@@ -1925,12 +1939,6 @@ const ImportUsers = ({
         ),
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | CITY
-        |--------------------------------------------------------------------------
-        */
-
         columnHelper.accessor(
           "City",
           {
@@ -1963,12 +1971,6 @@ const ImportUsers = ({
           }
         ),
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | DESIGNATION
-        |--------------------------------------------------------------------------
-        */
 
         columnHelper.accessor(
           "Designation",
@@ -2003,12 +2005,6 @@ const ImportUsers = ({
         ),
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | DEPARTMENT
-        |--------------------------------------------------------------------------
-        */
-
         columnHelper.accessor(
           "Department",
           {
@@ -2041,12 +2037,6 @@ const ImportUsers = ({
           }
         ),
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | PARTICIPATION TYPE
-        |--------------------------------------------------------------------------
-        */
 
         columnHelper.accessor(
           "ParticipationType",
@@ -2081,12 +2071,6 @@ const ImportUsers = ({
         ),
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | EMPLOYEE TYPE
-        |--------------------------------------------------------------------------
-        */
-
         columnHelper.accessor(
           "EmployeeType",
           {
@@ -2119,12 +2103,6 @@ const ImportUsers = ({
           }
         ),
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | ZONE
-        |--------------------------------------------------------------------------
-        */
 
         columnHelper.accessor(
           "Zone",
@@ -2159,12 +2137,6 @@ const ImportUsers = ({
         ),
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | REGION
-        |--------------------------------------------------------------------------
-        */
-
         columnHelper.accessor(
           "Region",
           {
@@ -2198,12 +2170,6 @@ const ImportUsers = ({
         ),
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | BRANCH
-        |--------------------------------------------------------------------------
-        */
-
         columnHelper.accessor(
           "Branch",
           {
@@ -2236,12 +2202,6 @@ const ImportUsers = ({
           }
         ),
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | STATUS
-        |--------------------------------------------------------------------------
-        */
 
         columnHelper.accessor(
           "Status",
@@ -2595,6 +2555,7 @@ const ImportUsers = ({
 
         />
 
+
         <CardContent>
 
           {
@@ -2610,21 +2571,21 @@ const ImportUsers = ({
                     Note:
                   </strong>
 
-                  {' '}
+                  {" "}
 
-                  Only Excel files with{' '}
+                  Only Excel files with{" "}
 
                   <code>
                     .xls
                   </code>
 
-                  {' '}or{' '}
+                  {" "}or{" "}
 
                   <code>
                     .xlsx
                   </code>
 
-                  {' '}extensions are allowed.
+                  {" "}extensions are allowed.
 
                 </div>
 
@@ -2641,11 +2602,8 @@ const ImportUsers = ({
 
                   <ul
                     style={{
-                      marginTop:
-                        4,
-
-                      paddingLeft:
-                        20
+                      marginTop: 4,
+                      paddingLeft: 20
                     }}
                   >
 
@@ -2693,6 +2651,7 @@ const ImportUsers = ({
 
             )
           }
+
 
           {
             showError && (
@@ -3052,10 +3011,12 @@ const ImportUsers = ({
                       {
                         isProgress
                           ? (
+
                             <CircularProgress
                               size={24}
                               color="inherit"
                             />
+
                           )
                           : hasUploadErrors
                             ? "Fix Errors Before Import"
