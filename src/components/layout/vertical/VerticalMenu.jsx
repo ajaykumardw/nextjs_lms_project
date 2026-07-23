@@ -237,9 +237,9 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
                 Leaderboard
               </MenuItem>
 
-              {/* <MenuItem key="module" href={`/${locale}/apps/moduleProgram`} icon={<i className="tabler-puzzle" />}>
-                My Module
-              </MenuItem> */}
+              <MenuItem key="team" href={`/${locale}/apps/my-team`} icon={<i className="tabler-users" style={{ insetInlineEnd: 8 }} />}>
+                Team
+              </MenuItem>
 
               <MenuItem key="self_enroll_module" href={`/${locale}/apps/self-enroll`} icon={<i className="tabler-users" />}>
                 Self Enroll Module
@@ -260,11 +260,6 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
               <MenuItem key="certificates" href={`/${locale}/apps/my-certificates`} icon={<i className="tabler-certificate" />}>
                 My Certificate
               </MenuItem>
-
-              {/* <MenuItem key="team" href={`/${locale}/apps/my-team`}>
-                <i className="tabler-users" style={{ insetInlineEnd: 8 }} />
-                Team
-              </MenuItem> */}
             </>
           )}
           {permissArray?.isCompany && (

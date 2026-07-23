@@ -599,7 +599,7 @@ const ImportUsers = ({ batch, onBack, userData }) => {
 
         toast.error(
           error?.message ||
-            "Error in processing the Excel file.",
+          "Error in processing the Excel file.",
         );
 
         setLoading(false);
@@ -758,7 +758,7 @@ const ImportUsers = ({ batch, onBack, userData }) => {
 
       toast.error(
         error?.message ||
-          "Error in processing the Excel file.",
+        "Error in processing the Excel file.",
       );
 
       setIsProgress(false);
@@ -782,8 +782,8 @@ const ImportUsers = ({ batch, onBack, userData }) => {
           }}
         >
           {value !== undefined &&
-          value !== null &&
-          String(value).trim() !== ""
+            value !== null &&
+            String(value).trim() !== ""
             ? String(value)
             : "-"}
         </Typography>
@@ -1275,6 +1275,19 @@ const ImportUsers = ({ batch, onBack, userData }) => {
             </Alert>
           )}
 
+          <Button
+            component="a"
+            href="/sample/users_import.xlsx"
+            download="User Sample"
+            style={{
+              marginTop: "14px",
+              marginBottom: "14px",
+            }}
+            variant="contained"
+          >
+            Download Sample XLSX File
+          </Button>
+
           <Controller
             name="roles"
             control={control}
@@ -1431,7 +1444,7 @@ const ImportUsers = ({ batch, onBack, userData }) => {
                     }
                     disabled={
                       uploadData.length ===
-                        0 ||
+                      0 ||
                       hasUploadErrors ||
                       isProgress
                     }
@@ -1455,10 +1468,10 @@ const ImportUsers = ({ batch, onBack, userData }) => {
 
         {(data.length > 0 ||
           uploadData.length > 0) && (
-          <CardContent>
-            {tableItems}
-          </CardContent>
-        )}
+            <CardContent>
+              {tableItems}
+            </CardContent>
+          )}
       </Card>
 
       <ImportSuccessDialog
