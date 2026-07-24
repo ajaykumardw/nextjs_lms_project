@@ -53,6 +53,7 @@ import { useApi } from '../../../../utils/api';
 import tableStyles from '@core/styles/table.module.css';
 
 import { usePermissionList } from '@/utils/getPermission';
+import { Chip } from '@mui/material';
 
 const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...props }) => {
   // States
@@ -213,10 +214,30 @@ const UserListTable = ({
         cell: ({ row }) => <Typography>{row.original.phone}</Typography>
       }),
 
-      columnHelper.accessor('address', {
-        header: 'Address',
-        cell: ({ row }) => <Typography>{row.original.address}</Typography>
+      columnHelper.accessor('roles', {
+        header: 'Role',
+        cell: ({ row }) => {
+          const roles = row.original?.roles || []
+
+          const roleNames = roles
+            .map(role => role?.role_id?.name)
+            .filter(Boolean)
+            .join(', ')
+
+          return (
+            <Chip
+              label={roleNames || '-'}
+              size="small"
+              variant="tonal"
+            />
+          )
+        }
       }),
+      columnHelper.accessor('participation_type', {
+        header: 'Participation Type',
+        cell: ({ row }) => <Typography>{row.original.participation_type_id.name}</Typography>
+      }),
+
       columnHelper.accessor('reporting_manager', {
         header: 'Reporting Manager',
         cell: ({ row }) => <Typography>{row?.original?.reporting_manager_id?.first_name} {row?.original?.reporting_manager_id?.last_name}</Typography>
@@ -459,10 +480,16 @@ const UserListTable = ({
           <TablePagination
             component='div'
             count={totalUsers}
-            rowsPerPage={pageSize}
             page={page}
+            rowsPerPage={pageSize}
             onPageChange={(_, newPage) => {
               setPage(newPage)
+            }}
+            onRowsPerPageChange={event => {
+              const newPageSize = parseInt(event.target.value, 10)
+
+              setPageSize(newPageSize)
+              setPage(0)
             }}
             rowsPerPageOptions={[10, 25, 50]}
           />
