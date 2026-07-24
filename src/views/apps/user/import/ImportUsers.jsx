@@ -220,68 +220,97 @@ const ImportUsers = ({ batch, onBack, userData }) => {
   }, [uploadData]);
 
   const validateReportingManager = async (
+    reportingManagerId,
     empId,
     email,
     phone,
   ) => {
     try {
-      const params = new URLSearchParams();
+      const params = new URLSearchParams()
 
-      const cleanEmpId = String(empId || "").trim();
+      const cleanReportingManagerId = String(
+        reportingManagerId || "",
+      ).trim()
+
+      const cleanEmpId = String(empId || "")
+        .trim()
 
       const cleanEmail = String(email || "")
         .trim()
-        .toLowerCase();
+        .toLowerCase()
 
-      const cleanPhone = String(phone || "").trim();
+      const cleanPhone = String(phone || "")
+        .trim()
+
+      if (cleanReportingManagerId) {
+        params.set(
+          "reporting_manager_id",
+          cleanReportingManagerId,
+        )
+      }
 
       if (cleanEmpId) {
-        params.set("emp_id", cleanEmpId);
+        params.set("emp_id", cleanEmpId)
       }
 
       if (cleanEmail) {
-        params.set("email", cleanEmail);
+        params.set("email", cleanEmail)
       }
 
       if (cleanPhone) {
-        params.set("phone", cleanPhone);
+        params.set("phone", cleanPhone)
       }
 
-      const queryString = params.toString();
+      const queryString = params.toString()
 
       const url = queryString
         ? `admin/validate-reporting-manager?${queryString}`
-        : "admin/validate-reporting-manager";
+        : "admin/validate-reporting-manager"
 
-      const response = await doGet(url);
+      const response = await doGet(url)
 
       return {
         valid: response?.valid === true,
+
         manager: response?.manager || null,
-        emailExists: response?.emailExists === true,
-        phoneExists: response?.phoneExists === true,
+
+        reportingManagerExists:
+          response?.reportingManagerExists === true,
+
+        empIdExists:
+          response?.empIdExists === true,
+
+        emailExists:
+          response?.emailExists === true,
+
+        phoneExists:
+          response?.phoneExists === true,
+
         error: false,
+
         message: response?.message || "",
-      };
+      }
     } catch (error) {
       console.error(
-        "Error validating reporting manager/email/phone:",
+        "Error validating reporting manager and employee:",
         error,
-      );
+      )
 
       return {
         valid: false,
         manager: null,
+        reportingManagerExists: false,
+        empIdExists: false,
         emailExists: false,
         phoneExists: false,
         error: true,
         message:
           error?.response?.data?.message ||
           error?.message ||
-          "Unable to validate data",
-      };
+          "Unable to validate employee data",
+      }
     }
-  };
+  }
 
   const { getRootProps, getInputProps } = useDropzone({
     multiple: false,
@@ -497,93 +526,122 @@ const ImportUsers = ({ batch, onBack, userData }) => {
           jsonData.map(async (row) => {
             const reportingManagerEmpId = getCellValue(
               row?.ReportingManager,
-            ).trim();
+            ).trim()
+
+            const empId = getCellValue(
+              row?.EmpID,
+            ).trim()
 
             const email = getEmailValue(row?.Email)
               .trim()
-              .toLowerCase();
+              .toLowerCase()
 
-            const phone = getCellValue(row?.PhoneNo).trim();
+            const phone = getCellValue(
+              row?.PhoneNo,
+            ).trim()
 
-            console.log("Excel Validation:", {
-              row: row.excelRowNumber,
-              reportingManagerEmpId,
-              email,
-              phone,
-            });
-
-            const response = await validateReportingManager(
-              reportingManagerEmpId,
-              email,
-              phone,
-            );
+            const response =
+              await validateReportingManager(
+                reportingManagerEmpId,
+                empId,
+                email,
+                phone,
+              )
 
             return {
               row,
               response,
               reportingManagerEmpId,
+              empId,
               email,
               phone,
-            };
+            }
           }),
-        );
+        )
 
         validationResults.forEach(
           ({
             row,
             response,
             reportingManagerEmpId,
+            empId,
             email,
             phone,
           }) => {
+
+            // -----------------------------------------
+            // Reporting Manager Validation
+            // -----------------------------------------
+
             if (reportingManagerEmpId) {
               if (!response.manager) {
                 row.errors.ReportingManager =
-                  `Reporting Manager EmpID "${reportingManagerEmpId}" does not exist`;
+                  `Reporting Manager EmpID "${reportingManagerEmpId}" does not exist`
 
-                row.reporting_manager_id = null;
+                row.reporting_manager_id = null
 
-                row.reporting_manager_name = "";
+                row.reporting_manager_name = ""
               } else {
-                const manager = response.manager;
+                const manager = response.manager
 
-                delete row.errors.ReportingManager;
+                delete row.errors.ReportingManager
 
                 row.reporting_manager_id =
-                  manager._id || null;
+                  manager._id || null
 
                 row.reporting_manager_name = [
                   manager.first_name,
                   manager.last_name,
                 ]
                   .filter(Boolean)
-                  .join(" ");
+                  .join(" ")
               }
             } else {
-              delete row.errors.ReportingManager;
+              delete row.errors.ReportingManager
 
-              row.reporting_manager_id = null;
+              row.reporting_manager_id = null
 
-              row.reporting_manager_name = "";
+              row.reporting_manager_name = ""
             }
+
+            // -----------------------------------------
+            // Employee ID Validation
+            // -----------------------------------------
+
+            if (response.empIdExists) {
+              row.errors.EmpID =
+                `Employee ID "${empId}" already exists`
+            }
+
+            // -----------------------------------------
+            // Email Validation
+            // -----------------------------------------
 
             if (response.emailExists) {
               row.errors.Email =
-                `Email "${email}" already exists`;
+                `Email "${email}" already exists`
             }
+
+            // -----------------------------------------
+            // Phone Validation
+            // -----------------------------------------
 
             if (response.phoneExists) {
               row.errors.PhoneNo =
-                `Phone "${phone}" already exists`;
+                `Phone "${phone}" already exists`
             }
+
+            // -----------------------------------------
+            // API Error
+            // -----------------------------------------
 
             if (response.error) {
               row.errors.ReportingManager =
                 response.message ||
-                "Unable to validate reporting manager and contact details";
+                "Unable to validate employee details"
             }
           },
-        );
+        )
 
         setUploadData(jsonData);
 
