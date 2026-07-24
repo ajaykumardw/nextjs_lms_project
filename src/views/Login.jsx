@@ -72,7 +72,6 @@ const schema = object({
   email: pipe(
     string(),
     minLength(1, 'This field is required'),
-    email('Email is invalid')
   ),
   password: pipe(
     string(),
@@ -209,8 +208,8 @@ const Login = ({ mode }) => {
                   autoFocus
                   fullWidth
                   type='email'
-                  label='Email'
-                  placeholder='Enter your email'
+                  label='Email/Emp Id'
+                  placeholder='Enter your email or emp Id'
                   onChange={e => {
                     field.onChange(e.target.value)
                     errorState !== null && setErrorState(null)
