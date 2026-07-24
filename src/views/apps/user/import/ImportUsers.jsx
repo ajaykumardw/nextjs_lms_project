@@ -74,8 +74,10 @@ const columnHelper = createColumnHelper();
 
 const schema = object({
   roles: array(
-    string([minLength(1, "Each role must be at least 1 character")]),
-    [minLength(1, "At least one role must be selected")],
+    string([
+      minLength(1, "Each role must be at least 1 character"),
+    ]),
+    [minLength(1, "At least one role must be selected")]
   ),
 });
 
@@ -111,14 +113,21 @@ const getCellValue = (value) => {
     return hyperlink;
   }
 
-  if (typeof value === "object" && Array.isArray(value.richText)) {
+  if (
+    typeof value === "object" &&
+    Array.isArray(value.richText)
+  ) {
     return value.richText
       .map((item) => item.text || "")
       .join("")
       .trim();
   }
 
-  if (typeof value === "object" && value.result !== undefined) {
+  if (
+    typeof value === "object" &&
+    value.result !== undefined
+  ) {
+
     return String(value.result ?? "").trim();
   }
 
@@ -127,6 +136,7 @@ const getCellValue = (value) => {
 
 const getEmailValue = (value) => {
   if (value === null || value === undefined) {
+
     return "";
   }
 
@@ -136,20 +146,30 @@ const getEmailValue = (value) => {
     email = String(email).trim();
 
     if (email.toLowerCase().startsWith("mailto:")) {
-      email = email.replace(/^mailto:/i, "").split("?")[0];
+      email = email
+        .replace(/^mailto:/i, "")
+        .split("?")[0];
     }
 
     return email.trim();
   }
 
-  if (typeof value === "object" && Array.isArray(value.richText)) {
+  if (
+    typeof value === "object" &&
+    Array.isArray(value.richText)
+  ) {
+
     return value.richText
       .map((item) => item.text || "")
       .join("")
       .trim();
   }
 
-  if (typeof value === "object" && value.result !== undefined) {
+  if (
+    typeof value === "object" &&
+    value.result !== undefined
+  ) {
+
     return String(value.result ?? "").trim();
   }
 
@@ -169,17 +189,27 @@ const isValidPhone = (phone) => {
 };
 
 const isValidStatus = (status) => {
-  const cleanStatus = String(status || "").trim().toLowerCase();
+  const cleanStatus = String(status || "")
+    .trim()
+    .toLowerCase();
 
-  return cleanStatus === "active" || cleanStatus === "inactive";
+  return (
+    cleanStatus === "active" ||
+    cleanStatus === "inactive"
+  );
 };
 
-const ImportUsers = ({ batch, onBack, userData }) => {
+const ImportUsers = ({
+  batch,
+  onBack,
+  userData,
+}) => {
   const [data, setData] = useState([]);
 
   const [uploadData, setUploadData] = useState([]);
 
-  const [missingHeadersData, setMissingHeaders] = useState([]);
+  const [missingHeadersData, setMissingHeaders] =
+    useState([]);
 
   const [fileInput, setFileInput] = useState(null);
 
@@ -187,9 +217,13 @@ const ImportUsers = ({ batch, onBack, userData }) => {
 
   const [isProgress, setIsProgress] = useState(false);
 
-  const [openSuccessDialog, setOpenSuccessDialog] = useState(false);
+  const [openSuccessDialog, setOpenSuccessDialog] =
+    useState(false);
 
   const [progress, setProgress] = useState(0);
+
+  const [uploadStage, setUploadStage] =
+    useState("");
 
   const [roles, setRoles] = useState([]);
 
@@ -214,65 +248,86 @@ const ImportUsers = ({ batch, onBack, userData }) => {
   });
 
   const hasUploadErrors = useMemo(() => {
+
     return uploadData.some(
-      (row) => Object.keys(row?.errors || {}).length > 0,
+      (row) =>
+        Object.keys(row?.errors || {}).length > 0
     );
   }, [uploadData]);
+
+  // =====================================================
+  // VALIDATE REPORTING MANAGER
+  // =====================================================
 
   const validateReportingManager = async (
     reportingManagerId,
     empId,
     email,
-    phone,
+    phone
   ) => {
     try {
-      const params = new URLSearchParams()
+      const params = new URLSearchParams();
 
       const cleanReportingManagerId = String(
-        reportingManagerId || "",
-      ).trim()
+        reportingManagerId || ""
+      ).trim();
 
-      const cleanEmpId = String(empId || "")
-        .trim()
+      const cleanEmpId = String(
+        empId || ""
+      ).trim();
 
-      const cleanEmail = String(email || "")
+      const cleanEmail = String(
+        email || ""
+      )
         .trim()
-        .toLowerCase()
+        .toLowerCase();
 
-      const cleanPhone = String(phone || "")
-        .trim()
+      const cleanPhone = String(
+        phone || ""
+      ).trim();
 
       if (cleanReportingManagerId) {
         params.set(
           "reporting_manager_id",
-          cleanReportingManagerId,
-        )
+          cleanReportingManagerId
+        );
       }
 
       if (cleanEmpId) {
-        params.set("emp_id", cleanEmpId)
+        params.set(
+          "emp_id",
+          cleanEmpId
+        );
       }
 
       if (cleanEmail) {
-        params.set("email", cleanEmail)
+        params.set(
+          "email",
+          cleanEmail
+        );
       }
 
       if (cleanPhone) {
-        params.set("phone", cleanPhone)
+        params.set(
+          "phone",
+          cleanPhone
+        );
       }
 
-      const queryString = params.toString()
+      const queryString = params.toString();
 
       const url = queryString
         ? `admin/validate-reporting-manager?${queryString}`
-        : "admin/validate-reporting-manager"
+        : "admin/validate-reporting-manager";
 
-      const response = await doGet(url)
+      const response = await doGet(url);
 
       return {
-        valid: response?.valid === true,
+        valid:
+          response?.valid === true,
 
-        manager: response?.manager || null,
+        manager:
+          response?.manager || null,
 
         reportingManagerExists:
           response?.reportingManagerExists === true,
@@ -288,31 +343,46 @@ const ImportUsers = ({ batch, onBack, userData }) => {
 
         error: false,
 
-        message: response?.message || "",
-      }
+        message:
+          response?.message || "",
+      };
     } catch (error) {
       console.error(
         "Error validating reporting manager and employee:",
-        error,
-      )
+        error
+      );
 
       return {
         valid: false,
+
         manager: null,
+
         reportingManagerExists: false,
+
         empIdExists: false,
+
         emailExists: false,
+
         phoneExists: false,
+
         error: true,
+
         message:
           error?.response?.data?.message ||
           error?.message ||
           "Unable to validate employee data",
-      }
+      };
     }
-  }
+  };
 
-  const { getRootProps, getInputProps } = useDropzone({
+  // =====================================================
+  // EXCEL DROPZONE
+  // =====================================================
+
+  const {
+    getRootProps,
+    getInputProps,
+  } = useDropzone({
     multiple: false,
 
     maxSize: 2 * 1024 * 1024,
@@ -320,17 +390,18 @@ const ImportUsers = ({ batch, onBack, userData }) => {
     accept: {
       "application/vnd.ms-excel": [".xls"],
 
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
-        ".xlsx",
-      ],
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+        [".xlsx"],
     },
 
     onDrop: async (acceptedFiles) => {
       if (!acceptedFiles?.length) {
+
         return;
       }
 
-      const selectedFile = acceptedFiles[0];
+      const selectedFile =
+        acceptedFiles[0];
 
       setFileInput(null);
 
@@ -342,22 +413,65 @@ const ImportUsers = ({ batch, onBack, userData }) => {
 
       setProgress(0);
 
+      setUploadStage(
+        "Uploading Excel file..."
+      );
+
       setData([]);
 
       setUploadData([]);
 
       try {
-        const arrayBuffer = await selectedFile.arrayBuffer();
+        // =================================================
+        // STEP 1: READ FILE
+        // =================================================
 
-        const workbook = new ExcelJS.Workbook();
+        setUploadStage(
+          "Reading Excel file..."
+        );
 
-        await workbook.xlsx.load(arrayBuffer);
+        setProgress(10);
 
-        const worksheet = workbook.worksheets[0];
+        const arrayBuffer =
+          await selectedFile.arrayBuffer();
+
+        setProgress(20);
+
+        // =================================================
+        // STEP 2: LOAD WORKBOOK
+        // =================================================
+
+        setUploadStage(
+          "Processing Excel file..."
+        );
+
+        const workbook =
+          new ExcelJS.Workbook();
+
+        await workbook.xlsx.load(
+          arrayBuffer
+        );
+
+        setProgress(30);
+
+        const worksheet =
+          workbook.worksheets[0];
 
         if (!worksheet) {
-          throw new Error("Excel file is empty.");
+          throw new Error(
+            "Excel file is empty."
+          );
         }
+
+        // =================================================
+        // STEP 3: VALIDATE HEADERS
+        // =================================================
+
+        setUploadStage(
+          "Validating Excel headers..."
+        );
+
+        setProgress(35);
 
         const requiredHeaders = [
           "SRNO",
@@ -375,19 +489,43 @@ const ImportUsers = ({ batch, onBack, userData }) => {
           .getRow(1)
           .values
           .slice(1)
-          .map((header) => String(header || "").trim());
+          .map((header) =>
+            String(
+              header || ""
+            ).trim()
+          );
 
-        const missingHeadersList = requiredHeaders.filter(
-          (header) => !headers.includes(header),
-        );
+        const missingHeadersList =
+          requiredHeaders.filter(
+            (header) =>
+              !headers.includes(header)
+          );
 
-        if (missingHeadersList.length > 0) {
-          setMissingHeaders(missingHeadersList);
+        if (
+          missingHeadersList.length > 0
+        ) {
+          setMissingHeaders(
+            missingHeadersList
+          );
 
           setLoading(false);
 
+          setProgress(0);
+
+          setUploadStage("");
+
           return;
         }
+
+        // =================================================
+        // STEP 4: CONVERT EXCEL TO JSON
+        // =================================================
+
+        setUploadStage(
+          "Reading Excel rows..."
+        );
+
+        setProgress(40);
 
         const jsonData = [];
 
@@ -395,160 +533,376 @@ const ImportUsers = ({ batch, onBack, userData }) => {
           {
             includeEmpty: false,
           },
-          (row, rowNumber) => {
+          (
+            row,
+            rowNumber
+          ) => {
             if (rowNumber === 1) {
+
               return;
             }
 
-            const rowValues = row.values.slice(1);
+            const rowValues =
+              row.values.slice(1);
 
             const rowData = {
-              excelRowNumber: rowNumber,
+              excelRowNumber:
+                rowNumber,
+
               errors: {},
             };
 
-            headers.forEach((header, index) => {
-              rowData[header] = rowValues[index] ?? "";
-            });
+            headers.forEach(
+              (
+                header,
+                index
+              ) => {
+                rowData[header] =
+                  rowValues[index] ??
+                  "";
+              }
+            );
 
-            jsonData.push(rowData);
-          },
+            jsonData.push(
+              rowData
+            );
+          }
         );
 
-        jsonData.forEach((row) => {
-          requiredHeaders.forEach((header) => {
-            let value;
+        // =================================================
+        // STEP 5: REQUIRED FIELD VALIDATION
+        // =================================================
 
-            if (header === "Email") {
-              value = getEmailValue(row[header]);
-            } else {
-              value = getCellValue(row[header]);
+        setUploadStage(
+          "Validating required fields..."
+        );
+
+        setProgress(45);
+
+        jsonData.forEach(
+          (row) => {
+            requiredHeaders.forEach(
+              (header) => {
+                let value;
+
+                if (
+                  header === "Email"
+                ) {
+                  value =
+                    getEmailValue(
+                      row[header]
+                    );
+                } else {
+                  value =
+                    getCellValue(
+                      row[header]
+                    );
+                }
+
+                if (
+                  String(
+                    value || ""
+                  ).trim() === ""
+                ) {
+                  row.errors[
+                    header
+                  ] =
+                    `Missing value in "${header}"`;
+                }
+              }
+            );
+          }
+        );
+
+        // =================================================
+        // STEP 6: EMAIL VALIDATION
+        // =================================================
+
+        setUploadStage(
+          "Validating email addresses..."
+        );
+
+        setProgress(48);
+
+        jsonData.forEach(
+          (row) => {
+            const email =
+              getEmailValue(
+                row?.Email
+              ).trim();
+
+            if (!email) {
+
+              return;
             }
 
-            if (String(value || "").trim() === "") {
-              row.errors[header] = `Missing value in "${header}"`;
-            }
-          });
-        });
-
-        jsonData.forEach((row) => {
-          const email = getEmailValue(row?.Email).trim();
-
-          if (!email) {
-            return;
-          }
-
-          if (!isValidEmail(email)) {
-            row.errors.Email =
-              "Please enter a valid email address";
-          }
-        });
-
-        jsonData.forEach((row) => {
-          const phone = getCellValue(row?.PhoneNo).trim();
-
-          if (!phone) {
-            return;
-          }
-
-          if (!isValidPhone(phone)) {
-            row.errors.PhoneNo =
-              "Phone number must contain exactly 10 digits";
-          }
-        });
-
-        jsonData.forEach((row) => {
-          const status = getCellValue(row?.Status).trim();
-
-          if (!status) {
-            return;
-          }
-
-          if (!isValidStatus(status)) {
-            row.errors.Status =
-              'Status must be either "Active" or "Inactive"';
-          }
-        });
-
-        const emailRows = new Map();
-
-        jsonData.forEach((row, index) => {
-          const email = getEmailValue(row?.Email)
-            .trim()
-            .toLowerCase();
-
-          if (!email) {
-            return;
-          }
-
-          if (!emailRows.has(email)) {
-            emailRows.set(email, []);
-          }
-
-          emailRows.get(email).push(index);
-        });
-
-        emailRows.forEach((rowIndexes, email) => {
-          if (rowIndexes.length > 1) {
-            rowIndexes.forEach((index) => {
-              jsonData[index].errors.Email =
-                `Duplicate email "${email}" found in Excel`;
-            });
-          }
-        });
-
-        const phoneRows = new Map();
-
-        jsonData.forEach((row, index) => {
-          const phone = getCellValue(row?.PhoneNo).trim();
-
-          if (!phone) {
-            return;
-          }
-
-          if (!phoneRows.has(phone)) {
-            phoneRows.set(phone, []);
-          }
-
-          phoneRows.get(phone).push(index);
-        });
-
-        phoneRows.forEach((rowIndexes, phone) => {
-          if (rowIndexes.length > 1) {
-            rowIndexes.forEach((index) => {
-              jsonData[index].errors.PhoneNo =
-                `Duplicate phone "${phone}" found in Excel`;
-            });
-          }
-        });
-
-        const validationResults = await Promise.all(
-          jsonData.map(async (row) => {
-            const reportingManagerEmpId = getCellValue(
-              row?.ReportingManager,
-            ).trim()
-
-            const empId = getCellValue(
-              row?.EmpID,
-            ).trim()
-
-            const email = getEmailValue(row?.Email)
-              .trim()
-              .toLowerCase()
-
-            const phone = getCellValue(
-              row?.PhoneNo,
-            ).trim()
-
-            const response =
-              await validateReportingManager(
-                reportingManagerEmpId,
-                empId,
-                email,
-                phone,
+            if (
+              !isValidEmail(
+                email
               )
+            ) {
+              row.errors.Email =
+                "Please enter a valid email address";
+            }
+          }
+        );
 
-            return {
+        // =================================================
+        // STEP 7: PHONE VALIDATION
+        // =================================================
+
+        setUploadStage(
+          "Validating phone numbers..."
+        );
+
+        setProgress(50);
+
+        jsonData.forEach(
+          (row) => {
+            const phone =
+              getCellValue(
+                row?.PhoneNo
+              ).trim();
+
+            if (!phone) {
+
+              return;
+            }
+
+            if (
+              !isValidPhone(
+                phone
+              )
+            ) {
+              row.errors.PhoneNo =
+                "Phone number must contain exactly 10 digits";
+            }
+          }
+        );
+
+        // =================================================
+        // STEP 8: STATUS VALIDATION
+        // =================================================
+
+        setUploadStage(
+          "Validating user status..."
+        );
+
+        setProgress(52);
+
+        jsonData.forEach(
+          (row) => {
+            const status =
+              getCellValue(
+                row?.Status
+              ).trim();
+
+            if (!status) {
+
+              return;
+            }
+
+            if (
+              !isValidStatus(
+                status
+              )
+            ) {
+              row.errors.Status =
+                'Status must be either "Active" or "Inactive"';
+            }
+          }
+        );
+
+        // =================================================
+        // STEP 9: DUPLICATE EMAIL CHECK
+        // =================================================
+
+        setUploadStage(
+          "Checking duplicate email addresses..."
+        );
+
+        setProgress(55);
+
+        const emailRows =
+          new Map();
+
+        jsonData.forEach(
+          (
+            row,
+            index
+          ) => {
+            const email =
+              getEmailValue(
+                row?.Email
+              )
+                .trim()
+                .toLowerCase();
+
+            if (!email) {
+
+              return;
+            }
+
+            if (
+              !emailRows.has(
+                email
+              )
+            ) {
+              emailRows.set(
+                email,
+                []
+              );
+            }
+
+            emailRows
+              .get(email)
+              .push(index);
+          }
+        );
+
+        emailRows.forEach(
+          (
+            rowIndexes,
+            email
+          ) => {
+            if (
+              rowIndexes.length >
+              1
+            ) {
+              rowIndexes.forEach(
+                (index) => {
+                  jsonData[
+                    index
+                  ].errors.Email =
+                    `Duplicate email "${email}" found in Excel`;
+                }
+              );
+            }
+          }
+        );
+
+        // =================================================
+        // STEP 10: DUPLICATE PHONE CHECK
+        // =================================================
+
+        setUploadStage(
+          "Checking duplicate phone numbers..."
+        );
+
+        setProgress(60);
+
+        const phoneRows =
+          new Map();
+
+        jsonData.forEach(
+          (
+            row,
+            index
+          ) => {
+            const phone =
+              getCellValue(
+                row?.PhoneNo
+              ).trim();
+
+            if (!phone) {
+
+              return;
+            }
+
+            if (
+              !phoneRows.has(
+                phone
+              )
+            ) {
+              phoneRows.set(
+                phone,
+                []
+              );
+            }
+
+            phoneRows
+              .get(phone)
+              .push(index);
+          }
+        );
+
+        phoneRows.forEach(
+          (
+            rowIndexes,
+            phone
+          ) => {
+            if (
+              rowIndexes.length >
+              1
+            ) {
+              rowIndexes.forEach(
+                (index) => {
+                  jsonData[
+                    index
+                  ].errors.PhoneNo =
+                    `Duplicate phone "${phone}" found in Excel`;
+                }
+              );
+            }
+          }
+        );
+
+        // =================================================
+        // STEP 11: BACKEND VALIDATION
+        // =================================================
+
+        setUploadStage(
+          "Checking Employee ID, Email, Phone and Reporting Manager..."
+        );
+
+        setProgress(65);
+
+        const validationResults =
+          [];
+
+        const totalRows =
+          jsonData.length;
+
+        for (
+          let i = 0;
+          i < totalRows;
+          i++
+        ) {
+          const row =
+            jsonData[i];
+
+          const reportingManagerEmpId =
+            getCellValue(
+              row?.ReportingManager
+            ).trim();
+
+          const empId =
+            getCellValue(
+              row?.EmpID
+            ).trim();
+
+          const email =
+            getEmailValue(
+              row?.Email
+            )
+              .trim()
+              .toLowerCase();
+
+          const phone =
+            getCellValue(
+              row?.PhoneNo
+            ).trim();
+
+          const response =
+            await validateReportingManager(
+              reportingManagerEmpId,
+              empId,
+              email,
+              phone
+            );
+
+          validationResults.push(
+            {
               row,
               response,
               reportingManagerEmpId,
@@ -556,8 +910,37 @@ const ImportUsers = ({ batch, onBack, userData }) => {
               email,
               phone,
             }
-          }),
-        )
+          );
+
+          // Progress from 65% to 95%
+          const validationProgress =
+            totalRows > 0
+              ? 65 +
+                Math.round(
+                  ((i + 1) /
+                    totalRows) *
+                    30
+                )
+              : 95;
+
+          setProgress(
+            validationProgress
+          );
+
+          setUploadStage(
+            `Validating row ${i + 1} of ${totalRows}...`
+          );
+        }
+
+        // =================================================
+        // STEP 12: APPLY VALIDATION RESULTS
+        // =================================================
+
+        setUploadStage(
+          "Finalizing Excel validation..."
+        );
+
+        setProgress(98);
 
         validationResults.forEach(
           ({
@@ -568,101 +951,149 @@ const ImportUsers = ({ batch, onBack, userData }) => {
             email,
             phone,
           }) => {
-
             // -----------------------------------------
             // Reporting Manager Validation
             // -----------------------------------------
 
-            if (reportingManagerEmpId) {
-              if (!response.manager) {
+            if (
+              reportingManagerEmpId
+            ) {
+              if (
+                !response.manager
+              ) {
                 row.errors.ReportingManager =
-                  `Reporting Manager EmpID "${reportingManagerEmpId}" does not exist`
-
-                row.reporting_manager_id = null
-
-                row.reporting_manager_name = ""
-              } else {
-                const manager = response.manager
-
-                delete row.errors.ReportingManager
+                  `Reporting Manager EmpID "${reportingManagerEmpId}" does not exist`;
 
                 row.reporting_manager_id =
-                  manager._id || null
+                  null;
 
-                row.reporting_manager_name = [
-                  manager.first_name,
-                  manager.last_name,
-                ]
-                  .filter(Boolean)
-                  .join(" ")
+                row.reporting_manager_name =
+                  "";
+              } else {
+                const manager =
+                  response.manager;
+
+                delete row
+                  .errors
+                  .ReportingManager;
+
+                row.reporting_manager_id =
+                  manager._id ||
+                  null;
+
+                row.reporting_manager_name =
+                  [
+                    manager.first_name,
+                    manager.last_name,
+                  ]
+                    .filter(
+                      Boolean
+                    )
+                    .join(" ");
               }
             } else {
-              delete row.errors.ReportingManager
+              delete row
+                .errors
+                .ReportingManager;
 
-              row.reporting_manager_id = null
+              row.reporting_manager_id =
+                null;
 
-              row.reporting_manager_name = ""
+              row.reporting_manager_name =
+                "";
             }
 
             // -----------------------------------------
             // Employee ID Validation
             // -----------------------------------------
 
-            if (response.empIdExists) {
+            if (
+              response.empIdExists
+            ) {
               row.errors.EmpID =
-                `Employee ID "${empId}" already exists`
+                `Employee ID "${empId}" already exists`;
             }
 
             // -----------------------------------------
             // Email Validation
             // -----------------------------------------
 
-            if (response.emailExists) {
+            if (
+              response.emailExists
+            ) {
               row.errors.Email =
-                `Email "${email}" already exists`
+                `Email "${email}" already exists`;
             }
 
             // -----------------------------------------
             // Phone Validation
             // -----------------------------------------
 
-            if (response.phoneExists) {
+            if (
+              response.phoneExists
+            ) {
               row.errors.PhoneNo =
-                `Phone "${phone}" already exists`
+                `Phone "${phone}" already exists`;
             }
 
             // -----------------------------------------
             // API Error
             // -----------------------------------------
 
-            if (response.error) {
+            if (
+              response.error
+            ) {
               row.errors.ReportingManager =
                 response.message ||
-                "Unable to validate employee details"
+                "Unable to validate employee details";
             }
-          },
-        )
+          }
+        );
 
-        setUploadData(jsonData);
+        // =================================================
+        // STEP 13: COMPLETE
+        // =================================================
 
-        setData(jsonData);
-
-        setFileInput(selectedFile);
+        setUploadStage(
+          "Excel validation completed successfully."
+        );
 
         setProgress(100);
 
-        setLoading(false);
+        setUploadData(
+          jsonData
+        );
+
+        setData(
+          jsonData
+        );
+
+        setFileInput(
+          selectedFile
+        );
+
+        // Give UI time to show 100%
+        setTimeout(() => {
+          setLoading(false);
+
+          setUploadStage("");
+        }, 500);
       } catch (error) {
-        console.error("Error processing Excel:", error);
+        console.error(
+          "Error processing Excel:",
+          error
+        );
 
         toast.error(
           error?.message ||
-          "Error in processing the Excel file.",
+            "Error in processing the Excel file."
         );
 
         setLoading(false);
 
         setProgress(0);
+
+        setUploadStage("");
 
         setUploadData([]);
 
@@ -672,10 +1103,14 @@ const ImportUsers = ({ batch, onBack, userData }) => {
       }
     },
 
-    onDropRejected: (rejectedFiles) => {
+    onDropRejected: (
+      rejectedFiles
+    ) => {
       setLoading(false);
 
       setProgress(0);
+
+      setUploadStage("");
 
       setUploadData([]);
 
@@ -683,46 +1118,71 @@ const ImportUsers = ({ batch, onBack, userData }) => {
 
       setFileInput(null);
 
-      rejectedFiles.forEach((file) => {
-        file.errors.forEach((error) => {
-          let msg = "";
+      rejectedFiles.forEach(
+        (file) => {
+          file.errors.forEach(
+            (error) => {
+              let msg = "";
 
-          switch (error.code) {
-            case "file-invalid-type":
-              msg = `Invalid file type for ${file.file.name}.`;
-              break;
+              switch (
+                error.code
+              ) {
+                case "file-invalid-type":
+                  msg = `Invalid file type for ${file.file.name}.`;
+                  break;
 
-            case "file-too-large":
-              msg = `File ${file.file.name} is too large. Maximum size is 2 MB.`;
-              break;
+                case "file-too-large":
+                  msg = `File ${file.file.name} is too large. Maximum size is 2 MB.`;
+                  break;
 
-            case "too-many-files":
-              msg = "Too many files selected.";
-              break;
+                case "too-many-files":
+                  msg =
+                    "Too many files selected.";
+                  break;
 
-            default:
-              msg = `Error with file ${file.file.name}.`;
-          }
+                default:
+                  msg = `Error with file ${file.file.name}.`;
+              }
 
-          toast.error(msg);
-        });
-      });
+              toast.error(
+                msg
+              );
+            }
+          );
+        }
+      );
     },
   });
 
+  // =====================================================
+  // GET ROLES
+  // =====================================================
+
   const getRoles = async () => {
     try {
-      const roleData = await doGet("company/role");
+      const roleData =
+        await doGet(
+          "company/role"
+        );
 
-      setRoles(roleData);
+      setRoles(
+        roleData
+      );
     } catch (error) {
-      console.error("Error fetching roles:", error);
+      console.error(
+        "Error fetching roles:",
+        error
+      );
     }
   };
 
   useEffect(() => {
     getRoles();
   }, []);
+
+  // =====================================================
+  // REMOVE FILE
+  // =====================================================
 
   const handleRemoveFile = () => {
     setData([]);
@@ -735,95 +1195,168 @@ const ImportUsers = ({ batch, onBack, userData }) => {
 
     setProgress(0);
 
+    setUploadStage("");
+
     setShowError("");
 
     setMissingHeaders([]);
   };
 
-  const handleUploadData = async () => {
-    try {
-      if (hasUploadErrors) {
-        setShowError(
-          "Please fix all errors before starting the import.",
+  // =====================================================
+  // IMPORT DATA
+  // =====================================================
+
+  const handleUploadData =
+    async () => {
+      try {
+        if (hasUploadErrors) {
+          setShowError(
+            "Please fix all errors before starting the import."
+          );
+
+          return;
+        }
+
+        if (
+          userRoles.length === 0
+        ) {
+          setShowError(
+            "Please choose the role first"
+          );
+
+          return;
+        }
+
+        setShowError("");
+
+        setIsProgress(true);
+
+        setProgress(0);
+
+        setUploadStage(
+          "Preparing users for import..."
         );
 
-        return;
-      }
+        const totalChunks =
+          Math.ceil(
+            uploadData.length /
+              CHUNK_SIZE
+          );
 
-      if (userRoles.length === 0) {
-        setShowError("Please choose the role first");
+        const final_url = `${process.env.NEXT_PUBLIC_API_URL}/admin/users/import`;
 
-        return;
-      }
+        for (
+          let i = 0;
+          i < totalChunks;
+          i++
+        ) {
+          const chunk =
+            uploadData.slice(
+              i * CHUNK_SIZE,
+              (i + 1) *
+                CHUNK_SIZE
+            );
 
-      setShowError("");
+          setUploadStage(
+            `Importing users ${i + 1} of ${totalChunks}...`
+          );
 
-      setIsProgress(true);
+          const res =
+            await fetch(
+              final_url,
+              {
+                method: "POST",
 
-      const totalChunks = Math.ceil(
-        uploadData.length / CHUNK_SIZE,
-      );
+                headers: {
+                  "Content-Type":
+                    "application/json",
 
-      const final_url = `${process.env.NEXT_PUBLIC_API_URL}/admin/users/import`;
+                  Authorization: `Bearer ${token}`,
+                },
 
-      for (let i = 0; i < totalChunks; i++) {
-        const chunk = uploadData.slice(
-          i * CHUNK_SIZE,
-          (i + 1) * CHUNK_SIZE,
-        );
+                body: JSON.stringify(
+                  {
+                    chunk,
 
-        const res = await fetch(final_url, {
-          method: "POST",
+                    roles: userRoles,
+                  }
+                ),
+              }
+            );
 
-          headers: {
-            "Content-Type": "application/json",
+          const result =
+            await res.json();
 
-            Authorization: `Bearer ${token}`,
-          },
+          if (!res.ok) {
+            throw new Error(
+              result?.message ||
+                "Import failed"
+            );
+          }
 
-          body: JSON.stringify({
-            chunk,
-            roles: userRoles,
-          }),
-        });
+          const percent =
+            Math.round(
+              ((i + 1) /
+                totalChunks) *
+                100
+            );
 
-        const result = await res.json();
-
-        if (!res.ok) {
-          throw new Error(
-            result?.message || "Import failed",
+          setProgress(
+            percent
           );
         }
 
-        const percent = Math.round(
-          ((i + 1) / totalChunks) * 100,
+        // =================================================
+        // IMPORT COMPLETE
+        // =================================================
+
+        setUploadStage(
+          "Import completed successfully!"
         );
 
-        setProgress(percent);
+        setProgress(100);
 
-        if (percent === 100) {
-          setOpenSuccessDialog(true);
+        setTimeout(() => {
+          setOpenSuccessDialog(
+            true
+          );
 
           setUploadData([]);
 
           setUserRoles([]);
 
           setIsProgress(false);
-        }
+
+          setUploadStage("");
+        }, 500);
+      } catch (error) {
+        console.error(
+          "Import error:",
+          error
+        );
+
+        toast.error(
+          error?.message ||
+            "Error in processing the Excel file."
+        );
+
+        setIsProgress(false);
+
+        setUploadStage("");
+
+        setProgress(0);
       }
-    } catch (error) {
-      console.error("Import error:", error);
+    };
 
-      toast.error(
-        error?.message ||
-        "Error in processing the Excel file.",
-      );
+  // =====================================================
+  // FIELD VALUE WITH ERROR
+  // =====================================================
 
-      setIsProgress(false);
-    }
-  };
-
-  const FieldValueWithError = ({ value, error }) => {
+  const FieldValueWithError = ({
+    value,
+    error,
+  }) => {
+    
     return (
       <div
         style={{
@@ -840,8 +1373,8 @@ const ImportUsers = ({ batch, onBack, userData }) => {
           }}
         >
           {value !== undefined &&
-            value !== null &&
-            String(value).trim() !== ""
+          value !== null &&
+          String(value).trim() !== ""
             ? String(value)
             : "-"}
         </Typography>
@@ -850,12 +1383,14 @@ const ImportUsers = ({ batch, onBack, userData }) => {
           <Typography
             variant="caption"
             sx={{
-              color: "#d32f2f !important",
+              color:
+                "#d32f2f !important",
               mt: 0.5,
               display: "block",
               fontWeight: 500,
               lineHeight: 1.4,
-              whiteSpace: "normal",
+              whiteSpace:
+                "normal",
             }}
           >
             {error}
@@ -865,6 +1400,10 @@ const ImportUsers = ({ batch, onBack, userData }) => {
     );
   };
 
+  // =====================================================
+  // TABLE COLUMNS
+  // =====================================================
+
   const columns = useMemo(
     () => [
       {
@@ -872,357 +1411,625 @@ const ImportUsers = ({ batch, onBack, userData }) => {
 
         header: "S.No.",
 
-        cell: ({ row }) => (
+        cell: ({
+          row,
+        }) => (
           <FieldValueWithError
-            value={row.original?.SRNO}
-            error={row.original?.errors?.SRNO}
+            value={
+              row.original
+                ?.SRNO
+            }
+            error={
+              row.original
+                ?.errors
+                ?.SRNO
+            }
           />
         ),
       },
 
-      columnHelper.accessor("Import Status", {
-        header: "Imported",
+      columnHelper.accessor(
+        "Import Status",
+        {
+          header:
+            "Imported",
 
-        cell: ({ row }) => {
-          const hasErrors =
-            Object.keys(
-              row.original?.errors || {},
-            ).length > 0;
+          cell: ({
+            row,
+          }) => {
+            const hasErrors =
+              Object.keys(
+                row.original
+                  ?.errors ||
+                  {}
+              ).length > 0;
 
-          return (
-            <CustomAvatar
-              skin="light"
-              color={hasErrors ? "error" : "success"}
-            >
-              <i
-                className={
+            return (
+              <CustomAvatar
+                skin="light"
+                color={
                   hasErrors
-                    ? "tabler-circle-x"
-                    : "tabler-circle-check"
+                    ? "error"
+                    : "success"
                 }
-              />
-            </CustomAvatar>
-          );
-        },
-      }),
+              >
+                <i
+                  className={
+                    hasErrors
+                      ? "tabler-circle-x"
+                      : "tabler-circle-check"
+                  }
+                />
+              </CustomAvatar>
+            );
+          },
+        }
+      ),
 
-      columnHelper.accessor("FirstName", {
-        header: "First Name",
+      columnHelper.accessor(
+        "FirstName",
+        {
+          header:
+            "First Name",
 
-        cell: ({ row }) => (
-          <FieldValueWithError
-            value={row.original?.FirstName}
-            error={row.original?.errors?.FirstName}
-          />
-        ),
-      }),
+          cell: ({
+            row,
+          }) => (
+            <FieldValueWithError
+              value={
+                row.original
+                  ?.FirstName
+              }
+              error={
+                row.original
+                  ?.errors
+                  ?.FirstName
+              }
+            />
+          ),
+        }
+      ),
 
-      columnHelper.accessor("LastName", {
-        header: "Last Name",
+      columnHelper.accessor(
+        "LastName",
+        {
+          header:
+            "Last Name",
 
-        cell: ({ row }) => (
-          <FieldValueWithError
-            value={row.original?.LastName}
-            error={row.original?.errors?.LastName}
-          />
-        ),
-      }),
+          cell: ({
+            row,
+          }) => (
+            <FieldValueWithError
+              value={
+                row.original
+                  ?.LastName
+              }
+              error={
+                row.original
+                  ?.errors
+                  ?.LastName
+              }
+            />
+          ),
+        }
+      ),
 
-      columnHelper.accessor("Email", {
-        header: "Email",
+      columnHelper.accessor(
+        "Email",
+        {
+          header:
+            "Email",
 
-        cell: ({ row }) => (
-          <FieldValueWithError
-            value={getEmailValue(
-              row.original?.Email,
-            )}
-            error={row.original?.errors?.Email}
-          />
-        ),
-      }),
+          cell: ({
+            row,
+          }) => (
+            <FieldValueWithError
+              value={getEmailValue(
+                row.original
+                  ?.Email
+              )}
+              error={
+                row.original
+                  ?.errors
+                  ?.Email
+              }
+            />
+          ),
+        }
+      ),
 
-      columnHelper.accessor("PhoneNo", {
-        header: "Phone",
+      columnHelper.accessor(
+        "PhoneNo",
+        {
+          header:
+            "Phone",
 
-        cell: ({ row }) => (
-          <FieldValueWithError
-            value={getCellValue(
-              row.original?.PhoneNo,
-            )}
-            error={row.original?.errors?.PhoneNo}
-          />
-        ),
-      }),
+          cell: ({
+            row,
+          }) => (
+            <FieldValueWithError
+              value={getCellValue(
+                row.original
+                  ?.PhoneNo
+              )}
+              error={
+                row.original
+                  ?.errors
+                  ?.PhoneNo
+              }
+            />
+          ),
+        }
+      ),
 
       columnHelper.accessor(
         "ReportingManager",
         {
           header: () => (
             <Tooltip title="Please enter Employee ID in Reporting Manager">
-              <span>Reporting Manager</span>
+              <span>
+                Reporting Manager
+              </span>
             </Tooltip>
           ),
 
-          cell: ({ row }) => (
+          cell: ({
+            row,
+          }) => (
             <FieldValueWithError
               value={getCellValue(
-                row.original?.ReportingManager,
+                row.original
+                  ?.ReportingManager
               )}
               error={
-                row.original?.errors
+                row.original
+                  ?.errors
                   ?.ReportingManager
               }
             />
           ),
-        },
+        }
       ),
 
-      columnHelper.accessor("EmpID", {
-        header: "Emp ID",
+      columnHelper.accessor(
+        "EmpID",
+        {
+          header:
+            "Emp ID",
 
-        cell: ({ row }) => (
-          <FieldValueWithError
-            value={row.original?.EmpID}
-            error={row.original?.errors?.EmpID}
-          />
-        ),
-      }),
+          cell: ({
+            row,
+          }) => (
+            <FieldValueWithError
+              value={
+                row.original
+                  ?.EmpID
+              }
+              error={
+                row.original
+                  ?.errors
+                  ?.EmpID
+              }
+            />
+          ),
+        }
+      ),
 
-      columnHelper.accessor("Country", {
-        header: "Country",
+      columnHelper.accessor(
+        "Country",
+        {
+          header:
+            "Country",
 
-        cell: ({ row }) => (
-          <FieldValueWithError
-            value={row.original?.Country}
-            error={row.original?.errors?.Country}
-          />
-        ),
-      }),
+          cell: ({
+            row,
+          }) => (
+            <FieldValueWithError
+              value={
+                row.original
+                  ?.Country
+              }
+              error={
+                row.original
+                  ?.errors
+                  ?.Country
+              }
+            />
+          ),
+        }
+      ),
 
-      columnHelper.accessor("State", {
-        header: "State",
+      columnHelper.accessor(
+        "State",
+        {
+          header:
+            "State",
 
-        cell: ({ row }) => (
-          <FieldValueWithError
-            value={row.original?.State}
-            error={row.original?.errors?.State}
-          />
-        ),
-      }),
+          cell: ({
+            row,
+          }) => (
+            <FieldValueWithError
+              value={
+                row.original
+                  ?.State
+              }
+              error={
+                row.original
+                  ?.errors
+                  ?.State
+              }
+            />
+          ),
+        }
+      ),
 
-      columnHelper.accessor("City", {
-        header: "City",
+      columnHelper.accessor(
+        "City",
+        {
+          header:
+            "City",
 
-        cell: ({ row }) => (
-          <FieldValueWithError
-            value={row.original?.City}
-            error={row.original?.errors?.City}
-          />
-        ),
-      }),
+          cell: ({
+            row,
+          }) => (
+            <FieldValueWithError
+              value={
+                row.original
+                  ?.City
+              }
+              error={
+                row.original
+                  ?.errors
+                  ?.City
+              }
+            />
+          ),
+        }
+      ),
 
-      columnHelper.accessor("Designation", {
-        header: "Designation",
+      columnHelper.accessor(
+        "Designation",
+        {
+          header:
+            "Designation",
 
-        cell: ({ row }) => (
-          <FieldValueWithError
-            value={row.original?.Designation}
-            error={row.original?.errors?.Designation}
-          />
-        ),
-      }),
+          cell: ({
+            row,
+          }) => (
+            <FieldValueWithError
+              value={
+                row.original
+                  ?.Designation
+              }
+              error={
+                row.original
+                  ?.errors
+                  ?.Designation
+              }
+            />
+          ),
+        }
+      ),
 
-      columnHelper.accessor("Department", {
-        header: "Department",
+      columnHelper.accessor(
+        "Department",
+        {
+          header:
+            "Department",
 
-        cell: ({ row }) => (
-          <FieldValueWithError
-            value={row.original?.Department}
-            error={row.original?.errors?.Department}
-          />
-        ),
-      }),
+          cell: ({
+            row,
+          }) => (
+            <FieldValueWithError
+              value={
+                row.original
+                  ?.Department
+              }
+              error={
+                row.original
+                  ?.errors
+                  ?.Department
+              }
+            />
+          ),
+        }
+      ),
 
       columnHelper.accessor(
         "ParticipationType",
         {
-          header: "ParticipationType",
+          header:
+            "ParticipationType",
 
-          cell: ({ row }) => (
+          cell: ({
+            row,
+          }) => (
             <FieldValueWithError
               value={
-                row.original?.ParticipationType
+                row.original
+                  ?.ParticipationType
               }
               error={
-                row.original?.errors
+                row.original
+                  ?.errors
                   ?.ParticipationType
               }
             />
           ),
-        },
+        }
       ),
 
       columnHelper.accessor(
         "EmployeeType",
         {
-          header: "EmployeeType",
+          header:
+            "EmployeeType",
 
-          cell: ({ row }) => (
+          cell: ({
+            row,
+          }) => (
             <FieldValueWithError
-              value={row.original?.EmployeeType}
+              value={
+                row.original
+                  ?.EmployeeType
+              }
               error={
-                row.original?.errors
+                row.original
+                  ?.errors
                   ?.EmployeeType
               }
             />
           ),
-        },
+        }
       ),
 
-      columnHelper.accessor("Zone", {
-        header: "Zone",
+      columnHelper.accessor(
+        "Zone",
+        {
+          header:
+            "Zone",
 
-        cell: ({ row }) => (
-          <FieldValueWithError
-            value={row.original?.Zone}
-            error={row.original?.errors?.Zone}
-          />
-        ),
-      }),
+          cell: ({
+            row,
+          }) => (
+            <FieldValueWithError
+              value={
+                row.original
+                  ?.Zone
+              }
+              error={
+                row.original
+                  ?.errors
+                  ?.Zone
+              }
+            />
+          ),
+        }
+      ),
 
-      columnHelper.accessor("Region", {
-        header: "Region",
+      columnHelper.accessor(
+        "Region",
+        {
+          header:
+            "Region",
 
-        cell: ({ row }) => (
-          <FieldValueWithError
-            value={row.original?.Region}
-            error={row.original?.errors?.Region}
-          />
-        ),
-      }),
+          cell: ({
+            row,
+          }) => (
+            <FieldValueWithError
+              value={
+                row.original
+                  ?.Region
+              }
+              error={
+                row.original
+                  ?.errors
+                  ?.Region
+              }
+            />
+          ),
+        }
+      ),
 
-      columnHelper.accessor("Branch", {
-        header: "Branch",
+      columnHelper.accessor(
+        "Branch",
+        {
+          header:
+            "Branch",
 
-        cell: ({ row }) => (
-          <FieldValueWithError
-            value={row.original?.Branch}
-            error={row.original?.errors?.Branch}
-          />
-        ),
-      }),
+          cell: ({
+            row,
+          }) => (
+            <FieldValueWithError
+              value={
+                row.original
+                  ?.Branch
+              }
+              error={
+                row.original
+                  ?.errors
+                  ?.Branch
+              }
+            />
+          ),
+        }
+      ),
 
-      columnHelper.accessor("Status", {
-        header: "Status",
+      columnHelper.accessor(
+        "Status",
+        {
+          header:
+            "Status",
 
-        cell: ({ row }) => (
-          <FieldValueWithError
-            value={row.original?.Status}
-            error={row.original?.errors?.Status}
-          />
-        ),
-      }),
+          cell: ({
+            row,
+          }) => (
+            <FieldValueWithError
+              value={
+                row.original
+                  ?.Status
+              }
+              error={
+                row.original
+                  ?.errors
+                  ?.Status
+              }
+            />
+          ),
+        }
+      ),
     ],
-    [],
+    []
   );
 
-  const table = useReactTable({
-    data,
+  // =====================================================
+  // TABLE
+  // =====================================================
 
-    columns,
+  const table =
+    useReactTable({
+      data,
 
-    filterFns: {
-      fuzzy: fuzzyFilter,
-    },
+      columns,
 
-    initialState: {
-      pagination: {
-        pageSize: 10,
+      filterFns: {
+        fuzzy: fuzzyFilter,
       },
-    },
 
-    enableRowSelection: true,
+      initialState: {
+        pagination: {
+          pageSize: 10,
+        },
+      },
 
-    globalFilterFn: fuzzyFilter,
+      enableRowSelection: true,
 
-    getCoreRowModel: getCoreRowModel(),
+      globalFilterFn:
+        fuzzyFilter,
 
-    getFilteredRowModel: getFilteredRowModel(),
+      getCoreRowModel:
+        getCoreRowModel(),
 
-    getSortedRowModel: getSortedRowModel(),
+      getFilteredRowModel:
+        getFilteredRowModel(),
 
-    getPaginationRowModel: getPaginationRowModel(),
+      getSortedRowModel:
+        getSortedRowModel(),
 
-    getFacetedRowModel: getFacetedRowModel(),
+      getPaginationRowModel:
+        getPaginationRowModel(),
 
-    getFacetedUniqueValues:
-      getFacetedUniqueValues(),
+      getFacetedRowModel:
+        getFacetedRowModel(),
 
-    getFacetedMinMaxValues:
-      getFacetedMinMaxValues(),
-  });
+      getFacetedUniqueValues:
+        getFacetedUniqueValues(),
+
+      getFacetedMinMaxValues:
+        getFacetedMinMaxValues(),
+    });
+
+  // =====================================================
+  // TABLE ITEMS
+  // =====================================================
 
   const tableItems = (
     <>
       <div className="overflow-x-auto">
-        <table className={tableStyles.table}>
+        <table
+          className={
+            tableStyles.table
+          }
+        >
           <thead>
             {table
               .getHeaderGroups()
-              .map((headerGroup) => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map(
-                    (header) => (
-                      <th key={header.id}>
-                        {header.isPlaceholder
-                          ? null
-                          : (
-                            <div
-                              className={classnames(
-                                {
-                                  "flex items-center":
-                                    header.column.getIsSorted(),
+              .map(
+                (
+                  headerGroup
+                ) => (
+                  <tr
+                    key={
+                      headerGroup.id
+                    }
+                  >
+                    {headerGroup.headers.map(
+                      (
+                        header
+                      ) => (
+                        <th
+                          key={
+                            header.id
+                          }
+                        >
+                          {header.isPlaceholder
+                            ? null
+                            : (
+                              <div
+                                className={classnames(
+                                  {
+                                    "flex items-center":
+                                      header.column.getIsSorted(),
 
-                                  "cursor-pointer select-none":
-                                    header.column.getCanSort(),
-                                },
-                              )}
-                              onClick={header.column.getToggleSortingHandler()}
-                            >
-                              {flexRender(
-                                header.column
-                                  .columnDef.header,
+                                    "cursor-pointer select-none":
+                                      header.column.getCanSort(),
+                                  }
+                                )}
+                                onClick={header.column.getToggleSortingHandler()}
+                              >
+                                {flexRender(
+                                  header
+                                    .column
+                                    .columnDef
+                                    .header,
 
-                                header.getContext(),
-                              )}
-                            </div>
-                          )}
-                      </th>
-                    ),
-                  )}
-                </tr>
-              ))}
+                                  header.getContext()
+                                )}
+                              </div>
+                            )}
+                        </th>
+                      )
+                    )}
+                  </tr>
+                )
+              )}
           </thead>
 
           <tbody>
             {table
               .getRowModel()
-              .rows.map((row) => (
-                <tr key={row.id}>
-                  {row
-                    .getVisibleCells()
-                    .map((cell) => (
-                      <td key={cell.id}>
-                        {flexRender(
-                          cell.column
-                            .columnDef.cell,
+              .rows.map(
+                (row) => (
+                  <tr
+                    key={
+                      row.id
+                    }
+                  >
+                    {row
+                      .getVisibleCells()
+                      .map(
+                        (
+                          cell
+                        ) => (
+                          <td
+                            key={
+                              cell.id
+                            }
+                          >
+                            {flexRender(
+                              cell
+                                .column
+                                .columnDef
+                                .cell,
 
-                          cell.getContext(),
-                        )}
-                      </td>
-                    ))}
-                </tr>
-              ))}
+                              cell.getContext()
+                            )}
+                          </td>
+                        )
+                      )}
+                  </tr>
+                )
+              )}
           </tbody>
         </table>
       </div>
@@ -1234,23 +2041,35 @@ const ImportUsers = ({ batch, onBack, userData }) => {
           />
         )}
         count={
-          table.getFilteredRowModel().rows
-            .length
+          table
+            .getFilteredRowModel()
+            .rows.length
         }
         rowsPerPage={
-          table.getState().pagination
+          table.getState()
+            .pagination
             .pageSize
         }
         page={
-          table.getState().pagination
+          table.getState()
+            .pagination
             .pageIndex
         }
-        onPageChange={(_, page) => {
-          table.setPageIndex(page);
+        onPageChange={(
+          _,
+          page
+        ) => {
+          table.setPageIndex(
+            page
+          );
         }}
       />
     </>
   );
+
+  // =====================================================
+  // UI
+  // =====================================================
 
   return (
     <>
@@ -1259,10 +2078,16 @@ const ImportUsers = ({ batch, onBack, userData }) => {
           title="Import Users"
           action={
             <Button
-              onClick={onBack}
+              onClick={
+                onBack
+              }
               variant="outlined"
               color="primary"
               size="small"
+              disabled={
+                loading ||
+                isProgress
+              }
             >
               Back
             </Button>
@@ -1273,9 +2098,19 @@ const ImportUsers = ({ batch, onBack, userData }) => {
           {!showError && (
             <Alert severity="info">
               <div>
-                <strong>Note:</strong> Only Excel
-                files with <code>.xls</code> or{" "}
-                <code>.xlsx</code> extensions are
+                <strong>
+                  Note:
+                </strong>{" "}
+                Only Excel
+                files with{" "}
+                <code>
+                  .xls
+                </code>{" "}
+                or{" "}
+                <code>
+                  .xlsx
+                </code>{" "}
+                extensions are
                 allowed.
               </div>
 
@@ -1292,15 +2127,41 @@ const ImportUsers = ({ batch, onBack, userData }) => {
                     paddingLeft: 20,
                   }}
                 >
-                  <li>SRNO</li>
-                  <li>First Name</li>
-                  <li>Last Name</li>
-                  <li>Email</li>
-                  <li>Password</li>
-                  <li>Phone</li>
-                  <li>Participation Type</li>
-                  <li>Emp ID</li>
-                  <li>Status</li>
+                  <li>
+                    SRNO
+                  </li>
+
+                  <li>
+                    First Name
+                  </li>
+
+                  <li>
+                    Last Name
+                  </li>
+
+                  <li>
+                    Email
+                  </li>
+
+                  <li>
+                    Password
+                  </li>
+
+                  <li>
+                    Phone
+                  </li>
+
+                  <li>
+                    Participation Type
+                  </li>
+
+                  <li>
+                    Emp ID
+                  </li>
+
+                  <li>
+                    Status
+                  </li>
                 </ul>
               </div>
             </Alert>
@@ -1317,7 +2178,8 @@ const ImportUsers = ({ batch, onBack, userData }) => {
             </Alert>
           )}
 
-          {missingHeadersData.length > 0 && (
+          {missingHeadersData.length >
+            0 && (
             <Alert
               severity="error"
               sx={{
@@ -1329,7 +2191,9 @@ const ImportUsers = ({ batch, onBack, userData }) => {
                 Missing Headers
               </AlertTitle>
 
-              {missingHeadersData.join(", ")}
+              {missingHeadersData.join(
+                ", "
+              )}
             </Alert>
           )}
 
@@ -1338,10 +2202,16 @@ const ImportUsers = ({ batch, onBack, userData }) => {
             href="/sample/users_import.xlsx"
             download="User Sample"
             style={{
-              marginTop: "14px",
-              marginBottom: "14px",
+              marginTop:
+                "14px",
+              marginBottom:
+                "14px",
             }}
             variant="contained"
+            disabled={
+              loading ||
+              isProgress
+            }
           >
             Download Sample XLSX File
           </Button>
@@ -1349,64 +2219,101 @@ const ImportUsers = ({ batch, onBack, userData }) => {
           <Controller
             name="roles"
             control={control}
-            render={({ field }) => (
+            render={({
+              field,
+            }) => (
               <CustomTextField
                 {...field}
                 select
                 fullWidth
                 label="Assign role*"
-                value={userRoles}
-                error={!!errors.roles}
+                value={
+                  userRoles
+                }
+                error={
+                  !!errors.roles
+                }
                 helperText={
-                  errors.roles?.message
+                  errors.roles
+                    ?.message
+                }
+                disabled={
+                  loading ||
+                  isProgress
                 }
                 slotProps={{
                   select: {
-                    multiple: true,
+                    multiple:
+                      true,
 
-                    onChange: (event) => {
+                    onChange: (
+                      event
+                    ) => {
                       const value =
-                        event.target.value;
+                        event
+                          .target
+                          .value;
 
-                      setUserRoles(value);
+                      setUserRoles(
+                        value
+                      );
 
-                      field.onChange(value);
+                      field.onChange(
+                        value
+                      );
                     },
 
                     renderValue: (
-                      selectedIds,
+                      selectedIds
                     ) => {
                       return roles
-                        .filter((role) =>
-                          selectedIds.includes(
-                            role._id,
-                          ),
+                        .filter(
+                          (
+                            role
+                          ) =>
+                            selectedIds.includes(
+                              role._id
+                            )
                         )
                         .map(
-                          (role) =>
-                            role.name,
+                          (
+                            role
+                          ) =>
+                            role.name
                         )
-                        .join(", ");
+                        .join(
+                          ", "
+                        );
                     },
                   },
                 }}
               >
-                {roles?.map((role) => (
-                  <MenuItem
-                    key={role._id}
-                    value={role._id}
-                  >
-                    <Checkbox
-                      checked={userRoles.includes(
-                        role._id,
-                      )}
-                    />
+                {roles?.map(
+                  (
+                    role
+                  ) => (
+                    <MenuItem
+                      key={
+                        role._id
+                      }
+                      value={
+                        role._id
+                      }
+                    >
+                      <Checkbox
+                        checked={userRoles.includes(
+                          role._id
+                        )}
+                      />
 
-                    <ListItemText
-                      primary={role.name}
-                    />
-                  </MenuItem>
-                ))}
+                      <ListItemText
+                        primary={
+                          role.name
+                        }
+                      />
+                    </MenuItem>
+                  )
+                )}
               </CustomTextField>
             )}
           />
@@ -1415,9 +2322,25 @@ const ImportUsers = ({ batch, onBack, userData }) => {
         <CardContent>
           <AppReactDropzone>
             <div
-              {...getRootProps({
-                className: "dropzone",
-              })}
+              {...getRootProps(
+                {
+                  className:
+                    "dropzone",
+                }
+              )}
+              style={{
+                pointerEvents:
+                  loading ||
+                  isProgress
+                    ? "none"
+                    : "auto",
+
+                opacity:
+                  loading ||
+                  isProgress
+                    ? 0.6
+                    : 1,
+              }}
             >
               <input
                 {...getInputProps()}
@@ -1449,18 +2372,68 @@ const ImportUsers = ({ batch, onBack, userData }) => {
               </div>
             </div>
 
-            {loading && (
-              <div className="flex items-center gap-3 mt-3">
-                <div className="is-full">
-                  <LinearProgress
-                    variant="determinate"
-                    value={progress}
-                  />
+            {/* =========================================
+                EXCEL PROCESSING / IMPORT PROGRESS
+            ========================================= */}
+
+            {(loading ||
+              isProgress) && (
+              <div
+                style={{
+                  marginTop:
+                    "20px",
+                  padding:
+                    "16px",
+                  borderRadius:
+                    "8px",
+                  backgroundColor:
+                    "rgba(0, 0, 0, 0.03)",
+                }}
+              >
+                <div
+                  style={{
+                    display:
+                      "flex",
+                    justifyContent:
+                      "space-between",
+                    alignItems:
+                      "center",
+                    marginBottom:
+                      "8px",
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    fontWeight={
+                      500
+                    }
+                  >
+                    {uploadStage ||
+                      "Processing..."}
+                  </Typography>
+
+                  <Typography
+                    variant="body2"
+                    fontWeight={
+                      700
+                    }
+                  >
+                    {progress}%
+                  </Typography>
                 </div>
 
-                <Typography>
-                  {`${progress}% `}
-                </Typography>
+                <LinearProgress
+                  variant="determinate"
+                  value={
+                    progress
+                  }
+                  sx={{
+                    height:
+                      8,
+                    borderRadius:
+                      4,
+                  }}
+                />
               </div>
             )}
 
@@ -1470,13 +2443,19 @@ const ImportUsers = ({ batch, onBack, userData }) => {
                   <ListItem>
                     <div className="file-details">
                       <Typography>
-                        {fileInput.name}
+                        {
+                          fileInput.name
+                        }
                       </Typography>
                     </div>
 
                     <IconButton
                       onClick={
                         handleRemoveFile
+                      }
+                      disabled={
+                        loading ||
+                        isProgress
                       }
                     >
                       <i className="tabler-x" />
@@ -1491,6 +2470,10 @@ const ImportUsers = ({ batch, onBack, userData }) => {
                     onClick={
                       handleRemoveFile
                     }
+                    disabled={
+                      loading ||
+                      isProgress
+                    }
                   >
                     Remove
                   </Button>
@@ -1502,16 +2485,25 @@ const ImportUsers = ({ batch, onBack, userData }) => {
                     }
                     disabled={
                       uploadData.length ===
-                      0 ||
+                        0 ||
                       hasUploadErrors ||
-                      isProgress
+                      isProgress ||
+                      loading
                     }
                   >
                     {isProgress ? (
-                      <CircularProgress
-                        size={24}
-                        color="inherit"
-                      />
+                      <div className="flex items-center gap-2">
+                        <CircularProgress
+                          size={
+                            24
+                          }
+                          color="inherit"
+                        />
+
+                        <span>
+                          Importing...
+                        </span>
+                      </div>
                     ) : hasUploadErrors ? (
                       "Fix Errors Before Import"
                     ) : (
@@ -1524,17 +2516,23 @@ const ImportUsers = ({ batch, onBack, userData }) => {
           </AppReactDropzone>
         </CardContent>
 
-        {(data.length > 0 ||
-          uploadData.length > 0) && (
-            <CardContent>
-              {tableItems}
-            </CardContent>
-          )}
+        {(data.length >
+          0 ||
+          uploadData.length >
+            0) && (
+          <CardContent>
+            {tableItems}
+          </CardContent>
+        )}
       </Card>
 
       <ImportSuccessDialog
-        open={openSuccessDialog}
-        setOpen={setOpenSuccessDialog}
+        open={
+          openSuccessDialog
+        }
+        setOpen={
+          setOpenSuccessDialog
+        }
       />
     </>
   );
