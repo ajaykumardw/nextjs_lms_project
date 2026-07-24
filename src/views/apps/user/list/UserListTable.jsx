@@ -13,6 +13,7 @@ import Typography from '@mui/material/Typography';
 import Checkbox from '@mui/material/Checkbox';
 import TablePagination from '@mui/material/TablePagination';
 import MenuItem from '@mui/material/MenuItem';
+import { Chip } from '@mui/material';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 
@@ -53,7 +54,6 @@ import { useApi } from '../../../../utils/api';
 import tableStyles from '@core/styles/table.module.css';
 
 import { usePermissionList } from '@/utils/getPermission';
-import { Chip } from '@mui/material';
 
 const DebouncedInput = ({ value: initialValue, onChange, debounce = 500, ...props }) => {
   // States

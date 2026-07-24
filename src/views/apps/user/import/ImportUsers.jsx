@@ -93,17 +93,20 @@ const fuzzyFilter = (row, columnId, value, addMeta) => {
 
 const getCellValue = (value) => {
   if (value === null || value === undefined) {
+
     return "";
   }
 
   if (typeof value === "object" && value.hyperlink) {
     if (value.text !== undefined && value.text !== null) {
+
       return String(value.text).trim();
     }
 
     const hyperlink = String(value.hyperlink).trim();
 
     if (hyperlink.toLowerCase().startsWith("mailto:")) {
+
       return hyperlink
         .replace(/^mailto:/i, "")
         .split("?")[0]
@@ -117,6 +120,7 @@ const getCellValue = (value) => {
     typeof value === "object" &&
     Array.isArray(value.richText)
   ) {
+    
     return value.richText
       .map((item) => item.text || "")
       .join("")
@@ -1356,7 +1360,7 @@ const ImportUsers = ({
     value,
     error,
   }) => {
-    
+
     return (
       <div
         style={{
@@ -2266,6 +2270,7 @@ const ImportUsers = ({
                     renderValue: (
                       selectedIds
                     ) => {
+
                       return roles
                         .filter(
                           (
