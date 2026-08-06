@@ -230,6 +230,7 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
               <MenuItem key="Package" href={`/${locale}/apps/package`}>Package</MenuItem>
             </SubMenu>
           )}
+
           {permissArray?.isUser && (
             <>
 
@@ -321,6 +322,11 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
           )}
           {permissArray?.isCompany && (
             <MenuItem key="download_center" href={`/${locale}/apps/download-center`} icon={<i className="tabler-download" />}>Download center</MenuItem>
+          )}
+          {permissArray?.isCompany && (
+            <MenuItem key="attendance" href={`/${locale}/apps/attendance`} icon={<i className="tabler-calendar" />}>
+              Attendance
+            </MenuItem>
           )}
           {permissArray?.isCompany && (
             <SubMenu label="Reports" icon={<i className="tabler-report" />}>
