@@ -3,11 +3,11 @@
 // React Imports
 import { useEffect, useRef } from 'react'
 
-import { useSession } from 'next-auth/react'
-
-// Next Imports
-import Link from 'next/link'
 import { useParams } from 'next/navigation'
+
+import Link from 'next/link'
+
+import { useSession } from 'next-auth/react'
 
 // MUI Imports
 import { styled, useColorScheme, useTheme } from '@mui/material/styles'
