@@ -374,7 +374,7 @@ const   UserFormLayout = () => {
                 phone: editData.phone ?? '',
                 address: editData.address ?? '',
                 pincode: editData.pincode ?? '',
-                country_id: editData.country_id ?? '',
+                country_id: String(editData.country_id) ?? '',
                 state_id: editData.state_id ?? '',
                 city_id: editData.city_id ?? '',
                 status: editData.status ?? '',
@@ -398,7 +398,11 @@ const   UserFormLayout = () => {
             });
 
             if (editData.photo) {
-                setImgSrc(`${public_url}${editData.photo}`);
+
+                console.log("Img", public_url, editData?.photo);
+                
+
+                setImgSrc(`${public_url}/uploads/images/${editData.photo}`);
             }
 
             if (editData.country_id) setCountryId(editData.country_id);

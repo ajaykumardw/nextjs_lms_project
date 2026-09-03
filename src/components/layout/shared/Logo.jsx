@@ -3,6 +3,10 @@
 // React Imports
 import { useEffect, useRef } from 'react'
 
+import { useSession } from 'next-auth/react'
+
+import { Skeleton } from '@mui/material'
+
 // Third-party Imports
 import styled from '@emotion/styled'
 
@@ -31,7 +35,9 @@ const LogoText = styled.span`
       : 'opacity: 1; margin-inline-start: 12px;'}
 `
 
-const Logo = ({ color }) => {
+const Logo = ({ color, company_logo = null }) => {
+
+  const { data: session } = useSession();
 
   // Refs
   const logoTextRef = useRef(null)
@@ -60,9 +66,19 @@ const Logo = ({ color }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isHovered, layout, isBreakpointReached])
 
+  if (!session) {
+    return (
+      <Skeleton variant='rectangular' width={140} height={100} />
+    )
+  }
+
   return (
     <div className='flex items-center'>
-      <img src={`${asset_url}/company_logo/demo39.svg`} alt="DW" width={200} height={170} />
+      {company_logo ? (
+        <img src={`${asset_url}/uploads/images/${company_logo}`} alt="DW" width={140} height={100} />
+      ) : (
+        <img src={`${asset_url}/company_logo/demo39.svg`} alt="DW" width={140} height={100} />
+      )}
       {/* <VuexyLogo className='text-2xl text-primary' /> */}
       {/* <LogoText
         color={color}

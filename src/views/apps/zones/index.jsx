@@ -71,15 +71,9 @@ const Zones = () => {
           Zones List
         </Typography>
       </Grid>
-      <Grid size={{ xs: 12 }}>
+      {/* <Grid size={{ xs: 12 }}>
         <ZoneCards fetchZoneData={fetchZoneData} tableData={zoneData} />
-      </Grid>
-      <Grid size={{ xs: 12 }} className='!pbs-12'>
-        <Typography variant='h4' className='mbe-1'>
-          Total users with their roles
-        </Typography>
-        <Typography>Find all of your company&#39;s administrator accounts and their associate roles.</Typography>
-      </Grid>
+      </Grid> */}
       <Grid size={{ xs: 12 }}>
         {loading ? (
           <ZonesTable tableData={zoneData} fetchZoneData={fetchZoneData} />

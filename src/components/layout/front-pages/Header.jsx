@@ -50,7 +50,6 @@ const Header = ({ mode }) => {
                 <i className='tabler-menu-2 text-textPrimary' />
               </IconButton>
               <Link href='/front-pages/landing-page'>
-                <Logo />
               </Link>
               <FrontMenu mode={mode} isDrawerOpen={isDrawerOpen} setIsDrawerOpen={setIsDrawerOpen} />
             </div>

@@ -4,7 +4,7 @@
 import { useState, useMemo, useEffect } from 'react'
 
 // MUI Imports
-import Card from '@mui/material/Card'
+import { Card, Button } from '@mui/material'
 import CardContent from '@mui/material/CardContent'
 import MenuItem from '@mui/material/MenuItem'
 import Chip from '@mui/material/Chip'
@@ -231,23 +231,16 @@ const RegionTable = ({ tableData, fetchRegionData }) => {
             onChange={value => setGlobalFilter(String(value))}
             placeholder='Search Region'
           />
-          <CustomTextField
-            select
-            value={role}
-            onChange={e => setRole(e.target.value)}
-            id='roles-app-role-select'
-            className='max-sm:is-full sm:is-[160px]'
-            slotProps={{ select: { displayEmpty: true } }}
+          <Button
+            variant='contained'
+            onClick={() => {
+
+              setSelectedRegion();
+              setOpenZoneDialog(true)
+            }}
           >
-            <MenuItem value=''>Select Region</MenuItem>
-            {tableData.map((item, index) => {
-              return (
-                <MenuItem key={index} value={item.data._id}>
-                  {item.data.name}
-                </MenuItem>
-              );
-            })}
-          </CustomTextField>
+            Add Region
+          </Button>
         </div>
       </CardContent>
 

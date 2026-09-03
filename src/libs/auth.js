@@ -45,7 +45,7 @@ export const authOptions = {
           const data = await res.json()
 
 
-          
+
 
           if (!res.ok) {
 
@@ -110,6 +110,8 @@ export const authOptions = {
         token.email = user.email;
         token.token = user.token;
         token.userId = user.userId;
+        token.photo = user.photo;
+        token.company_logo = user.company_logo;
         token.expiresAt = user.expiresAt;
       }
 
@@ -121,6 +123,8 @@ export const authOptions = {
         session.user.email = token.email;
         session.user.name = token.name;
         session.user.token = token.token;
+        session.user.photo = token.photo;
+        session.user.company_logo = token.company_logo;
         session.user.userId = token.userId;
         session.user.expiresAt = token.expiresAt;
       }

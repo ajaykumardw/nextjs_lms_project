@@ -73,15 +73,6 @@ const Region = () => {
         </Typography>
       </Grid>
       <Grid size={{ xs: 12 }}>
-        <RegionCards fetchRegionData={fetchRegionData} tableData={regionData} />
-      </Grid>
-      <Grid size={{ xs: 12 }} className='!pbs-12'>
-        <Typography variant='h4' className='mbe-1'>
-          Total users with their region
-        </Typography>
-        <Typography>Find all of your company&#39;s administrator accounts and their associate roles.</Typography>
-      </Grid>
-      <Grid size={{ xs: 12 }}>
         {regionData ? (
           <RegionTable tableData={regionData} fetchRegionData={fetchRegionData} />
         )

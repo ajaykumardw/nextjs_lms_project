@@ -71,15 +71,6 @@ const Branch = () => {
         </Typography>
       </Grid>
       <Grid size={{ xs: 12 }}>
-        <BranchCards fetchBranchData={fetchBranchData} tableData={branchData} />
-      </Grid>
-      <Grid size={{ xs: 12 }} className='!pbs-12'>
-        <Typography variant='h4' className='mbe-1'>
-          Total users with their branch
-        </Typography>
-        <Typography>Find all of your company&#39;s administrator accounts and their associate roles.</Typography>
-      </Grid>
-      <Grid size={{ xs: 12 }}>
         {branchData ? (
           <BranchTable tableData={branchData} fetchBranchData={fetchBranchData} />
         )

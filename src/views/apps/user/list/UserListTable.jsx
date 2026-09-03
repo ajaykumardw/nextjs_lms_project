@@ -356,7 +356,7 @@ const UserListTable = ({
     const { avatar, fullName } = params
 
     if (avatar) {
-      return <CustomAvatar src={`${public_url}/${avatar}`} size={34} />
+      return <CustomAvatar src={`${public_url}/uploads/images/${avatar}`} size={34} />
     } else {
       return <CustomAvatar size={34}>{getInitials(fullName)}</CustomAvatar>
     }

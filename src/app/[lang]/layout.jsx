@@ -25,8 +25,8 @@ import '@/app/globals.css'
 import '@assets/iconify-icons/generated-icons.css'
 
 export const metadata = {
-  title: 'DreamTech Infotel',
-  description: 'DreamTech Infotel'
+  title: 'LMS',
+  description: 'Learning Management System'
 }
 
 const RootLayout = async props => {

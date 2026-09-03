@@ -67,11 +67,13 @@ export default function AttendanceTable() {
                 mb={3}
                 alignItems="center"
             >
+
                 <Typography variant="h6" fontWeight={700}>
                     Session Attendance Log
                 </Typography>
 
                 <Box display="flex" gap={2}>
+
                     <TextField
                         select
                         size="small"

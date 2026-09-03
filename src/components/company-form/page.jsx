@@ -689,7 +689,7 @@ const UserFormLayout = () => {
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
                 {/* <Card className="p-4"> */}
-                <Typography variant="h6" className="mb-4">Profile Photo</Typography>
+                <Typography variant="h6" className="mb-4">Company Logo</Typography>
                 <CardContent className="flex flex-col sm:flex-row items-start gap-6 p-0">
                   <img
                     src={imgSrc}
@@ -700,7 +700,7 @@ const UserFormLayout = () => {
                   <div className="flex flex-col gap-2">
                     <div className="flex flex-col gap-2 w-48">
                       <Button component="label" variant="contained" fullWidth htmlFor="upload-image">
-                        Upload New Photo
+                        Upload New Logo
                         <input
                           hidden
                           type="file"

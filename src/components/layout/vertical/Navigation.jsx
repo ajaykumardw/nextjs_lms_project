@@ -3,6 +3,8 @@
 // React Imports
 import { useEffect, useRef } from 'react'
 
+import { useSession } from 'next-auth/react'
+
 // Next Imports
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
@@ -44,6 +46,9 @@ const StyledBoxForShadow = styled('div')(({ theme }) => ({
 const Navigation = props => {
   // Props
   const { dictionary, mode } = props
+
+  const { data: session } = useSession();
+  const company_logo = session?.user?.company_logo || null;
 
   // Hooks
   const verticalNavOptions = useVerticalNav()
@@ -97,13 +102,13 @@ const Navigation = props => {
       // when semiDark is enabled and the mode or systemMode is light
       {...(isSemiDark &&
         !isDark && {
-          'data-dark': ''
-        })}
+        'data-dark': ''
+      })}
     >
       {/* Nav Header including Logo & nav toggle icons  */}
       <NavHeader>
         <Link href={getLocalizedUrl('/', locale)}>
-          <Logo />
+          <Logo company_logo={company_logo} />
         </Link>
         {!(isCollapsed && !isHovered) && (
           <NavCollapseIcons

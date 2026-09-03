@@ -24,9 +24,9 @@ import '@/app/globals.css'
 import '@assets/iconify-icons/generated-icons.css'
 
 export const metadata = {
-  title: 'DreamTech Infotel',
+  title: 'LMS',
   description:
-    'DreamTech Infotel'
+    'Learning Management System'
 }
 
 const Layout = async ({ children }) => {

@@ -7,7 +7,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 
 // MUI Imports
-import Card from '@mui/material/Card'
+import { Card, Button } from '@mui/material'
 import CardContent from '@mui/material/CardContent'
 import MenuItem from '@mui/material/MenuItem'
 import Chip from '@mui/material/Chip'
@@ -96,7 +96,7 @@ const ZonesTable = ({ tableData, fetchZoneData }) => {
     const fetchPermissions = async () => {
       try {
         const result = await getPermissions();
-        
+
         setPermissions(result);
       } catch (error) {
         console.error('Error fetching permissions:', error);
@@ -234,25 +234,19 @@ const ZonesTable = ({ tableData, fetchZoneData }) => {
             value={globalFilter ?? ''}
             className='max-sm:is-full min-is-[250px]'
             onChange={value => setGlobalFilter(String(value))}
-            placeholder='Search Role'
+            placeholder='Search Zone'
           />
-          <CustomTextField
-            select
-            value={role}
-            onChange={e => setRole(e.target.value)}
-            id='roles-app-role-select'
-            className='max-sm:is-full sm:is-[160px]'
-            slotProps={{ select: { displayEmpty: true } }}
+          <Button
+            variant='contained'
+            onClick={() => {
+
+              setSelectedZone(null)
+
+              setOpenDialog(true)
+            }}
           >
-            <MenuItem value=''>Select Role</MenuItem>
-            {tableData.map((item, index) => {
-              return (
-                <MenuItem key={index} value={item._id}>
-                  {item.name}
-                </MenuItem>
-              );
-            })}
-          </CustomTextField>
+            Add Zones
+          </Button>
         </div>
       </CardContent>
 
