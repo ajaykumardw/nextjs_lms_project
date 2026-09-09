@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 
 import {
     Box,
-    Tabs,
     Tab,
+    Card,
+    CardContent,
     Typography,
     Checkbox,
     Button,
@@ -22,74 +23,48 @@ import {
     Paper,
     Switch,
     Divider,
-    GlobalStyles,
-    useTheme,
 } from "@mui/material";
-
-import { alpha } from "@mui/material/styles";
 
 import Grid from "@mui/material/Grid2";
 
-import {
-    IconLock,
-    IconCertificate,
-    IconMessage2,
-    IconUserPlus,
-    IconChecklist,
-    IconTag,
-    IconBellRinging,
-    IconAdjustments,
-    IconCircleCheckFilled,
-    IconFileText,
-    IconPlus,
-    IconAlertCircle,
-    IconCube,
-    IconInfoCircle,
-    IconBrandYoutube,
-    IconVideo,
-    IconHelpSquareRounded,
-    IconEdit,
-    IconTrash,
-} from "@tabler/icons-react";
+import { TabContext, TabList, TabPanel } from "@mui/lab";
 
-import DialogCloseButton from "@/components/dialogs/DialogCloseButton"
+import DialogCloseButton from "@/components/dialogs/DialogCloseButton";
 
-const ACCENTS = {
-    neutral: "#8A94A6",
-    amber: "#F59E0B",
-    teal: "#14B8A6",
-    indigo: "#6366F1",
-    rose: "#F43F5E",
-    purple: "#A855F7",
-    green: "#22C55E",
+/* -------------------------------------------------------------------- */
+/*  Shared bits                                                          */
+/* -------------------------------------------------------------------- */
+
+const fieldSx = {
+    "& .MuiOutlinedInput-root": { borderRadius: "8px" },
 };
 
-const EngageCard = ({ icon, title, subtitle, runtime, rightInfo }) => {
-    const theme = useTheme();
+const SectionBlock = ({ title, description, children }) => (
+    <Box mb={5}>
+        <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+            {title}
+        </Typography>
+        {description && (
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                {description}
+            </Typography>
+        )}
+        <Box>{children}</Box>
+    </Box>
+);
 
-    return (
-        <Paper
-            elevation={0}
+const EngageCard = ({ title, subtitle, runtime, rightInfo }) => (
+    <Card variant="outlined" sx={{ height: 140 }}>
+        <CardContent
             sx={{
-                border: `1px solid ${theme.palette.divider}`,
-                borderRadius: 2,
-                p: 2,
-                height: 145,
+                height: "100%",
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
             }}
         >
             <Box>
-                <Box sx={{ color: "text.secondary", mb: 1 }}>{icon}</Box>
-                <Divider sx={{ mb: 1 }} />
-                <Typography
-                    sx={{
-                        fontWeight: 600,
-                        color: "primary.main",
-                        mb: 0.5,
-                    }}
-                >
+                <Typography fontWeight={600} variant="body1" gutterBottom>
                     {title}
                 </Typography>
                 {subtitle && (
@@ -98,508 +73,414 @@ const EngageCard = ({ icon, title, subtitle, runtime, rightInfo }) => {
                     </Typography>
                 )}
             </Box>
-
-            <Box display="flex" justifyContent="space-between" alignItems="flex-end">
-                <Stack direction="row" spacing={1}>
-                    <IconEdit
-                        size={18}
-                        color={theme.palette.primary.main}
-                        style={{ cursor: "pointer" }}
-                    />
-                    <IconTrash
-                        size={18}
-                        color={theme.palette.primary.main}
-                        style={{ cursor: "pointer" }}
-                    />
-                </Stack>
-
+            <Box display="flex" justifyContent="flex-end">
                 {runtime && (
                     <Typography variant="body2" color="text.secondary">
                         {runtime}
                     </Typography>
                 )}
-
                 {rightInfo && <Box textAlign="right">{rightInfo}</Box>}
             </Box>
-        </Paper>
-    );
-};
+        </CardContent>
+    </Card>
+);
 
-const SectionHeader = ({ icon, title }) => {
-    const theme = useTheme();
+const EngageColumn = ({ title, children, ctaLabel }) => (
+    <Grid size={{ xs: 12, md: 4 }}>
+        <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+            {title}
+        </Typography>
+        {children}
+        <Box mt={3}>
+            <Button fullWidth variant="outlined">
+                {ctaLabel}
+            </Button>
+        </Box>
+    </Grid>
+);
+
+const EngagePanel = () => (
+    <Grid container spacing={4}>
+        <EngageColumn title="Pre-reads" ctaLabel="Add a pre-read">
+            <EngageCard title="YouTube Videos" runtime="02:09 runtime" />
+        </EngageColumn>
+
+        <EngageColumn title="Training material" ctaLabel="Add training material">
+            <EngageCard title="Videos" runtime="04:26 runtime" />
+        </EngageColumn>
+
+        <EngageColumn title="Post-reads" ctaLabel="Add a quiz">
+            <EngageCard
+                title="Objective-type quiz"
+                subtitle="Available in 3 languages"
+                rightInfo={
+                    <>
+                        <Typography variant="body2" color="text.secondary">2 questions</Typography>
+                        <Typography variant="body2" color="text.secondary">2 minutes</Typography>
+                    </>
+                }
+            />
+        </EngageColumn>
+    </Grid>
+);
+
+/* -------------------------------------------------------------------- */
+/*  Certificate picker                                                   */
+/* -------------------------------------------------------------------- */
+
+const CertificatePicker = ({ selected, onSelect }) => (
+    <Box display="flex" gap={2} flexWrap="wrap">
+        {[1, 2, 3].map((item) => {
+            const isSelected = selected === item;
+
+            return (
+                <Card
+                    key={item}
+                    onClick={() => onSelect(item)}
+                    sx={{
+                        width: 180,
+                        height: 120,
+                        borderRadius: 2,
+                        border: isSelected ? "2px solid #1976d2" : "1px solid #e0e0e0",
+                        cursor: "pointer",
+                        position: "relative",
+                    }}
+                >
+                    {isSelected && (
+                        <Box
+                            sx={{
+                                position: "absolute",
+                                top: 6,
+                                right: 6,
+                                backgroundColor: "primary.main",
+                                color: "#fff",
+                                borderRadius: "50%",
+                                width: 18,
+                                height: 18,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: 12,
+                            }}
+                        >
+                            <i className="tabler-check" />
+                        </Box>
+                    )}
+                    <Box
+                        sx={{
+                            width: "100%",
+                            height: "100%",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                        }}
+                    >
+                        <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
+                            Certificate {item}
+                        </Typography>
+                    </Box>
+                </Card>
+            );
+        })}
+    </Box>
+);
+
+/* -------------------------------------------------------------------- */
+/*  Batch creation modal                                                 */
+/* -------------------------------------------------------------------- */
+
+const ModalFooter = ({ onClose }) => (
+    <Box mt={3} display="flex" justifyContent="center" gap={2}>
+        <Button onClick={onClose}>Close</Button>
+        <Button variant="outlined" disabled>Publish</Button>
+        <Button variant="contained">Save</Button>
+    </Box>
+);
+
+const DefinedBatch = ({ setOpenBatchModal }) => {
+    const [participantTab, setParticipantTab] = useState("confirmed");
 
     return (
         <Box>
-            <Stack
-                direction="row"
-                spacing={1}
-                alignItems="center"
-                sx={{ mb: 2 }}
-            >
-                {icon}
-                <Typography
-                    variant="h6"
-                    sx={{
-                        color: "primary.main",
-                        fontWeight: 500,
-                    }}
-                >
-                    {title}
-                </Typography>
-                <IconInfoCircle size={16} color={theme.palette.text.secondary} />
-            </Stack>
-            <Divider />
-        </Box>
-    );
-};
-
-const EngagePanel = () => {
-    return (
-        <Grid container spacing={3} sx={{ p: 3 }}>
-            {/* Pre Reads */}
-            <Grid size={{ xs: 12, md: 4 }}>
-                <SectionHeader title="Pre-reads" icon={<IconCube size={24} />} />
-                <Box mt={2}>
-                    <EngageCard
-                        icon={<IconBrandYoutube size={30} />}
-                        title="YouTube Videos"
-                        runtime="02:09 Runtime"
-                    />
-                </Box>
-                <Box mt={8} display="flex" justifyContent="center">
-                    <Button variant="contained" sx={{ borderRadius: 20, textTransform: "none", px: 4 }}>
-                        Pre-Read
-                    </Button>
-                </Box>
-            </Grid>
-
-            {/* Training Material */}
-            <Grid size={{ xs: 12, md: 4 }}>
-                <SectionHeader title="Training Material" icon={<IconCube size={24} />} />
-                <Box mt={2}>
-                    <EngageCard
-                        icon={<IconVideo size={30} />}
-                        title="Videos"
-                        runtime="04:26 Runtime"
-                    />
-                </Box>
-                <Box mt={8} display="flex" justifyContent="center">
-                    <Button variant="contained" sx={{ borderRadius: 20, textTransform: "none", px: 4 }}>
-                        Training Material
-                    </Button>
-                </Box>
-            </Grid>
-
-            {/* Post Reads */}
-            <Grid size={{ xs: 12, md: 4 }}>
-                <SectionHeader title="Post-reads" icon={<IconCube size={24} />} />
-                <Box mt={2}>
-                    <EngageCard
-                        icon={<IconHelpSquareRounded size={30} />}
-                        title="Objective-Type Quizzes"
-                        subtitle="Available in 3 languages"
-                        rightInfo={
-                            <>
-                                <Typography variant="body2" color="text.secondary">2 Questions</Typography>
-                                <Typography variant="body2" color="text.secondary">2 Minutes</Typography>
-                            </>
-                        }
-                    />
-                </Box>
-                <Box mt={8} display="flex" justifyContent="center">
-                    <Button variant="contained" sx={{ borderRadius: 20, textTransform: "none", px: 4 }}>
-                        Post-Read
-                    </Button>
-                </Box>
-            </Grid>
-        </Grid>
-    );
-}
-
-const SectionCard = ({ accent, icon, title, description, children }) => {
-    const theme = useTheme();
-
-    return (
-        <Paper
-            elevation={0}
-            sx={{
-                p: { xs: 2.5, md: 4 },
-                mb: 3,
-                borderRadius: "20px",
-                border: `1px solid ${theme.palette.divider}`,
-                bgcolor: theme.palette.background.paper,
-                transition: "box-shadow .2s ease",
-                "&:hover": {
-                    boxShadow:
-                        theme.palette.mode === "dark"
-                            ? "0 8px 24px rgba(0,0,0,0.35)"
-                            : "0 8px 24px rgba(16, 24, 40, 0.06)",
-                },
-            }}
-        >
-            <Stack direction="row" spacing={2} alignItems="flex-start" mb={description ? 1 : 2.5}>
-                <Box
-                    sx={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: "12px",
-                        flexShrink: 0,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        bgcolor: alpha(accent, theme.palette.mode === "dark" ? 0.22 : 0.12),
-                        color: accent,
-                    }}
-                >
-                    {icon}
-                </Box>
-
-                <Box>
-                    <Typography
-                        sx={{
-                            fontFamily: "'Sora', sans-serif",
-                            fontWeight: 600,
-                            fontSize: "1.05rem",
-                            color: theme.palette.text.primary,
-                        }}
-                    >
-                        {title}
-                    </Typography>
-
-                    {description && (
-                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mt: 0.25 }}>
-                            {description}
-                        </Typography>
-                    )}
-                </Box>
-            </Stack>
-
-            <Box sx={{ pl: { xs: 0, md: "60px" } }}>{children}</Box>
-        </Paper>
-    );
-};
-
-const DefinedBatch = ({ setOpenBatchModal }) => {
-    return (
-        <Box sx={{ p: 4 }}>
-            {/* Header Tabs */}
-            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-                <Tabs value={0}>
-                    <Tab label="Create" />
-                    <Tab label="Settings" disabled />
-                </Tabs>
-            </Box>
-
-            {/* Batch Detail Form */}
-            <Typography variant="h6" gutterBottom>Batch Detail</Typography>
+            <Typography variant="h6" gutterBottom>
+                Batch detail
+            </Typography>
 
             <Grid container spacing={3} sx={{ mb: 4 }}>
-                <Grid item xs={12} md={8}>
-                    <TextField fullWidth label="Batch Name *" placeholder="Batch Name" size="small" />
+                <Grid size={{ xs: 12, md: 8 }}>
+                    <TextField fullWidth label="Batch name *" placeholder="e.g. October cohort" size="small" sx={fieldSx} />
                 </Grid>
-                <Grid item xs={12} md={4} display="flex" alignItems="flex-end">
-                    <Button variant="outlined" fullWidth sx={{ height: '40px' }}>Add Attachment</Button>
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                    <TextField fullWidth label="From (Start Date) *" type="date" InputLabelProps={{ shrink: true }} size="small" />
-                </Grid>
-                <Grid item xs={12} md={6}>
-                    <TextField fullWidth label="To (End Date) *" type="date" InputLabelProps={{ shrink: true }} size="small" />
+                <Grid size={{ xs: 12, md: 4 }} display="flex" alignItems="stretch">
+                    <Button variant="outlined" fullWidth>
+                        Add attachment
+                    </Button>
                 </Grid>
 
-                <Grid item xs={12} md={6}>
-                    <TextField fullWidth label="Venue (Place Or Conference Link)" placeholder="(Optional)" size="small" />
+                <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField fullWidth label="From (start date) *" type="date" InputLabelProps={{ shrink: true }} size="small" sx={fieldSx} />
                 </Grid>
-                <Grid item xs={12} md={6}>
-                    <TextField fullWidth label="Cost Per Learner" defaultValue="0" type="number" size="small" />
+                <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField fullWidth label="To (end date) *" type="date" InputLabelProps={{ shrink: true }} size="small" sx={fieldSx} />
+                </Grid>
+
+                <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField fullWidth label="Venue (place or conference link)" placeholder="Optional" size="small" sx={fieldSx} />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField fullWidth label="Cost per learner" defaultValue="0" type="number" size="small" sx={fieldSx} />
                 </Grid>
             </Grid>
 
-            {/* Participant Status Tabs */}
-            <Box sx={{ mb: 2 }}>
-                <Tabs value={0} textColor="primary" indicatorColor="primary">
-                    <Tab label="Confirmed" />
-                    <Tab label="Not responded" />
-                    <Tab label="Declined" />
-                    <Tab label="Instructors" />
-                </Tabs>
-                <Divider />
-            </Box>
+            <TabContext value={participantTab}>
+                <TabList onChange={(e, v) => setParticipantTab(v)} className="border-b px-0 pt-0">
+                    <Tab label="Confirmed" value="confirmed" />
+                    <Tab label="Not responded" value="pending" />
+                    <Tab label="Declined" value="declined" />
+                    <Tab label="Instructors" value="instructors" />
+                </TabList>
 
-            {/* Content Area */}
-            <Box sx={{ py: 3 }}>
-                <Typography variant="body1" sx={{ mb: 2, color: 'text.secondary' }}>
-                    No confirmed Participants yet
-                </Typography>
-                <Button variant="contained" size="small">Add Learners</Button>
-            </Box>
+                <TabPanel value={participantTab} className="p-0">
+                    <Box sx={{ py: 4, textAlign: "center" }}>
+                        <Typography variant="body2" sx={{ mb: 2 }} color="text.secondary">
+                            No confirmed participants yet
+                        </Typography>
+                        <Button variant="contained" size="small">
+                            Add learners
+                        </Button>
+                    </Box>
+                </TabPanel>
+            </TabContext>
 
-            {/* Modal Footer Area */}
-            <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center', gap: 2, pb: 2 }}>
-                <Button variant="outlined" onClick={() => setOpenBatchModal(false)}>Close</Button>
-                <Button variant="contained" disabled>Publish</Button>
-                <Button variant="contained">Save</Button>
-            </Box>
+            <ModalFooter onClose={() => setOpenBatchModal(false)} />
         </Box>
     );
 };
 
 const NominationBatch = ({ setOpenBatchModal }) => {
-    const [tabValue, setTabValue] = useState(0);
+    const [tabValue, setTabValue] = useState("nominated");
 
     return (
         <Box>
-            {/* Batch Detail Section */}
-            <Typography variant="h6" sx={{ mb: 2 }}>Batch Detail</Typography>
+            <Typography variant="h6" gutterBottom>
+                Batch detail
+            </Typography>
 
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', mb: 3 }}>
-                <TextField
-                    label="Batch Name"
-                    placeholder="Nominations Batch"
-                    required
-                    fullWidth
-                />
-                <Button variant="contained" sx={{ mt: 1, textTransform: 'none', whiteSpace: 'nowrap' }}>
-                    Add Attachment
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 3 }}>
+                <TextField label="Batch name" placeholder="Nominations batch" required fullWidth size="small" sx={fieldSx} />
+                <Button variant="outlined" sx={{ whiteSpace: "nowrap" }}>
+                    Add attachment
                 </Button>
-            </Box>
+            </Stack>
 
-            <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-                <TextField label="Nominations Capacity" type="number" defaultValue={0} sx={{ width: '200px' }} />
-                <TextField label="Close Registrations By" type="date" InputLabelProps={{ shrink: true }} sx={{ width: '250px' }} />
-            </Box>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 4 }}>
+                <TextField label="Nominations capacity" type="number" defaultValue={0} size="small" sx={{ width: { sm: 220 }, ...fieldSx }} />
+                <TextField
+                    label="Close registrations by"
+                    type="date"
+                    InputLabelProps={{ shrink: true }}
+                    size="small"
+                    sx={{ width: { sm: 260 }, ...fieldSx }}
+                />
+            </Stack>
 
-            {/* Tabs Section */}
-            <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)} sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-                <Tab label="Nominated" />
-                <Tab label="Not responded" />
-                <Tab label="Declined" />
-            </Tabs>
+            <TabContext value={tabValue}>
+                <TabList onChange={(e, v) => setTabValue(v)} className="border-b px-0 pt-0">
+                    <Tab label="Nominated" value="nominated" />
+                    <Tab label="Not responded" value="pending" />
+                    <Tab label="Declined" value="declined" />
+                </TabList>
 
-            {/* Search Section */}
-            <TextField
-                placeholder="Search User"
-                fullWidth
-                size="small"
-                sx={{ mb: 3 }}
-                InputProps={{
-                    endAdornment: (
-                        <InputAdornment position="end">
-                            <Button>Advanced Search</Button>
-                        </InputAdornment>
-                    )
-                }}
-            />
+                <TabPanel value={tabValue} className="p-0">
+                    <TextField
+                        placeholder="Search by name or email"
+                        fullWidth
+                        size="small"
+                        sx={{ my: 3, ...fieldSx }}
+                        InputProps={{
+                            endAdornment: (
+                                <InputAdornment position="end">
+                                    <Button>Advanced search</Button>
+                                </InputAdornment>
+                            ),
+                        }}
+                    />
+                </TabPanel>
+            </TabContext>
 
-            {/* Footer Actions */}
-            <Divider sx={{ my: 2 }} />
-            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, pb: 2 }}>
-                <Button variant="outlined" onClick={() => setOpenBatchModal(false)}>Close</Button>
-                <Button variant="contained" disabled>Publish</Button>
-                <Button variant="contained">Save</Button>
-            </Box>
+            <ModalFooter onClose={() => setOpenBatchModal(false)} />
         </Box>
     );
 };
 
 const BatchModal = ({ openBatchModal, setOpenBatchModal, batchType }) => {
+    const titleMap = {
+        defined: "Create a defined batch",
+        nominations: "Create a nominations batch",
+    };
+
     return (
-        <>
-            <Dialog
-                open={openBatchModal}
-                onClose={() => setOpenBatchModal(false)}
-                fullWidth
+        <Dialog
+            open={openBatchModal}
+            onClose={() => setOpenBatchModal(false)}
+            fullWidth
+            maxWidth="md"
+            sx={{ "& .MuiDialog-paper": { overflow: "visible" } }}
+        >
+            <DialogCloseButton onClick={() => setOpenBatchModal(false)}>
+                <i className="tabler-x" />
+            </DialogCloseButton>
+            <DialogTitle className="text-center">
+                {titleMap[batchType] ?? "Create a batch"}
+            </DialogTitle>
 
-                maxWidth="md"
-                sx={{
-                    '& .MuiDialog-paper': {
-                        overflow: 'visible',
-                        blockSize: 'auto', // Allows height to adjust to content
+            <DialogContent>
+                {batchType === "defined" && <DefinedBatch setOpenBatchModal={setOpenBatchModal} />}
+                {batchType === "nominations" && <NominationBatch setOpenBatchModal={setOpenBatchModal} />}
+            </DialogContent>
+        </Dialog>
+    );
+};
 
-                    }
-                }}
-            >
-                <DialogCloseButton onClick={() => setOpenBatchModal(false)}><i className="tabler-x" /></DialogCloseButton>
-                <DialogTitle variant='h4' className='text-center'>Batch Create</DialogTitle>
-
-                <DialogContent >
-                    {/* Replace this Box with your complete Batch Create UI */}
-                    <Box
-                        sx={{
-                            bgcolor: "background.paper",
-                        }}
-                    >
-                        {batchType == "defined" && (
-                            <DefinedBatch setOpenBatchModal={setOpenBatchModal} />
-                        )}
-
-                        {batchType == "nominations" && (
-                            <NominationBatch setOpenBatchModal={setOpenBatchModal} />
-                        )}
-
-                    </Box>
-                </DialogContent>
-            </Dialog>
-        </>
-    )
-}
+/* -------------------------------------------------------------------- */
+/*  Invite tab                                                           */
+/* -------------------------------------------------------------------- */
 
 const InvitePanel = () => {
-    const theme = useTheme();
+
     const [batchType, setBatchType] = useState("nominations");
     const [openBatchModal, setOpenBatchModal] = useState(false);
+
+    const fileInputRef = useRef(null);
+
+    const handleImportClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = (event) => {
+        const file = event.target.files?.[0];
+
+        if (!file) return;
+
+        console.log("Selected file:", file);
+
+        event.target.value = "";
+    };
 
     const batchOptions = [
         {
             value: "defined",
             title: "Batch with defined details",
-            description: "Batches that have defined date, venue and trainer details.",
+            description: "Has a fixed date, venue and trainer assigned before learners are invited.",
         },
         {
             value: "nominations",
-            title: "Nominations Batch",
-            description:
-                "A Batch that has very few details, primarily used to gauge interest of the users.",
+            title: "Nominations batch",
+            description: "Lightweight — used mainly to gauge interest before details are finalised.",
         },
         {
             value: "import",
-            title: "Import Batches and Sessions",
-            description: "Import Batches that have defined date, venue and trainer details. Download the template from",
-            link: "here",
+            title: "Import batches and sessions",
+            description: "Bring in batches that already have dates, venues and trainers assigned.",
+            link: "Download the template",
         },
     ];
 
     return (
         <Box>
             <Paper
-                elevation={0}
-                sx={{
-                    display: "flex",
-                    gap: 1.5,
-                    alignItems: "flex-start",
-                    p: { xs: 2, md: 2.5 },
-                    mb: 3,
-                    borderRadius: "14px",
-                    border: `1px solid ${alpha(ACCENTS.amber, theme.palette.mode === "dark" ? 0.4 : 0.3)}`,
-                    bgcolor: alpha(ACCENTS.amber, theme.palette.mode === "dark" ? 0.14 : 0.08),
-                }}
+                variant="outlined"
+                sx={{ p: 2, mb: 4, borderColor: "warning.main", bgcolor: "warning.lighter" }}
             >
-                <IconAlertCircle
-                    size={20}
-                    stroke={1.75}
-                    style={{ color: ACCENTS.amber, flexShrink: 0, marginTop: 2 }}
-                />
-                <Typography variant="body2" sx={{ color: theme.palette.text.primary }}>
-                    You have no Batches yet, please select any of the options below to create your first
-                    Batch. You can add more Batches once you create the first.
+                <Typography variant="body2">
+                    There are no batches yet. Choose one of the options below to create the first — you can add
+                    more once it exists.
                 </Typography>
             </Paper>
 
-            <RadioGroup
-                name="batch-type"
-                value={batchType}
-                onChange={(e) => setBatchType(e.target.value)}
-            >
-                <Stack spacing={0.5} mb={4}>
-                    {batchOptions.map((option) => {
-                        
-                        const selected = batchType === option.value;
-
-                        return (
-                            <Box
-                                key={option.value}
-                                onClick={() => setBatchType(option.value)}
-                                sx={{
-                                    display: "flex",
-                                    gap: 1.5,
-                                    alignItems: "flex-start",
-                                    p: 1.5,
-                                    borderRadius: "12px",
-                                    cursor: "pointer",
-                                    bgcolor: selected
-                                        ? alpha(ACCENTS.indigo, theme.palette.mode === "dark" ? 0.16 : 0.06)
-                                        : "transparent",
-                                    transition: "background-color .15s ease",
-                                }}
-                            >
-                                <Radio checked={selected} value={option.value} size="small" sx={{ mt: -0.25 }} />
-
-                                <Box>
-                                    <Typography
-                                        variant="body2"
-                                        fontWeight={600}
-                                        sx={{ color: theme.palette.text.primary }}
-                                    >
-                                        {option.title}
-                                    </Typography>
-
-                                    <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
-                                        {option.description}
-                                        {option.link && (
-                                            <>
-                                                {" "}
-                                                <Box
-                                                    component="span"
-                                                    sx={{
-                                                        color: theme.palette.primary.main,
-                                                        textDecoration: "underline",
-                                                        cursor: "pointer",
-                                                    }}
-                                                >
-                                                    {option.link}
-                                                </Box>
-                                                .
-                                            </>
-                                        )}
-                                    </Typography>
-                                </Box>
+            <RadioGroup name="batch-type" value={batchType} onChange={(e) => setBatchType(e.target.value)}>
+                <Stack spacing={1} mb={4}>
+                    {batchOptions.map((option) => (
+                        <Paper
+                            key={option.value}
+                            variant="outlined"
+                            onClick={() => setBatchType(option.value)}
+                            sx={{
+                                display: "flex",
+                                gap: 1.5,
+                                alignItems: "flex-start",
+                                p: 2,
+                                cursor: "pointer",
+                                borderColor: batchType === option.value ? "primary.main" : "divider",
+                            }}
+                        >
+                            <Radio checked={batchType === option.value} value={option.value} size="small" sx={{ mt: -0.25 }} />
+                            <Box>
+                                <Typography variant="body2" fontWeight={600}>
+                                    {option.title}
+                                </Typography>
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept=".xlsx,.xls"
+                                    style={{ display: "none" }}
+                                    onChange={handleFileChange}
+                                />
+                                <Typography variant="caption" color="text.secondary">
+                                    {option.description}
+                                    {option.link && (
+                                        <>
+                                            {" — "}
+                                            <Button
+                                                variant="contained"
+                                                onClick={() => {
+                                                    const link = document.createElement("a");
+                                                    link.href = "/sample/sample_batch_import.xlsx";
+                                                    link.download = "sample_batch_import.xlsx";
+                                                    document.body.appendChild(link);
+                                                    link.click();
+                                                    document.body.removeChild(link);
+                                                }}
+                                            >
+                                                {option.link}
+                                            </Button>
+                                        </>
+                                    )}
+                                </Typography>
                             </Box>
-                        );
-                    })}
+                        </Paper>
+                    ))}
                 </Stack>
             </RadioGroup>
 
             <Divider sx={{ mb: 3 }} />
 
-            <Stack direction="row" justifyContent="flex-end">
+            <Box display="flex" justifyContent="flex-end">
                 <Button
                     variant="contained"
-                    color="primary"
                     onClick={() => {
-                        if (batchType != "import") {
-
+                        if (batchType === "import") {
+                            handleImportClick();
+                        } else {
                             setOpenBatchModal(true);
                         }
                     }}
-                    sx={{
-                        borderRadius: "999px",
-                        textTransform: "none",
-                        fontWeight: 600,
-                        px: 4,
-                        boxShadow: "none",
-                        "&:hover": { boxShadow: "none" },
-                    }}
                 >
-                    Create
+                    {batchType === "import" ? "Import XLSX" : "Create batch"}
                 </Button>
-            </Stack>
-            <BatchModal
-                batchType={batchType}
-                openBatchModal={openBatchModal}
-                setOpenBatchModal={setOpenBatchModal}
-            />
+            </Box>
+
+            <BatchModal batchType={batchType} openBatchModal={openBatchModal} setOpenBatchModal={setOpenBatchModal} />
         </Box>
     );
 };
 
-const ILTPageComponent = () => {
-    const theme = useTheme();
-    const [tab, setTab] = useState(0);
+/* -------------------------------------------------------------------- */
+/*  Configure tab                                                        */
+/* -------------------------------------------------------------------- */
+
+const ConfigurePanel = () => {
     const [enrollment, setEnrollment] = useState("allow");
     const [selectedCertificate, setSelectedCertificate] = useState(1);
-
-    const tabs = ["Configure", "Invite", "Engage"];
 
     const enrollmentOptions = [
         { value: "none", label: "Do not allow self enrollment" },
@@ -608,458 +489,226 @@ const ILTPageComponent = () => {
     ];
 
     return (
-        <Box
-            sx={{
-                p: { xs: 2, md: 4 },
-                fontFamily: "'Inter', sans-serif",
-                color: theme.palette.text.primary,
-            }}
-        >
-            {/* Font import only — no color set here, so this stays mode-agnostic */}
-            <GlobalStyles
-                styles={`
-                    @import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Inter:wght@400;500;600&display=swap');
-                `}
-            />
+        <Grid container spacing={4}>
+            <Grid item size={{ xs: 12, md: 9 }}>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+                    <Box>
+                        <Typography variant="h6" fontWeight={600}>
+                            Configure
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            Set how this module launches, who can join it, and what happens when it's done.
+                        </Typography>
+                    </Box>
+                    <Button variant="outlined">Advanced settings</Button>
+                </Box>
 
-            <Box sx={{ mx: "auto" }}>
-                {/* Tabs */}
+                <SectionBlock title="Edit permissions" description="Control who else can change this module's setup.">
+                    <FormControlLabel
+                        control={<Checkbox size="small" />}
+                        label={<Typography variant="body2">Disallow other trainers from making changes to this module</Typography>}
+                    />
+                </SectionBlock>
 
-                <Paper
-                    elevation={0}
-                    sx={{
-                        mb: 3,
-                        p: 0.75,
-                        borderRadius: "16px",
-                        border: `1px solid ${theme.palette.divider}`,
-                        bgcolor: theme.palette.background.paper,
-                        display: "inline-flex",
-                        width: "100%",
-                    }}
+                <SectionBlock
+                    title="On completion, module launches the following"
+                    description="Choose what learners receive the moment they finish."
                 >
-                    <Tabs
-                        value={tab}
-                        onChange={(e, value) => setTab(value)}
-                        variant="scrollable"
-                        scrollButtons="auto"
-                        TabIndicatorProps={{ sx: { display: "none" } }}
-                        sx={{
-                            minHeight: 0,
-                            width: "100%",
-                            "& .MuiTabs-flexContainer": { gap: 0.5 },
-                        }}
-                    >
-                        {tabs.map((label) => (
-                            <Tab
-                                key={label}
-                                label={label}
-                                disableRipple
-                                sx={{
-                                    fontFamily: "'Sora', sans-serif",
-                                    textTransform: "none",
-                                    fontWeight: 600,
-                                    fontSize: "0.9rem",
-                                    minHeight: 40,
-                                    borderRadius: "12px",
-                                    color: theme.palette.text.secondary,
-                                    "&.Mui-selected": {
-                                        color: theme.palette.primary.contrastText,
-                                        bgcolor: theme.palette.primary.main,
-                                    },
-                                }}
-                            />
-                        ))}
-                    </Tabs>
-                </Paper>
+                    <Box display="flex" alignItems="center" gap={2} mb={2}>
+                        <FormControlLabel
+                            control={<Checkbox defaultChecked size="small" />}
+                            label={<Typography variant="body2" fontWeight={600}>Certificate</Typography>}
+                        />
+                        <Button size="small" variant="outlined">
+                            Quick preview
+                        </Button>
+                    </Box>
+                    <CertificatePicker selected={selectedCertificate} onSelect={setSelectedCertificate} />
+                </SectionBlock>
 
-                {tab === 0 && (
-                    <>
-                        {/* Top */}
+                <SectionBlock title="Feedback survey">
+                    <Box display="flex" alignItems="center" gap={2}>
+                        <Checkbox size="small" />
+                        <Typography variant="body2" sx={{ flexGrow: 1 }}>
+                            Collect a short survey from learners after they complete this module
+                        </Typography>
+                        <Button size="small" variant="outlined">
+                            Add a survey
+                        </Button>
+                    </Box>
+                </SectionBlock>
 
-                        <Stack
-                            direction={{ xs: "column", sm: "row" }}
-                            justifyContent="space-between"
-                            alignItems={{ xs: "flex-start", sm: "center" }}
-                            spacing={2}
-                            mb={3}
-                        >
-                            <Box>
-                                <Typography
+                <SectionBlock title="Self enrollment settings">
+                    <RadioGroup name="self-enrollment" value={enrollment} onChange={(e) => setEnrollment(e.target.value)}>
+                        <Stack spacing={1}>
+                            {enrollmentOptions.map((option) => (
+                                <Paper
+                                    key={option.value}
+                                    variant="outlined"
+                                    onClick={() => setEnrollment(option.value)}
                                     sx={{
-                                        fontFamily: "'Sora', sans-serif",
-                                        fontWeight: 700,
-                                        fontSize: "1.5rem",
-                                        color: theme.palette.text.primary,
+                                        px: 2,
+                                        py: 1,
+                                        cursor: "pointer",
+                                        borderColor: enrollment === option.value ? "primary.main" : "divider",
                                     }}
                                 >
-                                    Configure
-                                </Typography>
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mt: 0.25 }}>
-                                    Set how this module launches, who can join it, and what happens.
-                                </Typography>
-                            </Box>
-
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                startIcon={<IconAdjustments size={18} stroke={2} />}
-                                sx={{
-                                    textTransform: "none",
-                                    fontWeight: 600,
-                                    borderRadius: "12px",
-                                    px: 2.5,
-                                    py: 1,
-                                    boxShadow: "none",
-                                    "&:hover": { boxShadow: "none" },
-                                }}
-                            >
-                                Advanced Settings
-                            </Button>
+                                    <FormControlLabel
+                                        value={option.value}
+                                        control={<Radio size="small" />}
+                                        label={<Typography variant="body2">{option.label}</Typography>}
+                                        sx={{ width: "100%" }}
+                                    />
+                                </Paper>
+                            ))}
                         </Stack>
+                    </RadioGroup>
+                </SectionBlock>
 
-                        {/* Permission */}
-
-                        <SectionCard
-                            accent={ACCENTS.neutral}
-                            icon={<IconLock size={20} stroke={1.75} />}
-                            title="Edit Permissions"
-                        >
-                            <Stack direction="row" spacing={1.5} alignItems="center">
-                                <Checkbox sx={{ p: 0 }} />
-                                <Typography variant="body2">
-                                    Disallow other Trainers to make changes to this Module
-                                </Typography>
-                            </Stack>
-                        </SectionCard>
-
-                        {/* Completion */}
-
-                        <SectionCard
-                            accent={ACCENTS.amber}
-                            icon={<IconCertificate size={20} stroke={1.75} />}
-                            title="On Completion Of Module Launch The Following"
-                            description="Choose what learners receive the moment they finish."
-                        >
-                            <Stack direction="row" spacing={1.5} alignItems="center" mb={2.5}>
-                                <Checkbox defaultChecked sx={{ p: 0 }} />
-
-                                <Typography variant="body2" fontWeight={600}>
-                                    Certificate
-                                </Typography>
-
-                                <Button
-                                    size="small"
-                                    variant="outlined"
-                                    sx={{
-                                        textTransform: "none",
-                                        fontWeight: 600,
-                                        borderRadius: "8px",
-                                        borderColor: theme.palette.divider,
-                                        color: theme.palette.text.primary,
-                                        "&:hover": {
-                                            borderColor: ACCENTS.amber,
-                                            bgcolor: alpha(ACCENTS.amber, theme.palette.mode === "dark" ? 0.16 : 0.08),
-                                        },
-                                    }}
-                                >
-                                    Quick Preview
-                                </Button>
-                            </Stack>
-
-                            <Grid container spacing={2}>
-                                {[1, 2, 3].map((item) => {
-                                    const selected = selectedCertificate === item;
-                                    
-                                    return (
-                                        <Grid size={{ xs: 12, sm: 4, md: 3 }} key={item}>
-                                            <Paper
-                                                onClick={() => setSelectedCertificate(item)}
-                                                elevation={0}
-                                                sx={{
-                                                    p: 1.25,
-                                                    textAlign: "center",
-                                                    cursor: "pointer",
-                                                    borderRadius: "14px",
-                                                    border: selected
-                                                        ? `2px solid ${ACCENTS.amber}`
-                                                        : `1px solid ${theme.palette.divider}`,
-                                                    position: "relative",
-                                                    transition: "transform .15s ease, box-shadow .15s ease",
-                                                    "&:hover": {
-                                                        transform: "translateY(-2px)",
-                                                        boxShadow: `0 8px 20px ${alpha(ACCENTS.amber, 0.18)}`,
-                                                    },
-                                                }}
-                                            >
-                                                {selected && (
-                                                    <IconCircleCheckFilled
-                                                        size={20}
-                                                        style={{
-                                                            position: "absolute",
-                                                            top: 6,
-                                                            right: 6,
-                                                            color: ACCENTS.amber,
-                                                            background: theme.palette.background.paper,
-                                                            borderRadius: "50%",
-                                                        }}
-                                                    />
-                                                )}
-
-                                                <Box
-                                                    sx={{
-                                                        width: "100%",
-                                                        height: 100,
-                                                        mb: 1,
-                                                        borderRadius: "10px",
-                                                        display: "flex",
-                                                        alignItems: "center",
-                                                        justifyContent: "center",
-                                                        bgcolor: alpha(ACCENTS.amber, theme.palette.mode === "dark" ? 0.16 : 0.1),
-                                                        color: ACCENTS.amber,
-                                                    }}
-                                                >
-                                                    <IconFileText size={28} stroke={1.5} />
-                                                </Box>
-
-                                                <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
-                                                    Certificate {item}
-                                                </Typography>
-                                            </Paper>
-                                        </Grid>
-                                    );
-                                })}
-                            </Grid>
-                        </SectionCard>
-
-                        {/* Feedback */}
-
-                        <SectionCard
-                            accent={ACCENTS.teal}
-                            icon={<IconMessage2 size={20} stroke={1.75} />}
-                            title="Feedback Survey"
-                        >
-                            <Stack direction="row" spacing={1.5} alignItems="center">
-                                <Checkbox sx={{ p: 0 }} />
-                                <Typography variant="body2" sx={{ flexGrow: 1 }}>
-                                    Collect a short survey from learners after they complete this module
-                                </Typography>
-
-                                <Button
-                                    variant="outlined"
-                                    sx={{
-                                        textTransform: "none",
-                                        fontWeight: 600,
-                                        borderRadius: "8px",
-                                        borderColor: theme.palette.divider,
-                                        color: theme.palette.text.primary,
-                                        "&:hover": {
-                                            borderColor: ACCENTS.teal,
-                                            bgcolor: alpha(ACCENTS.teal, theme.palette.mode === "dark" ? 0.16 : 0.08),
-                                        },
-                                    }}
-                                >
-                                    Add A Survey
-                                </Button>
-                            </Stack>
-                        </SectionCard>
-
-                        {/* Self Enrollment */}
-
-                        <SectionCard
-                            accent={ACCENTS.indigo}
-                            icon={<IconUserPlus size={20} stroke={1.75} />}
-                            title="Self Enrollment Settings"
-                        >
-                            <RadioGroup
-                                name="self-enrollment"
-                                value={enrollment}
-                                onChange={(e) => setEnrollment(e.target.value)}
+                <SectionBlock title="Approval criteria">
+                    <Grid container spacing={2}>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <TextField
+                                id="approval-workflow-select"
+                                fullWidth
+                                select
+                                label="Approval workflow"
+                                defaultValue=""
+                                size="small"
+                                sx={fieldSx}
+                                SelectProps={{
+                                    labelId: "approval-workflow-select-label",
+                                }}
+                                InputLabelProps={{ id: "approval-workflow-select-label" }}
                             >
-                                <Stack spacing={1.25}>
-                                    {enrollmentOptions.map((option) => {
-                                        const selected = enrollment === option.value;
-                                        
-                                        return (
-                                            <Paper
-                                                key={option.value}
-                                                elevation={0}
-                                                onClick={() => setEnrollment(option.value)}
-                                                sx={{
-                                                    px: 2,
-                                                    py: 1.25,
-                                                    borderRadius: "12px",
-                                                    cursor: "pointer",
-                                                    border: selected
-                                                        ? `1.5px solid ${ACCENTS.indigo}`
-                                                        : `1px solid ${theme.palette.divider}`,
-                                                    bgcolor: selected
-                                                        ? alpha(ACCENTS.indigo, theme.palette.mode === "dark" ? 0.18 : 0.08)
-                                                        : "transparent",
-                                                    transition: "all .15s ease",
-                                                }}
-                                            >
-                                                <FormControlLabel
-                                                    value={option.value}
-                                                    control={<Radio size="small" name="self-enrollment" />}
-                                                    label={<Typography variant="body2">{option.label}</Typography>}
-                                                    sx={{ m: 0, width: "100%" }}
-                                                />
-                                            </Paper>
-                                        );
-                                    })}
-                                </Stack>
-                            </RadioGroup>
-                        </SectionCard>
+                                <MenuItem value="">Select...</MenuItem>
+                                <MenuItem value="1">Workflow 1</MenuItem>
+                                <MenuItem value="2">Workflow 2</MenuItem>
+                            </TextField>
+                        </Grid>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <TextField id="module-cost-input" fullWidth label="Module cost" size="small" sx={fieldSx} />
+                        </Grid>
+                    </Grid>
+                </SectionBlock>
 
-                        {/* Approval */}
+                <SectionBlock title="Tags & search keywords">
+                    <Grid container spacing={3}>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <TextField
+                                id="target-competency-select"
+                                fullWidth
+                                select
+                                label="Target competency level"
+                                defaultValue="all"
+                                size="small"
+                                sx={fieldSx}
+                                SelectProps={{
+                                    labelId: "target-competency-select-label",
+                                }}
+                                InputLabelProps={{ id: "target-competency-select-label" }}
+                            >
+                                <MenuItem value="all">All</MenuItem>
+                            </TextField>
+                        </Grid>
+                        <Grid size={{ xs: 12, md: 6 }} sx={{ display: "flex", alignItems: "center" }}>
+                            <Typography variant="caption" color="text.secondary">
+                                Learners below this level won't see the module in search.
+                            </Typography>
+                        </Grid>
 
-                        <SectionCard
-                            accent={ACCENTS.rose}
-                            icon={<IconChecklist size={20} stroke={1.75} />}
-                            title="Approval Criteria"
-                        >
-                            <Grid container spacing={2}>
-                                <Grid size={{ xs: 12, md: 6 }}>
-                                    <TextField
-                                        fullWidth
-                                        select
-                                        label="Approval Workflow"
-                                        defaultValue=""
-                                        sx={{ "& .MuiOutlinedInput-root": { borderRadius: "10px" } }}
-                                    >
-                                        <MenuItem value="">Select...</MenuItem>
-                                        <MenuItem value="1">Workflow 1</MenuItem>
-                                        <MenuItem value="2">Workflow 2</MenuItem>
-                                    </TextField>
-                                </Grid>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <TextField id="primary-tag-input" fullWidth label="Primary tag" size="small" sx={fieldSx} />
+                        </Grid>
+                        <Grid size={{ xs: 12, md: 6 }} sx={{ display: "flex", alignItems: "center" }}>
+                            <Typography variant="caption" color="text.secondary">
+                                Used to filter the module into the right catalogue sections.
+                            </Typography>
+                        </Grid>
 
-                                <Grid size={{ xs: 12, md: 3 }}>
-                                    <TextField
-                                        fullWidth
-                                        label="Module Cost"
-                                        sx={{ "& .MuiOutlinedInput-root": { borderRadius: "10px" } }}
-                                    />
-                                </Grid>
-                            </Grid>
-                        </SectionCard>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <TextField id="secondary-tag-input" fullWidth label="Secondary tag" size="small" sx={fieldSx} />
+                        </Grid>
+                        <Grid size={{ xs: 12, md: 6 }} sx={{ display: "flex", alignItems: "center" }}>
+                            <Typography variant="caption" color="text.secondary">
+                                Groups this module together with related collections.
+                            </Typography>
+                        </Grid>
 
-                        {/* Tags */}
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <TextField
+                                id="search-keywords-input"
+                                fullWidth
+                                label="Search keywords"
+                                placeholder="Comma separated"
+                                size="small"
+                                sx={fieldSx}
+                            />
+                        </Grid>
+                        <Grid size={{ xs: 12, md: 6 }} sx={{ display: "flex", alignItems: "center" }}>
+                            <Typography variant="caption" color="text.secondary">
+                                Improves how easily learners find this module by search.
+                            </Typography>
+                        </Grid>
+                    </Grid>
+                </SectionBlock>
 
-                        <SectionCard
-                            accent={ACCENTS.purple}
-                            icon={<IconTag size={20} stroke={1.75} />}
-                            title="Tags & Search Keywords"
-                        >
-                            <Grid container spacing={3}>
-                                <Grid size={{ xs: 12, md: 6 }}>
-                                    <TextField
-                                        fullWidth
-                                        select
-                                        label="Target Competency Level"
-                                        defaultValue="all"
-                                        sx={{ "& .MuiOutlinedInput-root": { borderRadius: "10px" } }}
-                                    >
-                                        <MenuItem value="all">All</MenuItem>
-                                    </TextField>
-                                </Grid>
+                <SectionBlock title="Communication settings">
+                    <Box display="flex" alignItems="center" gap={2}>
+                        <Switch defaultChecked />
+                        <Typography variant="body2" sx={{ flexGrow: 1 }}>
+                            Send a reminder email to learners who haven't finished the module
+                        </Typography>
+                        <Button size="small" variant="outlined">
+                            Add reminder
+                        </Button>
+                    </Box>
+                </SectionBlock>
 
-                                <Grid size={{ xs: 12, md: 6 }} sx={{ display: "flex", alignItems: "center" }}>
-                                    <Typography variant="body2" color="text.secondary">
-                                        Select competency level
-                                    </Typography>
-                                </Grid>
+                <Button variant="contained" sx={{ mt: 2 }}>
+                    Save
+                </Button>
+            </Grid>
+        </Grid>
+    );
+};
 
-                                <Grid size={{ xs: 12, md: 6 }}>
-                                    <TextField
-                                        fullWidth
-                                        label="Primary Tag"
-                                        sx={{ "& .MuiOutlinedInput-root": { borderRadius: "10px" } }}
-                                    />
-                                </Grid>
+/* -------------------------------------------------------------------- */
+/*  Main component                                                       */
+/* -------------------------------------------------------------------- */
 
-                                <Grid size={{ xs: 12, md: 6 }} sx={{ display: "flex", alignItems: "center" }}>
-                                    <Typography variant="body2" color="text.secondary">
-                                        These tags help in filtering modules.
-                                    </Typography>
-                                </Grid>
+const ILTPageComponent = () => {
+    const [value, setValue] = useState("configure");
+    const handleTabChange = (e, newValue) => setValue(newValue);
 
-                                <Grid size={{ xs: 12, md: 6 }}>
-                                    <TextField
-                                        fullWidth
-                                        label="Secondary Tag"
-                                        sx={{ "& .MuiOutlinedInput-root": { borderRadius: "10px" } }}
-                                    />
-                                </Grid>
+    return (
+        <Card>
+            <CardContent>
+                <TabContext value={value}>
+                    <TabList
+                        variant="scrollable"
+                        onChange={handleTabChange}
+                        className="border-b px-0 pt-0"
+                    >
+                        <Tab key={1} label="Configure" value="configure" />
+                        <Tab key={2} label="Invite" value="invite" />
+                        <Tab key={3} label="Engage" value="engage" />
+                    </TabList>
 
-                                <Grid size={{ xs: 12, md: 6 }} sx={{ display: "flex", alignItems: "center" }}>
-                                    <Typography variant="body2" color="text.secondary">
-                                        These tags create collections.
-                                    </Typography>
-                                </Grid>
-
-                                <Grid size={{ xs: 12, md: 6 }}>
-                                    <TextField
-                                        fullWidth
-                                        label="Search Keywords"
-                                        placeholder="Enter keywords..."
-                                        sx={{ "& .MuiOutlinedInput-root": { borderRadius: "10px" } }}
-                                    />
-                                </Grid>
-
-                                <Grid size={{ xs: 12, md: 6 }} sx={{ display: "flex", alignItems: "center" }}>
-                                    <Typography variant="body2" color="text.secondary">
-                                        Keywords help improve search.
-                                    </Typography>
-                                </Grid>
-                            </Grid>
-                        </SectionCard>
-
-                        {/* Communication */}
-
-                        <SectionCard
-                            accent={ACCENTS.green}
-                            icon={<IconBellRinging size={20} stroke={1.75} />}
-                            title="Communication Settings"
-                        >
-                            <Stack direction="row" spacing={1.5} alignItems="center">
-                                <Switch
-                                    defaultChecked
-                                    sx={{
-                                        "& .MuiSwitch-switchBase.Mui-checked": { color: ACCENTS.green },
-                                        "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                                            bgcolor: ACCENTS.green,
-                                        },
-                                    }}
-                                />
-
-                                <Typography variant="body2" sx={{ flexGrow: 1 }}>
-                                    Enable Completion Reminder Emails
-                                </Typography>
-
-                                <Button
-                                    variant="contained"
-                                    startIcon={<IconPlus size={18} stroke={2} />}
-                                    sx={{
-                                        textTransform: "none",
-                                        fontWeight: 600,
-                                        borderRadius: "8px",
-                                        bgcolor: ACCENTS.green,
-                                        boxShadow: "none",
-                                        "&:hover": { bgcolor: "#16A34A", boxShadow: "none" },
-                                    }}
-                                >
-                                    Add
-                                </Button>
-                            </Stack>
-                        </SectionCard>
-                    </>
-                )}
-
-                {tab === 1 && <InvitePanel />}
-
-                {tab == 2 && <EngagePanel />}
-            </Box>
-        </Box>
+                    <Box mt={3}>
+                        <TabPanel value="configure" className="p-0">
+                            <ConfigurePanel />
+                        </TabPanel>
+                        <TabPanel value="invite" className="p-0">
+                            <InvitePanel />
+                        </TabPanel>
+                        <TabPanel value="engage" className="p-0">
+                            <EngagePanel />
+                        </TabPanel>
+                    </Box>
+                </TabContext>
+            </CardContent>
+        </Card>
     );
 };
 

@@ -174,7 +174,6 @@ const ProgramCardComponent = ({
 
     const linkData = (itemId, moduleTypeId) => {
 
-        if (stage != "Module") return `${nextLink}/${itemId}`
 
         const data = {
             "688219557b6953e899cb57d2": `${nextLink}/${itemId}`,
@@ -291,6 +290,26 @@ const ProgramCardComponent = ({
                                                 <Typography variant="h6" fontWeight={600}>
                                                     {item?.title || ""}
                                                 </Typography>
+
+                                                {stage === "Module" && item?.module_type?.title && (
+                                                    <Box
+                                                        sx={{
+                                                            display: "inline-flex",
+                                                            alignItems: "center",
+                                                            mt: 1,
+                                                            px: 1.5,
+                                                            py: 0.5,
+                                                            border: "1px solid",
+                                                            borderColor: "grey.400",
+                                                            borderRadius: 2,
+                                                            fontSize: "0.75rem",
+                                                            fontWeight: 500,
+                                                            color: "text.secondary",
+                                                        }}
+                                                    >
+                                                        {item.module_type.title}
+                                                    </Box>
+                                                )}
 
                                                 {stage === "Program" && (
                                                     <Typography variant="body2" color="text.secondary" display="flex" alignItems="center" gap={1}>
