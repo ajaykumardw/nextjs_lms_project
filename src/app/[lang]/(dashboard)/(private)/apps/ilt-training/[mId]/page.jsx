@@ -433,11 +433,15 @@ const InvitePanel = () => {
                                             <Button
                                                 variant="contained"
                                                 onClick={() => {
+                                                    
                                                     const link = document.createElement("a");
+                                                    
                                                     link.href = "/sample/sample_batch_import.xlsx";
                                                     link.download = "sample_batch_import.xlsx";
                                                     document.body.appendChild(link);
+                                                    
                                                     link.click();
+                                                    
                                                     document.body.removeChild(link);
                                                 }}
                                             >
@@ -497,7 +501,7 @@ const ConfigurePanel = () => {
                             Configure
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                            Set how this module launches, who can join it, and what happens when it's done.
+                            Set how this module launches, who can join it, and what happens when it is done.
                         </Typography>
                     </Box>
                     <Button variant="outlined">Advanced settings</Button>
@@ -613,7 +617,7 @@ const ConfigurePanel = () => {
                         </Grid>
                         <Grid size={{ xs: 12, md: 6 }} sx={{ display: "flex", alignItems: "center" }}>
                             <Typography variant="caption" color="text.secondary">
-                                Learners below this level won't see the module in search.
+                                Learners below this level will not see the module in search.
                             </Typography>
                         </Grid>
 
@@ -657,7 +661,7 @@ const ConfigurePanel = () => {
                     <Box display="flex" alignItems="center" gap={2}>
                         <Switch defaultChecked />
                         <Typography variant="body2" sx={{ flexGrow: 1 }}>
-                            Send a reminder email to learners who haven't finished the module
+                            Send a reminder email to learners who have not finished the module
                         </Typography>
                         <Button size="small" variant="outlined">
                             Add reminder
