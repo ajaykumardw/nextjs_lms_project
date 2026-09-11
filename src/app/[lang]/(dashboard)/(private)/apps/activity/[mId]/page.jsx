@@ -3812,7 +3812,18 @@ const AcitivityCard = () => {
           </TabContext>
         </CardContent>
       </Card>
-      <ContentFlowModal open={open} setOpen={setOpen} data={data} setSelected={setSelected} selected={selected} setNext={setNext} API_URL={API_URL} token={token} mId={mId} fetchActivities={fetchActivities} />
+      <ContentFlowModal
+        open={open}
+        setOpen={setOpen}
+        data={data}
+        setSelected={setSelected}
+        selected={selected}
+        setNext={setNext}
+        API_URL={API_URL}
+        token={token}
+        mId={mId}
+        fetchActivities={fetchActivities}
+      />
     </PermissionGuard>
   )
 }
