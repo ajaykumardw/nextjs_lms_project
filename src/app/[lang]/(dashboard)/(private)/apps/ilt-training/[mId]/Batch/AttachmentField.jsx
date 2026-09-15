@@ -11,11 +11,13 @@ const AttachmentField = ({ attachment, onChange, error }) => {
 
     const handleFileChange = (e) => {
         const file = e.target.files?.[0];
+        
         e.target.value = "";
         if (!file) return;
 
         if (file.size > MAX_ATTACHMENT_MB * 1024 * 1024) {
             onChange(null, `File is too large. Max size is ${MAX_ATTACHMENT_MB}MB.`);
+            
             return;
         }
 

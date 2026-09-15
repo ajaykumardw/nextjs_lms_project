@@ -1,3 +1,6 @@
+import { Box, Divider, Skeleton, Stack } from "@mui/material";
+
+
 const InvitePanelSkeleton = () => (
     <Box>
         <Skeleton variant="rounded" height={64} sx={{ mb: 4 }} />

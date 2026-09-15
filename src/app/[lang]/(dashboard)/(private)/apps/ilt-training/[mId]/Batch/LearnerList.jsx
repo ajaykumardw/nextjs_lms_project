@@ -1,5 +1,11 @@
-import { Box, Typography, Stack, Paper, Avatar, Chip } from "@mui/material";
+import { Box, Typography, Stack, Paper, Avatar, Chip, IconButton, Button, Tooltip } from "@mui/material";
 
+const LEARNER_STATUS = {
+    NOMINATED: "nominated",
+    NOT_RESPONDED: "not_responded",
+    CONFIRMED: "confirmed",
+    DECLINED: "declined",
+};
 
 const LearnerList = ({
     learners = [],
@@ -12,6 +18,8 @@ const LearnerList = ({
     const filtered = learners.filter(
         (learner) => learner.status === status
     );
+
+
 
     const getStatusLabel = (value) => {
         switch (value) {
@@ -85,13 +93,13 @@ const LearnerList = ({
                                     {learner.name || learner.email}
                                 </Typography>
 
-                                {learner.email && (
+                                {learner.emp_id && (
                                     <Typography
                                         variant="caption"
                                         color="text.secondary"
                                         noWrap
                                     >
-                                        {learner.email}
+                                        {learner.emp_id}
                                     </Typography>
                                 )}
                             </Box>

@@ -1,5 +1,51 @@
 import { useState, useEffect } from "react";
 
+import {
+    Button,
+    Card,
+    Checkbox,
+    FormControlLabel,
+    Paper,
+    Typography,
+    Box,
+    RadioGroup,
+    Stack,
+    Radio,
+    Switch,
+    TextField,
+    MenuItem,
+    IconButton
+} from "@mui/material";
+
+import Grid from "@mui/material/Grid2";
+
+import { toast } from "react-toastify";
+
+import SectionBlock from "../Batch/SectionBlock";
+
+import ConfigurePanelSkeleton from "../SkeletonComponent/ConfigurePanelSkeleton";
+import SurveyModalComponent from "../ModalComponent/SurveyModalComponent";
+import NotificationModalComponent from "../ModalComponent/NotificationModalComponent";
+import ImportUserModal from "../ModalComponent/ImportUserModal";
+
+const MAX_PAIRS = 5;
+
+const enrollmentOptions = [
+    { value: "1", label: "Do not allow self enrollment" },
+    { value: "2", label: "Allow any learner to self enroll" },
+    { value: "3", label: "Allow learners who meet target audience criteria" },
+];
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const assert_url = process.env.NEXT_PUBLIC_ASSETS_URL || ''
+
+const normalizeOptions = (val) => {
+    if (!val) return [];
+    if (Array.isArray(val)) return val.map((v) => String(v));
+
+    return [String(val)];
+};
+
 const ConfigurePanel = ({ token, handleFetchData, finalData, setQuestions, questions, mId, createData, certificateData, loading, finalScheduleData }) => {
 
     const [enrollment, setEnrollment] = useState("1");
@@ -65,10 +111,6 @@ const ConfigurePanel = ({ token, handleFetchData, finalData, setQuestions, quest
         setAllData([]);
     };
 
-    // FIX: setAllData from ImportUserModal returns an array of matched user
-    // IDs. Previously this modal's result was never merged back into the
-    // target-audience "User" option list for the pair that opened it — the
-    // imported users vanished. Now we merge them into that pair's `options`.
     const handleImportedTargetUsers = (importedIds) => {
         if (selectedPairIndex === null) return;
 
@@ -119,18 +161,21 @@ const ConfigurePanel = ({ token, handleFetchData, finalData, setQuestions, quest
         // Certificate validation
         if (isCertificateSelected && !selectedCertificateId) {
             toast.error("Please select a certificate.");
+            
             return;
         }
 
         // Feedback survey validation - at least one question required if enabled
         if (isSurveyAllowed && (!questions || questions.length === 0 || !questions.some(q => q.text?.trim() && q.type))) {
             toast.error("Please add at least one survey question before saving.");
+            
             return;
         }
 
         // Communication/reminder validation - at least one reminder required if enabled
         if (isEmailAllowed && !finalData?.moduleReminder) {
             toast.error("Please add a reminder before saving.");
+            
             return;
         }
 
@@ -142,6 +187,7 @@ const ConfigurePanel = ({ token, handleFetchData, finalData, setQuestions, quest
 
             if (!isValid) {
                 toast.error("Please select target and option for every row.");
+                
                 return;
             }
         }
@@ -199,6 +245,7 @@ const ConfigurePanel = ({ token, handleFetchData, finalData, setQuestions, quest
 
     useEffect(() => {
         const setting = finalScheduleData?.moduleSetting;
+        
         if (!setting) return;
 
         setIsEditPermissionEnabled(setting.trainerAllowed);
@@ -208,6 +255,7 @@ const ConfigurePanel = ({ token, handleFetchData, finalData, setQuestions, quest
         setIsEmailAllowed(setting.reminderEnabled ?? false);
 
         const enrollmentType = String(finalScheduleData.selfEnrollmentSetting ?? "1");
+        
         setEnrollment(enrollmentType);
         setSelfEnrollData(enrollmentType);
 

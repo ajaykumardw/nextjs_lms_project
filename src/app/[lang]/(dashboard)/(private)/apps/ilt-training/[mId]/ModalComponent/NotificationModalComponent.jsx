@@ -1,3 +1,28 @@
+import { useState, useEffect, useRef } from "react"
+
+import { useTheme, Dialog, DialogContent, Box, Typography, Button, Checkbox, useMediaQuery, Select, DialogTitle, DialogActions, MenuItem, TextField, FormControlLabel, RadioGroup, Radio } from "@mui/material"
+
+import DialogCloseButton from "@/components/dialogs/DialogCloseButton"
+
+import FieldLabel from "../Batch/FieldLabel"
+import NumberStepper from "../Batch/NumberStepper"
+
+const NAV_ITEMS = [
+    { key: 'settings', label: 'Settings', Icon: "tabler-settings" },
+    { key: 'message', label: 'Message', Icon: "tabler-mail" },
+    { key: 'recipients', label: 'Recipients', Icon: "tabler-users" }
+]
+
+const EVENT_OPTIONS = [
+    'Attendance Status (Session Level): Saved - Present',
+    'Attendance Status (Session Level): Saved - Absent',
+    'Before Batch Starts',
+    'Before Session Starts',
+    'Survey Reminder'
+]
+
+const TAGS = ['First Name', 'Last Name', 'Program Name', 'Content Folder Name', 'Module Name', 'Module Type']
+
 const NotificationModalComponent = ({ open, setIsOpen, token, mId, finalData, handleFetchData }) => {
 
     const theme = useTheme()
@@ -14,6 +39,7 @@ const NotificationModalComponent = ({ open, setIsOpen, token, mId, finalData, ha
 
     // Message tab state
     const [subject, setSubject] = useState('Your Attendance Has Been Marked as {{attendanceStatus}}')
+    
     const [body, setBody] = useState(
         `Session Title: {{sessionName}}\nStart Date & Time: {{sessionStartDate}}\nEnd Date & Time: {{sessionEndDate}}\nBatch Name: {{batchName}}\nILT Name: {{moduleName}}\n\nIf you believe there is an error, please reach out to your instructor.`
     )
@@ -166,6 +192,7 @@ If you believe there is an error, please reach out to your instructor.`
         // Validate current tab before moving forward
         if (activeTab === 'settings' && !validateSettings()) {
             setErrors(prev => ({ ...prev, event: true }))
+            
             return
         }
 
@@ -175,6 +202,7 @@ If you believe there is an error, please reach out to your instructor.`
                 subject: !subject.trim(),
                 body: !body.trim()
             }))
+            
             return
         }
 

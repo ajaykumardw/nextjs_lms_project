@@ -1,3 +1,7 @@
+import { Box, Skeleton, Stack } from "@mui/material";
+
+import Grid from "@mui/material/Grid2";
+
 const ConfigurePanelSkeleton = () => (
     <Grid container spacing={4}>
         <Grid item size={{ xs: 12, md: 9 }}>

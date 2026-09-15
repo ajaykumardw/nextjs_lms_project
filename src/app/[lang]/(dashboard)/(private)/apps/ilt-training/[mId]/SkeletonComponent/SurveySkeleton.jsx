@@ -1,3 +1,5 @@
+import { Box, Skeleton } from "@mui/material"
+
 const SurveySkeleton = ({ isTablet }) => (
     <>
         {[1, 2, 3].map(i => (

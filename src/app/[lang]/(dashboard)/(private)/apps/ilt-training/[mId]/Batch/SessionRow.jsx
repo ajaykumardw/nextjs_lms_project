@@ -21,7 +21,7 @@ const trainers = [
     },
 ];
 
-const SessionRow = ({ session, onChange, onRemove, canRemove, index }) => {
+const SessionRow = ({ session, onChange, onRemove, canRemove, index, finalData }) => {
 
     const setField = (field) => (e) => onChange(session.id, field, e.target.value);
 
@@ -99,30 +99,61 @@ const SessionRow = ({ session, onChange, onRemove, canRemove, index }) => {
                         size="small"
                         sx={fieldStyleSx}
                         value={session.trainers || []}
-                        onChange={(e) => onChange(session.id, "trainers", e.target.value)}
+                        onChange={(e) => {
+                            const value = e.target.value;
+
+                            onChange(
+                                session.id,
+                                "trainers",
+                                typeof value === "string" ? value.split(",") : value
+                            );
+                        }}
                         SelectProps={{
                             multiple: true,
-                            renderValue: (selected) =>
-                                selected
-                                    .map(
-                                        (id) =>
-                                            trainers.find((trainer) => trainer._id === id)?.name
-                                    )
+                            renderValue: (selected) => {
+                                if (!selected || selected.length === 0) {
+                                    return "";
+                                }
+
+                                return selected
+                                    .map((id) => {
+                                        const trainer = finalData?.trainer?.find(
+                                            (trainer) => trainer._id === id
+                                        );
+
+                                        return trainer
+                                            ? `${trainer.first_name} ${trainer.last_name}`
+                                            : null;
+                                    })
                                     .filter(Boolean)
-                                    .join(", "),
+                                    .join(", ");
+                            },
                         }}
                     >
-                        {trainers.map((trainer) => (
-                            <MenuItem key={trainer._id} value={trainer._id}>
-                                <Checkbox
-                                    checked={(session.trainers || []).includes(trainer._id)}
-                                    size="small"
-                                />
-                                <ListItemText primary={trainer.name} />
-                            </MenuItem>
-                        ))}
+                        {finalData?.trainer?.map((trainer) => {
+                            const selectedTrainers = session.trainers || [];
+                            const isSelected = selectedTrainers.includes(trainer._id);
+
+                            return (
+                                <MenuItem
+                                    key={trainer._id}
+                                    value={trainer._id}
+                                >
+                                    <Checkbox
+                                        checked={isSelected}
+                                        size="small"
+                                    />
+
+                                    <ListItemText
+                                        primary={`${trainer.first_name} ${trainer.last_name}`}
+                                        secondary={trainer.emp_id}
+                                    />
+                                </MenuItem>
+                            );
+                        })}
                     </TextField>
                 </Grid>
+
             </Grid>
         </Paper>
     );

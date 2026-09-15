@@ -1,4 +1,30 @@
+import { useState, useEffect, useRef } from "react"
+
+import { useTheme, Dialog, DialogContent, Box, Typography, Button, Checkbox, useMediaQuery, Select, DialogTitle, DialogActions, MenuItem, TextField, FormControlLabel, IconButton } from "@mui/material"
+
+import DialogCloseButton from "@/components/dialogs/DialogCloseButton"
+
+const satisfactionOptions = [
+    'Very Dissatisfied',
+    'Dissatisfied',
+    'Neutral',
+    'Satisfied',
+    'Very Satisfied'
+]
+
+const qualityOptions = ['Poor', 'Good', 'Excellent']
+
+const MAX_OPTIONS = 10
+
+const labelOption = {
+    "7": "Define your custom options",
+    "8": "Define your Likert scale",
+    "9": "Define your Satisfaction scale",
+    "10": "Define your Quality scale"
+}
+
 const MCQModalComponent = ({ open, setOpen, activeQuestionId, setOptionData, optionData }) => {
+
     const handleClose = () => setOpen(false)
 
     const [customOptions, setCustomOptions] = useState([''])
@@ -42,17 +68,6 @@ const MCQModalComponent = ({ open, setOpen, activeQuestionId, setOptionData, opt
         ? ['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree']
         : ['Strongly Disagree', 'Disagree', 'Agree', 'Strongly Agree']
 
-    const satisfactionOptions = [
-        'Very Dissatisfied',
-        'Dissatisfied',
-        'Neutral',
-        'Satisfied',
-        'Very Satisfied'
-    ]
-
-    const qualityOptions = ['Poor', 'Good', 'Excellent']
-
-    const MAX_OPTIONS = 10
 
     const addCustomOption = () => {
         if (customOptions.length >= MAX_OPTIONS) return

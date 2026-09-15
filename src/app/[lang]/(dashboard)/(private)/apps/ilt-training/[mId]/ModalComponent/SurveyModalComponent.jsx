@@ -1,3 +1,39 @@
+import { useState, useEffect } from "react"
+
+import { useTheme, Dialog, DialogContent, Box, Typography, Button, Checkbox, IconButton, useMediaQuery, DialogTitle, DialogActions, TextField, Select, MenuItem, CircularProgress } from "@mui/material"
+
+import { useForm } from "react-hook-form"
+
+import DialogCloseButton from "@/components/dialogs/DialogCloseButton"
+
+import SurveySkeleton from "../SkeletonComponent/SurveySkeleton"
+
+import MCQModalComponent from "./MCQModalComponent"
+
+const OPTION_BASED_TYPES = ['7', '8', '9', '10']
+
+const QUESTION_TYPES = [
+    { label: 'Yes or No', value: '1' },
+    { label: 'Rating (1–5)', value: '2' },
+    { label: 'Rating (1–10)', value: '3' },
+    { label: 'Rating (1–5) - Emoji', value: '4' },
+    { label: 'Rating (1–5) - Star', value: '5' },
+    { label: 'Subjective Answer', value: '6' },
+    { label: 'Multiple Choice', value: '7' },
+    { label: 'Likert Scale', value: '8' },
+    { label: 'Satisfaction Scale', value: '9' },
+    { label: 'Quality Scale', value: '10' },
+]
+
+const createEmptyQuestion = () => ({
+    id: Date.now() + Math.random(),
+    text: '',
+    type: '',
+    options: null,
+    mandatory: false,
+    errors: { text: false, type: false }
+})
+
 const SurveyModalComponent = ({ open, setISOpen, token, mId, questions, setQuestions, handleFetchQuestion, fetching }) => {
 
     const [loading, setLoading] = useState(false)

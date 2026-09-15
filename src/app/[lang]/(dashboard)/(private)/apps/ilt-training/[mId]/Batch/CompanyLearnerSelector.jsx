@@ -1,37 +1,45 @@
-import { useMemo } from "react";
-
-import { TextField, MenuItem, Checkbox, ListItemText } from "@mui/material";
+import {
+    Checkbox,
+    ListItemText,
+    MenuItem,
+    TextField,
+} from "@mui/material";
 
 const fieldStyleSx = {
-    "& .MuiOutlinedInput-root": { borderRadius: 1 },
+    "& .MuiOutlinedInput-root": {
+        borderRadius: 1,
+    },
 };
 
 const CompanyLearnerSelector = ({
-    users = [],
+    finalData = {},
     selectedIds = [],
     onChange,
     disabled = false,
 }) => {
+    const normalizedSelectedIds = (
+        selectedIds || []
+    ).map(String);
 
-    const learnerUsers = useMemo(() => {
-        return (users || []).filter((user) => {
-            const roles = Array.isArray(user.roles)
-                ? user.roles.map((r) =>
-                    typeof r === "string"
-                        ? r.toLowerCase()
-                        : String(r?.name || r?.role || "").toLowerCase()
-                )
-                : [];
+    const learners = Array.isArray(
+        finalData?.learner
+    )
+        ? finalData.learner
+        : [];
 
-            const role = String(user.role || "").toLowerCase();
+    const handleChange = (event) => {
+        const value =
+            event.target.value;
 
-            // Adjust this role check if your backend uses another field.
-            return (
-                role === "learner" ||
-                roles.includes("learner")
-            );
-        });
-    }, [users]);
+        const ids = Array.isArray(value)
+            ? value.map(String)
+            : String(value)
+                .split(",")
+                .filter(Boolean)
+                .map(String);
+
+        onChange?.(ids);
+    };
 
     return (
         <TextField
@@ -39,53 +47,58 @@ const CompanyLearnerSelector = ({
             fullWidth
             size="small"
             label="Select learners"
-            value={selectedIds}
+            value={
+                normalizedSelectedIds
+            }
             disabled={disabled}
-            onChange={(e) => {
-                const value = e.target.value;
-
-                onChange(
-                    typeof value === "string"
-                        ? value.split(",").filter(Boolean)
-                        : value
-                );
-            }}
+            onChange={handleChange}
+            sx={fieldStyleSx}
             SelectProps={{
                 multiple: true,
-                renderValue: (selected) => {
-                    if (!selected?.length) {
+
+                renderValue: (
+                    selected
+                ) => {
+                    if (
+                        !selected ||
+                        selected.length === 0
+                    ) {
                         return "Select learners";
                     }
 
-                    return `${selected.length} learner${selected.length > 1 ? "s" : ""} selected`;
+                    return `${selected.length
+                        } learner${selected.length > 1
+                            ? "s"
+                            : ""
+                        } selected`;
                 },
             }}
-            sx={fieldStyleSx}
         >
-            {learnerUsers.length === 0 ? (
+            {learners.length === 0 ? (
                 <MenuItem disabled>
-                    No company learners available
+                    No company learners
+                    available
                 </MenuItem>
             ) : (
-                learnerUsers.map((user) => {
-                    const id = String(user._id);
+                learners.map((user) => {
 
-                    const name =
-                        `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
-                        user.name ||
-                        user.email ||
-                        "Unnamed user";
+                    const id = String(user?._id || user?.id || "");
+                    const name = `${user?.first_name || ""} ${user?.last_name || ""}`.trim() || "Unnamed learner";
+                    const isSelected = normalizedSelectedIds.includes(id);
 
                     return (
-                        <MenuItem key={id} value={id}>
+                        <MenuItem
+                            key={id}
+                            value={id}
+                        >
                             <Checkbox
                                 size="small"
-                                checked={selectedIds.includes(id)}
+                                checked={isSelected}
                             />
 
                             <ListItemText
                                 primary={name}
-                                secondary={user.email || ""}
+                                secondary={user?.emp_id || user?.email || ""}
                             />
                         </MenuItem>
                     );

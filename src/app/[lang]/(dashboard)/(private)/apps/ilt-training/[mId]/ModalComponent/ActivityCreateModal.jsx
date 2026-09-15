@@ -1,3 +1,9 @@
+import { Box, Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, Radio, RadioGroup, Typography } from "@mui/material";
+
+import Grid from "@mui/material/Grid2"
+
+import DialogCloseButton from "@/components/dialogs/DialogCloseButton";
+
 const ActivityCreateModal = ({ open, data, setOpen, setSelected, selected, setNext, slug, token, mId, fetchActivities }) => {
 
     const handleChange = (selectedItem) => {
