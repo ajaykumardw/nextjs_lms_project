@@ -2,9 +2,13 @@ import { Box, Button, Card, CardContent, Dialog, DialogActions, DialogContent, D
 
 import Grid from "@mui/material/Grid2"
 
+import { toast } from "react-toastify";
+
 import DialogCloseButton from "@/components/dialogs/DialogCloseButton";
 
-const ActivityCreateModal = ({ open, data, setOpen, setSelected, selected, setNext, slug, token, mId, fetchActivities }) => {
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+const ActivityCreateModal = ({ open, data, setOpen, setSelected, selected, setNext, slug, token, mId, handleFetchData, title, setValue }) => {
 
     const handleChange = (selectedItem) => {
         setSelected(selectedItem?._id);
@@ -12,7 +16,7 @@ const ActivityCreateModal = ({ open, data, setOpen, setSelected, selected, setNe
 
     const submitActivity = async () => {
         try {
-            const response = await fetch(`${API_URL}/company/activity/form/${mId}/${selected}`, {
+            const response = await fetch(`${API_URL}/company/ILT/engage/activity/create/${slug}/${mId}/${selected}`, {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${token}`
@@ -27,9 +31,10 @@ const ActivityCreateModal = ({ open, data, setOpen, setSelected, selected, setNe
                 toast.success("Activity added successfully", {
                     autoClose: 1000
                 })
-                fetchActivities()
+                handleFetchData()
                 setSelected()
                 setOpen(false)
+                setValue("engage")
             }
 
         } catch (error) {
@@ -65,7 +70,7 @@ const ActivityCreateModal = ({ open, data, setOpen, setSelected, selected, setNe
                     className="flex flex-col gap-2 text-center sm:pbs-5 sm:pbe-5 sm:pli-5"
                 >
                     <Typography component="span" className="flex flex-col items-center">
-                        {"Select any Activity " + `${slug}` + " to create"}
+                        {"Select any Activity " + `${title}` + " to create"}
                     </Typography>
                 </DialogTitle>
 

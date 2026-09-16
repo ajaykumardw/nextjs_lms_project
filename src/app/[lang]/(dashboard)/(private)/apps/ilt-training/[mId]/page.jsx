@@ -77,7 +77,7 @@ const ILTPageComponent = () => {
                         }))
                         : []
                 );
-                
+
                 const create_data = {
                     designation: value?.designation || [],
                     department: value?.department || [],
@@ -150,11 +150,12 @@ const ILTPageComponent = () => {
                         <TabPanel value="engage" className="p-0">
                             <EngagePanel
                                 activityData={activityData}
-                                token={token}
-                                fetchActivities={handleFetchData}
-                                loading={pageLoading}
-                                mId={mId}
                                 finalData={finalData}
+                                token={token}
+                                handleFetchData={handleFetchData}
+                                loading={pageLoading}
+                                setValue={setValue}
+                                mId={mId}
                             />
                         </TabPanel>
                     </Box>

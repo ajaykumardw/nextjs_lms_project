@@ -6,7 +6,7 @@ import Grid from "@mui/material/Grid2"
 
 import ActivityCreateModal from "../ModalComponent/ActivityCreateModal";
 
-const EngageColumn = ({ title, children, ctaLabel, slug, activityData, token, fetchActivities, mId }) => {
+const EngageColumn = ({ title, children, ctaLabel, slug, activityData, token, handleFetchData, mId, setValue }) => {
 
     const [isOpen, setIsOpen] = useState(false)
     const [selected, setSelected] = useState()
@@ -33,7 +33,9 @@ const EngageColumn = ({ title, children, ctaLabel, slug, activityData, token, fe
                 data={activityData}
                 token={token}
                 slug={slug}
-                fetchActivities={fetchActivities}
+                setValue={setValue}
+                title={title}
+                handleFetchData={handleFetchData}
                 setSelected={setSelected}
                 selected={selected}
                 setNext={setNext}
