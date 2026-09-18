@@ -9,6 +9,8 @@ import {
     FormHelperText,
     Paper,
     Stack,
+    MenuItem,
+    Divider,
     Tab,
     TextField,
     Typography,
@@ -32,6 +34,7 @@ const LEARNER_STATUS = {
     NOT_RESPONDED: "not_responded",
     CONFIRMED: "confirmed",
     DECLINED: "declined",
+    ATTENDANCE: "attendance"
 };
 
 const fieldStyleSx = {
@@ -102,37 +105,7 @@ const DefinedBatch = ({
     onBatchSaved,
     editingBatch = null,
 }) => {
-    const [participantTab, setParticipantTab] = useState(
-        LEARNER_STATUS.NOMINATED
-    );
-
-    const [saving, setSaving] = useState(false);
-    const [errors, setErrors] = useState({});
-
-    const [form, setForm] = useState(() => ({
-        name: editingBatch?.name || "",
-
-        startDate: editingBatch?.start_date
-            ? new Date(editingBatch.start_date)
-                .toISOString()
-                .split("T")[0]
-            : "",
-
-        endDate: editingBatch?.end_date
-            ? new Date(editingBatch.end_date)
-                .toISOString()
-                .split("T")[0]
-            : "",
-
-        venue: editingBatch?.venue || "",
-
-        cost:
-            editingBatch?.cost_per_learner ??
-            "0",
-    }));
-
-    const [attachment, setAttachment] = useState(null);
-    const [attachmentError, setAttachmentError] = useState("");
+    const [participantTab, setParticipantTab] = useState(LEARNER_STATUS.NOMINATED);
 
     const [sessions, setSessions] =
         useState(() => {
@@ -195,6 +168,41 @@ const DefinedBatch = ({
 
             return [emptySession()];
         });
+
+    const [attendanceSessionId, setAttendanceSessionId] =
+        useState(
+            sessions?.[0]?.id || ""
+        );
+
+    const [attendance, setAttendance] = useState({});
+
+    const [saving, setSaving] = useState(false);
+    const [errors, setErrors] = useState({});
+
+    const [form, setForm] = useState(() => ({
+        name: editingBatch?.name || "",
+
+        startDate: editingBatch?.start_date
+            ? new Date(editingBatch.start_date)
+                .toISOString()
+                .split("T")[0]
+            : "",
+
+        endDate: editingBatch?.end_date
+            ? new Date(editingBatch.end_date)
+                .toISOString()
+                .split("T")[0]
+            : "",
+
+        venue: editingBatch?.venue || "",
+
+        cost:
+            editingBatch?.cost_per_learner ??
+            "0",
+    }));
+
+    const [attachment, setAttachment] = useState(null);
+    const [attachmentError, setAttachmentError] = useState("");
 
     const [sessionsError, setSessionsError] = useState("");
 
@@ -274,6 +282,19 @@ const DefinedBatch = ({
             ...prev,
             [field]: undefined,
             submit: undefined,
+        }));
+    };
+
+    const updateAttendance = (
+        learnerId,
+        status
+    ) => {
+        setAttendance((prev) => ({
+            ...prev,
+            [attendanceSessionId]: {
+                ...(prev[attendanceSessionId] || {}),
+                [String(learnerId)]: status,
+            },
         }));
     };
 
@@ -1198,6 +1219,182 @@ const DefinedBatch = ({
                 </Grid>
             </Grid>
 
+            {/* TRAINING PROGRESS */}
+
+            <Paper
+                variant="outlined"
+                sx={{
+                    p: 2.5,
+                    mb: 3,
+                    borderRadius: 2,
+                }}
+            >
+                <Typography
+                    variant="subtitle1"
+                    fontWeight={700}
+                    sx={{ mb: 2 }}
+                >
+                    Training Overview
+                </Typography>
+
+                <Grid
+                    container
+                    spacing={2}
+                >
+                    <Grid size={{ xs: 6, md: 3 }}>
+                        <Paper
+                            variant="outlined"
+                            sx={{ p: 2 }}
+                        >
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                            >
+                                Participants
+                            </Typography>
+
+                            <Typography
+                                variant="h5"
+                                fontWeight={700}
+                            >
+                                {learners.length}
+                            </Typography>
+                        </Paper>
+                    </Grid>
+
+                    <Grid size={{ xs: 6, md: 3 }}>
+                        <Paper
+                            variant="outlined"
+                            sx={{ p: 2 }}
+                        >
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                            >
+                                Sessions
+                            </Typography>
+
+                            <Typography
+                                variant="h5"
+                                fontWeight={700}
+                            >
+                                {sessions.length}
+                            </Typography>
+                        </Paper>
+                    </Grid>
+
+                    <Grid size={{ xs: 6, md: 3 }}>
+                        <Paper
+                            variant="outlined"
+                            sx={{ p: 2 }}
+                        >
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                            >
+                                Trainers
+                            </Typography>
+
+                            <Typography
+                                variant="h5"
+                                fontWeight={700}
+                            >
+                                {assignedTrainers.length}
+                            </Typography>
+                        </Paper>
+                    </Grid>
+
+                    <Grid size={{ xs: 6, md: 3 }}>
+                        <Paper
+                            variant="outlined"
+                            sx={{ p: 2 }}
+                        >
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                            >
+                                Confirmed
+                            </Typography>
+
+                            <Typography
+                                variant="h5"
+                                fontWeight={700}
+                            >
+                                {confirmedCount}
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                </Grid>
+
+                <Divider sx={{ my: 3 }} />
+
+                <Typography
+                    variant="body2"
+                    fontWeight={600}
+                    sx={{ mb: 1 }}
+                >
+                    Training Progress
+                </Typography>
+
+                <Stack spacing={1}>
+                    <Typography
+                        variant="body2"
+                        color="success.main"
+                    >
+                        ✓ Batch created
+                    </Typography>
+
+                    <Typography
+                        variant="body2"
+                        color={
+                            learners.length > 0
+                                ? "success.main"
+                                : "text.secondary"
+                        }
+                    >
+                        {learners.length > 0
+                            ? "✓"
+                            : "○"}{" "}
+                        Participants assigned
+                    </Typography>
+
+                    <Typography
+                        variant="body2"
+                        color={
+                            assignedTrainers.length > 0
+                                ? "success.main"
+                                : "text.secondary"
+                        }
+                    >
+                        {assignedTrainers.length > 0
+                            ? "✓"
+                            : "○"}{" "}
+                        Trainers assigned
+                    </Typography>
+
+                    <Typography
+                        variant="body2"
+                        color={
+                            sessions.length > 0
+                                ? "success.main"
+                                : "text.secondary"
+                        }
+                    >
+                        {sessions.length > 0
+                            ? "✓"
+                            : "○"}{" "}
+                        Sessions scheduled
+                    </Typography>
+
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                    >
+                        ○ Training completed
+                    </Typography>
+                </Stack>
+            </Paper>
+
             <SessionList
                 sessions={sessions}
                 finalData={finalData}
@@ -1303,6 +1500,10 @@ const DefinedBatch = ({
                         }
                     />
 
+                    <Tab
+                        label="Instructors"
+                        value="instructors"
+                    />
                     <Tab
                         label="Instructors"
                         value="instructors"
@@ -1442,6 +1643,218 @@ const DefinedBatch = ({
                                 )}
                             </Box>
                         )}
+
+                    {participantTab === "attendance" && (
+                        <Box sx={{ mt: 3 }}>
+                            <Paper
+                                variant="outlined"
+                                sx={{
+                                    p: 2,
+                                    borderRadius: 2,
+                                }}
+                            >
+                                <Stack
+                                    direction={{
+                                        xs: "column",
+                                        sm: "row",
+                                    }}
+                                    justifyContent="space-between"
+                                    spacing={2}
+                                    sx={{ mb: 3 }}
+                                >
+                                    <Box>
+                                        <Typography
+                                            variant="subtitle1"
+                                            fontWeight={700}
+                                        >
+                                            Session Attendance
+                                        </Typography>
+
+                                        <Typography
+                                            variant="body2"
+                                            color="text.secondary"
+                                        >
+                                            Record attendance for each learner
+                                            for the selected session.
+                                        </Typography>
+                                    </Box>
+
+                                    <TextField
+                                        select
+                                        size="small"
+                                        label="Session"
+                                        value={attendanceSessionId}
+                                        onChange={(e) =>
+                                            setAttendanceSessionId(
+                                                e.target.value
+                                            )
+                                        }
+                                        sx={{
+                                            minWidth: 240,
+                                            ...fieldStyleSx,
+                                        }}
+                                        SelectProps={{
+                                            native: true,
+                                        }}
+                                    >
+                                        {sessions.map((session, index) => (
+                                            <option
+                                                key={session.id}
+                                                value={session.id}
+                                            >
+                                                {`Session ${index + 1}${session.date
+                                                    ? ` - ${session.date}`
+                                                    : ""
+                                                    }`}
+                                            </option>
+                                        ))}
+                                    </TextField>
+                                </Stack>
+
+                                {learners.length === 0 ? (
+                                    <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                        sx={{
+                                            textAlign: "center",
+                                            py: 4,
+                                        }}
+                                    >
+                                        No learners assigned to this batch.
+                                    </Typography>
+                                ) : (
+                                    <Stack spacing={1}>
+                                        {learners
+                                            .filter(
+                                                (learner) =>
+                                                    learner.status ===
+                                                    LEARNER_STATUS.CONFIRMED
+                                            )
+                                            .map((learner) => {
+                                                const learnerId = String(
+                                                    learner.id ||
+                                                    learner.learner_id
+                                                );
+
+                                                const currentStatus =
+                                                    attendance[
+                                                    attendanceSessionId
+                                                    ]?.[learnerId] ||
+                                                    "pending";
+
+                                                return (
+                                                    <Paper
+                                                        key={learnerId}
+                                                        variant="outlined"
+                                                        sx={{
+                                                            p: 1.5,
+                                                        }}
+                                                    >
+                                                        <Grid
+                                                            container
+                                                            spacing={2}
+                                                            alignItems="center"
+                                                        >
+                                                            <Grid
+                                                                size={{
+                                                                    xs: 12,
+                                                                    sm: 6,
+                                                                }}
+                                                            >
+                                                                <Typography
+                                                                    variant="body2"
+                                                                    fontWeight={600}
+                                                                >
+                                                                    {learner.name}
+                                                                </Typography>
+
+                                                                <Typography
+                                                                    variant="caption"
+                                                                    color="text.secondary"
+                                                                >
+                                                                    {
+                                                                        learner.email
+                                                                    }
+                                                                </Typography>
+                                                            </Grid>
+
+                                                            <Grid
+                                                                size={{
+                                                                    xs: 12,
+                                                                    sm: 6,
+                                                                }}
+                                                            >
+                                                                <TextField
+                                                                    select
+                                                                    fullWidth
+                                                                    size="small"
+                                                                    label="Attendance"
+                                                                    value={
+                                                                        currentStatus
+                                                                    }
+                                                                    onChange={(e) =>
+                                                                        updateAttendance(
+                                                                            learnerId,
+                                                                            e.target
+                                                                                .value
+                                                                        )
+                                                                    }
+                                                                    sx={
+                                                                        fieldStyleSx
+                                                                    }
+                                                                >
+                                                                    <MenuItem value="pending">
+                                                                        Pending
+                                                                    </MenuItem>
+
+                                                                    <MenuItem value="present">
+                                                                        Present
+                                                                    </MenuItem>
+
+                                                                    <MenuItem value="late">
+                                                                        Late
+                                                                    </MenuItem>
+
+                                                                    <MenuItem value="absent">
+                                                                        Absent
+                                                                    </MenuItem>
+                                                                </TextField>
+                                                            </Grid>
+                                                        </Grid>
+                                                    </Paper>
+                                                );
+                                            })}
+                                    </Stack>
+                                )}
+
+                                <Box
+                                    sx={{
+                                        display: "flex",
+                                        justifyContent: "flex-end",
+                                        mt: 3,
+                                    }}
+                                >
+                                    <Button
+                                        variant="contained"
+                                        disabled={!canManage}
+                                        onClick={() => {
+                                            /*
+                                             * Connect your attendance API here.
+                                             * Current UI keeps the attendance state
+                                             * locally until the API is connected.
+                                             */
+                                            toast.success(
+                                                "Attendance saved."
+                                            );
+                                        }}
+                                    >
+                                        Save Attendance
+                                    </Button>
+                                </Box>
+                            </Paper>
+                        </Box>
+                    )}
+
                 </TabPanel>
             </TabContext>
 

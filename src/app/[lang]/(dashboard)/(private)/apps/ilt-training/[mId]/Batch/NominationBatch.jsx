@@ -5,11 +5,17 @@ import { useState } from "react";
 import {
     Box,
     Typography,
+    Paper,
+    Chip,
+    Divider,
+    Button,
     Stack,
     TextField,
     Tab,
     FormHelperText,
 } from "@mui/material";
+
+import Grid from "@mui/material/Grid2"
 
 import {
     TabContext,
@@ -55,8 +61,26 @@ const NominationBatch = ({
 
     const [errors, setErrors] = useState({});
 
-    const [tabValue, setTabValue] =
-        useState("nominated");
+    const [tabValue, setTabValue] = useState("nominated");
+
+    const [finalParticipantIds, setFinalParticipantIds] = useState(() => {
+        return Array.isArray(editingBatch?.learners)
+            ? editingBatch.learners
+                .filter(
+                    (learner) =>
+                        learner?.status === LEARNER_STATUS.CONFIRMED
+                )
+                .map((learner) =>
+                    String(
+                        learner?.learner_id?._id ||
+                        learner?.learner_id ||
+                        learner?._id
+                    )
+                )
+            : [];
+    });
+
+    const [finalizing, setFinalizing] = useState(false);
 
     const [form, setForm] = useState({
         name: editingBatch?.name || "",
@@ -280,389 +304,235 @@ const NominationBatch = ({
     ) => {
         setLearners((prev) =>
             prev.map((learner) => {
-                const id =
-                    learner.learner_id ||
-                    learner.id;
 
-                if (
-                    String(id) !==
-                    String(learnerId)
-                ) {
+                const id = learner.learner_id || learner.id;
+
+                if (String(id) != String(learnerId)) {
                     return learner;
                 }
 
                 return {
+
                     ...learner,
-                    status:
-                        LEARNER_STATUS.CONFIRMED,
+                    status: LEARNER_STATUS.CONFIRMED,
                 };
             })
         );
     };
 
+    const selectedLearnerIds = learners.map((learner) => String(learner.learner_id || learner.id));
 
-    /*
-    |--------------------------------------------------------------------------
-    | Selected learner IDs
-    |--------------------------------------------------------------------------
-    */
+    const nominatedCount = learners.filter(
+        (learner) =>
+            learner.status ===
+            LEARNER_STATUS.NOMINATED
+    ).length;
 
-    const selectedLearnerIds =
-        learners.map((learner) =>
-            String(
-                learner.learner_id ||
-                learner.id
-            )
-        );
+    const notRespondedCount = learners.filter(
+        (learner) =>
+            learner.status ===
+            LEARNER_STATUS.NOT_RESPONDED
+    ).length;
 
+    const confirmedCount = learners.filter(
+        (learner) =>
+            learner.status ===
+            LEARNER_STATUS.CONFIRMED
+    ).length;
 
-    /*
-    |--------------------------------------------------------------------------
-    | Counts
-    |--------------------------------------------------------------------------
-    */
-
-    const nominatedCount =
-        learners.filter(
-            (learner) =>
-                learner.status ===
-                LEARNER_STATUS.NOMINATED
-        ).length;
-
-    const notRespondedCount =
-        learners.filter(
-            (learner) =>
-                learner.status ===
-                LEARNER_STATUS.NOT_RESPONDED
-        ).length;
-
-    const confirmedCount =
-        learners.filter(
-            (learner) =>
-                learner.status ===
-                LEARNER_STATUS.CONFIRMED
-        ).length;
-
-    const declinedCount =
-        learners.filter(
-            (learner) =>
-                learner.status ===
-                LEARNER_STATUS.DECLINED
-        ).length;
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Validation
-    |--------------------------------------------------------------------------
-    */
+    const declinedCount = learners.filter(
+        (learner) =>
+            learner.status ===
+            LEARNER_STATUS.DECLINED
+    ).length;
 
     const validate = () => {
         const next = {};
 
-        /*
-        | Batch name
-        */
-
         if (!form.name.trim()) {
-            next.name =
-                "Batch name is required.";
+
+            next.name = "Batch name is required.";
         } else if (
+
             form.name.trim().length < 3
         ) {
-            next.name =
-                "Batch name must be at least 3 characters.";
+
+            next.name = "Batch name must be at least 3 characters.";
         }
 
+        const capacity = Number(form.capacity);
 
-        /*
-        | Capacity
-        */
-
-        const capacity =
-            Number(form.capacity);
-
-        if (
-            form.capacity === "" ||
-            Number.isNaN(capacity)
-        ) {
-            next.capacity =
-                "Enter a valid capacity.";
+        if (form.capacity === "" || Number.isNaN(capacity)) {
+            next.capacity = "Enter a valid capacity.";
         } else if (capacity < 1) {
-            next.capacity =
-                "Capacity must be at least 1.";
+            next.capacity = "Capacity must be at least 1.";
         }
 
-
-        /*
-        | Learners cannot exceed capacity
-        */
-
-        if (
-            !Number.isNaN(capacity) &&
-            capacity > 0 &&
-            learners.length > capacity
-        ) {
-            next.capacity =
-                `You selected ${learners.length} learners, but capacity is ${capacity}.`;
+        if (!Number.isNaN(capacity) && capacity > 0 && learners.length > capacity) {
+            next.capacity = `You selected ${learners.length} learners, but capacity is ${capacity}.`;
         }
-
-
-        /*
-        | Close registration date
-        */
 
         if (form.closeBy) {
-            const today =
-                new Date();
+            const today = new Date();
 
-            today.setHours(
-                0,
-                0,
-                0,
-                0
-            );
+            today.setHours(0, 0, 0, 0);
 
-            const closeDate =
-                new Date(
-                    `${form.closeBy} T00:00:00`
-                );
+            const closeDate = new Date(`${form.closeBy} T00:00:00`);
 
-            if (
-                closeDate < today
-            ) {
-                next.closeBy =
-                    "Close date cannot be in the past.";
+            if (closeDate < today) {
+                next.closeBy = "Close date cannot be in the past.";
             }
         }
 
-
-        /*
-        | At least one learner
-        */
-
         if (learners.length === 0) {
-            next.learners =
-                "Select at least one company learner.";
+            next.learners = "Select at least one company learner.";
         }
 
-
-        /*
-        | Attachment
-        */
-
         if (attachmentError) {
-            next.attachment =
-                attachmentError;
+            next.attachment = attachmentError;
         }
 
 
         setErrors(next);
 
-        return (
-            Object.keys(next).length ===
-            0
-        );
+        return (Object.keys(next).length === 0);
     };
 
+    const confirmedLearners = learners.filter(
+        (learner) =>
+            learner.status === LEARNER_STATUS.CONFIRMED
+    );
 
-    /*
-    |--------------------------------------------------------------------------
-    | Save / Update
-    |--------------------------------------------------------------------------
-    */
+    const toggleFinalParticipant = (learnerId) => {
+        const id = String(learnerId);
+
+        setFinalParticipantIds((prev) => {
+            if (prev.includes(id)) {
+                return prev.filter((item) => item !== id);
+            }
+
+            if (
+                Number(form.capacity) > 0 &&
+                prev.length >= Number(form.capacity)
+            ) {
+                toast.warning(
+                    `You can select maximum ${form.capacity} participants.`
+                );
+
+                return prev;
+            }
+
+            return [...prev, id];
+        });
+    };
+
+    const handleFinalizeTraining = async () => {
+        if (!canManage) {
+            toast.error(
+                "You don't have permission to finalize this training."
+            );
+            return;
+        }
+
+        if (finalParticipantIds.length === 0) {
+            toast.error(
+                "Select at least one confirmed learner."
+            );
+            return;
+        }
+
+        setFinalizing(true);
+
+        try {
+            if (typeof onFinalizeTraining === "function") {
+                await onFinalizeTraining({
+                    batchId:
+                        editingBatch?._id ||
+                        editingBatch?.id,
+
+                    learnerIds: finalParticipantIds,
+                });
+            }
+
+            toast.success(
+                "Final participants selected successfully."
+            );
+        } catch (error) {
+            toast.error(
+                error?.message ||
+                "Could not finalize training."
+            );
+        } finally {
+            setFinalizing(false);
+        }
+    };
 
     const handleSave = async () => {
         if (!validate()) {
             setTabValue("nominated");
-            
+
             return;
         }
 
         setSaving(true);
 
         try {
-            const body =
-                new FormData();
+            const body = new FormData();
+
+            body.append("type", "nominated");
+            body.append("name", form.name.trim());
+            body.append("capacity", String(Number(form.capacity)));
+            body.append("closeBy", form.closeBy || "");
+
+            const cleanLearners = learners.map((learner) => ({
+                learner_id: String(learner.learner_id || learner.id),
+                status: learner.status || LEARNER_STATUS.NOMINATED,
+            }));
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Batch fields
-            |--------------------------------------------------------------------------
-            */
-
-            body.append(
-                "type",
-                "nominated"
-            );
-
-            body.append(
-                "name",
-                form.name.trim()
-            );
-
-            body.append(
-                "capacity",
-                String(
-                    Number(form.capacity)
-                )
-            );
-
-            body.append(
-                "closeBy",
-                form.closeBy || ""
-            );
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Learners
-            |--------------------------------------------------------------------------
-            */
-
-            const cleanLearners =
-                learners.map(
-                    (learner) => ({
-                        learner_id:
-                            String(
-                                learner.learner_id ||
-                                learner.id
-                            ),
-
-                        status:
-                            learner.status ||
-                            LEARNER_STATUS.NOMINATED,
-                    })
-                );
-
-
-            body.append(
-                "learners",
-                JSON.stringify(
-                    cleanLearners
-                )
-            );
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Attachment
-            |--------------------------------------------------------------------------
-            */
+            body.append("learners", JSON.stringify(cleanLearners));
 
             if (attachment) {
-                body.append(
-                    "attachment",
-                    attachment
-                );
+                body.append("attachment", attachment);
             }
 
+            const isEdit = Boolean(editingBatch?._id);
 
-            /*
-            |--------------------------------------------------------------------------
-            | Create vs Edit
-            |--------------------------------------------------------------------------
-            */
-
-            const isEdit =
-                Boolean(
-                    editingBatch?._id
-                );
-
-            const url = isEdit
-                ? `${API_URL}/company/ILT/batch/${editingBatch._id} `
-                : `${API_URL}/company/ILT/batch/${mId} `;
+            const url = isEdit ? `${API_URL}/company/ILT/batch/${editingBatch._id} ` : `${API_URL}/company/ILT/batch/${mId} `;
 
 
-            const response =
-                await fetch(url, {
-                    method: isEdit
-                        ? "PUT"
-                        : "POST",
-
-                    headers: {
-                        Authorization:
-                            `Bearer ${token} `,
-                    },
-
-                    body,
-                });
+            const response = await fetch(url, {
+                method: isEdit ? "PUT" : "POST",
+                headers: {
+                    Authorization:
+                        `Bearer ${token} `,
+                },
+                body,
+            });
 
 
-            const result =
-                await response.json();
+            const result = await response.json();
 
 
             if (!response.ok) {
-                throw new Error(
-                    result?.message ||
-                    (
-                        isEdit
-                            ? "Could not update nomination batch."
-                            : "Could not save nomination batch."
-                    )
-                );
+
+                throw new Error(result?.message || (isEdit ? "Could not update nomination batch." : "Could not save nomination batch."));
             }
 
+            const savedBatch = result?.data || result?.batch || result;
 
-            /*
-            |--------------------------------------------------------------------------
-            | Backend response
-            |--------------------------------------------------------------------------
-            */
-
-            const savedBatch =
-                result?.data ||
-                result?.batch ||
-                result;
-
-
-            toast.success(
-                isEdit
-                    ? "Nomination batch updated successfully"
-                    : "Nomination batch saved successfully"
-            );
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Notify parent
-            |--------------------------------------------------------------------------
-            */
+            toast.success(isEdit ? "Nomination batch updated successfully" : "Nomination batch saved successfully");
 
             onBatchSaved?.({
                 ...(savedBatch || {}),
 
-                id:
-                    savedBatch?._id ||
-                    editingBatch?._id,
-
+                id: savedBatch?._id || editingBatch?._id,
                 type: "nominated",
-
-                name:
-                    savedBatch?.name ||
-                    form.name.trim(),
-
-                capacity:
-                    savedBatch?.capacity ||
-                    Number(form.capacity),
-
-                close_by:
-                    savedBatch?.close_by ||
-                    form.closeBy,
-
-                learners:
-                    savedBatch?.learners ||
-                    cleanLearners,
+                name: savedBatch?.name || form.name.trim(),
+                capacity: savedBatch?.capacity || Number(form.capacity),
+                close_by: savedBatch?.close_by || form.closeBy,
+                learners: savedBatch?.learners || cleanLearners,
             });
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Close modal
-            |--------------------------------------------------------------------------
-            */
 
             setOpenBatchModal(false);
 
@@ -671,37 +541,16 @@ const NominationBatch = ({
 
         } catch (error) {
 
-            console.error(
-                "Nomination batch save error:",
-                error
-            );
+            console.error("Nomination batch save error:", error);
 
+            setErrors((prev) => ({ ...prev, submit: error?.message || "Could not save the batch. Please try again.", }));
 
-            setErrors((prev) => ({
-                ...prev,
-
-                submit:
-                    error?.message ||
-                    "Could not save the batch. Please try again.",
-            }));
-
-
-            toast.error(
-                error?.message ||
-                "Could not save the batch."
-            );
+            toast.error(error?.message || "Could not save the batch.");
 
         } finally {
             setSaving(false);
         }
     };
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Render
-    |--------------------------------------------------------------------------
-    */
 
     return (
         <Box>
@@ -864,12 +713,8 @@ const NominationBatch = ({
                 <CompanyLearnerSelector
                     users={users}
                     finalData={finalData}
-                    selectedIds={
-                        selectedLearnerIds
-                    }
-                    onChange={
-                        handleLearnerSelection
-                    }
+                    selectedIds={selectedLearnerIds}
+                    onChange={handleLearnerSelection}
                     disabled={!canManage}
                 />
 
@@ -882,219 +727,421 @@ const NominationBatch = ({
 
             </Box>
 
+            <TabContext value={tabValue}>
 
-            {/* Learner status tabs */}
+                <TabList onChange={(e, value) => setTabValue(value)} className="border-b px-0 pt-0">
 
-            <TabContext
-                value={tabValue}
-            >
-
-                <TabList
-                    onChange={(
-                        e,
-                        value
-                    ) =>
-                        setTabValue(
-                            value
-                        )
-                    }
-                    className="border-b px-0 pt-0"
-                >
-
-                    <Tab
-                        label={`Nominated(${nominatedCount})`}
-                        value="nominated"
-                    />
-
-                    <Tab
-                        label={`Not responded(${notRespondedCount})`}
-                        value="not_responded"
-                    />
-
-                    <Tab
-                        label={`Confirmed(${confirmedCount})`}
-                        value="confirmed"
-                    />
-
-                    <Tab
-                        label={`Declined(${declinedCount})`}
-                        value="declined"
-                    />
-
+                    <Tab label={`Nominated(${nominatedCount})`} value="nominated" />
+                    <Tab label={`Not responded(${notRespondedCount})`} value="not_responded" />
+                    <Tab label={`Confirmed(${confirmedCount})`} value="confirmed" />
+                    <Tab label={`Declined(${declinedCount})`} value="declined" />
+                    <Tab label={`Final Participants (${finalParticipantIds.length})`} value="final" />
                 </TabList>
 
-
-                {/* Nominated */}
-
-                <TabPanel
-                    value="nominated"
-                    className="p-0"
-                >
-                    <Box
-                        sx={{
-                            mt: 3,
-                        }}
-                    >
+                <TabPanel value="nominated" className="p-0"                >
+                    <Box sx={{ mt: 3, }}>
 
                         <LearnerList
-                            learners={
-                                learners
-                            }
-                            status={
-                                LEARNER_STATUS.NOMINATED
-                            }
-                            onRemove={
-                                handleRemoveLearner
-                            }
-                            onMoveToConfirmed={
-                                handleMoveToConfirmed
-                            }
-                            canManage={
-                                canManage
-                            }
+                            learners={learners}
+                            status={LEARNER_STATUS.NOMINATED}
+                            onRemove={handleRemoveLearner}
+                            onMoveToConfirmed={handleMoveToConfirmed}
+                            canManage={canManage}
                             emptyLabel="No nominated learners"
                         />
 
                     </Box>
                 </TabPanel>
 
-
-                {/* Not responded */}
-
-                <TabPanel
-                    value="not_responded"
-                    className="p-0"
-                >
-                    <Box
-                        sx={{
-                            mt: 3,
-                        }}
-                    >
+                <TabPanel value="not_responded" className="p-0"                >
+                    <Box sx={{ mt: 3, }}>
 
                         <LearnerList
-                            learners={
-                                learners
-                            }
-                            status={
-                                LEARNER_STATUS.NOT_RESPONDED
-                            }
-                            onRemove={
-                                handleRemoveLearner
-                            }
-                            onMoveToConfirmed={
-                                handleMoveToConfirmed
-                            }
-                            canManage={
-                                canManage
-                            }
+                            learners={learners}
+                            status={LEARNER_STATUS.NOT_RESPONDED}
+                            onRemove={handleRemoveLearner}
+                            onMoveToConfirmed={handleMoveToConfirmed}
+                            canManage={canManage}
                             emptyLabel="No learners are waiting for a response"
                         />
 
                     </Box>
                 </TabPanel>
 
-
-                {/* Confirmed */}
-
-                <TabPanel
-                    value="confirmed"
-                    className="p-0"
-                >
-                    <Box
-                        sx={{
-                            mt: 3,
-                        }}
-                    >
+                <TabPanel value="confirmed" className="p-0">
+                    <Box sx={{ mt: 3, }}>
 
                         <LearnerList
-                            learners={
-                                learners
-                            }
-                            status={
-                                LEARNER_STATUS.CONFIRMED
-                            }
-                            onRemove={
-                                handleRemoveLearner
-                            }
-                            onMoveToConfirmed={
-                                handleMoveToConfirmed
-                            }
-                            canManage={
-                                canManage
-                            }
+                            learners={learners}
+                            status={LEARNER_STATUS.CONFIRMED}
+                            onRemove={handleRemoveLearner}
+                            onMoveToConfirmed={handleMoveToConfirmed}
+                            canManage={canManage}
                             emptyLabel="No confirmed learners"
                         />
 
                     </Box>
                 </TabPanel>
 
+                <TabPanel value="declined" className="p-0">
 
-                {/* Declined */}
-
-                <TabPanel
-                    value="declined"
-                    className="p-0"
-                >
-                    <Box
-                        sx={{
-                            mt: 3,
-                        }}
-                    >
+                    <Box sx={{ mt: 3, }}>
 
                         <LearnerList
-                            learners={
-                                learners
-                            }
-                            status={
-                                LEARNER_STATUS.DECLINED
-                            }
-                            onRemove={
-                                handleRemoveLearner
-                            }
-                            onMoveToConfirmed={
-                                handleMoveToConfirmed
-                            }
-                            canManage={
-                                canManage
-                            }
+                            learners={learners}
+                            status={LEARNER_STATUS.DECLINED}
+                            onRemove={handleRemoveLearner}
+                            onMoveToConfirmed={handleMoveToConfirmed}
+                            canManage={canManage}
                             emptyLabel="No declined learners"
                         />
 
                     </Box>
                 </TabPanel>
 
+                <TabPanel value="final" className="p-0">
+                    <Box sx={{ mt: 3 }}>
+                        <Paper
+                            variant="outlined"
+                            sx={{ p: 2, mb: 2, borderRadius: 2, }}
+                        >
+                            <Stack
+                                direction={{ xs: "column", sm: "row", }}
+                                justifyContent="space-between"
+                                alignItems={{ xs: "flex-start", sm: "center", }}
+                                spacing={2}
+                            >
+                                <Box>
+                                    <Typography
+                                        variant="subtitle1"
+                                        fontWeight={700}
+                                    >
+                                        Final Participants
+                                    </Typography>
+
+                                    <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                    >
+                                        Select confirmed learners who will
+                                        attend the actual training.
+                                    </Typography>
+                                </Box>
+
+                                <Chip
+                                    label={`${finalParticipantIds.length} / ${form.capacity} selected`}
+                                    color={
+                                        finalParticipantIds.length > 0
+                                            ? "primary"
+                                            : "default"
+                                    }
+                                />
+                            </Stack>
+                        </Paper>
+
+                        {confirmedLearners.length === 0 ? (
+                            <Paper
+                                variant="outlined"
+                                sx={{
+                                    p: 4,
+                                    textAlign: "center",
+                                }}
+                            >
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                >
+                                    No confirmed learners are available.
+                                </Typography>
+                            </Paper>
+                        ) : (
+                            <Stack spacing={1}>
+                                {confirmedLearners.map((learner) => {
+                                    const learnerId = String(
+                                        learner.learner_id ||
+                                        learner.id
+                                    );
+
+                                    const selected =
+                                        finalParticipantIds.includes(
+                                            learnerId
+                                        );
+
+                                    return (
+                                        <Paper
+                                            key={learnerId}
+                                            variant="outlined"
+                                            sx={{
+                                                px: 2,
+                                                py: 1.5,
+                                                borderRadius: 1.5,
+                                            }}
+                                        >
+                                            <FormControlLabel
+                                                sx={{
+                                                    width: "100%",
+                                                    m: 0,
+                                                }}
+                                                control={
+                                                    <Checkbox
+                                                        checked={selected}
+                                                        disabled={
+                                                            !canManage ||
+                                                            (
+                                                                !selected &&
+                                                                finalParticipantIds.length >=
+                                                                Number(form.capacity)
+                                                            )
+                                                        }
+                                                        onChange={() =>
+                                                            toggleFinalParticipant(
+                                                                learnerId
+                                                            )
+                                                        }
+                                                    />
+                                                }
+                                                label={
+                                                    <Box>
+                                                        <Typography
+                                                            variant="body2"
+                                                            fontWeight={600}
+                                                        >
+                                                            {learner.name}
+                                                        </Typography>
+
+                                                        <Typography
+                                                            variant="caption"
+                                                            color="text.secondary"
+                                                        >
+                                                            {learner.email}
+                                                            {learner.emp_id
+                                                                ? ` • ${learner.emp_id}`
+                                                                : ""}
+                                                        </Typography>
+                                                    </Box>
+                                                }
+                                            />
+                                        </Paper>
+                                    );
+                                })}
+                            </Stack>
+                        )}
+
+                        <Box
+                            sx={{
+                                display: "flex",
+                                justifyContent: "flex-end",
+                                mt: 3,
+                            }}
+                        >
+                            <Button
+                                variant="contained"
+                                disabled={
+                                    !canManage ||
+                                    finalizing ||
+                                    finalParticipantIds.length === 0
+                                }
+                                onClick={handleFinalizeTraining}
+                            >
+                                {finalizing
+                                    ? "Finalizing..."
+                                    : "Finalize Training"}
+                            </Button>
+                        </Box>
+                    </Box>
+                </TabPanel>
+
             </TabContext>
 
-
-            {/* Submit error */}
-
             {errors.submit && (
-                <FormHelperText
-                    error
-                    sx={{
-                        textAlign:
-                            "center",
-                        mb: 1,
-                    }}
-                >
-                    {
-                        errors.submit
-                    }
+
+                <FormHelperText error sx={{ textAlign: "center", mb: 1, }}>
+                    {errors.submit}
                 </FormHelperText>
             )}
+            {/* NOMINATION SUMMARY */}
 
+            <Paper
+                variant="outlined"
+                sx={{
+                    p: 2.5,
+                    mb: 4,
+                    borderRadius: 2,
+                }}
+            >
+                <Stack
+                    direction={{
+                        xs: "column",
+                        md: "row",
+                    }}
+                    justifyContent="space-between"
+                    spacing={2}
+                >
+                    <Box>
+                        <Typography
+                            variant="subtitle1"
+                            fontWeight={700}
+                        >
+                            Nomination Summary
+                        </Typography>
+
+                        <Typography
+                            variant="body2"
+                            color="text.secondary"
+                        >
+                            Review learner responses and finalize
+                            participants for training.
+                        </Typography>
+                    </Box>
+
+                    <Chip
+                        label={
+                            `${finalParticipantIds.length} / ${form.capacity || 0} selected`
+                        }
+                        color={
+                            finalParticipantIds.length > 0
+                                ? "primary"
+                                : "default"
+                        }
+                    />
+                </Stack>
+
+                <Grid
+                    container
+                    spacing={2}
+                    sx={{ mt: 2 }}
+                >
+                    <Grid size={{ xs: 6, sm: 3 }}>
+                        <Paper
+                            variant="outlined"
+                            sx={{ p: 2 }}
+                        >
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                            >
+                                Nominated
+                            </Typography>
+
+                            <Typography
+                                variant="h5"
+                                fontWeight={700}
+                            >
+                                {nominatedCount}
+                            </Typography>
+                        </Paper>
+                    </Grid>
+
+                    <Grid size={{ xs: 6, sm: 3 }}>
+                        <Paper
+                            variant="outlined"
+                            sx={{ p: 2 }}
+                        >
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                            >
+                                Awaiting Response
+                            </Typography>
+
+                            <Typography
+                                variant="h5"
+                                fontWeight={700}
+                            >
+                                {notRespondedCount}
+                            </Typography>
+                        </Paper>
+                    </Grid>
+
+                    <Grid size={{ xs: 6, sm: 3 }}>
+                        <Paper
+                            variant="outlined"
+                            sx={{ p: 2 }}
+                        >
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                            >
+                                Confirmed
+                            </Typography>
+
+                            <Typography
+                                variant="h5"
+                                fontWeight={700}
+                            >
+                                {confirmedCount}
+                            </Typography>
+                        </Paper>
+                    </Grid>
+
+                    <Grid size={{ xs: 6, sm: 3 }}>
+                        <Paper
+                            variant="outlined"
+                            sx={{ p: 2 }}
+                        >
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                            >
+                                Declined
+                            </Typography>
+
+                            <Typography
+                                variant="h5"
+                                fontWeight={700}
+                            >
+                                {declinedCount}
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                </Grid>
+
+                <Divider sx={{ my: 3 }} />
+
+                <Stack
+                    direction={{
+                        xs: "column",
+                        sm: "row",
+                    }}
+                    justifyContent="space-between"
+                    alignItems={{
+                        xs: "stretch",
+                        sm: "center",
+                    }}
+                    spacing={2}
+                >
+                    <Box>
+                        <Typography
+                            variant="body2"
+                            fontWeight={600}
+                        >
+                            Ready to finalize?
+                        </Typography>
+
+                        <Typography
+                            variant="caption"
+                            color="text.secondary"
+                        >
+                            Select confirmed learners who will
+                            participate in the final training.
+                        </Typography>
+                    </Box>
+
+                    <Button
+                        variant="contained"
+                        disabled={!canManage || finalizing || confirmedCount === 0}
+                        onClick={() => setTabValue("final")}
+                    >
+                        Select Final Participants
+                    </Button>
+                </Stack>
+            </Paper>
 
             {/* Footer */}
 
             <ModalFooter
-                onClose={() =>
-                    setOpenBatchModal(
-                        false
-                    )
-                }
-                onSave={
-                    handleSave
-                }
+                onClose={() => setOpenBatchModal(false)}
+                onSave={handleSave}
                 onPublish={() => { }}
                 saving={saving}
                 canPublish={false}
