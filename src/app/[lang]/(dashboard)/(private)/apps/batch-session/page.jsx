@@ -2,9 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 
-import { useSession } from 'next-auth/react';
-
 import { useParams } from 'next/navigation';
+
+import Link from 'next/link';
+
+import { useSession } from 'next-auth/react';
 
 import {
     Box,
@@ -20,8 +22,8 @@ import {
 
 import Grid from "@mui/material/Grid2";
 
-import Link from 'next/link';
 import PermissionGuard from '@/hocs/PermissionClientGuard';
+
 import { useApi } from '@/hooks/useApi';
 
 const TrainerOverviewPage = () => {
@@ -45,6 +47,7 @@ const TrainerOverviewPage = () => {
             try {
                 setLoading(true);
                 const data = await apiGet(`/user/trainer/overview`);
+
                 if (!cancelled) setOverview(data);
             } catch (err) {
                 if (!cancelled) setError(err.message);
@@ -64,6 +67,7 @@ const TrainerOverviewPage = () => {
         totalLearnersEnrolled: 0,
         pendingGrading: 0
     };
+    
     const todaySessions = overview?.todaySessions || [];
 
     return (
@@ -87,8 +91,7 @@ const TrainerOverviewPage = () => {
                                         sx={{ color: 'inherit', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
                                     >
                                         {trainerName}
-                                    </Box>{' '}
-                                    🎓
+                                    </Box>
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                                     You are managing programs across massive learner cohorts. Select a section below to view paginated batches, materials, and attendance rosters.
@@ -170,7 +173,7 @@ const TrainerOverviewPage = () => {
                     <Grid container spacing={4}>
                         <Grid size={{ xs: 12, md: 8 }}>
                             <Card elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid', borderColor: 'divider', height: '100%' }}>
-                                <Typography variant="h6" fontWeight="700" sx={{ mb: 2 }}>Today's Teaching Schedule</Typography>
+                                <Typography variant="h6" fontWeight="700" sx={{ mb: 2 }}>Today Teaching Schedule</Typography>
 
                                 {loading && <Skeleton variant="rounded" height={90} />}
 

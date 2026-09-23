@@ -17,7 +17,7 @@ function injectScormAPI(setProgress, setScormData) {
     Initialize: () => "true",
     Terminate: () => {
       setScormData({ ...store2004 });
-      
+
       return "true";
     },
     GetValue: (k) => store2004[k] ?? "",
@@ -39,7 +39,7 @@ function injectScormAPI(setProgress, setScormData) {
     },
     Commit: () => {
       setScormData({ ...store2004 });
-      
+
       return "true";
     },
     GetLastError: () => "0",
@@ -52,7 +52,7 @@ function injectScormAPI(setProgress, setScormData) {
     LMSInitialize: () => "true",
     LMSFinish: () => {
       setScormData({ ...store12 });
-      
+
       return "true";
     },
     LMSGetValue: (k) => store12[k] ?? "",
@@ -74,7 +74,7 @@ function injectScormAPI(setProgress, setScormData) {
     },
     LMSCommit: () => {
       setScormData({ ...store12 });
-      
+
       return "true";
     },
     LMSGetLastError: () => "0",
@@ -90,7 +90,7 @@ function injectTrackingScript(iframe) {
   if (!iframe?.contentWindow) return;
 
   const script = iframe.contentDocument.createElement("script");
-  
+
   script.type = "text/javascript";
 
   script.innerHTML = `
@@ -125,7 +125,7 @@ function injectTrackingScript(iframe) {
 // -------------------------------------------------
 export default function ScormViewer({ data, setScormData, handleSaveScormData, scromLogData }) {
   const [launchFile, setLaunchFile] = useState(null);
-  
+
   const [progress, setProgress] = useState({
     slide: scromLogData?.lastSlide || null,
     currentTime: scromLogData?.lastTime
@@ -155,7 +155,7 @@ export default function ScormViewer({ data, setScormData, handleSaveScormData, s
         const identifierRef = item?.getAttribute("identifierref");
         const resource = xml.querySelector(`resource[identifier="${identifierRef}"]`);
         const href = resource?.getAttribute("href") || resource?.querySelector("file")?.getAttribute("href");
-        
+
         if (!href) return;
 
         setLaunchFile(`/api/scorm/${folderUrl}/${href}`);
@@ -191,7 +191,7 @@ export default function ScormViewer({ data, setScormData, handleSaveScormData, s
     };
 
     window.addEventListener("message", listener);
-    
+
     return () => window.removeEventListener("message", listener);
   }, [handleSaveScormData, setScormData]);
 

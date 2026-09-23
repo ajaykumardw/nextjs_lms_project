@@ -1,7 +1,11 @@
 "use client"
 
 import React, { useEffect, useState } from 'react';
+
 import { useParams } from 'next/navigation';
+
+import Link from 'next/link';
+
 import {
     Box,
     Container,
@@ -18,9 +22,11 @@ import {
     Alert,
     Snackbar
 } from '@mui/material';
+
 import Grid from "@mui/material/Grid2";
-import Link from 'next/link';
+
 import PermissionGuard from '@/hocs/PermissionClientGuard';
+
 import { useApi } from '@/hooks/useApi';
 
 const TrainerProfilePage = () => {
@@ -41,7 +47,9 @@ const TrainerProfilePage = () => {
             try {
                 setLoading(true);
                 const data = await apiGet('/user/trainer/profile');
+
                 if (!cancelled) {
+
                     setForm({
                         name: `${data.profile?.first_name || ''} ${data.profile?.last_name || ''}`.trim(),
                         email: data.profile?.email || '',
@@ -73,6 +81,7 @@ const TrainerProfilePage = () => {
         try {
             setSaving(true);
             const [first_name, ...rest] = form.name.split(' ');
+
             await apiPut('/user/trainer/profile', {
                 first_name,
                 last_name: rest.join(' '),

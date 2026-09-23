@@ -1,7 +1,11 @@
 "use client"
 
 import React, { useEffect, useState } from 'react';
+
 import { useParams, useSearchParams } from 'next/navigation';
+
+import Link from 'next/link';
+
 import {
     Box,
     Container,
@@ -14,9 +18,13 @@ import {
     Alert,
     Snackbar
 } from '@mui/material';
-import Link from 'next/link';
+
+import { toast } from 'react-toastify';
+
 import PermissionGuard from '@/hocs/PermissionClientGuard';
+
 import { useApi } from '@/hooks/useApi';
+
 
 const PostReadPage = () => {
     const { lang } = useParams();
@@ -45,6 +53,7 @@ const PostReadPage = () => {
                 setError(null);
 
                 const calls = [apiGet(`/user/trainer/resource/post-read?batchId=${batchId}`)];
+                
                 if (sessionId) {
                     calls.push(apiGet(`/user/trainer/batches/${batchId}/sessions/${sessionId}/notes`));
                 }
@@ -52,6 +61,7 @@ const PostReadPage = () => {
                 const [postReadData, notesData] = await Promise.all(calls);
 
                 if (!cancelled) {
+
                     setItems(postReadData.items || []);
                     if (notesData) setNote(notesData.note?.outcome_notes || '');
                 }
@@ -67,10 +77,13 @@ const PostReadPage = () => {
 
     const saveNotes = async () => {
         if (!sessionId) return;
+        
         try {
             setSaving(true);
             await apiPut(`/user/trainer/batches/${batchId}/sessions/${sessionId}/notes`, { outcome_notes: note });
-            setSnack('Notes saved');
+            toast.success("Notes saved successfully", {
+                autoClose: 1000
+            })
         } catch (err) {
             setError(err.message);
         } finally {
@@ -108,7 +121,6 @@ const PostReadPage = () => {
                     </Box>
 
                     <Card elevation={0} sx={{ p: 4, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
-                        <Chip label={`Session: ${sessionId || 'N/A'}`} color="primary" size="small" sx={{ mb: 1 }} />
                         <Typography variant="h4" fontWeight="700" sx={{ mb: 1 }}>Post-read Materials</Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
                             Assigned to learners after this session to reinforce and extend what was covered.

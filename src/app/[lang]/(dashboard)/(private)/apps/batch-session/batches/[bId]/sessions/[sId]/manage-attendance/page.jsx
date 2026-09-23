@@ -1,7 +1,11 @@
 "use client"
 
 import React, { useEffect, useState } from 'react';
+
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
+
+import Link from 'next/link';
+
 import {
     Box,
     Container,
@@ -21,8 +25,9 @@ import {
     Alert,
     Snackbar
 } from '@mui/material';
-import Link from 'next/link';
+
 import PermissionGuard from '@/hocs/PermissionClientGuard';
+
 import { useApi } from '@/hooks/useApi';
 
 const AttendanceManagementPage = () => {
@@ -48,6 +53,7 @@ const AttendanceManagementPage = () => {
             setLoading(true);
             const qs = new URLSearchParams({ page: String(page), search }).toString();
             const result = await apiGet(`/user/trainer/batches/${batchId}/sessions/${sessionId}/attendance?${qs}`);
+            
             setData(result);
         } catch (err) {
             setError(err.message);
@@ -57,7 +63,9 @@ const AttendanceManagementPage = () => {
     };
 
     useEffect(() => {
+        
         if (!ready || !batchId || !sessionId) return;
+        
         fetchAttendance();
     }, [ready, batchId, sessionId, page, search]);
 
@@ -65,6 +73,7 @@ const AttendanceManagementPage = () => {
         e.preventDefault();
         const value = new FormData(e.target).get('search') || '';
         const qs = new URLSearchParams({ page: '1', search: value }).toString();
+        
         router.push(`?${qs}`);
     };
 
@@ -205,6 +214,7 @@ const AttendanceManagementPage = () => {
                             <Typography variant="body2" color="text.secondary">
                                 Managing large cohorts securely via paginated database queries.
                             </Typography>
+                            
                             <Pagination
                                 count={data?.totalPages || 1}
                                 page={page}
@@ -212,6 +222,7 @@ const AttendanceManagementPage = () => {
                                 shape="rounded"
                                 onChange={(e, value) => {
                                     const qs = new URLSearchParams({ page: String(value), search }).toString();
+                                    
                                     router.push(`?${qs}`);
                                 }}
                             />

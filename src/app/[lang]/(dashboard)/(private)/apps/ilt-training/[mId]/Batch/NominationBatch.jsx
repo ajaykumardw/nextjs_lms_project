@@ -8,6 +8,8 @@ import {
     Paper,
     Chip,
     Divider,
+    Checkbox,
+    FormControlLabel,
     Button,
     Stack,
     TextField,
@@ -431,6 +433,7 @@ const NominationBatch = ({
             toast.error(
                 "You don't have permission to finalize this training."
             );
+
             return;
         }
 
@@ -438,6 +441,7 @@ const NominationBatch = ({
             toast.error(
                 "Select at least one confirmed learner."
             );
+
             return;
         }
 

@@ -240,6 +240,14 @@ const VerticalMenu = ({ dictionary, scrollMenu }) => {
           )}
 
           {permissArray?.isUser && (
+            <SubMenu label="ILT Module" icon={<i className="tabler-lock" />}>
+              <MenuItem key="ilt_module_index" href={`/${locale}/apps/ilt-module`}>View</MenuItem>
+              <MenuItem key="batches_index" href={`/${locale}/apps/ilt-module/batch-list`}>Batches</MenuItem>
+              <MenuItem key="batch_grading_index" href={`/${locale}/apps/ilt-module/enrollment`}>Enrollment</MenuItem>
+            </SubMenu>
+          )}
+
+          {permissArray?.isUser && (
             <>
 
               <MenuItem key="leaderboard" href={`/${locale}/apps/leaderboard`} icon={<i className="tabler-puzzle" style={{ insetInlineEnd: 8, fontSize: '1.2rem' }} />}>

@@ -29,10 +29,13 @@ const ITEMS_PER_PAGE = 6;
 
 const useDebouncedValue = (value, delay = 400) => {
     const [debounced, setDebounced] = useState(value);
+    
     useEffect(() => {
         const t = setTimeout(() => setDebounced(value), delay);
+        
         return () => clearTimeout(t);
     }, [value, delay]);
+    
     return debounced;
 };
 
@@ -63,6 +66,7 @@ const LearnerRosterPage = () => {
                 setLoading(true);
                 const qs = new URLSearchParams({ search: debouncedSearch, status }).toString();
                 const data = await apiGet(`/user/trainer/batches/${batchId}/sessions/${sessionId}/learners?${qs}`);
+                
                 if (!cancelled) {
                     setLearners(data.learners || []);
                     setPage(1); // Reset page on filter/search change
@@ -84,6 +88,7 @@ const LearnerRosterPage = () => {
 
     // Pagination calculations
     const totalPages = Math.ceil(learners.length / ITEMS_PER_PAGE);
+    
     const paginatedLearners = learners.slice(
         (page - 1) * ITEMS_PER_PAGE,
         page * ITEMS_PER_PAGE

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 import {
@@ -23,6 +24,7 @@ import {
 } from "@mui/material";
 
 import Grid from "@mui/material/Grid2";
+
 import { useApi } from "@/hooks/useApi";
 
 const formatDate = (d) =>
@@ -55,6 +57,7 @@ const SessionDetailsPage = () => {
                 console.log("Data found");
 
                 const data = await apiGet(`/user/trainer/batches/${batchId}/sessions/${sessionId}`);
+                
                 if (!cancelled) setSessionData(data);
             } catch (err) {
                 if (!cancelled) setError(err.message);
@@ -68,11 +71,13 @@ const SessionDetailsPage = () => {
 
     const attendancePercentage = useMemo(() => {
         if (!sessionData?.learners?.total) return 0;
+        
         return Math.round((sessionData.learners.present / sessionData.learners.total) * 100);
     }, [sessionData]);
 
     const preReadPercentage = useMemo(() => {
         if (!sessionData?.learners?.total) return 0;
+        
         return Math.round((sessionData.preRead.completed / sessionData.learners.total) * 100);
     }, [sessionData]);
 
@@ -278,6 +283,7 @@ const ActionCard = ({ icon, title, description, onClick }) => (
 
 const LearnersTab = ({ sessionBase, goTo, sessionData }) => {
     const pending = sessionData.learners.pending;
+    
     const completionPct = sessionData.learners.total
         ? Math.round((sessionData.learners.present / sessionData.learners.total) * 100)
         : 0;
@@ -328,14 +334,17 @@ const PreReadTab = ({ goTo, sessionData, lang, batchId, sessionId }) => {
     useEffect(() => {
         if (!ready) return;
         let cancelled = false;
+        
         (async () => {
             try {
                 const data = await apiGet(`/user/trainer/resource/pre-read?batchId=${batchId}&sessionId=${sessionId}`);
+                
                 if (!cancelled) setItems(data.items || []);
             } finally {
                 if (!cancelled) setLoading(false);
             }
         })();
+        
         return () => { cancelled = true; };
     }, [ready]);
 
@@ -379,14 +388,17 @@ const MaterialsTab = ({ goTo, lang, batchId, sessionId }) => {
     useEffect(() => {
         if (!ready) return;
         let cancelled = false;
+        
         (async () => {
             try {
                 const data = await apiGet(`/user/trainer/resource/material?batchId=${batchId}&sessionId=${sessionId}`);
+                
                 if (!cancelled) setMaterials(data.materials || []);
             } finally {
                 if (!cancelled) setLoading(false);
             }
         })();
+        
         return () => { cancelled = true; };
     }, [ready]);
 
@@ -438,14 +450,17 @@ const PostReadTab = ({ sessionData, goTo, lang, batchId, sessionId }) => {
     useEffect(() => {
         if (!ready) return;
         let cancelled = false;
+        
         (async () => {
             try {
                 const data = await apiGet(`/user/trainer/resource/post-read?batchId=${batchId}&sessionId=${sessionId}`);
+                
                 if (!cancelled) setItems(data.items || []);
             } finally {
                 if (!cancelled) setLoading(false);
             }
         })();
+        
         return () => { cancelled = true; };
     }, [ready]);
 
@@ -495,16 +510,21 @@ const NotesTab = ({ batchId, sessionId }) => {
     const [snack, setSnack] = useState("");
 
     useEffect(() => {
+        
         if (!ready) return;
+        
         let cancelled = false;
+        
         (async () => {
             try {
                 const data = await apiGet(`/user/trainer/batches/${batchId}/sessions/${sessionId}/notes`);
+                
                 if (!cancelled) setNote(data.note);
             } finally {
                 if (!cancelled) setLoading(false);
             }
         })();
+        
         return () => { cancelled = true; };
     }, [ready]);
 

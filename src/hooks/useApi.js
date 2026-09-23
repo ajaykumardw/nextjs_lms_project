@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
+
 import { useSession } from "next-auth/react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;

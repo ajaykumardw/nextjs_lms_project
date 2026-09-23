@@ -1,7 +1,11 @@
 "use client"
 
 import React, { useEffect, useState } from 'react';
+
 import { useParams, useSearchParams } from 'next/navigation';
+
+import Link from 'next/link';
+
 import {
     Box,
     Container,
@@ -14,9 +18,11 @@ import {
     Skeleton,
     Alert
 } from '@mui/material';
+
 import Grid from "@mui/material/Grid2";
-import Link from 'next/link';
+
 import PermissionGuard from '@/hocs/PermissionClientGuard';
+
 import { useApi } from '@/hooks/useApi';
 
 const fileIcon = (type) => {
@@ -35,6 +41,7 @@ const fileIcon = (type) => {
 const formatSize = (bytes) => {
     if (!bytes) return null;
     const mb = bytes / 1024 / 1024;
+    
     return mb >= 1 ? `${mb.toFixed(1)} MB` : `${Math.round(bytes / 1024)} KB`;
 };
 
@@ -50,14 +57,12 @@ const MaterialPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Materials are module-level content, so the list only depends on batchId
-    // (which resolves to a module) — sessionId is kept in the querystring for
-    // navigation context only.
     const fetchMaterials = async () => {
         try {
             setLoading(true);
             setError(null);
             const data = await apiGet(`/user/trainer/resource/material?batchId=${batchId}`);
+
             setMaterials(data.materials || []);
         } catch (err) {
             setError(err.message);
@@ -70,15 +75,6 @@ const MaterialPage = () => {
         if (!ready || !batchId) return;
         fetchMaterials();
     }, [ready, batchId]);
-
-    const handleDelete = async (materialId) => {
-        try {
-            await apiDelete(`/user/trainer/resource/material/${materialId}`);
-            setMaterials((prev) => prev.filter((m) => m._id !== materialId));
-        } catch (err) {
-            setError(err.message);
-        }
-    };
 
     return (
         <PermissionGuard element={"isUser"} locale={lang}>
@@ -110,7 +106,6 @@ const MaterialPage = () => {
                     </Box>
 
                     <Card elevation={0} sx={{ p: 4, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
-                        <Chip label={`Session: ${sessionId || 'N/A'}`} color="primary" size="small" sx={{ mb: 1 }} />
                         <Typography variant="h4" fontWeight="700" sx={{ mb: 1 }}>Session Materials</Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
                             Download or share these resources with your learners for this session.
@@ -129,6 +124,7 @@ const MaterialPage = () => {
                                 )}
                                 {materials.map((mat) => {
                                     const size = formatSize(mat.file_size);
+                                    
                                     return (
                                         <Grid size={{ xs: 12, sm: 6 }} key={mat._id}>
                                             <Box
@@ -155,28 +151,6 @@ const MaterialPage = () => {
                                                         </Typography>
                                                     </Box>
                                                 </Box>
-                                                <Box sx={{ display: 'flex', gap: 1 }}>
-                                                    <Button
-                                                        size="small"
-                                                        variant="outlined"
-                                                        component={mat.file_url ? "a" : "button"}
-                                                        href={mat.file_url || undefined}
-                                                        target={mat.file_url ? "_blank" : undefined}
-                                                        disabled={!mat.file_url}
-                                                        startIcon={<i className="tabler-download text-base" />}
-                                                        sx={{ textTransform: 'none', borderRadius: 2 }}
-                                                    >
-                                                        Get
-                                                    </Button>
-                                                    <Button
-                                                        size="small"
-                                                        color="error"
-                                                        variant="text"
-                                                        onClick={() => handleDelete(mat._id)}
-                                                    >
-                                                        Remove
-                                                    </Button>
-                                                </Box>
                                             </Box>
                                         </Grid>
                                     );
@@ -184,11 +158,6 @@ const MaterialPage = () => {
                             </Grid>
                         )}
 
-                        <Divider sx={{ my: 3 }} />
-
-                        <Button variant="contained" startIcon={<i className="tabler-upload text-lg" />} sx={{ textTransform: 'none', borderRadius: 2 }}>
-                            Upload New Material
-                        </Button>
                     </Card>
 
                 </Container>

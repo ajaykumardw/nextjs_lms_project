@@ -14,7 +14,6 @@ import {
     Card,
     Typography,
     Button,
-    Chip,
     Checkbox,
     LinearProgress,
     Skeleton,
@@ -25,72 +24,59 @@ import { toast } from 'react-toastify';
 
 import PermissionGuard from '@/hocs/PermissionClientGuard';
 
-
 import { useApi } from '@/hooks/useApi';
 
+// Same preview modals the trainer's pre-read page uses, so learners get
+// document/video/SCORM previews in place rather than a bare download link.
 import ActivityModal from '../../ModalComponent/ActivityModal';
 import ShowFileModal from '../../ModalComponent/ShowFileModal';
-import ScormModalComponent from "../../ModalComponent/ScromModalComponent"
+import ScormModalComponent from "../../ModalComponent/ScromModalComponent";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-const PreReadPage = () => {
-
+const LearnerPreReadPage = () => {
     const { lang } = useParams();
+    const router = useRouter();
     const searchParams = useSearchParams();
     const batchId = searchParams?.get('batchId');
     const sessionId = searchParams?.get('sessionId');
-
-    const [selectedId, setSelectedId] = useState();
-    const [isOpen, setISOpen] = useState(false);
-    const [activityId, setActivityId] = useState();
-    const [docURL, setDocURL] = useState();
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [logData, setLogData] = useState();
-
-    const [selectedScorm, setSelectedScorm] = useState(null);
-    const [scormLogData, setScormLogData] = useState(null);
-
-    const router = useRouter();
-
-    const { data: session } = useSession();
-    const token = session?.user?.token;
-
     const qs = `?batchId=${batchId}&sessionId=${sessionId}`;
+
+    const { data: authSession } = useSession();
+    const token = authSession?.user?.token;
+
     const { ready, apiGet, apiPut } = useApi();
 
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [activityData, setActivityData] = useState()
-    const [isScormOpen, setIsScormOpen] = useState(false)
+
+    // Modal state — mirrors the trainer PreReadPage's handleCardClick flow.
+    const [activityData, setActivityData] = useState();
+    const [isOpen, setISOpen] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [docURL, setDocURL] = useState();
+    const [isScormOpen, setIsScormOpen] = useState(false);
+    const [selectedScorm, setSelectedScorm] = useState(null);
+    const [scormLogData, setScormLogData] = useState(null);
+
+    const fetchItems = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const data = await apiGet(`/user/learner/resource/pre-read?batchId=${batchId}`);
+            
+            setItems(data.items || []);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
         if (!ready || !batchId) return;
-        let cancelled = false;
-
-        (async () => {
-            try {
-                setLoading(true);
-                setError(null);
-                const data = await apiGet(`/user/trainer/resource/pre-read?batchId=${batchId}`);
-
-                if (!cancelled) {
-                    setItems(
-                        (data.items || []).map((item) => ({
-                            ...item,
-                            done: Boolean(item.completions) // adjust if API later returns a per-user "done" flag directly
-                        }))
-                    );
-                }
-            } catch (err) {
-                if (!cancelled) setError(err.message);
-            } finally {
-                if (!cancelled) setLoading(false);
-            }
-        })();
-
-        return () => { cancelled = true; };
+        fetchItems();
     }, [ready, batchId]);
 
     const completedCount = items.filter((i) => i.done).length;
@@ -104,10 +90,8 @@ const PreReadPage = () => {
         );
 
         try {
-            await apiPut(`/user/trainer/resource/pre-read/${id}/toggle`, { batchId });
-            toast.success("Pre read saved successfully", {
-                autoClose: 1000
-            })
+            await apiPut(`/user/learner/resource/pre-read/${id}/toggle`, { batchId });
+            toast.success("Pre-read updated", { autoClose: 1000 });
         } catch (err) {
             setItems(prevItems); // revert on failure
             setError(err.message);
@@ -115,41 +99,23 @@ const PreReadPage = () => {
     };
 
     const handleCardClick = (activity) => {
-
-
         const isDocumentType = activity.module_type_id === "688723af5dd97f4ccae68834";
-        const isScorm = activity?.module_type_id === "688723af5dd97f4ccae68837"
+        const isScorm = activity.module_type_id === "688723af5dd97f4ccae68837";
         const quesLength = activity?.questions?.length || 0;
 
         if (quesLength > 0) {
-
-            router.replace(`/${lang}/apps/batch-session/quiz/${activity?.module_id}/${activity?.id}`);
-
+            router.push(`/${lang}/apps/ilt-module/quiz/${activity.module_id}/${activity.id}`);
         } else if (isScorm) {
-
             setSelectedScorm(activity);
             setScormLogData(activity?.scorm_data || null);
             setIsScormOpen(true);
-
+        } else if (isDocumentType && activity.document_data?.image_url) {
+            setActivityData(activity);
+            setDocURL(activity.document_data.image_url);
+            setIsModalOpen(true);
         } else {
-
-            setISOpen(false);
-            setIsModalOpen(false);
-
-            setActivityData(activity)
-
-            setTimeout(() => {
-                setLogData(activity);
-                setActivityId(activity._id);
-                setSelectedId(activity.module_type_id);
-
-                if (isDocumentType && activity.document_data?.image_url) {
-                    setDocURL(activity.document_data.image_url);
-                    setIsModalOpen(true);
-                } else {
-                    setISOpen(true);
-                }
-            }, 10);
+            setActivityData(activity);
+            setISOpen(true);
         }
     };
 
@@ -165,33 +131,29 @@ const PreReadPage = () => {
                         <Button
                             component={Link}
                             variant='outlined'
-                            href={batchId ? `/${lang}/apps/batch-session/batches/${batchId}` : `/${lang}/apps/batch-session/batches`}
+                            href={batchId ? `/${lang}/apps/ilt-module/batch-session/${batchId}` : `/${lang}/apps/ilt-module/batch-list`}
                             startIcon={<i className="tabler-arrow-left text-lg" />}
                             sx={{ textTransform: 'none', fontWeight: 600 }}
                         >
                             Back to Sessions
                         </Button>
 
-                        {/* Resource tab switcher */}
                         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                            <Button component={Link} href={`/${lang}/apps/batch-session/resource/pre-read${qs}`} size="small" variant="contained" sx={{ textTransform: 'none', borderRadius: 2 }}>Pre-read</Button>
-                            <Button component={Link} href={`/${lang}/apps/batch-session/resource/training-material${qs}`} size="small" variant="outlined" sx={{ textTransform: 'none', borderRadius: 2 }}>Material</Button>
-                            <Button component={Link} href={`/${lang}/apps/batch-session/resource/post-read${qs}`} size="small" variant="outlined" sx={{ textTransform: 'none', borderRadius: 2 }}>Post-read</Button>
-                            {batchId && sessionId && (
-                                <Button component={Link} href={`/${lang}/apps/batch-session/batches/${batchId}/sessions/${sessionId}/attendance`} size="small" variant="outlined" color="success" sx={{ textTransform: 'none', borderRadius: 2 }}>Attendance</Button>
-                            )}
+                            <Button component={Link} href={`/${lang}/apps/ilt-module/resources/pre-read${qs}`} size="small" variant="contained" sx={{ textTransform: 'none', borderRadius: 2 }}>Pre-read</Button>
+                            <Button component={Link} href={`/${lang}/apps/ilt-module/resources/training-material${qs}`} size="small" variant="outlined" sx={{ textTransform: 'none', borderRadius: 2 }}>Material</Button>
+                            <Button component={Link} href={`/${lang}/apps/ilt-module/resources/post-read${qs}`} size="small" variant="outlined" sx={{ textTransform: 'none', borderRadius: 2 }}>Post-read</Button>
                         </Box>
                     </Box>
 
                     <Card elevation={0} sx={{ p: 4, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
                         <Typography variant="h4" fontWeight="700" sx={{ mb: 1 }}>Pre-read Materials</Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                            Learners are asked to complete these items before the session begins. Track your own review status below.
+                            Complete these before the session begins. Your progress is tracked automatically.
                         </Typography>
 
                         <Box sx={{ mb: 4 }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                <Typography variant="body2" fontWeight="600">Review Progress</Typography>
+                                <Typography variant="body2" fontWeight="600">Your Progress</Typography>
                                 <Typography variant="body2" color="text.secondary">{completedCount} of {items.length} completed</Typography>
                             </Box>
                             <LinearProgress variant="determinate" value={progress} sx={{ height: 8, borderRadius: 4 }} />
@@ -219,8 +181,13 @@ const PreReadPage = () => {
                                             bgcolor: item.done ? 'success.50' : 'background.paper'
                                         }}
                                     >
+                                        {/* // LearnerPreReadPage.jsx — inside the items.map(...) block */}
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                            <Checkbox checked={item.done} onChange={() => toggleDone(item.id)} />
+                                            <Checkbox
+                                                checked={item.done}
+                                                onChange={() => toggleDone(item.id)}
+                                                inputProps={{ 'aria-label': 'Mark this pre-read as completed' }}
+                                            />
                                             <Box>
                                                 <Typography
                                                     variant="subtitle1"
@@ -230,7 +197,7 @@ const PreReadPage = () => {
                                                     {item.title}
                                                 </Typography>
                                                 <Typography variant="caption" color="text.secondary">
-                                                    {item.type}
+                                                    {item.type} · {item.done ? 'Completed by you' : 'Mark as completed'}
                                                 </Typography>
                                             </Box>
                                         </Box>
@@ -250,21 +217,22 @@ const PreReadPage = () => {
 
                 </Container>
             </Box>
+
             <ActivityModal
                 open={isOpen}
                 setISOpen={setISOpen}
                 API_URL={API_URL}
                 token={token}
                 editData={activityData}
-                activityId={activityData?._id}
+                activityId={activityData?.id}
                 id={activityData?.module_type_id}
+                readOnly   // ← add this
             />
             <ShowFileModal
                 open={isModalOpen}
                 setOpen={setIsModalOpen}
                 docURL={docURL}
             />
-
             <ScormModalComponent
                 open={isScormOpen}
                 setOpen={setIsScormOpen}
@@ -276,4 +244,4 @@ const PreReadPage = () => {
     );
 };
 
-export default PreReadPage;
+export default LearnerPreReadPage;

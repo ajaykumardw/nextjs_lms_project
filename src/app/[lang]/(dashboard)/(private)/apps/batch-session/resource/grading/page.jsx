@@ -1,7 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+
 import { useParams, useRouter } from 'next/navigation';
+
+import Link from 'next/link';
+
 import {
     Box,
     Container,
@@ -21,8 +25,9 @@ import {
     Pagination,
     Stack
 } from '@mui/material';
-import Link from 'next/link';
+
 import PermissionGuard from '@/hocs/PermissionClientGuard';
+
 import { useApi } from '@/hooks/useApi';
 
 const ITEMS_PER_PAGE = 10;
@@ -199,7 +204,7 @@ const GradingPage = () => {
                             >
                                 {pendingCount} submission
                                 {pendingCount === 1 ? '' : 's'} awaiting review
-                                across your batches. Click a learner's batch to
+                                across your batches. Click a learner batch to
                                 open its cohort page.
                             </Typography>
                         </Box>
