@@ -53,6 +53,7 @@ const LearnerBatchSessionsPage = () => {
                 const data = await apiGet(`/user/learner/batches/${batchId}`);
 
                 if (!cancelled) {
+
                     setBatch(data.batch);
                     setSessions(data.sessions || []);
                 }
@@ -127,14 +128,14 @@ const LearnerBatchSessionsPage = () => {
                                                 />
                                             </Box>
                                             <Typography variant="caption" color="text.secondary">
-                                                🗓️ {formatSessionDate(sess.date)} | ⏰ {sess.startTime} - {sess.endTime}
+                                                {formatSessionDate(sess.date)} |  {sess.startTime} - {sess.endTime}
                                             </Typography>
                                         </Box>
 
                                         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                                             <Button
                                                 component={Link}
-                                                href={`/${lang}/apps/ilt-module/resources/pre-read?batchId=${batchId}&sessionId=${sess.id}`}
+                                                href={`/${lang}/apps/ilt-module/resources/pre-read?batchId=${batchId}&sessionId=${sess.id}&moduleId=${batch?.module_id}&contentFolderId=${batch?.contentFolderId}`}
                                                 variant="outlined"
                                                 size="small"
                                                 sx={{ textTransform: 'none', borderRadius: 2 }}
@@ -143,7 +144,7 @@ const LearnerBatchSessionsPage = () => {
                                             </Button>
                                             <Button
                                                 component={Link}
-                                                href={`/${lang}/apps/ilt-module/resources/training-material?batchId=${batchId}&sessionId=${sess.id}`}
+                                                href={`/${lang}/apps/ilt-module/resources/training-material?batchId=${batchId}&sessionId=${sess.id}&moduleId=${batch?.module_id}&contentFolderId=${batch?.contentFolderId}`}
                                                 variant="outlined"
                                                 size="small"
                                                 sx={{ textTransform: 'none', borderRadius: 2 }}
@@ -152,7 +153,7 @@ const LearnerBatchSessionsPage = () => {
                                             </Button>
                                             <Button
                                                 component={Link}
-                                                href={`/${lang}/apps/ilt-module/resources/post-read?batchId=${batchId}&sessionId=${sess.id}`}
+                                                href={`/${lang}/apps/ilt-module/resources/post-read?batchId=${batchId}&sessionId=${sess.id}&moduleId=${batch?.module_id}&contentFolderId=${batch?.contentFolderId}`}
                                                 variant="contained"
                                                 size="small"
                                                 sx={{ textTransform: 'none', borderRadius: 2 }}

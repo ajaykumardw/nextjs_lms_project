@@ -256,8 +256,7 @@ const ProgramPage = () => {
           data.activities.map((activity, index) => {
             const moduleTypeId = activity?.module_type_id;
 
-            const label =
-              activity?.name || moduleTypeLabel?.[moduleTypeId] || "Untitled Activity";
+            const label = activity?.name || moduleTypeLabel?.[moduleTypeId] || "Untitled Activity";
 
             const isCompleted = Boolean(activity?.has_completed);
 

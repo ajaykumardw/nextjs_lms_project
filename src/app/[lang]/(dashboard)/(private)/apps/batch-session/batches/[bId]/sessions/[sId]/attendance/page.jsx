@@ -4,6 +4,8 @@ import React, { useEffect, useMemo, useState } from "react";
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 
+import { useSession } from "next-auth/react";
+
 import {
     Box,
     Button,
@@ -27,6 +29,12 @@ import Grid from "@mui/material/Grid2";
 
 import { useApi } from "@/hooks/useApi";
 
+import ActivityModal from "../../../../../ModalComponent/ActivityModal";
+import ShowFileModal from "../../../../../ModalComponent/ShowFileModal";
+import ScormModal from "../../../../../ModalComponent/ScromModalComponent"
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 const formatDate = (d) =>
     d ? new Date(d).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
 
@@ -35,9 +43,14 @@ const SessionDetailsPage = () => {
     const { lang, bId, sId } = useParams();
     const batchId = bId;
     const sessionId = sId;
+
     const router = useRouter();
     const searchParams = useSearchParams();
+
     const { ready, apiGet } = useApi();
+
+    const { data: session } = useSession()
+    const token = session?.user?.token;
 
     const initialTab = searchParams.get("tab") || "overview";
     const [tab, setTab] = useState(initialTab);
@@ -45,6 +58,14 @@ const SessionDetailsPage = () => {
     const [sessionData, setSessionData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    const [isOpen, setISOpen] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedScorm, setSelectedScorm] = useState(null);
+    const [scormLogData, setScormLogData] = useState(null);
+    const [docURL, setDocURL] = useState();
+    const [activityData, setActivityData] = useState()
+    const [isScormOpen, setIsScormOpen] = useState(false)
 
     useEffect(() => {
         if (!ready || !sessionId) return;
@@ -57,7 +78,7 @@ const SessionDetailsPage = () => {
                 console.log("Data found");
 
                 const data = await apiGet(`/user/trainer/batches/${batchId}/sessions/${sessionId}`);
-                
+
                 if (!cancelled) setSessionData(data);
             } catch (err) {
                 if (!cancelled) setError(err.message);
@@ -71,18 +92,54 @@ const SessionDetailsPage = () => {
 
     const attendancePercentage = useMemo(() => {
         if (!sessionData?.learners?.total) return 0;
-        
+
         return Math.round((sessionData.learners.present / sessionData.learners.total) * 100);
     }, [sessionData]);
 
     const preReadPercentage = useMemo(() => {
         if (!sessionData?.learners?.total) return 0;
-        
+
         return Math.round((sessionData.preRead.completed / sessionData.learners.total) * 100);
     }, [sessionData]);
 
     const goTo = (url) => router.push(url);
     const sessionBase = `/${lang}/apps/batch-session/batches/${batchId}/sessions/${sessionId}`;
+
+    const handleCardClick = (activity) => {
+
+
+        const isDocumentType = activity.module_type_id === "688723af5dd97f4ccae68834";
+        const isScorm = activity?.module_type_id === "688723af5dd97f4ccae68837"
+        const quesLength = activity?.questions?.length || 0;
+
+        if (quesLength > 0) {
+
+            router.replace(`/${lang}/apps/batch-session/quiz/${activity?.module_id}/${activity?.id}`);
+
+        } else if (isScorm) {
+
+            setSelectedScorm(activity);
+            setScormLogData(activity?.scorm_data || null);
+            setIsScormOpen(true);
+
+        } else {
+
+            setISOpen(false);
+            setIsModalOpen(false);
+
+            setActivityData(activity)
+
+            setTimeout(() => {
+
+                if (isDocumentType && activity.document_data?.image_url) {
+                    setDocURL(activity.document_data.image_url);
+                    setIsModalOpen(true);
+                } else {
+                    setISOpen(true);
+                }
+            }, 10);
+        }
+    };
 
     if (loading || !sessionData) {
         return (
@@ -181,13 +238,35 @@ const SessionDetailsPage = () => {
                         )}
                         {tab === "learners" && <LearnersTab sessionBase={sessionBase} goTo={goTo} sessionData={sessionData} />}
                         {tab === "attendance" && <AttendanceTab sessionBase={sessionBase} goTo={goTo} sessionData={sessionData} />}
-                        {tab === "pre-read" && <PreReadTab sessionBase={sessionBase} goTo={goTo} sessionData={sessionData} lang={lang} batchId={batchId} sessionId={sessionId} />}
-                        {tab === "materials" && <MaterialsTab goTo={goTo} sessionData={sessionData} lang={lang} batchId={batchId} sessionId={sessionId} />}
-                        {tab === "post-read" && <PostReadTab sessionData={sessionData} goTo={goTo} lang={lang} batchId={batchId} sessionId={sessionId} />}
+                        {tab === "pre-read" && <PreReadTab sessionBase={sessionBase} goTo={goTo} sessionData={sessionData} lang={lang} batchId={batchId} sessionId={sessionId} handleCardClick={handleCardClick} />}
+                        {tab === "materials" && <MaterialsTab goTo={goTo} sessionData={sessionData} lang={lang} batchId={batchId} sessionId={sessionId} handleCardClick={handleCardClick} />}
+                        {tab === "post-read" && <PostReadTab sessionData={sessionData} goTo={goTo} lang={lang} batchId={batchId} sessionId={sessionId} handleCardClick={handleCardClick} />}
                         {tab === "notes" && <NotesTab batchId={batchId} sessionId={sessionId} />}
                     </Box>
                 </Card>
             </Box>
+            <ActivityModal
+                open={isOpen}
+                setISOpen={setISOpen}
+                API_URL={API_URL}
+                token={token}
+                editData={activityData}
+                activityId={activityData?._id}
+                id={activityData?.module_type_id}
+            />
+            <ShowFileModal
+                open={isModalOpen}
+                setOpen={setIsModalOpen}
+                docURL={docURL}
+            />
+
+            <ScormModal
+                open={isScormOpen}
+                setOpen={setIsScormOpen}
+                scormLogData={scormLogData}
+                setScormLogData={setScormLogData}
+                selectedScorm={selectedScorm}
+            />
         </Box>
     );
 };
@@ -283,7 +362,7 @@ const ActionCard = ({ icon, title, description, onClick }) => (
 
 const LearnersTab = ({ sessionBase, goTo, sessionData }) => {
     const pending = sessionData.learners.pending;
-    
+
     const completionPct = sessionData.learners.total
         ? Math.round((sessionData.learners.present / sessionData.learners.total) * 100)
         : 0;
@@ -326,7 +405,7 @@ const AttendanceTab = ({ sessionBase, goTo, sessionData }) => (
     </Box>
 );
 
-const PreReadTab = ({ goTo, sessionData, lang, batchId, sessionId }) => {
+const PreReadTab = ({ goTo, sessionData, lang, batchId, sessionId, handleCardClick }) => {
     const { ready, apiGet } = useApi();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -334,17 +413,17 @@ const PreReadTab = ({ goTo, sessionData, lang, batchId, sessionId }) => {
     useEffect(() => {
         if (!ready) return;
         let cancelled = false;
-        
+
         (async () => {
             try {
                 const data = await apiGet(`/user/trainer/resource/pre-read?batchId=${batchId}&sessionId=${sessionId}`);
-                
+
                 if (!cancelled) setItems(data.items || []);
             } finally {
                 if (!cancelled) setLoading(false);
             }
         })();
-        
+
         return () => { cancelled = true; };
     }, [ready]);
 
@@ -363,7 +442,9 @@ const PreReadTab = ({ goTo, sessionData, lang, batchId, sessionId }) => {
                     key={item.id}
                     icon={item.type === "video" ? "tabler-video" : "tabler-file-text"}
                     title={item.title}
+                    item={item}
                     type={item.type}
+                    handleCardClick={handleCardClick}
                     progress=""
                     status={item.duration}
                 />
@@ -380,7 +461,7 @@ const PreReadTab = ({ goTo, sessionData, lang, batchId, sessionId }) => {
     );
 };
 
-const MaterialsTab = ({ goTo, lang, batchId, sessionId }) => {
+const MaterialsTab = ({ goTo, lang, batchId, sessionId, handleCardClick }) => {
     const { ready, apiGet } = useApi();
     const [materials, setMaterials] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -388,17 +469,17 @@ const MaterialsTab = ({ goTo, lang, batchId, sessionId }) => {
     useEffect(() => {
         if (!ready) return;
         let cancelled = false;
-        
+
         (async () => {
             try {
                 const data = await apiGet(`/user/trainer/resource/material?batchId=${batchId}&sessionId=${sessionId}`);
-                
+
                 if (!cancelled) setMaterials(data.materials || []);
             } finally {
                 if (!cancelled) setLoading(false);
             }
         })();
-        
+
         return () => { cancelled = true; };
     }, [ready]);
 
@@ -421,8 +502,10 @@ const MaterialsTab = ({ goTo, lang, batchId, sessionId }) => {
 
             {materials.map((mat) => (
                 <ResourceRow
-                    key={mat._id}
+                    key={mat.id}
                     icon={iconFor(mat.type)}
+                    item={mat}
+                    handleCardClick={handleCardClick}
                     title={mat.title}
                     type={mat.type}
                     progress=""
@@ -442,7 +525,7 @@ const MaterialsTab = ({ goTo, lang, batchId, sessionId }) => {
     );
 };
 
-const PostReadTab = ({ sessionData, goTo, lang, batchId, sessionId }) => {
+const PostReadTab = ({ sessionData, goTo, lang, batchId, sessionId, handleCardClick }) => {
     const { ready, apiGet } = useApi();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -450,17 +533,17 @@ const PostReadTab = ({ sessionData, goTo, lang, batchId, sessionId }) => {
     useEffect(() => {
         if (!ready) return;
         let cancelled = false;
-        
+
         (async () => {
             try {
                 const data = await apiGet(`/user/trainer/resource/post-read?batchId=${batchId}&sessionId=${sessionId}`);
-                
+
                 if (!cancelled) setItems(data.items || []);
             } finally {
                 if (!cancelled) setLoading(false);
             }
         })();
-        
+
         return () => { cancelled = true; };
     }, [ready]);
 
@@ -483,6 +566,8 @@ const PostReadTab = ({ sessionData, goTo, lang, batchId, sessionId }) => {
             {items.map((item) => (
                 <ResourceRow
                     key={item.id}
+                    item={item}
+                    handleCardClick={handleCardClick}
                     icon="tabler-clipboard-text"
                     title={item.title}
                     type={item.type}
@@ -510,21 +595,21 @@ const NotesTab = ({ batchId, sessionId }) => {
     const [snack, setSnack] = useState("");
 
     useEffect(() => {
-        
+
         if (!ready) return;
-        
+
         let cancelled = false;
-        
+
         (async () => {
             try {
                 const data = await apiGet(`/user/trainer/batches/${batchId}/sessions/${sessionId}/notes`);
-                
+
                 if (!cancelled) setNote(data.note);
             } finally {
                 if (!cancelled) setLoading(false);
             }
         })();
-        
+
         return () => { cancelled = true; };
     }, [ready]);
 
@@ -616,7 +701,7 @@ const MiniStat = ({ title, value }) => (
     </Grid>
 );
 
-const ResourceRow = ({ icon, title, type, progress, status }) => (
+const ResourceRow = ({ icon, title, type, progress, status, item, handleCardClick }) => (
     <Paper elevation={0} sx={{ p: 2, mb: 1.5, border: "1px solid", borderColor: "divider", borderRadius: 2.5 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <Avatar sx={{ borderRadius: 2, bgcolor: "primary.lighter", color: "primary.main" }}>
@@ -631,7 +716,7 @@ const ResourceRow = ({ icon, title, type, progress, status }) => (
                     <LinearProgress variant="determinate" value={parseInt(progress)} sx={{ mt: 1, height: 6, borderRadius: 5 }} />
                 )}
             </Box>
-            <Button size="small" variant="outlined" sx={{ textTransform: "none" }}>Open</Button>
+            <Button size="small" variant="outlined" sx={{ textTransform: "none" }} onClick={() => handleCardClick(item)}>Open</Button>
         </Box>
     </Paper>
 );

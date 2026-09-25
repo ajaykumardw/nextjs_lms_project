@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, act } from 'react';
 
-import { useParams, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 
 import dynamic from 'next/dynamic';
 
@@ -31,6 +31,9 @@ import DialogCloseButton from '@/components/dialogs/DialogCloseButton';
 
 import SurveyModalComponent from '@/components/survey-modal/page';
 
+import { useApi } from '@/hooks/useApi';
+
+
 const PDFViewer = dynamic(() => import('@/components/Content-data/PdfViewer/index'), { ssr: false });
 const DocViewer = dynamic(() => import('@/components/Content-data/DocViewer/index'), { ssr: false });
 const PptViewer = dynamic(() => import('@/components/Content-data/PptViewer/index'), { ssr: false });
@@ -47,6 +50,10 @@ const ContentData = () => {
     const moduleId = searchParams.get('moduleId');
     const contentFolderId = searchParams.get('contentFolderId');
     const moduleTypeId = searchParams.get('moduleTypeId');
+    const batchId = searchParams.get("batchId")
+    const sessionId = searchParams.get("sessionId")
+
+    const { ready, apiPost } = useApi();
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
     const ASSET_URL = process.env.NEXT_PUBLIC_ASSETS_URL;
@@ -60,23 +67,15 @@ const ContentData = () => {
     const [pageInfo, setPageInfo] = useState({ current: 1, total: 0 });
     const [loading, setLoading] = useState(true);
     const [openConfirm, setOpenConfirm] = useState(false);
-
     const [surveyModalOpen, setSurveyModalOpen] = useState(false)
-
     const [scormData, setScormData] = useState({});
-
     const [isInstruction, setInstruction] = useState(false)
-
     const [isQuizClose, setIsQuizClose] = useState(false)
-
     const [fieldData, setFieldData] = useState({
         currentPage: 0,
         totalPages: 0,
-
         viewedPages: [],
-
         currentVideoTime: 0,
-
         viewedVideoTime: 0,
         totalVideoTime: 0
     });
@@ -122,21 +121,13 @@ const ContentData = () => {
 
         try {
 
-            if (!API_URL || !token || !activityId) return;
+            if (!moduleId || !activityId) return;
 
-            const response = await fetch(`${API_URL}/user/activity/fetch/data/${activityId}`, {
-                method: 'GET',
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const activityData = await apiPost(`/user/learner/activity/fetch/data`, { activityId, moduleId, })
 
-            const result = await response.json();
+            console.log("Activity data", activityData)
 
-            if (response.ok) {
-
-                setData(result?.data);
-            } else {
-                console.error('Activity Fetch Error response:', result);
-            }
+            setData(activityData);
         } catch (error) {
             console.error('Activity Fetch Error:', error);
         } finally {
@@ -147,59 +138,22 @@ const ContentData = () => {
     useEffect(() => {
 
         fetchActivity();
-    }, [API_URL, token, activityId]);
-
-    const postJson = async (url, payload) => {
-
-        try {
-
-            if (!API_URL || !token) {
-
-                return { ok: false, error: 'missing credentials' };
-
-            }
-
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            const json = await res.json().catch(() => null);
-
-            const values = json?.data;
-
-            if (res.ok) {
-
-                setSurveyModalOpen(values?.is_survey_completed && values?.completed);
-
-            }
-
-
-            return { ok: res.ok, status: res.status, data: json?.data };
-        } catch (error) {
-
-            return { ok: false, error };
-
-        }
-    };
+    }, [API_URL, token, activityId, moduleId]);
 
     const handleSaveScormData = async (data) => {
         try {
-            const response = await fetch(`${API_URL}/user/activity/set/scorm/data/${moduleId}/${contentFolderId}/${activityId}/${moduleTypeId}`, {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
 
-            const result = await response.json();
+            const surveyData = await apiPost(`/user/learner/save/scorm-data`, {
+                ...data,
+                moduleId,
+                contentFolderId,
+                activityId,
+                batchId,
+                sessionId,
+                moduleTypeId
+            })
 
-            if (response.ok) {
-
-                const values = result?.data;
-
-                setSurveyModalOpen(values?.is_survey_completed && values?.completed);
-            }
+            setSurveyModalOpen(surveyData?.is_survey_completed && surveyData?.completed)
 
         } catch (error) {
             throw new Error(error)
@@ -208,40 +162,69 @@ const ContentData = () => {
 
     const saveFieldData = async (payload) => {
 
+        const saveData = await apiPost(`/user/learner/set/report-data`, {
+            ...payload,
+            moduleId,
+            contentFolderId,
+            activityId,
+            moduleTypeId,
+            batchId,
+            sessionId
+        })
 
-        const url = `${API_URL}/user/activity/set/report/data/${moduleId}/${contentFolderId}/${activityId}/${moduleTypeId}`;
+        setSurveyModalOpen(saveData?.is_survey_completed && saveData?.completed);
 
-        return postJson(url, payload);
+
     };
 
     const saveQuizData = async (payload) => {
-        const url = `${API_URL}/user/activity/set/report/data/${moduleId}/${contentFolderId}/${activityId}/${moduleTypeId}`;
+        const saveData = await apiPost(`/user/learner/set/report-data`, {
+            ...payload,
+            moduleId,
+            contentFolderId,
+            activityId,
+            moduleTypeId,
+            batchId,
+            sessionId
+        })
 
-        return postJson(url, payload);
+        setSurveyModalOpen(saveData?.is_survey_completed && saveData?.completed);
     };
 
     const saveInsertFieldData = async (payload) => {
 
-        const url = `${API_URL}/user/activity/insert/report/data/${moduleId}/${contentFolderId}/${activityId}/${moduleTypeId}`;
+        const saveData = await apiPost(`/user/learner/insert/report-data`, {
+            ...payload,
+            moduleId,
+            contentFolderId,
+            activityId,
+            moduleTypeId,
+            batchId,
+            sessionId
+        })
 
-        return postJson(url, payload);
+        setSurveyModalOpen(saveData?.is_survey_completed && saveData?.completed)
+
     };
 
     const saveInsertQuizData = async (payload) => {
-        const url = `${API_URL}/user/activity/insert/report/data/${moduleId}/${contentFolderId}/${activityId}/${moduleTypeId}`;
 
-        return postJson(url, payload);
+        const saveData = await apiPost(`/user/learner/insert/report-data`, {
+            ...payload,
+            moduleId,
+            contentFolderId,
+            activityId,
+            moduleTypeId,
+            batchId,
+            sessionId
+        })
+
+        setSurveyModalOpen(saveData?.is_survey_completed && saveData?.completed)
     };
 
     useEffect(() => {
 
-        const changed =
-
-            fieldData.currentPage ||
-
-            fieldData.currentVideoTime ||
-
-            (fieldData.viewedPages && fieldData.viewedPages.length > 0);
+        const changed = fieldData.currentPage || fieldData.currentVideoTime || (fieldData.viewedPages && fieldData.viewedPages.length > 0);
 
         if (!changed) return;
 
@@ -396,14 +379,14 @@ const ContentData = () => {
     const saveAttempt = async () => {
         try {
 
-            const response = await fetch(`${API_URL}/user/activity/attempt/check/${moduleId}/${contentFolderId}/${activityId}/${moduleTypeId}`, {
-                method: "GET",
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
+            await apiPost(`/user/learner/activity/attempt-check`, {
+                activityId,
+                moduleId,
+                contentFolderId,
+                moduleTypeId,
+                batchId,
+                sessionId
             })
-
-            const value = await response.json();
 
         } catch (error) {
 
@@ -423,8 +406,6 @@ const ContentData = () => {
         return () => clearTimeout(saveTimeout.current);
     }, [scormData, moduleId, contentFolderId, activityId, moduleTypeId]);
 
-    const ready = types && data;
-
     const moduleTypeLabel = {
         '688723af5dd97f4ccae68834': 'Documents & Slides',
         '688723af5dd97f4ccae68835': 'Video',
@@ -440,7 +421,7 @@ const ContentData = () => {
     const isLeavingRef = useRef(false);
     const initialUrlRef = useRef('');
 
-    const endActivityUrl = `${API_URL}/user/activity/end/attempt`;
+    const endActivityUrl = `${API_URL}/user/learner/activity/end-attempt`;
 
     const endActivity = () => {
         if (!token || isLeavingRef.current) return;
@@ -452,6 +433,8 @@ const ContentData = () => {
                 moduleId,
                 contentFolderId,
                 activityId,
+                batchId,
+                sessionId,
                 moduleTypeId,
                 token
             };
@@ -627,7 +610,7 @@ const ContentData = () => {
                             <Skeleton width="60%" height={40} />
                         ) : (
                             <Typography variant="h4" fontWeight="bold" gutterBottom color="primary">
-                                {data.name || moduleTypeLabel?.[moduleTypeId] ? moduleTypeLabel?.[moduleTypeId] : 'Objective Quiz'}
+                                {data?.name || moduleTypeLabel?.[moduleTypeId] ? moduleTypeLabel?.[moduleTypeId] : 'Objective Quiz'}
                             </Typography>
                         )}
 
@@ -658,7 +641,7 @@ const ContentData = () => {
                                             pdfUrl={fileUrl}
                                             onPageChange={handlePageChange}
                                             setFieldData={setFieldData}
-                                            pageData={data.logs?.[0]}
+                                            pageData={data?.logs?.[0]}
                                             setSurveyModalOpen={setSurveyModalOpen}
                                         />
                                     )}
@@ -667,7 +650,7 @@ const ContentData = () => {
                                             fileUrl={fileUrl}
                                             onPageLoad={handlePageChange}
                                             setFieldData={setFieldData}
-                                            pageData={data.logs?.[0]}
+                                            pageData={data?.logs?.[0]}
                                             setSurveyModalOpen={setSurveyModalOpen}
                                         />
                                     )}
@@ -676,7 +659,7 @@ const ContentData = () => {
                                             fileUrl={fileUrl}
                                             onPageLoad={handlePageChange}
                                             setFieldData={setFieldData}
-                                            pageData={data.logs?.[0]}
+                                            pageData={data?.logs?.[0]}
                                             setSurveyModalOpen={setSurveyModalOpen}
                                         />
                                     )}
@@ -684,7 +667,7 @@ const ContentData = () => {
                                         <YouTubePlayerComponent
                                             url={types === 'video' ? videoURL : youtubeVideoURL}
                                             setFieldData={setFieldData}
-                                            pageData={data.logs?.[0]}
+                                            pageData={data?.logs?.[0]}
                                             setSurveyModalOpen={setSurveyModalOpen}
                                         />
                                     )}
@@ -766,7 +749,7 @@ const ContentData = () => {
                             <Button
                                 variant="contained"
                                 color="primary"
-                                disabled={data.logs?.[0]?.is_completed}
+                                disabled={data?.logs?.[0]?.is_completed}
                                 onClick={() => setOpenConfirm(true)}
                             >
                                 Mark as complete
