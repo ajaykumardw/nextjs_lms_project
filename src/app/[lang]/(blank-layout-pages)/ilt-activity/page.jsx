@@ -36,8 +36,8 @@ const PDFViewer = dynamic(() => import('@/components/Content-data/PdfViewer/inde
 const DocViewer = dynamic(() => import('@/components/Content-data/DocViewer/index'), { ssr: false });
 const PptViewer = dynamic(() => import('@/components/Content-data/PptViewer/index'), { ssr: false });
 const YouTubePlayerComponent = dynamic(() => import('@/components/Content-data/youtube-player/page'), { ssr: false });
-const QuizQuestionComponent = dynamic(() => import('@/components/Content-data/quiz-qyestion/page'), { ssr: false });
-const ScromContentComponent = dynamic(() => import('@/components/Content-data/scrom-content/page'), { ssr: false });
+const QuizQuestionComponent = dynamic(() => import('@/components/ilt-section/quiz-section/page'), { ssr: false });
+const ScromContentComponent = dynamic(() => import('@/components/ilt-section/quiz-section/page'), { ssr: false });
 
 const moduleTypeLabel = {
     '688723af5dd97f4ccae68834': 'Documents & Slides',
@@ -86,7 +86,7 @@ const ContentData = () => {
     const [isQuizClose, setIsQuizClose] = useState(false);
     const [quizData, setQuizData] = useState([]);
     const [blurred, setBlurred] = useState(false);
-    
+
     const [fieldData, setFieldData] = useState({
         currentPage: 0,
         totalPages: 0,
@@ -281,7 +281,15 @@ const ContentData = () => {
     };
 
     const saveInsertQuizData = async payload => {
-        const result = await apiPost('/user/learner/insert/report-data', { answers: payload, ...baseIds });
+
+        const payloadFinalData = { answers: payload, ...baseIds }
+
+        console.log("payload", payloadFinalData);
+
+        const result = await apiPost('/user/learner/insert/report-data', payloadFinalData);
+
+        console.log("Result", result);
+
 
         applySurveyState(result);
 
