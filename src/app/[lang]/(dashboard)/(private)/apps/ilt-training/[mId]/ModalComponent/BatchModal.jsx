@@ -86,21 +86,20 @@ const BatchModal = ({
                         />
                     )}
 
-                {batchType ===
-                    "nominations" && (
-                        <NominationBatch
-                            setOpenBatchModal={setOpenBatchModal}
-                            mId={mId}
-                            setValue={setValue}
-                            token={token}
-                            handleFetchData={handleFetchData}
-                            users={users}
-                            finalData={finalData}
-                            canManage={canManage}
-                            onBatchSaved={onBatchSaved}
-                            editingBatch={editingBatch}
-                        />
-                    )}
+                {batchType === "nominations" && (
+                    <NominationBatch
+                        setOpenBatchModal={setOpenBatchModal}
+                        mId={mId}
+                        token={token}
+                        users={users}
+                        handleFetchData={handleFetchData}
+                        setValue={setValue}
+                        canManage={canManage}
+                        finalData={finalData}
+                        onBatchSaved={onBatchSaved}
+                        editingBatch={editingBatch}
+                    />
+                )}
             </DialogContent>
         </Dialog>
     );

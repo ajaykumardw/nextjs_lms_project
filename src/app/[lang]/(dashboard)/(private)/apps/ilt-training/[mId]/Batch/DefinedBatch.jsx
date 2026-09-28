@@ -144,9 +144,9 @@ const DefinedBatch = ({
                             "",
 
                         /*
-                         * If backend returns populated
-                         * trainers, normalize them.
-                         */
+                        * If backend returns populated
+                        * trainers, normalize them.
+                        */
                         trainers:
                             Array.isArray(
                                 session?.trainers
@@ -342,8 +342,8 @@ const DefinedBatch = ({
             );
 
             /*
-             * Add newly selected learners.
-             */
+            * Add newly selected learners.
+            */
             selectedUsers.forEach((user) => {
                 const id = getUserId(user);
 
@@ -543,8 +543,8 @@ const DefinedBatch = ({
     ).length;
 
     /*
-     * Validate entire batch.
-     */
+    * Validate entire batch.
+    */
     const validate = () => {
         const next = {};
 
@@ -797,8 +797,8 @@ const DefinedBatch = ({
             }
 
             /*
-             * Backend-created batch.
-             */
+            * Backend-created batch.
+            */
             const savedBatch =
                 result?.data ||
                 result?.batch ||
@@ -875,8 +875,8 @@ const DefinedBatch = ({
     };
 
     /*
-     * Unique trainers assigned to sessions.
-     */
+    * Unique trainers assigned to sessions.
+    */
     const assignedTrainerIds = useMemo(() => {
         return Array.from(
             new Set(
@@ -950,8 +950,8 @@ const DefinedBatch = ({
         });
 
         /*
-         * Sessions
-         */
+        * Sessions
+        */
         if (
             Array.isArray(
                 editingBatch?.sessions
@@ -1014,8 +1014,8 @@ const DefinedBatch = ({
         }
 
         /*
-         * Learners
-         */
+        * Learners
+        */
         if (
             Array.isArray(
                 editingBatch?.learners
@@ -1839,10 +1839,10 @@ const DefinedBatch = ({
                                         disabled={!canManage}
                                         onClick={() => {
                                             /*
-                                             * Connect your attendance API here.
-                                             * Current UI keeps the attendance state
-                                             * locally until the API is connected.
-                                             */
+                                            * Connect your attendance API here.
+                                            * Current UI keeps the attendance state
+                                            * locally until the API is connected.
+                                            */
                                             toast.success(
                                                 "Attendance saved."
                                             );
