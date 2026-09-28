@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import { useParams, useSearchParams } from 'next/navigation';
 
@@ -8,12 +8,15 @@ import Link from 'next/link';
 
 import { useSession } from 'next-auth/react';
 
+import { toast } from 'react-toastify';
+
 import {
     Box,
     Container,
     Card,
     Typography,
     Button,
+    LinearProgress,
     Avatar,
     Divider,
     Skeleton,
@@ -26,78 +29,174 @@ import PermissionGuard from '@/hocs/PermissionClientGuard';
 
 import { useApi } from '@/hooks/useApi';
 
-// Reuse the same modal components the trainer's pre-read page uses, so
-// learners get the same in-place preview instead of a bare download link.
-import ActivityModal from '../../ModalComponent/ActivityModal';
-import ShowFileModal from '../../ModalComponent/ShowFileModal';
-import ScormModalComponent from "../../ModalComponent/ScromModalComponent";
+import { getLocalizedUrl } from "@/utils/i18n";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const SCORM_TYPE_ID = '688723af5dd97f4ccae68837';
 
-const fileIcon = (type) => ({
-    pdf: 'tabler-file-type-pdf',
-    document: 'tabler-file-type-pdf',
-    slides: 'tabler-presentation',
-    video: 'tabler-video',
-    youtube: 'tabler-brand-youtube',
-    scorm: 'tabler-package',
-    link: 'tabler-link',
-}[type] || 'tabler-file');
+const docType = {
+    '688723af5dd97f4ccae68834': 'pdf',
+    '688723af5dd97f4ccae68835': 'video',
+    '688723af5dd97f4ccae68836': 'youtube-video',
+    [SCORM_TYPE_ID]: 'scrom-content',
+    '688723af5dd97f4ccae68838': 'web-link',
+    '688723af5dd97f4ccae68839': 'subjective-sssessment',
+    '688723af5dd97f4ccae6883a': 'flash-card',
+    '68886902954c4d9dc7a379bd': 'quiz'
+};
+
+// Icons keyed by the module type id, so they always match what docType knows about
+const iconByModuleType = {
+    '688723af5dd97f4ccae68834': 'tabler-file-type-pdf',
+    '688723af5dd97f4ccae68835': 'tabler-video',
+    '688723af5dd97f4ccae68836': 'tabler-brand-youtube',
+    [SCORM_TYPE_ID]: 'tabler-package',
+    '688723af5dd97f4ccae68838': 'tabler-link',
+    '688723af5dd97f4ccae68839': 'tabler-file-text',
+    '688723af5dd97f4ccae6883a': 'tabler-cards',
+    '68886902954c4d9dc7a379bd': 'tabler-help-circle',
+};
+
+const fileIcon = (item) =>
+    iconByModuleType[item?.module_type_id] ||
+    ({
+        pdf: 'tabler-file-type-pdf',
+        document: 'tabler-file-type-pdf',
+        slides: 'tabler-presentation',
+        video: 'tabler-video',
+        youtube: 'tabler-brand-youtube',
+        scorm: 'tabler-package',
+        link: 'tabler-link',
+    }[item?.type]) ||
+    'tabler-file';
 
 const LearnerMaterialPage = () => {
     const { lang } = useParams();
+
     const { data: authSession } = useSession();
     const token = authSession?.user?.token;
-    const searchParams = useSearchParams();
-    const batchId = searchParams?.get('batchId');
-    const { ready, apiGet } = useApi();
 
-    const [materials, setMaterials] = useState([]);
+    const searchParams = useSearchParams();
+
+    const batchId = searchParams?.get('batchId');
+    const sessionId = searchParams?.get('sessionId');
+    const moduleId = searchParams?.get('moduleId');
+    const contentFolderId = searchParams?.get('contentFolderId');
+
+    const { ready, apiGet, apiPost } = useApi();
+
+    const [items, setItems] = useState([]);
+    const [isClient, setIsClient] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [orderType, setOrderType] = useState('any');
 
-    const [activityData, setActivityData] = useState();
-    const [isOpen, setISOpen] = useState(false);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [docURL, setDocURL] = useState();
-    const [isScormOpen, setIsScormOpen] = useState(false);
-    const [selectedScorm, setSelectedScorm] = useState(null);
+    const fetchItems = useCallback(async (showLoader = true) => {
+        try {
+            if (showLoader) setLoading(true);
+            setError(null);
 
+            const data = await apiGet(
+                `/user/learner/resource/material?batchId=${batchId}&moduleId=${moduleId}&sessionId=${sessionId}`
+            );
+
+            setItems(data?.items || []);
+        } catch (err) {
+            setError(err?.message || 'Failed to load materials.');
+        } finally {
+            if (showLoader) setLoading(false);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [batchId, moduleId, sessionId, ready]);
+
+    const fetchSurveyData = useCallback(async () => {
+        try {
+            const surveyData = await apiGet(`/user/module/survey/data/${moduleId}`);
+
+            setOrderType(surveyData?.module_setting?.orderType || 'any');
+        } catch (err) {
+            console.error(err);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [moduleId, ready]);
+
+    // Load items + module setting together
+    useEffect(() => {
+        if (!ready || !batchId || !moduleId) return;
+
+        const load = async () => {
+            setLoading(true);
+            await Promise.all([fetchItems(false), fetchSurveyData()]);
+            setLoading(false);
+        };
+
+        load();
+    }, [ready, token, batchId, moduleId, sessionId, fetchItems, fetchSurveyData]);
+
+    // Refresh progress when the learner comes back from the activity window
     useEffect(() => {
         if (!ready || !batchId) return;
-        let cancelled = false;
 
-        (async () => {
-            try {
-                setLoading(true);
-                const data = await apiGet(`/user/learner/resource/material?batchId=${batchId}`);
-                
-                if (!cancelled) setMaterials(data.materials || []);
-            } catch (err) {
-                if (!cancelled) setError(err.message);
-            } finally {
-                if (!cancelled) setLoading(false);
-            }
-        })();
+        const onFocus = () => fetchItems(false);
 
-        return () => { cancelled = true; };
-    }, [ready, batchId]);
+        window.addEventListener('focus', onFocus);
 
-    const handleOpen = (mat) => {
-        const isDocumentType = mat.module_type_id === "688723af5dd97f4ccae68834";
-        const isScorm = mat.module_type_id === "688723af5dd97f4ccae68837";
+        return () => window.removeEventListener('focus', onFocus);
+    }, [ready, batchId, fetchItems]);
 
-        if (isScorm) {
-            setSelectedScorm(mat);
-            setIsScormOpen(true);
-        } else if (isDocumentType && mat.document_data?.image_url) {
-            setDocURL(mat.document_data.image_url);
-            setIsModalOpen(true);
-        } else {
-            setActivityData(mat);
-            setISOpen(true);
-        }
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    const completedCount = items.filter((i) => i.done).length;
+    const progress = items.length ? Math.round((completedCount / items.length) * 100) : 0;
+
+    const handleStartActivity = async (activityId, moduleTypeId) => {
+        await apiPost("/user/learner/activity/new-attempt", {
+            moduleId,
+            contentFolderId,
+            activityId,
+            moduleTypeId,
+            batchId,
+            sessionId
+        });
     };
+
+    const handleStartExam = async (canOpen, url, activityId, moduleTypeId) => {
+        if (!canOpen) {
+            toast.error('Please complete the previous activity first.', { autoClose: 1000 });
+
+            return;
+        }
+
+        // Open the window synchronously inside the click handler so popup blockers allow it
+        const newWindow = window.open(
+            '',
+            '_blank',
+            `width=${window.screen.availWidth},height=${window.screen.availHeight},toolbar=1,location=0,scrollbars=no,resizable=no`
+        );
+
+        if (!newWindow) {
+            toast.error('Popup blocked. Please allow popups for this site.');
+
+            return;
+        }
+
+        try {
+            // Create the attempt first, then load the activity
+            await handleStartActivity(activityId, moduleTypeId);
+            newWindow.location.href = url;
+        } catch (err) {
+            console.error(err);
+            newWindow.close();
+            toast.error('Unable to start activity.');
+        }
+
+        // NOTE: right-click / F12 / text-selection blocking must live inside the
+        // /ilt-activity page itself. Listeners added here are wiped as soon as the
+        // new window navigates, so they never worked from this page.
+    };
+
+    if (!isClient) return null;
 
     return (
         <PermissionGuard element={"isUser"} locale={lang}>
@@ -122,56 +221,125 @@ const LearnerMaterialPage = () => {
                             Resources shared for this session.
                         </Typography>
 
+                        <Box sx={{ mb: 4 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                <Typography variant="body2" fontWeight="600">Your Progress</Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    {completedCount} of {items.length} completed
+                                </Typography>
+                            </Box>
+                            <LinearProgress variant="determinate" value={progress} sx={{ height: 8, borderRadius: 4 }} />
+                        </Box>
+
                         <Divider sx={{ mb: 3 }} />
 
                         {loading ? (
                             <Skeleton variant="rounded" height={200} />
                         ) : (
                             <Grid container spacing={2.5}>
-                                {materials.length === 0 && (
+                                {items.length === 0 && (
                                     <Grid size={12}>
-                                        <Typography variant="body2" color="text.secondary">No materials shared yet.</Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                            No materials shared yet.
+                                        </Typography>
                                     </Grid>
                                 )}
-                                {materials.map((mat) => (
-                                    <Grid size={{ xs: 12, sm: 6 }} key={mat._id}>
-                                        <Box sx={{ p: 2.5, borderRadius: 2.5, border: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, height: '100%' }}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                                <Avatar sx={{ bgcolor: 'primary.lighter', color: 'primary.main', borderRadius: 2 }}>
-                                                    <i className={`${fileIcon(mat.type)} text-xl`} />
-                                                </Avatar>
-                                                <Typography variant="subtitle2" fontWeight="700">{mat.title}</Typography>
+
+                                {items.map((item, index) => {
+                                    const moduleTypeId = item?.module_type_id;
+                                    const isCompleted = Boolean(item?.done);
+
+                                    const prevActivity = items[index - 1];
+                                    const prevLog = prevActivity?.logs?.[0];
+
+                                    const prevCompleted =
+                                        Boolean(prevActivity?.done) ||
+                                        Boolean(prevLog?.done && Number(prevLog?.completion_percentage) >= 100) ||
+                                        prevLog?.scorm_data?.lessonStatus === "passed";
+
+                                    const isOrdered = orderType === "ordered";
+                                    const canOpen = !isOrdered || index === 0 || prevCompleted;
+
+                                    const isDisabled = isCompleted && moduleTypeId === SCORM_TYPE_ID;
+
+                                    const examPageUrl =
+                                        window.location.origin +
+                                        getLocalizedUrl(
+                                            `/ilt-activity?type=${docType[moduleTypeId]}&activityId=${item?.id}&moduleId=${moduleId}&contentFolderId=${contentFolderId}&moduleTypeId=${moduleTypeId}&batchId=${batchId}&sessionId=${sessionId}`,
+                                            lang
+                                        );
+
+                                    let buttonLabel = 'Start';
+
+                                    if (isCompleted) buttonLabel = 'Completed';
+                                    else if (!canOpen) buttonLabel = 'Locked';
+                                    else if (item?.logs?.length) buttonLabel = 'In Progress';
+
+                                    return (
+                                        <Grid size={{ xs: 12, sm: 6 }} key={item?.id || index}>
+                                            <Box
+                                                sx={{
+                                                    p: 2.5,
+                                                    borderRadius: 2.5,
+                                                    border: '1px solid',
+                                                    borderColor: 'divider',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'space-between',
+                                                    gap: 2,
+                                                    height: '100%',
+                                                    opacity: canOpen ? 1 : 0.6
+                                                }}
+                                            >
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+                                                    <Avatar sx={{ bgcolor: 'primary.lighter', color: 'primary.main', borderRadius: 2 }}>
+                                                        <i className={`${fileIcon(item)} text-xl`} />
+                                                    </Avatar>
+
+                                                    <Box sx={{ minWidth: 0 }}>
+                                                        <Typography
+                                                            variant="subtitle2"
+                                                            fontWeight="700"
+                                                            noWrap
+                                                            sx={{
+                                                                textDecoration: isCompleted ? 'line-through' : 'none',
+                                                                color: isCompleted ? 'text.secondary' : 'text.primary'
+                                                            }}
+                                                        >
+                                                            {item?.title}
+                                                        </Typography>
+                                                        <Typography variant="caption" color="text.secondary">
+                                                            {item?.type} · {isCompleted ? 'Completed by you' : 'Not completed'}
+                                                        </Typography>
+                                                    </Box>
+                                                </Box>
+
+                                                <Button
+                                                    variant="contained"
+                                                    color={isCompleted ? "success" : "primary"}
+                                                    disabled={isDisabled}
+                                                    onClick={() => handleStartExam(canOpen, examPageUrl, item?.id, moduleTypeId)}
+                                                    sx={{
+                                                        textTransform: "none",
+                                                        height: 32,
+                                                        px: 2,
+                                                        fontSize: "0.75rem",
+                                                        borderRadius: 1,
+                                                        flexShrink: 0
+                                                    }}
+                                                >
+                                                    {buttonLabel}
+                                                </Button>
                                             </Box>
-                                            <Button size="small" variant="outlined" sx={{ textTransform: 'none' }} onClick={() => handleOpen(mat)}>
-                                                Open
-                                            </Button>
-                                        </Box>
-                                    </Grid>
-                                ))}
+                                        </Grid>
+                                    );
+                                })}
                             </Grid>
                         )}
                     </Card>
 
                 </Container>
             </Box>
-
-            <ActivityModal
-                open={isOpen}
-                setISOpen={setISOpen}
-                API_URL={API_URL}
-                token={token}
-                editData={activityData}
-                activityId={activityData?._id}
-                id={activityData?.module_type_id}
-            />
-            <ShowFileModal open={isModalOpen} setOpen={setIsModalOpen} docURL={docURL} />
-            <ScormModalComponent
-                open={isScormOpen}
-                setOpen={setIsScormOpen}
-                selectedScorm={selectedScorm}
-                scormLogData={selectedScorm?.scorm_data}
-                setScormLogData={() => { }}
-            />
         </PermissionGuard>
     );
 };

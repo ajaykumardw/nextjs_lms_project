@@ -30,6 +30,17 @@ import { getLocalizedUrl } from "@/utils/i18n";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+const docType = {
+    '688723af5dd97f4ccae68834': 'pdf',
+    '688723af5dd97f4ccae68835': 'video',
+    '688723af5dd97f4ccae68836': 'youtube-video',
+    '688723af5dd97f4ccae68837': 'scrom-content',
+    '688723af5dd97f4ccae68838': 'web-link',
+    '688723af5dd97f4ccae68839': 'subjective-sssessment',
+    '688723af5dd97f4ccae6883a': 'flash-card',
+    '68886902954c4d9dc7a379bd': 'quiz'
+}
+
 const LearnerPreReadPage = () => {
 
     const { lang } = useParams();
@@ -39,7 +50,7 @@ const LearnerPreReadPage = () => {
     const sessionId = searchParams?.get('sessionId');
     const moduleId = searchParams?.get('moduleId');
     const contentFolderId = searchParams?.get("contentFolderId")
-    const qs = `?batchId=${batchId}&sessionId=${sessionId}`;
+    const qs = `?batchId=${batchId}&sessionId=${sessionId}&moduleId=${moduleId}&contentFolderId=${contentFolderId}`;
 
     const { data: authSession } = useSession();
     const token = authSession?.user?.token;
@@ -92,28 +103,6 @@ const LearnerPreReadPage = () => {
             setError(err.message);
         }
     };
-
-    const moduleTypeLabel = {
-        '688723af5dd97f4ccae68834': 'Documents & Slides',
-        '688723af5dd97f4ccae68835': 'Video',
-        '688723af5dd97f4ccae68836': 'YouTube Video',
-        '688723af5dd97f4ccae68837': 'Scorm Content',
-        '688723af5dd97f4ccae68838': 'Web Link',
-        '688723af5dd97f4ccae68839': 'Subjective Assessment',
-        '688723af5dd97f4ccae6883a': 'Flash Card',
-        '68886902954c4d9dc7a379bd': 'Quiz'
-    }
-
-    const docType = {
-        '688723af5dd97f4ccae68834': 'pdf',
-        '688723af5dd97f4ccae68835': 'video',
-        '688723af5dd97f4ccae68836': 'youtube-video',
-        '688723af5dd97f4ccae68837': 'scrom-content',
-        '688723af5dd97f4ccae68838': 'web-link',
-        '688723af5dd97f4ccae68839': 'subjective-sssessment',
-        '688723af5dd97f4ccae6883a': 'flash-card',
-        '68886902954c4d9dc7a379bd': 'quiz'
-    }
 
     const fetchSurveyData = async () => {
         try {

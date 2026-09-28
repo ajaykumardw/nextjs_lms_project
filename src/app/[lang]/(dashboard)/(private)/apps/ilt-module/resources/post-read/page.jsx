@@ -1,10 +1,12 @@
 "use client"
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import { useParams, useSearchParams } from 'next/navigation';
 
 import Link from 'next/link';
+
+import { toast } from 'react-toastify';
 
 import {
     Box,
@@ -12,65 +14,158 @@ import {
     Card,
     Typography,
     Button,
-    Chip,
-    TextField,
-    Rating,
+    LinearProgress,
+    Avatar,
     Divider,
     Skeleton,
     Alert
 } from '@mui/material';
 
+import Grid from "@mui/material/Grid2";
+
 import PermissionGuard from '@/hocs/PermissionClientGuard';
 
 import { useApi } from '@/hooks/useApi';
 
+import { getLocalizedUrl } from "@/utils/i18n";
+
+const SCORM_TYPE_ID = '688723af5dd97f4ccae68837';
+
+const docType = {
+    '688723af5dd97f4ccae68834': 'pdf',
+    '688723af5dd97f4ccae68835': 'video',
+    '688723af5dd97f4ccae68836': 'youtube-video',
+    [SCORM_TYPE_ID]: 'scrom-content',
+    '688723af5dd97f4ccae68838': 'web-link',
+    '688723af5dd97f4ccae68839': 'subjective-sssessment',
+    '688723af5dd97f4ccae6883a': 'flash-card',
+    '68886902954c4d9dc7a379bd': 'quiz'
+};
+
+const iconByModuleType = {
+    '688723af5dd97f4ccae68834': 'tabler-file-type-pdf',
+    '688723af5dd97f4ccae68835': 'tabler-video',
+    '688723af5dd97f4ccae68836': 'tabler-brand-youtube',
+    [SCORM_TYPE_ID]: 'tabler-package',
+    '688723af5dd97f4ccae68838': 'tabler-link',
+    '688723af5dd97f4ccae68839': 'tabler-file-text',
+    '688723af5dd97f4ccae6883a': 'tabler-cards',
+    '68886902954c4d9dc7a379bd': 'tabler-help-circle',
+};
+
+const fileIcon = (item) => iconByModuleType[item?.module_type_id] || 'tabler-file';
+
 const LearnerPostReadPage = () => {
     const { lang } = useParams();
     const searchParams = useSearchParams();
+
     const batchId = searchParams?.get('batchId');
+    const sessionId = searchParams?.get('sessionId');
+    const moduleId = searchParams?.get('moduleId');
+    const contentFolderId = searchParams?.get('contentFolderId');
+
     const { ready, apiGet, apiPost } = useApi();
 
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [drafts, setDrafts] = useState({}); // itemId -> draft text
-    const [submittingId, setSubmittingId] = useState(null);
+    const [orderType, setOrderType] = useState('any');
 
-    const fetchItems = async () => {
+    const fetchItems = useCallback(async (showLoader = true) => {
         try {
-            setLoading(true);
-            const data = await apiGet(`/user/learner/resource/post-read?batchId=${batchId}`);
-            
-            setItems(data.items || []);
+            if (showLoader) setLoading(true);
+            setError(null);
+
+            const data = await apiGet(
+                `/user/learner/resource/post-read?batchId=${batchId}&moduleId=${moduleId}&sessionId=${sessionId}`
+            );
+
+            setItems(data?.items || []);
         } catch (err) {
-            setError(err.message);
+            setError(err?.message || 'Failed to load materials.');
         } finally {
-            setLoading(false);
+            if (showLoader) setLoading(false);
         }
-    };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [batchId, moduleId, sessionId, ready]);
+
+    const fetchSurveyData = useCallback(async () => {
+        if (!moduleId) return;
+
+        try {
+            const surveyData = await apiGet(`/user/module/survey/data/${moduleId}`);
+
+            setOrderType(surveyData?.module_setting?.orderType || 'any');
+        } catch (err) {
+            console.error(err);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [moduleId, ready]);
 
     useEffect(() => {
         if (!ready || !batchId) return;
-        fetchItems();
-    }, [ready, batchId]);
 
-    const handleSubmit = async (itemId) => {
-        const text = drafts[itemId]?.trim();
-        
-        if (!text) return;
+        const load = async () => {
+            setLoading(true);
+            await Promise.all([fetchItems(false), fetchSurveyData()]);
+            setLoading(false);
+        };
+
+        load();
+    }, [ready, batchId, moduleId, sessionId, fetchItems, fetchSurveyData]);
+
+    // Refresh progress when the learner returns from the activity window
+    useEffect(() => {
+        if (!ready || !batchId) return;
+
+        const onFocus = () => fetchItems(false);
+
+        window.addEventListener('focus', onFocus);
+
+        return () => window.removeEventListener('focus', onFocus);
+    }, [ready, batchId, fetchItems]);
+
+    const completedCount = items.filter((i) => i.done).length;
+    const progress = items.length ? Math.round((completedCount / items.length) * 100) : 0;
+
+    const handleStartActivity = async (activityId, moduleTypeId) => {
+        await apiPost("/user/learner/activity/new-attempt", {
+            moduleId,
+            contentFolderId,
+            activityId,
+            moduleTypeId,
+            batchId,
+            sessionId
+        });
+    };
+
+    const handleOpen = async (canOpen, url, activityId, moduleTypeId) => {
+        if (!canOpen) {
+            toast.error('Please complete the previous activity first.', { autoClose: 1000 });
+
+            return;
+        }
+
+        // Open synchronously in the click handler so popup blockers allow it
+        const newWindow = window.open(
+            '',
+            '_blank',
+            `width=${window.screen.availWidth},height=${window.screen.availHeight},toolbar=1,location=0,scrollbars=no,resizable=no`
+        );
+
+        if (!newWindow) {
+            toast.error('Popup blocked. Please allow popups for this site.');
+
+            return;
+        }
 
         try {
-            setSubmittingId(itemId);
-            await apiPost(`/user/learner/resource/post-read/${itemId}/submit`, {
-                batchId,
-                submission_text: text,
-            });
-            setDrafts((prev) => ({ ...prev, [itemId]: '' }));
-            await fetchItems(); // refresh to show the new "submitted" state
+            await handleStartActivity(activityId, moduleTypeId);
+            newWindow.location.href = url;
         } catch (err) {
-            setError(err.message);
-        } finally {
-            setSubmittingId(null);
+            console.error(err);
+            newWindow.close();
+            toast.error('Unable to start activity.');
         }
     };
 
@@ -92,105 +187,123 @@ const LearnerPostReadPage = () => {
                     </Button>
 
                     <Card elevation={0} sx={{ p: 4, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
-                        <Typography variant="h4" fontWeight="700" sx={{ mb: 1 }}>Assignments</Typography>
+                        <Typography variant="h4" fontWeight="700" sx={{ mb: 1 }}>Post-Read Materials</Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
-                            Complete and submit these to reinforce what was covered in the session.
+                            Resources to review after the session to reinforce what was covered.
                         </Typography>
+
+                        <Box sx={{ mb: 4 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                <Typography variant="body2" fontWeight="600">Your Progress</Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    {completedCount} of {items.length} completed
+                                </Typography>
+                            </Box>
+                            <LinearProgress variant="determinate" value={progress} sx={{ height: 8, borderRadius: 4 }} />
+                        </Box>
+
+                        <Divider sx={{ mb: 3 }} />
 
                         {loading ? (
                             <Skeleton variant="rounded" height={200} />
                         ) : (
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                            <Grid container spacing={2.5}>
                                 {items.length === 0 && (
-                                    <Typography variant="body2" color="text.secondary">No assignments yet.</Typography>
+                                    <Grid size={12}>
+                                        <Typography variant="body2" color="text.secondary">
+                                            No post-read materials shared yet.
+                                        </Typography>
+                                    </Grid>
                                 )}
 
-                                {items.map((item) => {
-                                    const submission = item.mySubmission;
-                                    const isGraded = submission?.status === 'graded';
+                                {items.map((item, index) => {
+                                    const moduleTypeId = item?.module_type_id;
+                                    const isCompleted = Boolean(item?.done);
+
+                                    const prevActivity = items[index - 1];
+                                    const prevLog = prevActivity?.logs?.[0];
+
+                                    const prevCompleted =
+                                        Boolean(prevActivity?.done) ||
+                                        Boolean(prevLog?.done && Number(prevLog?.completion_percentage) >= 100) ||
+                                        prevLog?.scorm_data?.lessonStatus === "passed";
+
+                                    const canOpen = orderType !== "ordered" || index === 0 || prevCompleted;
+                                    const isDisabled = isCompleted && moduleTypeId === SCORM_TYPE_ID;
+
+                                    const activityUrl =
+                                        window.location.origin +
+                                        getLocalizedUrl(
+                                            `/ilt-activity?type=${docType[moduleTypeId]}&activityId=${item?.id}&moduleId=${moduleId}&contentFolderId=${contentFolderId}&moduleTypeId=${moduleTypeId}&batchId=${batchId}&sessionId=${sessionId}`,
+                                            lang
+                                        );
+
+                                    let buttonLabel = 'Start';
+
+                                    if (isCompleted) buttonLabel = 'Completed';
+                                    else if (!canOpen) buttonLabel = 'Locked';
+                                    else if (item?.logs?.length) buttonLabel = 'In Progress';
 
                                     return (
-                                        <Box
-                                            key={item.id}
-                                            sx={{ p: 3, borderRadius: 2.5, border: '1px solid', borderColor: submission ? 'success.main' : 'divider' }}
-                                        >
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2, mb: 2 }}>
-                                                <Box>
-                                                    <Typography variant="subtitle1" fontWeight="700">{item.title}</Typography>
-                                                    <Typography variant="caption" color="text.secondary">{item.type}</Typography>
+                                        <Grid size={{ xs: 12, sm: 6 }} key={item?.id || index}>
+                                            <Box
+                                                sx={{
+                                                    p: 2.5,
+                                                    borderRadius: 2.5,
+                                                    border: '1px solid',
+                                                    borderColor: isCompleted ? 'success.main' : 'divider',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'space-between',
+                                                    gap: 2,
+                                                    height: '100%',
+                                                    opacity: canOpen ? 1 : 0.6
+                                                }}
+                                            >
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+                                                    <Avatar sx={{ bgcolor: 'primary.lighter', color: 'primary.main', borderRadius: 2 }}>
+                                                        <i className={`${fileIcon(item)} text-xl`} />
+                                                    </Avatar>
+
+                                                    <Box sx={{ minWidth: 0 }}>
+                                                        <Typography
+                                                            variant="subtitle2"
+                                                            fontWeight="700"
+                                                            noWrap
+                                                            sx={{
+                                                                textDecoration: isCompleted ? 'line-through' : 'none',
+                                                                color: isCompleted ? 'text.secondary' : 'text.primary'
+                                                            }}
+                                                        >
+                                                            {item?.title}
+                                                        </Typography>
+                                                        <Typography variant="caption" color="text.secondary">
+                                                            {item?.type} · {isCompleted ? 'Completed by you' : 'Not completed'}
+                                                        </Typography>
+                                                    </Box>
                                                 </Box>
-                                                <Chip
-                                                    label={submission ? (isGraded ? 'Graded' : 'Submitted') : 'Not submitted'}
-                                                    size="small"
-                                                    color={isGraded ? 'success' : submission ? 'info' : 'default'}
-                                                    variant="outlined"
-                                                />
+
+                                                <Button
+                                                    variant="contained"
+                                                    color={isCompleted ? "success" : "primary"}
+                                                    disabled={isDisabled}
+                                                    onClick={() => handleOpen(canOpen, activityUrl, item?.id, moduleTypeId)}
+                                                    sx={{
+                                                        textTransform: "none",
+                                                        height: 32,
+                                                        px: 2,
+                                                        fontSize: "0.75rem",
+                                                        borderRadius: 1,
+                                                        flexShrink: 0
+                                                    }}
+                                                >
+                                                    {buttonLabel}
+                                                </Button>
                                             </Box>
-
-                                            {isGraded && (
-                                                <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                                    <Typography variant="body2" fontWeight={600}>Your score:</Typography>
-                                                    <Rating value={submission.score || 0} max={5} readOnly size="small" />
-                                                </Box>
-                                            )}
-
-                                            {submission ? (
-                                                <Box>
-                                                    <Typography variant="caption" color="text.secondary">Your submission</Typography>
-                                                    <Typography variant="body2" sx={{ mt: 0.5, whiteSpace: 'pre-wrap' }}>{submission.text}</Typography>
-                                                    {!isGraded && (
-                                                        <>
-                                                            <Divider sx={{ my: 2 }} />
-                                                            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                                                                Want to change your answer? Submitting again will replace it.
-                                                            </Typography>
-                                                            <TextField
-                                                                fullWidth
-                                                                multiline
-                                                                minRows={3}
-                                                                placeholder="Update your submission..."
-                                                                value={drafts[item.id] ?? ''}
-                                                                onChange={(e) => setDrafts((prev) => ({ ...prev, [item.id]: e.target.value }))}
-                                                                sx={{ mb: 1.5 }}
-                                                            />
-                                                            <Button
-                                                                variant="outlined"
-                                                                size="small"
-                                                                disabled={submittingId === item.id || !drafts[item.id]?.trim()}
-                                                                onClick={() => handleSubmit(item.id)}
-                                                                sx={{ textTransform: 'none', borderRadius: 2 }}
-                                                            >
-                                                                {submittingId === item.id ? 'Resubmitting...' : 'Resubmit'}
-                                                            </Button>
-                                                        </>
-                                                    )}
-                                                </Box>
-                                            ) : (
-                                                <Box>
-                                                    <TextField
-                                                        fullWidth
-                                                        multiline
-                                                        minRows={4}
-                                                        placeholder="Write your response here..."
-                                                        value={drafts[item.id] ?? ''}
-                                                        onChange={(e) => setDrafts((prev) => ({ ...prev, [item.id]: e.target.value }))}
-                                                        sx={{ mb: 1.5 }}
-                                                    />
-                                                    <Button
-                                                        variant="contained"
-                                                        size="small"
-                                                        disabled={submittingId === item.id || !drafts[item.id]?.trim()}
-                                                        onClick={() => handleSubmit(item.id)}
-                                                        sx={{ textTransform: 'none', borderRadius: 2 }}
-                                                    >
-                                                        {submittingId === item.id ? 'Submitting...' : 'Submit'}
-                                                    </Button>
-                                                </Box>
-                                            )}
-                                        </Box>
+                                        </Grid>
                                     );
                                 })}
-                            </Box>
+                            </Grid>
                         )}
                     </Card>
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, act } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 import { useSearchParams } from 'next/navigation';
 
@@ -19,7 +19,6 @@ import {
     CardContent,
     Button,
     Typography,
-    Divider,
     Skeleton,
     CardActions,
     CardHeader
@@ -33,7 +32,6 @@ import SurveyModalComponent from '@/components/survey-modal/page';
 
 import { useApi } from '@/hooks/useApi';
 
-
 const PDFViewer = dynamic(() => import('@/components/Content-data/PdfViewer/index'), { ssr: false });
 const DocViewer = dynamic(() => import('@/components/Content-data/DocViewer/index'), { ssr: false });
 const PptViewer = dynamic(() => import('@/components/Content-data/PptViewer/index'), { ssr: false });
@@ -41,8 +39,18 @@ const YouTubePlayerComponent = dynamic(() => import('@/components/Content-data/y
 const QuizQuestionComponent = dynamic(() => import('@/components/Content-data/quiz-qyestion/page'), { ssr: false });
 const ScromContentComponent = dynamic(() => import('@/components/Content-data/scrom-content/page'), { ssr: false });
 
-const ContentData = () => {
+const moduleTypeLabel = {
+    '688723af5dd97f4ccae68834': 'Documents & Slides',
+    '688723af5dd97f4ccae68835': 'Video',
+    '688723af5dd97f4ccae68836': 'YouTube Video',
+    '688723af5dd97f4ccae68837': 'Scrom Content',
+    '688723af5dd97f4ccae68838': 'Web Link',
+    '688723af5dd97f4ccae68839': 'Subjective Assessment',
+    '688723af5dd97f4ccae6883a': 'Flash Card',
+    '68886902954c4d9dc7a379bd': 'Quiz'
+};
 
+const ContentData = () => {
     const searchParams = useSearchParams();
 
     const activityId = searchParams.get('activityId');
@@ -50,8 +58,8 @@ const ContentData = () => {
     const moduleId = searchParams.get('moduleId');
     const contentFolderId = searchParams.get('contentFolderId');
     const moduleTypeId = searchParams.get('moduleTypeId');
-    const batchId = searchParams.get("batchId")
-    const sessionId = searchParams.get("sessionId")
+    const batchId = searchParams.get('batchId');
+    const sessionId = searchParams.get('sessionId');
 
     const { ready, apiPost } = useApi();
 
@@ -62,15 +70,23 @@ const ContentData = () => {
     const token = session?.user?.token;
 
     const saveTimeout = useRef(null);
+    const fieldAutosaveTimer = useRef(null);
+    const quizAutosaveTimer = useRef(null);
+    const isLeavingRef = useRef(false);
+    const initialUrlRef = useRef('');
+    const beforeUnloadHandlerRef = useRef(null);
 
     const [data, setData] = useState(null);
     const [pageInfo, setPageInfo] = useState({ current: 1, total: 0 });
     const [loading, setLoading] = useState(true);
     const [openConfirm, setOpenConfirm] = useState(false);
-    const [surveyModalOpen, setSurveyModalOpen] = useState(false)
+    const [surveyModalOpen, setSurveyModalOpen] = useState(false);
     const [scormData, setScormData] = useState({});
-    const [isInstruction, setInstruction] = useState(false)
-    const [isQuizClose, setIsQuizClose] = useState(false)
+    const [isInstruction, setInstruction] = useState(false);
+    const [isQuizClose, setIsQuizClose] = useState(false);
+    const [quizData, setQuizData] = useState([]);
+    const [blurred, setBlurred] = useState(false);
+    
     const [fieldData, setFieldData] = useState({
         currentPage: 0,
         totalPages: 0,
@@ -80,8 +96,31 @@ const ContentData = () => {
         totalVideoTime: 0
     });
 
-    useEffect(() => {
+    // Common ids sent with every save request
+    const baseIds = {
+        moduleId,
+        contentFolderId,
+        activityId,
+        moduleTypeId,
+        batchId,
+        sessionId
+    };
 
+    const closeWindow = () => {
+        setTimeout(() => {
+            if (beforeUnloadHandlerRef.current) {
+                window.removeEventListener('beforeunload', beforeUnloadHandlerRef.current);
+            }
+
+            window.close();
+        }, 300);
+    };
+
+    /* ------------------------------------------------------------------ */
+    /* Fullscreen / anti-cheat listeners                                   */
+    /* ------------------------------------------------------------------ */
+
+    useEffect(() => {
         return () => {
             if (document.fullscreenElement) {
                 document.exitFullscreen?.();
@@ -92,206 +131,239 @@ const ContentData = () => {
     useEffect(() => {
         const handler = () => {
             if (!document.fullscreenElement) {
-                toast.error("Please stay in fullscreen mode.");
+                toast.error('Please stay in fullscreen mode.');
             }
         };
 
-        document.addEventListener("fullscreenchange", handler);
+        document.addEventListener('fullscreenchange', handler);
 
-        return () =>
-            document.removeEventListener("fullscreenchange", handler);
+        return () => document.removeEventListener('fullscreenchange', handler);
     }, []);
 
     useEffect(() => {
         const prevent = e => e.preventDefault();
 
-        document.addEventListener("contextmenu", prevent);
+        document.addEventListener('contextmenu', prevent);
+        document.addEventListener('copy', prevent);
+        document.addEventListener('cut', prevent);
+        document.addEventListener('paste', prevent);
+        document.addEventListener('dragstart', prevent);
 
-        return () =>
-            document.removeEventListener("contextmenu", prevent);
+        return () => {
+            document.removeEventListener('contextmenu', prevent);
+            document.removeEventListener('copy', prevent);
+            document.removeEventListener('cut', prevent);
+            document.removeEventListener('paste', prevent);
+            document.removeEventListener('dragstart', prevent);
+        };
     }, []);
 
-    const [quizData, setQuizData] = useState([]);
+    useEffect(() => {
+        const handler = e => {
+            const key = e.key?.toUpperCase();
 
-    const fieldAutosaveTimer = useRef(null);
-    const quizAutosaveTimer = useRef(null);
+            if (
+                e.key === 'F12' ||
+                (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(key)) ||
+                (e.ctrlKey && ['U', 'S', 'P', 'C', 'V', 'X', 'A'].includes(key))
+            ) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        };
+
+        window.addEventListener('keydown', handler, true);
+
+        return () => window.removeEventListener('keydown', handler, true);
+    }, []);
+
+    useEffect(() => {
+        const visibility = () => {
+            if (document.hidden) {
+                toast.error('Tab switching detected.');
+            }
+        };
+
+        document.addEventListener('visibilitychange', visibility);
+
+        return () => document.removeEventListener('visibilitychange', visibility);
+    }, []);
+
+    useEffect(() => {
+        const blur = () => setBlurred(true);
+        const focus = () => setBlurred(false);
+
+        window.addEventListener('blur', blur);
+        window.addEventListener('focus', focus);
+
+        return () => {
+            window.removeEventListener('blur', blur);
+            window.removeEventListener('focus', focus);
+        };
+    }, []);
+
+    /* ------------------------------------------------------------------ */
+    /* Fetch activity (only once the session token is ready)               */
+    /* ------------------------------------------------------------------ */
 
     const fetchActivity = async () => {
+        if (!moduleId || !activityId) {
+            setLoading(false);
+
+            return;
+        }
+
         setLoading(true);
 
         try {
-
-            if (!moduleId || !activityId) return;
-
-            const activityData = await apiPost(`/user/learner/activity/fetch/data`, { activityId, moduleId, })
-
-            console.log("Activity data", activityData)
+            const activityData = await apiPost('/user/learner/activity/fetch/data', { activityId, moduleId });
 
             setData(activityData);
         } catch (error) {
             console.error('Activity Fetch Error:', error);
+            toast.error(error?.message || 'Could not load activity');
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
+        if (!ready) return;
 
         fetchActivity();
-    }, [API_URL, token, activityId, moduleId]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [ready, activityId, moduleId]);
 
-    const handleSaveScormData = async (data) => {
-        try {
+    /* ------------------------------------------------------------------ */
+    /* Save helpers — every one RETURNS the API data (no res.ok anywhere)  */
+    /* ------------------------------------------------------------------ */
 
-            const surveyData = await apiPost(`/user/learner/save/scorm-data`, {
-                ...data,
-                moduleId,
-                contentFolderId,
-                activityId,
-                batchId,
-                sessionId,
-                moduleTypeId
-            })
+    const applySurveyState = result => {
+        const shouldOpen = Boolean(result?.is_survey_completed && result?.completed);
 
-            setSurveyModalOpen(surveyData?.is_survey_completed && surveyData?.completed)
+        setSurveyModalOpen(shouldOpen);
 
-        } catch (error) {
-            throw new Error(error)
-        }
-    }
-
-    const saveFieldData = async (payload) => {
-
-        const saveData = await apiPost(`/user/learner/set/report-data`, {
-            ...payload,
-            moduleId,
-            contentFolderId,
-            activityId,
-            moduleTypeId,
-            batchId,
-            sessionId
-        })
-
-        setSurveyModalOpen(saveData?.is_survey_completed && saveData?.completed);
-
-
+        return shouldOpen;
     };
 
-    const saveQuizData = async (payload) => {
-        const saveData = await apiPost(`/user/learner/set/report-data`, {
-            ...payload,
-            moduleId,
-            contentFolderId,
-            activityId,
-            moduleTypeId,
-            batchId,
-            sessionId
-        })
+    const handleSaveScormData = async payload => {
+        const result = await apiPost('/user/learner/save/scorm-data', { ...payload, ...baseIds });
 
-        setSurveyModalOpen(saveData?.is_survey_completed && saveData?.completed);
+        applySurveyState(result);
+
+        return result;
     };
 
-    const saveInsertFieldData = async (payload) => {
+    const saveFieldData = async payload => {
+        const result = await apiPost('/user/learner/set/report-data', { ...payload, ...baseIds });
 
-        const saveData = await apiPost(`/user/learner/insert/report-data`, {
-            ...payload,
-            moduleId,
-            contentFolderId,
-            activityId,
-            moduleTypeId,
-            batchId,
-            sessionId
-        })
+        applySurveyState(result);
 
-        setSurveyModalOpen(saveData?.is_survey_completed && saveData?.completed)
-
+        return result;
     };
 
-    const saveInsertQuizData = async (payload) => {
+    // Quiz payload is an ARRAY, so it must be nested (spreading an array into
+    // an object turns it into {0:..., 1:...} and the backend ignores it).
+    const saveQuizData = async payload => {
+        const result = await apiPost('/user/learner/set/report-data', { answers: payload, ...baseIds });
 
-        const saveData = await apiPost(`/user/learner/insert/report-data`, {
-            ...payload,
-            moduleId,
-            contentFolderId,
-            activityId,
-            moduleTypeId,
-            batchId,
-            sessionId
-        })
+        applySurveyState(result);
 
-        setSurveyModalOpen(saveData?.is_survey_completed && saveData?.completed)
+        return result;
     };
+
+    const saveInsertFieldData = async payload => {
+        const result = await apiPost('/user/learner/insert/report-data', { ...payload, ...baseIds });
+
+        applySurveyState(result);
+
+        return result;
+    };
+
+    const saveInsertQuizData = async payload => {
+        const result = await apiPost('/user/learner/insert/report-data', { answers: payload, ...baseIds });
+
+        applySurveyState(result);
+
+        return result;
+    };
+
+    const saveAttempt = async () => {
+        await apiPost('/user/learner/activity/attempt-check', baseIds);
+    };
+
+    /* ------------------------------------------------------------------ */
+    /* Autosave effects                                                    */
+    /* ------------------------------------------------------------------ */
 
     useEffect(() => {
+        if (!ready) return;
 
-        const changed = fieldData.currentPage || fieldData.currentVideoTime || (fieldData.viewedPages && fieldData.viewedPages.length > 0);
+        const changed =
+            fieldData.currentPage ||
+            fieldData.currentVideoTime ||
+            (fieldData.viewedPages && fieldData.viewedPages.length > 0);
 
         if (!changed) return;
 
         if (fieldAutosaveTimer.current) clearTimeout(fieldAutosaveTimer.current);
 
         fieldAutosaveTimer.current = setTimeout(() => {
-
-
-            saveFieldData(fieldData).then((res) => {
-                if (!res.ok) {
-                    console.warn('Field autosave failed', res);
-                }
-            });
+            saveFieldData(fieldData).catch(err => console.warn('Field autosave failed', err));
         }, 800);
 
         return () => {
-            if (fieldAutosaveTimer.current) {
-
-                clearTimeout(fieldAutosaveTimer.current);
-
-            }
+            if (fieldAutosaveTimer.current) clearTimeout(fieldAutosaveTimer.current);
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
+        ready,
         fieldData.currentPage,
         fieldData.currentVideoTime,
         (fieldData.viewedPages || []).length,
         fieldData.totalPages,
-        fieldData.totalVideoTime,
-        API_URL,
-        token
+        fieldData.totalVideoTime
     ]);
 
-    const handleStartExam = async () => {
-        if (!document.fullscreenElement) {
-            await document.documentElement.requestFullscreen();
-        }
-
-        setInstruction(true);
-        saveAttempt();
-    };
-
     useEffect(() => {
+        if (!ready) return;
         if (!Array.isArray(quizData) || quizData.length === 0) return;
 
         if (quizAutosaveTimer.current) clearTimeout(quizAutosaveTimer.current);
 
         quizAutosaveTimer.current = setTimeout(() => {
-            saveQuizData(quizData).then((res) => {
-                if (!res.ok) {
-                    console.warn('Quiz autosave failed', res);
-                }
-
-            });
-
+            saveQuizData(quizData).catch(err => console.warn('Quiz autosave failed', err));
         }, 1200);
 
         return () => {
             if (quizAutosaveTimer.current) clearTimeout(quizAutosaveTimer.current);
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [ready, quizData]);
 
-    }, [quizData, API_URL, token]);
+    useEffect(() => {
+        if (!ready) return;
+        if (Object.keys(scormData).length === 0) return;
+
+        if (saveTimeout.current) clearTimeout(saveTimeout.current);
+
+        saveTimeout.current = setTimeout(() => {
+            handleSaveScormData(scormData).catch(err => console.error('SCORM save failed', err));
+        }, 800);
+
+        return () => clearTimeout(saveTimeout.current);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [ready, scormData, moduleId, contentFolderId, activityId, moduleTypeId]);
+
+    /* ------------------------------------------------------------------ */
+    /* Derived values                                                      */
+    /* ------------------------------------------------------------------ */
 
     const fileUrl = data?.document_data?.image_url ? `${ASSET_URL}/activity/${data.document_data.image_url}` : null;
     const videoURL = data?.video_data?.video_url ? `${ASSET_URL}/activity/${data.video_data.video_url}` : null;
     const youtubeVideoURL = data?.video_data?.video_url;
     const extension = data?.document_data?.image_url?.split('.').pop()?.toLowerCase();
-    const scromLogData = data?.logs?.[0]?.scorm_data || {}
+    const scromLogData = data?.logs?.[0]?.scorm_data || {};
 
     const isPDF = extension === 'pdf';
     const isOfficeDoc = ['ppt', 'pptx', 'doc', 'docx'].includes(extension);
@@ -307,142 +379,76 @@ const ContentData = () => {
     };
 
     const isCompletedCondition =
-        (data?.logs?.[0]?.completion_percentage || 0) >= 100 || (
-            (fieldData.totalPages > 0 && fieldData.viewedPages.length === fieldData.totalPages) ||
-            (fieldData.totalVideoTime > 0 && fieldData.viewedVideoTime >= fieldData.totalVideoTime) ||
-            (data?.questions?.length > 0 && quizData.length === data.questions.length)
+        (data?.logs?.[0]?.completion_percentage || 0) >= 100 ||
+        (fieldData.totalPages > 0 && fieldData.viewedPages.length === fieldData.totalPages) ||
+        (fieldData.totalVideoTime > 0 && fieldData.viewedVideoTime >= fieldData.totalVideoTime) ||
+        (data?.questions?.length > 0 && quizData.length === data.questions.length);
 
-        );
+    /* ------------------------------------------------------------------ */
+    /* Actions                                                             */
+    /* ------------------------------------------------------------------ */
+
+    const handleStartExam = async () => {
+        try {
+            if (!document.fullscreenElement) {
+                await document.documentElement.requestFullscreen();
+            }
+        } catch (err) {
+            console.warn('Fullscreen request failed', err);
+        }
+
+        try {
+            await saveAttempt();
+            setInstruction(true);
+        } catch (err) {
+            console.error('Attempt check failed', err);
+            toast.error(err?.message || 'Could not start the exam');
+        }
+    };
 
     const handleMarkComplete = async () => {
         setOpenConfirm(false);
 
         try {
-            if (quizData.length > 0) {
-                const res = await saveInsertQuizData(quizData);
-
-                if (!res.ok) {
-                    toast.error('Failed to save quiz before marking complete');
-                    console.warn('markComplete saveInsertQuizData failed', res);
-                }
-
-                const values = res?.data;
-
-                if (!res.ok) {
-
-                    toast.error('Failed to save progress before marking complete', {
-                        autoClose: 1000
-                    });
-
-                    return;
-
-                }
-
-                setSurveyModalOpen(values?.is_survey_completed && values?.completed)
-
-
-            } else {
-                const res = await saveInsertFieldData(fieldData);
-
-                if (!res.ok) {
-
-                    toast.error('Failed to save progress before marking complete', {
-                        autoClose: 1000
-                    });
-
-                    return;
-
-                }
-
-                const values = res?.data;
-
-                setSurveyModalOpen(values?.is_survey_completed && values?.completed)
-            }
+            // apiPost throws on any non-2xx response, so no `res.ok` check is needed.
+            const values =
+                quizData.length > 0
+                    ? await saveInsertQuizData(quizData)
+                    : await saveInsertFieldData(fieldData);
 
             toast.success('Activity completed successfully', { autoClose: 1000 });
 
-            setTimeout(() => {
-                window.removeEventListener(
-                    "beforeunload",
-                    beforeUnloadHandlerRef.current
-                );
+            // If the survey modal is opening, keep the window open so the learner can fill it in.
+            if (values?.is_survey_completed && values?.completed) return;
 
-                window.close();
-            }, 300);
-
+            closeWindow();
         } catch (err) {
             console.error('handleMarkComplete error', err);
-            toast.error('Could not mark activity complete');
+            toast.error(err?.message || 'Could not mark activity complete');
         }
     };
 
-    const saveAttempt = async () => {
-        try {
-
-            await apiPost(`/user/learner/activity/attempt-check`, {
-                activityId,
-                moduleId,
-                contentFolderId,
-                moduleTypeId,
-                batchId,
-                sessionId
-            })
-
-        } catch (error) {
-
-            throw new Error(error)
-        }
-    }
-
-    useEffect(() => {
-        if (Object.keys(scormData).length === 0) return;
-
-        if (saveTimeout.current) clearTimeout(saveTimeout.current);
-
-        saveTimeout.current = setTimeout(() => {
-            handleSaveScormData(scormData);
-        }, 800);
-
-        return () => clearTimeout(saveTimeout.current);
-    }, [scormData, moduleId, contentFolderId, activityId, moduleTypeId]);
-
-    const moduleTypeLabel = {
-        '688723af5dd97f4ccae68834': 'Documents & Slides',
-        '688723af5dd97f4ccae68835': 'Video',
-        '688723af5dd97f4ccae68836': 'YouTube Video',
-        '688723af5dd97f4ccae68837': 'Scrom Content',
-        '688723af5dd97f4ccae68838': 'Web Link',
-        '688723af5dd97f4ccae68839': 'Subjective Assessment',
-        '688723af5dd97f4ccae6883a': 'Flash Card',
-        "68886902954c4d9dc7a379bd": "Quiz"
-
-    }
-
-    const isLeavingRef = useRef(false);
-    const initialUrlRef = useRef('');
+    /* ------------------------------------------------------------------ */
+    /* Leaving the page                                                    */
+    /* ------------------------------------------------------------------ */
 
     const endActivityUrl = `${API_URL}/user/learner/activity/end-attempt`;
 
     const endActivity = () => {
+
+        console.log("Data tried", token, isLeavingRef.current);
+
         if (!token || isLeavingRef.current) return;
+
+        console.log("Data 7", token, isLeavingRef.current);
 
         isLeavingRef.current = true;
 
         try {
-            const payload = {
-                moduleId,
-                contentFolderId,
-                activityId,
-                batchId,
-                sessionId,
-                moduleTypeId,
-                token
-            };
+            const blob = new Blob([JSON.stringify({ ...baseIds, token })], { type: 'application/json' });
 
-            const blob = new Blob(
-                [JSON.stringify(payload)],
-                { type: 'application/json' }
-            );
+
+            console.log("Data 8", token, isLeavingRef.current);
 
             navigator.sendBeacon(endActivityUrl, blob);
         } catch (err) {
@@ -450,12 +456,10 @@ const ContentData = () => {
         }
     };
 
-    const beforeUnloadHandlerRef = useRef(null);
-
     useEffect(() => {
-        if (!token) return;
+        if (!token && !ready) return;
 
-        const handleBeforeUnload = (event) => {
+        const handleBeforeUnload = event => {
             endActivity();
             event.preventDefault();
             event.returnValue = '';
@@ -463,27 +467,22 @@ const ContentData = () => {
 
         beforeUnloadHandlerRef.current = handleBeforeUnload;
 
-        window.addEventListener("beforeunload", handleBeforeUnload);
+        window.addEventListener('beforeunload', handleBeforeUnload);
 
         return () => {
-            window.removeEventListener("beforeunload", handleBeforeUnload);
+            window.removeEventListener('beforeunload', handleBeforeUnload);
         };
-    }, [token]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [token, ready]);
 
     useEffect(() => {
-        if (!token || typeof window === 'undefined') return;
+        if (!token || typeof window === 'undefined' || !ready) return;
+
+        initialUrlRef.current = window.location.href;
 
         window.history.pushState({ guard: true }, '', window.location.href);
 
         const handlePopState = () => {
-            const newUrl = window.location.href;
-
-            if (newUrl === initialUrlRef.current) {
-                window.history.pushState({ guard: true }, '', initialUrlRef.current);
-
-                return;
-            }
-
             const leave = window.confirm('Do you want to leave this page?');
 
             if (!leave) {
@@ -500,133 +499,64 @@ const ContentData = () => {
         return () => {
             window.removeEventListener('popstate', handlePopState);
         };
-    }, [token]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [token, ready]);
 
     useEffect(() => {
-        const prevent = e => e.preventDefault();
+        if (isQuizClose) closeWindow();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isQuizClose]);
 
-        document.addEventListener("copy", prevent);
-        document.addEventListener("cut", prevent);
-        document.addEventListener("paste", prevent);
+    const disableBlur = types === 'youtube-video' || types === 'scrom-content';
 
-        return () => {
-            document.removeEventListener("copy", prevent);
-            document.removeEventListener("cut", prevent);
-            document.removeEventListener("paste", prevent);
-        };
-    }, []);
+    const quizStartDisabled =
+        data?.QuizSetting?.[0]?.reattempts != -1 &&
+        quizData?.length > 0 &&
+        (data?.logs?.[0] ? !data?.logs?.[0]?.is_reattempt_left : false);
 
-    useEffect(() => {
-        const prevent = e => e.preventDefault();
-
-        document.addEventListener("dragstart", prevent);
-
-        return () =>
-            document.removeEventListener("dragstart", prevent);
-    }, []);
-
-    useEffect(() => {
-        const handler = e => {
-
-            if (
-                e.key === "F12" ||
-                (e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(e.key.toUpperCase())) ||
-                (e.ctrlKey && ["U", "S", "P", "C", "V", "X", "A"].includes(e.key.toUpperCase()))
-            ) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
-        };
-
-        window.addEventListener("keydown", handler, true);
-
-        return () =>
-            window.removeEventListener("keydown", handler, true);
-    }, []);
-
-    useEffect(() => {
-        const visibility = () => {
-            if (document.hidden) {
-                toast.error("Tab switching detected.");
-            }
-        };
-
-        document.addEventListener("visibilitychange", visibility);
-
-        return () =>
-            document.removeEventListener("visibilitychange", visibility);
-    }, []);
-
-    const [blurred, setBlurred] = useState(false);
-
-    useEffect(() => {
-        const blur = () => setBlurred(true);
-        const focus = () => setBlurred(false);
-
-        window.addEventListener("blur", blur);
-        window.addEventListener("focus", focus);
-
-        return () => {
-            window.removeEventListener("blur", blur);
-            window.removeEventListener("focus", focus);
-        };
-    }, []);
-
-    useEffect(() => {
-        if (isQuizClose) {
-
-            setTimeout(() => {
-                window.removeEventListener(
-                    "beforeunload",
-                    beforeUnloadHandlerRef.current
-                );
-
-                window.close();
-            }, 300);
-
-        }
-    }, [isQuizClose])
-
-    const disableBlur =
-        types === "youtube-video" ||
-        types === "scrom-content";
+    /* ------------------------------------------------------------------ */
+    /* Render                                                              */
+    /* ------------------------------------------------------------------ */
 
     return (
         <Box
             sx={{
                 p: { xs: 1, sm: 2, md: 3 },
-                userSelect: "none",
-                WebkitUserSelect: "none",
-                filter: blurred && !disableBlur ? "blur(20px)" : "none",
-                pointerEvents: blurred && !disableBlur ? "none" : "auto"
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+                filter: blurred && !disableBlur ? 'blur(20px)' : 'none',
+                pointerEvents: blurred && !disableBlur ? 'none' : 'auto'
             }}
         >
             {!ready ? (
                 <Skeleton height={200} />
             ) : (
                 <Card>
-                    <CardHeader title={<>
-                        {loading ? (
-                            <Skeleton width="60%" height={40} />
-                        ) : (
-                            <Typography variant="h4" fontWeight="bold" gutterBottom color="primary">
-                                {data?.name || moduleTypeLabel?.[moduleTypeId] ? moduleTypeLabel?.[moduleTypeId] : 'Objective Quiz'}
-                            </Typography>
-                        )}
+                    <CardHeader
+                        title={
+                            <>
+                                {loading ? (
+                                    <Skeleton width='60%' height={40} />
+                                ) : (
+                                    <Typography variant='h4' fontWeight='bold' gutterBottom color='primary'>
+                                        {data?.name || moduleTypeLabel?.[moduleTypeId] || 'Objective Quiz'} {types}
+                                    </Typography>
+                                )}
 
-                        {!loading && pageInfo.total > 0 && (isPDF || isOfficeDoc) && (
-                            <Typography variant="body2" sx={{ color: 'primary.main', fontWeight: 500, mb: 1 }}>
-                                Page {pageInfo.current} of {pageInfo.total}
-                            </Typography>
-                        )}</>
-                    } />
+                                {!loading && pageInfo.total > 0 && (isPDF || isOfficeDoc) && (
+                                    <Typography variant='body2' sx={{ color: 'primary.main', fontWeight: 500, mb: 1 }}>
+                                        Page {pageInfo.current} of {pageInfo.total}
+                                    </Typography>
+                                )}
+                            </>
+                        }
+                    />
 
                     <CardContent>
-
                         <Box
                             sx={{
                                 height: { xs: '45vh', sm: '50vh', md: '60vh' },
-                                p: { xs: 0.5, sm: 1 },
+                                p: { xs: 0.5, sm: 1 }
                             }}
                         >
                             {loading ? (
@@ -672,22 +602,21 @@ const ContentData = () => {
                                         />
                                     )}
                                     {types === 'quiz' && (
-
                                         <QuizQuestionComponent
                                             log={data}
                                             isInstruction={isInstruction}
                                             setInstruction={setInstruction}
                                             status={false}
                                             quizSetting={data?.QuizSetting?.[0] || {}}
-                                            data={data.questions || []}
-                                            report={data.quiz_reports || []}
+                                            data={data?.questions || []}
+                                            report={data?.quiz_reports || []}
                                             setQuizData={setQuizData}
-                                            saveInsertQuizData={saveInsertQuizData} // pass actual fn
+                                            saveInsertQuizData={saveInsertQuizData}
                                             setSurveyModalOpen={setSurveyModalOpen}
                                             setIsQuizClose={setIsQuizClose}
                                         />
                                     )}
-                                    {types === 'scrom-content' &&
+                                    {types === 'scrom-content' && (
                                         <ScromContentComponent
                                             data={data}
                                             scormData={scormData}
@@ -695,60 +624,50 @@ const ContentData = () => {
                                             setScormData={setScormData}
                                             setSurveyModalOpen={setSurveyModalOpen}
                                         />
-                                    }
+                                    )}
                                 </>
                             )}
                         </Box>
 
-                        {!loading && (
-                            <>
-
-                                {types !== 'quiz' && types !== "scrom-content" && (
-
-                                    <Box
-                                        sx={{
-                                            backgroundColor: '#e8f1ff',
-                                            border: '1px solid #c5d7ff',
-                                            padding: 2,
-                                            borderRadius: 1,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 1,
-                                            mt: 2
-                                        }}
-                                    >
-                                        In order to complete the activity it is mandatory to click on
-                                        <strong>Mark As Complete</strong> after you have finished.
-                                    </Box>
-
-                                )}
-                            </>
+                        {!loading && types !== 'quiz' && types !== 'scrom-content' && (
+                            <Box
+                                sx={{
+                                    backgroundColor: '#e8f1ff',
+                                    border: '1px solid #c5d7ff',
+                                    padding: 2,
+                                    borderRadius: 1,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 1,
+                                    mt: 2
+                                }}
+                            >
+                                In order to complete the activity it is mandatory to click on
+                                <strong>Mark As Complete</strong> after you have finished.
+                            </Box>
                         )}
                     </CardContent>
-                    <CardActions sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 6 }}>
-                        {(!isInstruction && types === 'quiz') && (
 
-                            ((data?.QuizSetting?.[0]?.reattempts == -1) || (!(quizData?.length > 0 && (data?.logs?.[0] ? !data?.logs?.[0]?.is_reattempt_left : false)))) ? (
+                    <CardActions sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 6 }}>
+                        {!isInstruction &&
+                            types === 'quiz' &&
+                            (data?.QuizSetting?.[0]?.reattempts == -1 || !quizStartDisabled ? (
                                 <Button
-                                    variant="contained"
-                                    color="primary"
-                                    disabled={data?.QuizSetting?.[0]?.reattempts != -1 && (quizData?.length > 0 && (data?.logs?.[0] ? !data?.logs?.[0]?.is_reattempt_left : false))}
+                                    variant='contained'
+                                    color='primary'
+                                    disabled={quizStartDisabled}
                                     onClick={handleStartExam}
                                 >
                                     Start Exam
                                 </Button>
-
                             ) : (
-                                <>
-                                    No attempt left
-                                </>
-                            ))
-                        }
+                                <>No attempt left</>
+                            ))}
 
                         {types !== 'quiz' && isCompletedCondition && (
                             <Button
-                                variant="contained"
-                                color="primary"
+                                variant='contained'
+                                color='primary'
                                 disabled={data?.logs?.[0]?.is_completed}
                                 onClick={() => setOpenConfirm(true)}
                             >
@@ -756,44 +675,40 @@ const ContentData = () => {
                             </Button>
                         )}
 
-                        {(
-                            <Button
-                                variant="outlined"
-                                color="secondary"
-                                onClick={() => {
-                                    endActivity();
+                        <Button
+                            variant='outlined'
+                            color='secondary'
+                            onClick={() => {
 
-                                    setTimeout(() => {
-                                        window.removeEventListener(
-                                            "beforeunload",
-                                            beforeUnloadHandlerRef.current
-                                        );
-
-                                        window.close();
-                                    }, 300);
-                                }}
-                            >
-                                Exit
-                            </Button>
-                        )}
-
+                                endActivity();
+                                closeWindow();
+                            }}
+                        >
+                            Exit
+                        </Button>
                     </CardActions>
                 </Card>
             )}
 
             <SurveyModalComponent open={surveyModalOpen} setOpen={setSurveyModalOpen} moduleId={moduleId} />
 
-            <Dialog open={openConfirm} onClose={() => setOpenConfirm(false)} sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}>
-                <DialogCloseButton onClick={() => setOpenConfirm(false)}><i className="tabler-x" /></DialogCloseButton>
+            <Dialog
+                open={openConfirm}
+                onClose={() => setOpenConfirm(false)}
+                sx={{ '& .MuiDialog-paper': { overflow: 'visible' } }}
+            >
+                <DialogCloseButton onClick={() => setOpenConfirm(false)}>
+                    <i className='tabler-x' />
+                </DialogCloseButton>
                 <DialogTitle>Confirm Completion</DialogTitle>
                 <DialogContent>
-                    <DialogContentText>
-                        Are you sure you want to mark this activity as complete?
-                    </DialogContentText>
+                    <DialogContentText>Are you sure you want to mark this activity as complete?</DialogContentText>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setOpenConfirm(false)} color="secondary">Cancel</Button>
-                    <Button onClick={handleMarkComplete} color="primary" variant="contained">
+                    <Button onClick={() => setOpenConfirm(false)} color='secondary'>
+                        Cancel
+                    </Button>
+                    <Button onClick={handleMarkComplete} color='primary' variant='contained'>
                         Confirm
                     </Button>
                 </DialogActions>

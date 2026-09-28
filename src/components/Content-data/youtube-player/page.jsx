@@ -6,15 +6,23 @@ import { Box } from '@mui/material'
 
 import ReactPlayer from 'react-player'
 
+const normalizeYoutubeUrl = url => {
+  const match = url?.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=|youtube\.com\/embed\/)([^?&]+)/)
+
+  return match ? `https://www.youtube.com/watch?v=${match[1]}` : url
+}
+
 const YouTubePlayerComponent = ({ url, setFieldData, pageData }) => {
   const playerRef = useRef(null)
   const pendingSeekRef = useRef(null)
   const restoredRef = useRef(false)
+  const durationRef = useRef(0)
 
   const [totalVideoTime, setTotalVideoTime] = useState(0)
   const [currentVideoTime, setCurrentVideoTime] = useState(0)
   const [viewedVideoTime, setViewedVideoTime] = useState(0)
 
+  // Restore saved progress, ignoring impossible values
   useEffect(() => {
     if (!pageData) return
 
@@ -22,16 +30,19 @@ const YouTubePlayerComponent = ({ url, setFieldData, pageData }) => {
     const dbCurrent = Number(pageData.current_video_time) || 0
     const dbViewed = Number(pageData.viewed_video_time) || 0
 
+    // Progress is only trustworthy if a total was saved with it
+    if (dbTotal <= 0) return
+
+    durationRef.current = dbTotal
+
     setTotalVideoTime(dbTotal)
-    setCurrentVideoTime(dbCurrent)
-    setViewedVideoTime(dbViewed)
+    setCurrentVideoTime(Math.min(dbCurrent, dbTotal))
+    setViewedVideoTime(Math.min(dbViewed, dbTotal))
 
-    if (dbCurrent > 0) {
-      pendingSeekRef.current = dbCurrent
-    }
-
+    if (dbCurrent > 0) pendingSeekRef.current = Math.min(dbCurrent, dbTotal)
   }, [pageData])
 
+  // Sync to the parent
   useEffect(() => {
     if (!setFieldData) return
 
@@ -39,23 +50,21 @@ const YouTubePlayerComponent = ({ url, setFieldData, pageData }) => {
       ...prev,
       totalVideoTime,
       currentVideoTime,
-      viewedVideoTime,
+      viewedVideoTime
     }))
-  }, [
-    totalVideoTime,
-    currentVideoTime,
-    viewedVideoTime,
-    setFieldData,
-  ])
+  }, [totalVideoTime, currentVideoTime, viewedVideoTime, setFieldData])
 
-  const normalizeYoutubeUrl = url => {
-    const match = url?.match(
-      /(?:youtu\.be\/|youtube\.com\/watch\?v=|youtube\.com\/embed\/)([^?&]+)/,
-    )
+  // The player is the source of truth for duration
+  const handleDuration = duration => {
+    const d = Math.ceil(Number(duration) || 0)
 
-    return match
-      ? `https://www.youtube.com/watch?v=${match[1]}`
-      : url
+    if (!d) return
+
+    durationRef.current = d
+
+    setTotalVideoTime(d)
+    setCurrentVideoTime(prev => Math.min(prev, d))
+    setViewedVideoTime(prev => Math.min(prev, d))
   }
 
   return (
@@ -66,37 +75,39 @@ const YouTubePlayerComponent = ({ url, setFieldData, pageData }) => {
         height: '100%',
         borderRadius: 2,
         overflow: 'hidden',
-        boxShadow: 1,
+        boxShadow: 1
       }}
     >
       <ReactPlayer
         ref={playerRef}
         url={normalizeYoutubeUrl(url)}
         controls
-        width="100%"
-        height="100%"
+        width='100%'
+        height='100%'
         config={{
           youtube: {
             playerVars: {
-              origin:
-                typeof window !== 'undefined'
-                  ? window.location.origin
-                  : '',
-            },
-          },
+              origin: typeof window !== 'undefined' ? window.location.origin : ''
+            }
+          }
         }}
+        onReady={() => {
+          // Fallback in case onDuration doesn't fire
+          handleDuration(playerRef.current?.getDuration?.())
+        }}
+        onDuration={handleDuration}
         onPlay={() => {
-          if (
-            !restoredRef.current &&
-            pendingSeekRef.current > 0
-          ) {
+          // Some players only know their duration once playback starts
+          if (!durationRef.current) handleDuration(playerRef.current?.getDuration?.())
+
+          if (!restoredRef.current && pendingSeekRef.current > 0) {
             restoredRef.current = true
 
             const seekTime = pendingSeekRef.current
 
             setTimeout(() => {
               try {
-                playerRef.current?.seekTo(seekTime)
+                playerRef.current?.seekTo(seekTime, 'seconds')
                 pendingSeekRef.current = null
               } catch (err) {
                 console.error('Seek failed', err)
@@ -104,34 +115,22 @@ const YouTubePlayerComponent = ({ url, setFieldData, pageData }) => {
             }, 100)
           }
         }}
-        onDuration={duration => {
-          setTotalVideoTime(prev =>
-            Math.max(prev, Math.ceil(duration))
-          )
-        }}
         onProgress={state => {
-          const rounded = Math.floor(
-            state.playedSeconds
-          )
+          const max = durationRef.current || Infinity
+          const rounded = Math.min(Math.floor(state.playedSeconds), max)
 
-          setCurrentVideoTime(prev =>
-            Math.max(prev, rounded)
-          )
-
-          setViewedVideoTime(prev =>
-            Math.max(prev, rounded)
-          )
+          setCurrentVideoTime(rounded)
+          setViewedVideoTime(prev => Math.max(prev, rounded))
         }}
         onEnded={() => {
-          setCurrentVideoTime(totalVideoTime)
-          setViewedVideoTime(totalVideoTime)
+          const d = durationRef.current
+
+          if (!d) return
+
+          setCurrentVideoTime(d)
+          setViewedVideoTime(d)
         }}
-        onError={error => {
-          console.error(
-            'ReactPlayer Error:',
-            error
-          )
-        }}
+        onError={error => console.error('ReactPlayer Error:', error)}
       />
     </Box>
   )

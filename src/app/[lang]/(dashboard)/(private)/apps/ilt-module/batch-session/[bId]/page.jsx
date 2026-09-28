@@ -154,11 +154,11 @@ const LearnerBatchSessionsPage = () => {
                                             <Button
                                                 component={Link}
                                                 href={`/${lang}/apps/ilt-module/resources/post-read?batchId=${batchId}&sessionId=${sess.id}&moduleId=${batch?.module_id}&contentFolderId=${batch?.contentFolderId}`}
-                                                variant="contained"
+                                                variant="outlined"
                                                 size="small"
                                                 sx={{ textTransform: 'none', borderRadius: 2 }}
                                             >
-                                                Assignment
+                                                Post read
                                             </Button>
                                             {/* // LearnerBatchSessionsPage.jsx — add near the "Back to My Batches" button */}
                                             <Button

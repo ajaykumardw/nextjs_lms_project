@@ -28,6 +28,9 @@ export const useApi = () => {
             const payload = await response.json().catch(() => ({}));
 
             if (!response.ok) {
+
+                console.log("Data", payload);
+                
                 throw new Error(payload?.message || "Request failed");
             }
 
