@@ -216,7 +216,7 @@ const ContentData = () => {
         setLoading(true);
 
         try {
-            const activityData = await apiPost('/user/learner/activity/fetch/data', { activityId, moduleId });
+            const activityData = await apiPost('/user/learner/activity/fetch/data', { activityId, moduleId, batchId, sessionId });
 
             setData(activityData);
         } catch (error) {
@@ -232,7 +232,7 @@ const ContentData = () => {
 
         fetchActivity();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [ready, activityId, moduleId]);
+    }, [ready, activityId, moduleId, batchId, sessionId]);
 
     /* ------------------------------------------------------------------ */
     /* Save helpers — every one RETURNS the API data (no res.ok anywhere)  */

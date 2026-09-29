@@ -2,9 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 
 import Link from 'next/link';
+
+import { useSession } from 'next-auth/react';
 
 import {
     Box,
@@ -19,15 +21,23 @@ import {
     Snackbar
 } from '@mui/material';
 
-import { toast } from 'react-toastify';
-
 import PermissionGuard from '@/hocs/PermissionClientGuard';
 
 import { useApi } from '@/hooks/useApi';
 
+import ActivityModal from '../../ModalComponent/ActivityModal';
+import ShowFileModal from '../../ModalComponent/ShowFileModal';
+import ScormModalComponent from "../../ModalComponent/ScromModalComponent"
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const PostReadPage = () => {
     const { lang } = useParams();
+    const router = useRouter()
+
+    const { data: session } = useSession();
+    const token = session?.user?.token;
+
     const searchParams = useSearchParams();
     const batchId = searchParams?.get('batchId');
     const sessionId = searchParams?.get('sessionId');
@@ -37,9 +47,17 @@ const PostReadPage = () => {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [note, setNote] = useState('');
-    const [saving, setSaving] = useState(false);
     const [snack, setSnack] = useState('');
+
+    const [activityData, setActivityData] = useState()
+    const [isScormOpen, setIsScormOpen] = useState(false)
+
+    const [isOpen, setISOpen] = useState(false);
+    const [docURL, setDocURL] = useState();
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const [selectedScorm, setSelectedScorm] = useState(null);
+    const [scormLogData, setScormLogData] = useState(null);
 
     // Post-read content is module-level (depends only on batchId -> module).
     // Facilitator notes remain session-specific, so that fetch still needs sessionId.
@@ -53,17 +71,16 @@ const PostReadPage = () => {
                 setError(null);
 
                 const calls = [apiGet(`/user/trainer/resource/post-read?batchId=${batchId}`)];
-                
+
                 if (sessionId) {
                     calls.push(apiGet(`/user/trainer/batches/${batchId}/sessions/${sessionId}/notes`));
                 }
 
-                const [postReadData, notesData] = await Promise.all(calls);
+                const [postReadData] = await Promise.all(calls);
 
                 if (!cancelled) {
 
                     setItems(postReadData.items || []);
-                    if (notesData) setNote(notesData.note?.outcome_notes || '');
                 }
             } catch (err) {
                 if (!cancelled) setError(err.message);
@@ -75,19 +92,39 @@ const PostReadPage = () => {
         return () => { cancelled = true; };
     }, [ready, batchId, sessionId]);
 
-    const saveNotes = async () => {
-        if (!sessionId) return;
-        
-        try {
-            setSaving(true);
-            await apiPut(`/user/trainer/batches/${batchId}/sessions/${sessionId}/notes`, { outcome_notes: note });
-            toast.success("Notes saved successfully", {
-                autoClose: 1000
-            })
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setSaving(false);
+    const handleCardClick = (activity) => {
+
+
+        const isDocumentType = activity.module_type_id === "688723af5dd97f4ccae68834";
+        const isScorm = activity?.module_type_id === "688723af5dd97f4ccae68837"
+        const quesLength = activity?.questions?.length || 0;
+
+        if (quesLength > 0) {
+
+            router.replace(`/${lang}/apps/batch-session/quiz/${activity?.module_id}/${activity?.id}`);
+
+        } else if (isScorm) {
+
+            setSelectedScorm(activity);
+            setScormLogData(activity?.scorm_data || null);
+            setIsScormOpen(true);
+
+        } else {
+
+            setISOpen(false);
+            setIsModalOpen(false);
+
+            setActivityData(activity)
+
+            setTimeout(() => {
+
+                if (isDocumentType && activity.document_data?.image_url) {
+                    setDocURL(activity.document_data.image_url);
+                    setIsModalOpen(true);
+                } else {
+                    setISOpen(true);
+                }
+            }, 10);
         }
     };
 
@@ -135,52 +172,70 @@ const PostReadPage = () => {
                                         <Typography variant="body2" color="text.secondary">No post-read items assigned yet.</Typography>
                                     )}
                                     {items.map((item) => (
-                                        <Box
+                                        <div
                                             key={item.id}
-                                            sx={{
-                                                p: 2.5,
-                                                borderRadius: 2.5,
-                                                border: '1px solid',
-                                                borderColor: 'divider',
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                alignItems: 'center',
-                                                gap: 2
-                                            }}
                                         >
-                                            <Box>
-                                                <Typography variant="subtitle1" fontWeight="700">{item.title}</Typography>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    {item.type} · {item.submissions} submission{item.submissions === 1 ? '' : 's'}
-                                                </Typography>
+                                            <Box
+                                                key={item.id}
+                                                sx={{
+                                                    p: 2.5,
+                                                    borderRadius: 2.5,
+                                                    border: '1px solid',
+                                                    borderColor: 'divider',
+                                                    display: 'flex',
+                                                    justifyContent: 'space-between',
+                                                    alignItems: 'center',
+                                                    gap: 2
+                                                }}
+                                            >
+                                                <Box>
+                                                    <Typography variant="subtitle1" fontWeight="700">{item.title}</Typography>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        {item.type} · {item.submissions} submission{item.submissions === 1 ? '' : 's'}
+                                                    </Typography>
+                                                </Box>
+                                                <Button
+                                                    size="small"
+                                                    variant="outlined"
+                                                    sx={{ textTransform: 'none', borderRadius: 2 }}
+                                                    onClick={() => handleCardClick(item)}
+                                                >
+                                                    Open
+                                                </Button>
                                             </Box>
-                                        </Box>
+                                        </div>
                                     ))}
                                 </Box>
-
-                                <Typography variant="h6" fontWeight="700" sx={{ mb: 1.5 }}>Facilitator Notes for Next Session</Typography>
-                                <TextField
-                                    fullWidth
-                                    multiline
-                                    minRows={4}
-                                    placeholder="Add notes on how this session landed, topics to revisit, or learners who need follow-up..."
-                                    value={note}
-                                    onChange={(e) => setNote(e.target.value)}
-                                    sx={{ mb: 2 }}
-                                    disabled={!sessionId}
-                                />
-                                <Button variant="contained" onClick={saveNotes} disabled={saving || !sessionId} sx={{ textTransform: 'none', borderRadius: 2 }}>
-                                    {saving ? 'Saving...' : 'Save Notes'}
-                                </Button>
                             </>
                         )}
                     </Card>
+                    <ActivityModal
+                        open={isOpen}
+                        setISOpen={setISOpen}
+                        API_URL={API_URL}
+                        token={token}
+                        editData={activityData}
+                        activityId={activityData?._id}
+                        id={activityData?.module_type_id}
+                    />
+                    <ShowFileModal
+                        open={isModalOpen}
+                        setOpen={setIsModalOpen}
+                        docURL={docURL}
+                    />
 
+                    <ScormModalComponent
+                        open={isScormOpen}
+                        setOpen={setIsScormOpen}
+                        scormLogData={scormLogData}
+                        setScormLogData={setScormLogData}
+                        selectedScorm={selectedScorm}
+                    />
                 </Container>
             </Box>
 
             <Snackbar open={Boolean(snack)} autoHideDuration={3000} onClose={() => setSnack('')} message={snack} />
-        </PermissionGuard>
+        </PermissionGuard >
     );
 };
 

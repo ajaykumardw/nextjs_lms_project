@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams, notFound } from 'next/navigation';
 
 import Link from 'next/link';
 
@@ -81,6 +81,10 @@ const LearnerMaterialPage = () => {
     const sessionId = searchParams?.get('sessionId');
     const moduleId = searchParams?.get('moduleId');
     const contentFolderId = searchParams?.get('contentFolderId');
+
+    if (!batchId || !sessionId || !moduleId || !contentFolderId) {
+        notFound();
+    }
 
     const { ready, apiGet, apiPost } = useApi();
 

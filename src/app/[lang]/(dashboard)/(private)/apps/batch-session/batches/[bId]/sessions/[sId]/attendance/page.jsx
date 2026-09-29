@@ -75,8 +75,6 @@ const SessionDetailsPage = () => {
             try {
                 setLoading(true);
 
-                console.log("Data found");
-
                 const data = await apiGet(`/user/trainer/batches/${batchId}/sessions/${sessionId}`);
 
                 if (!cancelled) setSessionData(data);
@@ -106,7 +104,6 @@ const SessionDetailsPage = () => {
     const sessionBase = `/${lang}/apps/batch-session/batches/${batchId}/sessions/${sessionId}`;
 
     const handleCardClick = (activity) => {
-
 
         const isDocumentType = activity.module_type_id === "688723af5dd97f4ccae68834";
         const isScorm = activity?.module_type_id === "688723af5dd97f4ccae68837"
@@ -222,7 +219,6 @@ const SessionDetailsPage = () => {
                         <Tab value="pre-read" label="Pre-read" />
                         <Tab value="materials" label="Materials" />
                         <Tab value="post-read" label="Post-read" />
-                        <Tab value="notes" label="Session Notes" />
                     </Tabs>
 
                     <Box sx={{ p: { xs: 2, md: 3 } }}>
@@ -240,8 +236,7 @@ const SessionDetailsPage = () => {
                         {tab === "attendance" && <AttendanceTab sessionBase={sessionBase} goTo={goTo} sessionData={sessionData} />}
                         {tab === "pre-read" && <PreReadTab sessionBase={sessionBase} goTo={goTo} sessionData={sessionData} lang={lang} batchId={batchId} sessionId={sessionId} handleCardClick={handleCardClick} />}
                         {tab === "materials" && <MaterialsTab goTo={goTo} sessionData={sessionData} lang={lang} batchId={batchId} sessionId={sessionId} handleCardClick={handleCardClick} />}
-                        {tab === "post-read" && <PostReadTab sessionData={sessionData} goTo={goTo} lang={lang} batchId={batchId} sessionId={sessionId} handleCardClick={handleCardClick} />}
-                        {tab === "notes" && <NotesTab batchId={batchId} sessionId={sessionId} />}
+                        {tab === "post-read" && <PostReadTab sessionData={sessionData} goTo={goTo} lang={lang} batchId={batchId} sessionId={sessionId} handleCardClick={handleCardClick} />}                        {tab === "notes" && <NotesTab batchId={batchId} sessionId={sessionId} />}
                     </Box>
                 </Card>
             </Box>

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 
-import { useParams, useSearchParams, useRouter } from 'next/navigation';
+import { useParams, useSearchParams, useRouter, notFound } from 'next/navigation';
 
 import Link from 'next/link';
 
@@ -52,6 +52,10 @@ const LearnerPreReadPage = () => {
     const contentFolderId = searchParams?.get("contentFolderId")
     const qs = `?batchId=${batchId}&sessionId=${sessionId}&moduleId=${moduleId}&contentFolderId=${contentFolderId}`;
 
+    if (!batchId || !sessionId || !moduleId || !contentFolderId) {
+        notFound();
+    }
+
     const { data: authSession } = useSession();
     const token = authSession?.user?.token;
 
@@ -87,22 +91,6 @@ const LearnerPreReadPage = () => {
 
     const completedCount = items.filter((i) => i.done).length;
     const progress = items.length ? Math.round((completedCount / items.length) * 100) : 0;
-
-    const toggleDone = async (id) => {
-        const prevItems = items;
-
-        setItems((prev) =>
-            prev.map((item) => (item.id === id ? { ...item, done: !item.done } : item))
-        );
-
-        try {
-            await apiPut(`/user/learner/resource/pre-read/${id}/toggle`, { batchId, sessionId });
-            toast.success("Pre-read updated", { autoClose: 1000 });
-        } catch (err) {
-            setItems(prevItems); // revert on failure
-            setError(err.message);
-        }
-    };
 
     const fetchSurveyData = async () => {
         try {
@@ -297,7 +285,7 @@ const LearnerPreReadPage = () => {
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                                 <Checkbox
                                                     checked={item.done}
-                                                    onChange={() => toggleDone(item.id)}
+                                                    disabled
                                                     inputProps={{ 'aria-label': 'Mark this pre-read as completed' }}
                                                 />
                                                 <Box>
@@ -309,7 +297,7 @@ const LearnerPreReadPage = () => {
                                                         {item.title}
                                                     </Typography>
                                                     <Typography variant="caption" color="text.secondary">
-                                                        {item.type} · {item.done ? 'Completed by you' : 'Mark as completed'}
+                                                        {item.type} · {item.done ? 'Completed by you' : 'Pending'}
                                                     </Typography>
                                                 </Box>
                                             </Box>

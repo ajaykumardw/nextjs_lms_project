@@ -163,7 +163,7 @@ const LearnerBatchSessionsPage = () => {
                                             {/* // LearnerBatchSessionsPage.jsx — add near the "Back to My Batches" button */}
                                             <Button
                                                 component={Link}
-                                                href={`/${lang}/apps/ilt-module/batch-session/${batchId}/attendance`}
+                                                href={`/${lang}/apps/ilt-module/batch-session/${batchId}/attendance?sessionId=${sess?.id}`}
                                                 variant="outlined"
                                                 size="small"
                                                 startIcon={<i className="tabler-calendar-stats" />}

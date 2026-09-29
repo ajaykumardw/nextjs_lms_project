@@ -2,9 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 
 import Link from 'next/link';
+
+import { useSession } from 'next-auth/react';
 
 import {
     Box,
@@ -12,7 +14,6 @@ import {
     Card,
     Typography,
     Button,
-    Chip,
     Avatar,
     Divider,
     Skeleton,
@@ -25,7 +26,14 @@ import PermissionGuard from '@/hocs/PermissionClientGuard';
 
 import { useApi } from '@/hooks/useApi';
 
+import ActivityModal from '../../ModalComponent/ActivityModal';
+import ShowFileModal from '../../ModalComponent/ShowFileModal';
+import ScormModalComponent from "../../ModalComponent/ScromModalComponent"
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 const fileIcon = (type) => {
+
     switch (type) {
         case 'pdf': return 'tabler-file-type-pdf';
         case 'document': return 'tabler-file-type-pdf';
@@ -41,21 +49,73 @@ const fileIcon = (type) => {
 const formatSize = (bytes) => {
     if (!bytes) return null;
     const mb = bytes / 1024 / 1024;
-    
+
     return mb >= 1 ? `${mb.toFixed(1)} MB` : `${Math.round(bytes / 1024)} KB`;
 };
 
 const MaterialPage = () => {
+
     const { lang } = useParams();
+    const router = useRouter()
+
     const searchParams = useSearchParams();
     const batchId = searchParams?.get('batchId');
     const sessionId = searchParams?.get('sessionId');
     const qs = `?batchId=${batchId}&sessionId=${sessionId}`;
-    const { ready, apiGet, apiDelete } = useApi();
+    const { ready, apiGet } = useApi();
+
+    const { data: session } = useSession();
+    const token = session?.user?.token;
 
     const [materials, setMaterials] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    const [isOpen, setISOpen] = useState(false);
+    const [docURL, setDocURL] = useState();
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const [activityData, setActivityData] = useState()
+    const [isScormOpen, setIsScormOpen] = useState(false)
+
+    const [selectedScorm, setSelectedScorm] = useState(null);
+    const [scormLogData, setScormLogData] = useState(null);
+
+    const handleCardClick = (activity) => {
+
+
+        const isDocumentType = activity.module_type_id === "688723af5dd97f4ccae68834";
+        const isScorm = activity?.module_type_id === "688723af5dd97f4ccae68837"
+        const quesLength = activity?.questions?.length || 0;
+
+        if (quesLength > 0) {
+
+            router.replace(`/${lang}/apps/batch-session/quiz/${activity?.module_id}/${activity?.id}`);
+
+        } else if (isScorm) {
+
+            setSelectedScorm(activity);
+            setScormLogData(activity?.scorm_data || null);
+            setIsScormOpen(true);
+
+        } else {
+
+            setISOpen(false);
+            setIsModalOpen(false);
+
+            setActivityData(activity)
+
+            setTimeout(() => {
+
+                if (isDocumentType && activity.document_data?.image_url) {
+                    setDocURL(activity.document_data.image_url);
+                    setIsModalOpen(true);
+                } else {
+                    setISOpen(true);
+                }
+            }, 10);
+        }
+    };
 
     const fetchMaterials = async () => {
         try {
@@ -122,11 +182,11 @@ const MaterialPage = () => {
                                         <Typography variant="body2" color="text.secondary">No materials uploaded yet.</Typography>
                                     </Grid>
                                 )}
-                                {materials.map((mat) => {
+                                {materials.map((mat, index) => {
                                     const size = formatSize(mat.file_size);
-                                    
+
                                     return (
-                                        <Grid size={{ xs: 12, sm: 6 }} key={mat._id}>
+                                        <Grid size={{ xs: 12, sm: 6 }} key={index}>
                                             <Box
                                                 sx={{
                                                     p: 2.5,
@@ -151,6 +211,14 @@ const MaterialPage = () => {
                                                         </Typography>
                                                     </Box>
                                                 </Box>
+                                                <Button
+                                                    size="small"
+                                                    variant="outlined"
+                                                    sx={{ textTransform: 'none', borderRadius: 2 }}
+                                                    onClick={() => handleCardClick(mat)}
+                                                >
+                                                    Open
+                                                </Button>
                                             </Box>
                                         </Grid>
                                     );
@@ -161,6 +229,28 @@ const MaterialPage = () => {
                     </Card>
 
                 </Container>
+                <ActivityModal
+                    open={isOpen}
+                    setISOpen={setISOpen}
+                    API_URL={API_URL}
+                    token={token}
+                    editData={activityData}
+                    activityId={activityData?._id}
+                    id={activityData?.module_type_id}
+                />
+                <ShowFileModal
+                    open={isModalOpen}
+                    setOpen={setIsModalOpen}
+                    docURL={docURL}
+                />
+
+                <ScormModalComponent
+                    open={isScormOpen}
+                    setOpen={setIsScormOpen}
+                    scormLogData={scormLogData}
+                    setScormLogData={setScormLogData}
+                    selectedScorm={selectedScorm}
+                />
             </Box>
         </PermissionGuard>
     );

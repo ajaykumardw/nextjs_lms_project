@@ -195,17 +195,7 @@ const GradingPage = () => {
                                 fontWeight="700"
                                 sx={{ mb: 0.5, fontSize: { xs: '1.5rem', md: '2rem' } }}
                             >
-                                Pending Grading
-                            </Typography>
-
-                            <Typography
-                                variant="body2"
-                                color="text.secondary"
-                            >
-                                {pendingCount} submission
-                                {pendingCount === 1 ? '' : 's'} awaiting review
-                                across your batches. Click a learner batch to
-                                open its cohort page.
+                                Grading
                             </Typography>
                         </Box>
 
@@ -234,6 +224,10 @@ const GradingPage = () => {
 
                                                 <TableCell sx={{ fontWeight: 700, color: 'text.primary', py: 2 }}>
                                                     Batch
+                                                </TableCell>
+
+                                                <TableCell sx={{ fontWeight: 700, color: 'text.primary', py: 2 }}>
+                                                    Session
                                                 </TableCell>
 
                                                 <TableCell sx={{ fontWeight: 700, color: 'text.primary', py: 2 }}>
@@ -303,6 +297,28 @@ const GradingPage = () => {
                                                     </TableCell>
 
                                                     <TableCell sx={{ py: 2.5 }}>
+                                                        <Typography
+                                                            variant="body2"
+                                                            color="primary.main"
+                                                            fontWeight={600}
+                                                            sx={{
+                                                                cursor: 'pointer',
+                                                                display: 'inline-block',
+                                                                '&:hover': {
+                                                                    textDecoration: 'underline'
+                                                                }
+                                                            }}
+                                                            onClick={() =>
+                                                                router.push(
+                                                                    `/${lang}/apps/batch-session/batches/${s.batchId}`
+                                                                )
+                                                            }
+                                                        >
+                                                            {"Session"} {s.session}
+                                                        </Typography>
+                                                    </TableCell>
+
+                                                    <TableCell sx={{ py: 2.5 }}>
                                                         <Typography variant="body2" color="text.secondary">
                                                             {s.assignment}
                                                         </Typography>
@@ -323,13 +339,7 @@ const GradingPage = () => {
 
                                                     <TableCell sx={{ py: 2.5, textAlign: 'center' }}>
                                                         <Box sx={{ display: 'inline-flex', alignItems: 'center' }}>
-                                                            <Rating
-                                                                value={s.score || 0}
-                                                                onChange={(_, value) =>
-                                                                    setScore(s.id, value)
-                                                                }
-                                                                max={5}
-                                                            />
+                                                            {Number(s.score ?? 0).toFixed(1)}%
                                                         </Box>
                                                     </TableCell>
                                                 </TableRow>

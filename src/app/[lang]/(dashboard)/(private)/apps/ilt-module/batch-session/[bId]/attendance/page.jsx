@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams, notFound } from 'next/navigation';
 
 import Link from 'next/link';
 
@@ -36,9 +36,22 @@ const statusColor = (status) => ({
 }[status] || 'default');
 
 const LearnerAttendancePage = () => {
+
+    const searchParams = useSearchParams();
+
     const params = useParams();
+
+
     const batchId = params?.bId;
+
+    const sessionId = searchParams.get('sessionId');
+
+    if (!sessionId) {
+        notFound()
+    }
+
     const lang = params?.lang;
+
     const { ready, apiGet } = useApi();
 
     const [history, setHistory] = useState([]);
@@ -53,8 +66,8 @@ const LearnerAttendancePage = () => {
         (async () => {
             try {
                 setLoading(true);
-                const data = await apiGet(`/user/learner/batches/${batchId}/attendance`);
-                
+                const data = await apiGet(`/user/learner/batches/${batchId}/attendance/${sessionId}`);
+
                 if (!cancelled) {
                     setHistory(data.history || []);
                     setSummary(data.summary || null);
@@ -67,7 +80,7 @@ const LearnerAttendancePage = () => {
         })();
 
         return () => { cancelled = true; };
-    }, [ready, batchId]);
+    }, [ready, batchId, sessionId]);
 
     return (
         <PermissionGuard element={"isUser"} locale={lang}>

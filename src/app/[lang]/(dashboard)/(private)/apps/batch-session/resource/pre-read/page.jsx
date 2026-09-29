@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 
-import { useParams, useSearchParams, useRouter } from 'next/navigation';
+import { useParams, useSearchParams, useRouter, notFound } from 'next/navigation';
 
 import Link from 'next/link';
 
@@ -14,17 +14,11 @@ import {
     Card,
     Typography,
     Button,
-    Chip,
-    Checkbox,
-    LinearProgress,
     Skeleton,
     Alert
 } from '@mui/material';
 
-import { toast } from 'react-toastify';
-
 import PermissionGuard from '@/hocs/PermissionClientGuard';
-
 
 import { useApi } from '@/hooks/useApi';
 
@@ -41,12 +35,13 @@ const PreReadPage = () => {
     const batchId = searchParams?.get('batchId');
     const sessionId = searchParams?.get('sessionId');
 
-    const [selectedId, setSelectedId] = useState();
+    if (!batchId || !sessionId) {
+        notFound()
+    }
+
     const [isOpen, setISOpen] = useState(false);
-    const [activityId, setActivityId] = useState();
     const [docURL, setDocURL] = useState();
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [logData, setLogData] = useState();
 
     const [selectedScorm, setSelectedScorm] = useState(null);
     const [scormLogData, setScormLogData] = useState(null);
@@ -57,7 +52,7 @@ const PreReadPage = () => {
     const token = session?.user?.token;
 
     const qs = `?batchId=${batchId}&sessionId=${sessionId}`;
-    const { ready, apiGet, apiPut } = useApi();
+    const { ready, apiGet } = useApi();
 
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -93,27 +88,6 @@ const PreReadPage = () => {
         return () => { cancelled = true; };
     }, [ready, batchId]);
 
-    const completedCount = items.filter((i) => i.done).length;
-    const progress = items.length ? Math.round((completedCount / items.length) * 100) : 0;
-
-    const toggleDone = async (id) => {
-        const prevItems = items;
-        
-        setItems((prev) =>
-            prev.map((item) => (item.id === id ? { ...item, done: !item.done } : item))
-        );
-
-        try {
-            await apiPut(`/user/trainer/resource/pre-read/${id}/toggle`, { batchId });
-            toast.success("Pre read saved successfully", {
-                autoClose: 1000
-            })
-        } catch (err) {
-            setItems(prevItems); // revert on failure
-            setError(err.message);
-        }
-    };
-
     const handleCardClick = (activity) => {
 
 
@@ -139,9 +113,6 @@ const PreReadPage = () => {
             setActivityData(activity)
 
             setTimeout(() => {
-                setLogData(activity);
-                setActivityId(activity._id);
-                setSelectedId(activity.module_type_id);
 
                 if (isDocumentType && activity.document_data?.image_url) {
                     setDocURL(activity.document_data.image_url);
@@ -189,14 +160,6 @@ const PreReadPage = () => {
                             Learners are asked to complete these items before the session begins. Track your own review status below.
                         </Typography>
 
-                        <Box sx={{ mb: 4 }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                <Typography variant="body2" fontWeight="600">Review Progress</Typography>
-                                <Typography variant="body2" color="text.secondary">{completedCount} of {items.length} completed</Typography>
-                            </Box>
-                            <LinearProgress variant="determinate" value={progress} sx={{ height: 8, borderRadius: 4 }} />
-                        </Box>
-
                         {loading ? (
                             <Skeleton variant="rounded" height={200} />
                         ) : (
@@ -204,28 +167,27 @@ const PreReadPage = () => {
                                 {items.length === 0 && (
                                     <Typography variant="body2" color="text.secondary">No pre-read items assigned yet.</Typography>
                                 )}
-                                {items.map((item) => (
+                                {items.map((item, index) => (
                                     <Box
-                                        key={item.id}
+                                        key={index}
                                         sx={{
                                             p: 2.5,
                                             borderRadius: 2.5,
                                             border: '1px solid',
-                                            borderColor: item.done ? 'success.main' : 'divider',
+                                            borderColor: 'divider',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'space-between',
                                             gap: 2,
-                                            bgcolor: item.done ? 'success.50' : 'background.paper'
+                                            bgcolor: 'background.paper'
                                         }}
                                     >
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                            <Checkbox checked={item.done} onChange={() => toggleDone(item.id)} />
                                             <Box>
                                                 <Typography
                                                     variant="subtitle1"
                                                     fontWeight="700"
-                                                    sx={{ textDecoration: item.done ? 'line-through' : 'none', color: item.done ? 'text.secondary' : 'text.primary' }}
+                                                    sx={{ color: 'text.primary' }}
                                                 >
                                                     {item.title}
                                                 </Typography>

@@ -221,10 +221,6 @@ const LearnerRosterPage = () => {
                                         <LinearProgress variant="determinate" value={learner.attendance} sx={{ height: 6, borderRadius: 5 }} />
                                     </Box>
                                 </Box>
-
-                                <Button fullWidth variant="outlined" sx={{ textTransform: "none", fontWeight: 600, borderRadius: 2 }}>
-                                    View Learner
-                                </Button>
                             </Card>
                         </Grid>
                     ))}
