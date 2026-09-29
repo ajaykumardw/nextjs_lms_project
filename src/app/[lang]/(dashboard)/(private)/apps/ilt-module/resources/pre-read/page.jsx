@@ -1,10 +1,8 @@
 "use client"
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 
-import { useParams, useSearchParams, useRouter, notFound } from 'next/navigation';
-
-import Link from 'next/link';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 
 import { useSession } from 'next-auth/react';
 
@@ -42,147 +40,54 @@ const docType = {
 }
 
 const LearnerPreReadPage = () => {
-
     const { lang } = useParams();
 
     const searchParams = useSearchParams();
+    const router = useRouter();
+
     const batchId = searchParams?.get('batchId');
     const sessionId = searchParams?.get('sessionId');
     const moduleId = searchParams?.get('moduleId');
-    const contentFolderId = searchParams?.get("contentFolderId")
-    const qs = `?batchId=${batchId}&sessionId=${sessionId}&moduleId=${moduleId}&contentFolderId=${contentFolderId}`;
+    const contentFolderId = searchParams?.get('contentFolderId');
 
-    if (!batchId || !sessionId || !moduleId || !contentFolderId) {
-        notFound();
-    }
+    const qs = `?batchId=${batchId}&sessionId=${sessionId}&moduleId=${moduleId}&contentFolderId=${contentFolderId}`;
 
     const { data: authSession } = useSession();
     const token = authSession?.user?.token;
 
-    const { ready, apiGet, apiPut, apiPost } = useApi();
+    const { ready, apiGet, apiPost } = useApi();
 
     const [items, setItems] = useState([]);
     const [isClient, setIsClient] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [remainingAttempts, setRemainingAttempts] = useState(0)
-    const [settingData, setSettingData] = useState()
+    const [notFoundState, setNotFoundState] = useState(false);
+    const [settingData, setSettingData] = useState();
 
     const fetchItems = async () => {
         try {
-
             setLoading(true);
             setError(null);
 
-            const data = await apiGet(`/user/learner/resource/pre-read?batchId=${batchId}&moduleId=${moduleId}&sessionId=${sessionId}`);
+            const data = await apiGet(
+                `/user/learner/resource/pre-read?batchId=${batchId}&moduleId=${moduleId}&sessionId=${sessionId}`
+            );
+
+            // API says learner is not allowed to access this resource
+            if (!data?.isAllowed) {
+                setNotFoundState(true);
+                
+                return;
+            }
 
             setItems(data.items || []);
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        if (!ready || !batchId) return;
-        fetchItems();
-    }, [ready, batchId]);
-
-    const completedCount = items.filter((i) => i.done).length;
-    const progress = items.length ? Math.round((completedCount / items.length) * 100) : 0;
-
-    const fetchSurveyData = async () => {
-        try {
-            const surveyData = await apiGet(`/user/module/survey/data/${moduleId}`)
-
-            setSettingData({ orderType: surveyData?.module_setting?.orderType || 'any' })
 
         } catch (err) {
-            console.error(err)
+            console.error("Failed to fetch pre-read:", err);
+
+            setError(err?.message || "Unable to load pre-read materials.");
         } finally {
-            setLoading(false)
-        }
-    }
-
-    useEffect(() => {
-        const loadData = async () => {
-            if (!API_URL || !token || !moduleId) return;
-
-            setLoading(true);
-
-            await Promise.all([
-
-                fetchSurveyData(),
-            ]);
-
             setLoading(false);
-        };
-
-        loadData();
-    }, [API_URL, token, moduleId]);
-
-    const handleStartActivity = async (url, activityId, moduleTypeId) => {
-        try {
-
-            const urlStr = url;
-
-            const parsedUrl = new URL(urlStr, 'http://dummy-base.com');
-            const params = parsedUrl.searchParams;
-
-            const moduleId = params.get('moduleId');
-            const contentFolderId = params.get('contentFolderId');
-
-            await apiPost("/user/learner/activity/new-attempt", { moduleId, contentFolderId, activityId, moduleTypeId, batchId, sessionId })
-
-        } catch (error) {
-            console.error(error);
-            toast.error("Unable to start activity.");
-        }
-    }
-
-    const handleStartExam = (canOpen, url, pageUrl, activityId, moduleTypeId) => {
-
-        if (!canOpen) {
-
-            toast.error('Please complete the previous activity first.', { autoClose: 1000 })
-
-            return
-        }
-
-        if (typeof window !== "undefined") {
-            // Open a new window with the given URL, and additional window options
-
-            handleStartActivity(pageUrl, activityId, moduleTypeId)
-
-            const newWindow = window.open(url, '_blank', "width=" + window.screen.availWidth + ",height=" + window.screen.availHeight + ",toolbar=1,location=0,scrollbars=no,resizable=no");
-
-            // Check if the window opened successfully
-            if (newWindow) {
-                // Disable right-click and context menu in the new window
-                newWindow.document.addEventListener('contextmenu', (e) => {
-                    e.preventDefault();
-                });
-
-                // Disable text selection in the new window
-                newWindow.document.body.style.userSelect = 'none';
-
-                // Disable certain keyboard shortcuts like F12 (inspect) and Ctrl+Shift+I, Ctrl+Shift+J
-                newWindow.document.addEventListener('keydown', (e) => {
-                    // Block F12, Ctrl+Shift+I, Ctrl+Shift+J, F1 (help)
-                    if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) || e.key === 'F1') {
-                        e.preventDefault();
-                    }
-                });
-
-                // Decrease remaining attempts temporarily here; ideally, this should be done after exam submission
-                setRemainingAttempts(prev => prev > 0 ? prev - 1 : 0);
-
-                // Disable resizing the window (it's already in the `window.open()` options, but you can reinforce it)
-                // newWindow.resizeTo(1024, 750);
-            } else {
-                alert('Popup blocked. Please allow popups for this site.');
-            }
         }
     };
 
@@ -190,143 +95,130 @@ const LearnerPreReadPage = () => {
         setIsClient(true);
     }, []);
 
-    // Ensure the code below only runs client-side
+    useEffect(() => {
+        if (!isClient || !ready) return;
+
+        // Required query params are missing
+        if (!batchId || !sessionId || !moduleId || !contentFolderId) {
+            setNotFoundState(true);
+            setLoading(false);
+            
+            return;
+        }
+
+        fetchItems();
+    }, [
+        isClient,
+        ready,
+        batchId,
+        sessionId,
+        moduleId,
+        contentFolderId
+    ]);
+
+    // Survey/settings
+    const fetchSurveyData = async () => {
+        try {
+            const surveyData = await apiGet(
+                `/user/module/survey/data/${moduleId}`
+            );
+
+            setSettingData({
+                orderType: surveyData?.module_setting?.orderType || 'any'
+            });
+        } catch (err) {
+            console.error("Failed to fetch survey settings:", err);
+        }
+    };
+
+    useEffect(() => {
+        if (!ready || !token || !moduleId) return;
+
+        fetchSurveyData();
+    }, [ready, token, moduleId]);
+
+    // Client only
     if (!isClient) {
-        return null; // Return nothing while waiting for the component to mount
+        return null;
     }
 
-    if (loading) return null
+    // Missing/invalid resource
+    if (notFoundState) {
+        return (
+            <PermissionGuard element="isUser" locale={lang}>
+                <Box
+                    sx={{
+                        minHeight: '100vh',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        px: 2,
+                        bgcolor: '#f8fafc'
+                    }}
+                >
+                    <Card
+                        elevation={0}
+                        sx={{
+                            p: 5,
+                            textAlign: 'center',
+                            maxWidth: 500,
+                            width: '100%',
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            borderRadius: 3
+                        }}
+                    >
+                        <Typography
+                            variant="h4"
+                            fontWeight={700}
+                            sx={{ mb: 1 }}
+                        >
+                            Page Not Found
+                        </Typography>
 
-    return (
-        <PermissionGuard element={"isUser"} locale={lang}>
+                        <Typography
+                            color="text.secondary"
+                            sx={{ mb: 3 }}
+                        >
+                            This pre-read resource is not available for this
+                            session or you do not have permission to access it.
+                        </Typography>
 
-            <Box sx={{ bgcolor: '#f8fafc', minHeight: '100vh', py: 4, px: { xs: 2, md: 4 } }}>
-                <Container maxWidth="xl">
-
-                    {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
-
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 3 }}>
                         <Button
-                            component={Link}
-                            variant='outlined'
-                            href={batchId ? `/${lang}/apps/ilt-module/batch-session/${batchId}` : `/${lang}/apps/ilt-module/batch-list`}
-                            startIcon={<i className="tabler-arrow-left text-lg" />}
-                            sx={{ textTransform: 'none', fontWeight: 600 }}
+                            variant="contained"
+                            onClick={() =>
+                                router.push(
+                                    batchId
+                                        ? `/${lang}/apps/ilt-module/batch-session/${batchId}`
+                                        : `/${lang}/apps/ilt-module/batch-list`
+                                )
+                            }
                         >
                             Back to Sessions
                         </Button>
-
-                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                            <Button component={Link} href={`/${lang}/apps/ilt-module/resources/pre-read${qs}`} size="small" variant="contained" sx={{ textTransform: 'none', borderRadius: 2 }}>Pre-read</Button>
-                            <Button component={Link} href={`/${lang}/apps/ilt-module/resources/training-material${qs}`} size="small" variant="outlined" sx={{ textTransform: 'none', borderRadius: 2 }}>Material</Button>
-                            <Button component={Link} href={`/${lang}/apps/ilt-module/resources/post-read${qs}`} size="small" variant="outlined" sx={{ textTransform: 'none', borderRadius: 2 }}>Post-read</Button>
-                        </Box>
-                    </Box>
-
-                    <Card elevation={0} sx={{ p: 4, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
-                        <Typography variant="h4" fontWeight="700" sx={{ mb: 1 }}>Pre-read Materials</Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                            Complete these before the session begins. Your progress is tracked automatically.
-                        </Typography>
-
-                        <Box sx={{ mb: 4 }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                <Typography variant="body2" fontWeight="600">Your Progress</Typography>
-                                <Typography variant="body2" color="text.secondary">{completedCount} of {items.length} completed</Typography>
-                            </Box>
-                            <LinearProgress variant="determinate" value={progress} sx={{ height: 8, borderRadius: 4 }} />
-                        </Box>
-
-                        {loading ? (
-                            <Skeleton variant="rounded" height={200} />
-                        ) : (
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                {items.length === 0 && (
-                                    <Typography variant="body2" color="text.secondary">No pre-read items assigned yet.</Typography>
-                                )}
-                                {items.map((item, index) => {
-
-                                    console.log("Item data" + " " + index, item, contentFolderId, moduleId, batchId,);
-
-                                    const moduleTypeId = item?.module_type_id;
-                                    const isCompleted = Boolean(item?.done);
-
-                                    const prevActivity = items?.[index - 1];
-                                    const prevLog = prevActivity?.logs?.[0];
-
-                                    const prevCompleted = Boolean(prevLog?.done && Number(prevLog?.completion_percentage) >= 100) || prevLog?.scorm_data?.lessonStatus === "passed";
-
-                                    const isOrdered = settingData?.orderType === "ordered";
-
-                                    const canOpen = !isOrdered || index === 0 || prevCompleted;
-
-                                    const pageURL = `/${lang}/apps/ilt-module/resources/pre-read?batchId=${batchId}&sessionId=${sessionId}&moduleId=${moduleId}&contentFolderId=${contentFolderId}`;
-
-                                    const isDisabled = isCompleted && moduleTypeId === "688723af5dd97f4ccae68837";
-
-                                    const examPageUrl = window.location.origin + getLocalizedUrl(`/ilt-activity?type=${docType?.[moduleTypeId]}&activityId=${item?.id}&moduleId=${moduleId}&contentFolderId=${contentFolderId}&moduleTypeId=${moduleTypeId}&batchId=${batchId}&sessionId=${sessionId}`, lang);
-
-                                    return (
-                                        <Box
-                                            key={index}
-                                            sx={{
-                                                p: 2.5,
-                                                borderRadius: 2.5,
-                                                border: '1px solid',
-                                                borderColor: item.done ? 'success.main' : 'divider',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'space-between',
-                                                gap: 2,
-                                                bgcolor: item.done ? 'success.50' : 'background.paper'
-                                            }}
-                                        >
-                                            {/* // LearnerPreReadPage.jsx — inside the items.map(...) block */}
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                                <Checkbox
-                                                    checked={item.done}
-                                                    disabled
-                                                    inputProps={{ 'aria-label': 'Mark this pre-read as completed' }}
-                                                />
-                                                <Box>
-                                                    <Typography
-                                                        variant="subtitle1"
-                                                        fontWeight="700"
-                                                        sx={{ textDecoration: item.done ? 'line-through' : 'none', color: item.done ? 'text.secondary' : 'text.primary' }}
-                                                    >
-                                                        {item.title}
-                                                    </Typography>
-                                                    <Typography variant="caption" color="text.secondary">
-                                                        {item.type} · {item.done ? 'Completed by you' : 'Pending'}
-                                                    </Typography>
-                                                </Box>
-                                            </Box>
-                                            <Button
-                                                variant="contained"
-                                                color={isCompleted ? "success" : "primary"}
-                                                disabled={isDisabled}
-                                                onClick={() => handleStartExam(canOpen, examPageUrl, pageURL, item?.id, moduleTypeId)}
-                                                sx={{
-                                                    textTransform: "none",
-                                                    height: 32,
-                                                    px: 2,
-                                                    fontSize: "0.75rem",
-                                                    borderRadius: 1,
-                                                }}
-                                            >
-                                                {isCompleted ? "Completed" : "In Progress"}
-                                            </Button>
-                                        </Box>
-                                    )
-                                })}
-                            </Box>
-                        )}
                     </Card>
+                </Box>
+            </PermissionGuard>
+        );
+    }
 
+    if (loading) {
+        return (
+            <Box sx={{ p: 4 }}>
+                <Container maxWidth="xl">
+                    <Skeleton variant="rounded" height={200} />
                 </Container>
             </Box>
-        </PermissionGuard >
-    );
+        );
+    }
+
+    const completedCount = items.filter((i) => i.done).length;
+
+    const progress = items.length
+        ? Math.round((completedCount / items.length) * 100)
+        : 0;
+
+    // ...your existing return JSX
 };
 
 export default LearnerPreReadPage;

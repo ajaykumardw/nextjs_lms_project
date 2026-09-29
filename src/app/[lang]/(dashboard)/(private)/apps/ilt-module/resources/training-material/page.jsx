@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 
-import { useParams, useSearchParams, notFound } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 
 import Link from 'next/link';
 
@@ -70,7 +70,10 @@ const fileIcon = (item) =>
     'tabler-file';
 
 const LearnerMaterialPage = () => {
+
     const { lang } = useParams();
+
+    const router = useRouter()
 
     const { data: authSession } = useSession();
     const token = authSession?.user?.token;
@@ -89,6 +92,7 @@ const LearnerMaterialPage = () => {
     const { ready, apiGet, apiPost } = useApi();
 
     const [items, setItems] = useState([]);
+    const [notFoundState, setNotFoundState] = useState(false);
     const [isClient, setIsClient] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -103,6 +107,12 @@ const LearnerMaterialPage = () => {
                 `/user/learner/resource/material?batchId=${batchId}&moduleId=${moduleId}&sessionId=${sessionId}`
             );
 
+            if (!data?.isAllowed) {
+                setNotFoundState(true);
+                
+                return;
+            }
+
             setItems(data?.items || []);
         } catch (err) {
             setError(err?.message || 'Failed to load materials.');
@@ -111,6 +121,28 @@ const LearnerMaterialPage = () => {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [batchId, moduleId, sessionId, ready]);
+
+    useEffect(() => {
+        if (!isClient || !ready) return;
+
+        // Required query params are missing
+        if (!batchId || !sessionId || !moduleId || !contentFolderId) {
+
+            setNotFoundState(true);
+            setLoading(false);
+            
+            return;
+        }
+
+        fetchItems();
+    }, [
+        isClient,
+        ready,
+        batchId,
+        sessionId,
+        moduleId,
+        contentFolderId
+    ]);
 
     const fetchSurveyData = useCallback(async () => {
         try {
@@ -201,6 +233,65 @@ const LearnerMaterialPage = () => {
     };
 
     if (!isClient) return null;
+
+    if (notFoundState) {
+        return (
+            <PermissionGuard element="isUser" locale={lang}>
+                <Box
+                    sx={{
+                        minHeight: '100vh',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        px: 2,
+                        bgcolor: '#f8fafc'
+                    }}
+                >
+                    <Card
+                        elevation={0}
+                        sx={{
+                            p: 5,
+                            textAlign: 'center',
+                            maxWidth: 500,
+                            width: '100%',
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            borderRadius: 3
+                        }}
+                    >
+                        <Typography
+                            variant="h4"
+                            fontWeight={700}
+                            sx={{ mb: 1 }}
+                        >
+                            Page Not Found
+                        </Typography>
+
+                        <Typography
+                            color="text.secondary"
+                            sx={{ mb: 3 }}
+                        >
+                            This pre-read resource is not available for this
+                            session or you do not have permission to access it.
+                        </Typography>
+
+                        <Button
+                            variant="contained"
+                            onClick={() =>
+                                router.push(
+                                    batchId
+                                        ? `/${lang}/apps/ilt-module/batch-session/${batchId}`
+                                        : `/${lang}/apps/ilt-module/batch-list`
+                                )
+                            }
+                        >
+                            Back to Sessions
+                        </Button>
+                    </Card>
+                </Box>
+            </PermissionGuard>
+        );
+    }
 
     return (
         <PermissionGuard element={"isUser"} locale={lang}>

@@ -133,33 +133,44 @@ const LearnerBatchSessionsPage = () => {
                                         </Box>
 
                                         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                            <Button
-                                                component={Link}
-                                                href={`/${lang}/apps/ilt-module/resources/pre-read?batchId=${batchId}&sessionId=${sess.id}&moduleId=${batch?.module_id}&contentFolderId=${batch?.contentFolderId}`}
-                                                variant="outlined"
-                                                size="small"
-                                                sx={{ textTransform: 'none', borderRadius: 2 }}
-                                            >
-                                                Pre-read
-                                            </Button>
-                                            <Button
-                                                component={Link}
-                                                href={`/${lang}/apps/ilt-module/resources/training-material?batchId=${batchId}&sessionId=${sess.id}&moduleId=${batch?.module_id}&contentFolderId=${batch?.contentFolderId}`}
-                                                variant="outlined"
-                                                size="small"
-                                                sx={{ textTransform: 'none', borderRadius: 2 }}
-                                            >
-                                                Materials
-                                            </Button>
-                                            <Button
-                                                component={Link}
-                                                href={`/${lang}/apps/ilt-module/resources/post-read?batchId=${batchId}&sessionId=${sess.id}&moduleId=${batch?.module_id}&contentFolderId=${batch?.contentFolderId}`}
-                                                variant="outlined"
-                                                size="small"
-                                                sx={{ textTransform: 'none', borderRadius: 2 }}
-                                            >
-                                                Post read
-                                            </Button>
+
+                                            {sess?.isPreAllowed && (
+
+                                                <Button
+                                                    component={Link}
+                                                    href={`/${lang}/apps/ilt-module/resources/pre-read?batchId=${batchId}&sessionId=${sess.id}&moduleId=${batch?.module_id}&contentFolderId=${batch?.contentFolderId}`}
+                                                    variant="outlined"
+                                                    size="small"
+                                                    sx={{ textTransform: 'none', borderRadius: 2 }}
+                                                >
+                                                    Pre-read
+                                                </Button>
+                                            )}
+
+                                            {sess?.isMaterialAllowed && (
+
+                                                <Button
+                                                    component={Link}
+                                                    href={`/${lang}/apps/ilt-module/resources/training-material?batchId=${batchId}&sessionId=${sess.id}&moduleId=${batch?.module_id}&contentFolderId=${batch?.contentFolderId}`}
+                                                    variant="outlined"
+                                                    size="small"
+                                                    sx={{ textTransform: 'none', borderRadius: 2 }}
+                                                >
+                                                    Materials
+                                                </Button>
+                                            )}
+                                            {sess?.isPastAllowed && (
+
+                                                <Button
+                                                    component={Link}
+                                                    href={`/${lang}/apps/ilt-module/resources/post-read?batchId=${batchId}&sessionId=${sess.id}&moduleId=${batch?.module_id}&contentFolderId=${batch?.contentFolderId}`}
+                                                    variant="outlined"
+                                                    size="small"
+                                                    sx={{ textTransform: 'none', borderRadius: 2 }}
+                                                >
+                                                    Post read
+                                                </Button>
+                                            )}
                                             {/* // LearnerBatchSessionsPage.jsx — add near the "Back to My Batches" button */}
                                             <Button
                                                 component={Link}
