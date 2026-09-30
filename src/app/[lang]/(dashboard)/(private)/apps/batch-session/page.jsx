@@ -67,7 +67,7 @@ const TrainerOverviewPage = () => {
         totalLearnersEnrolled: 0,
         pendingGrading: 0
     };
-    
+
     const todaySessions = overview?.todaySessions || [];
 
     return (
@@ -161,7 +161,7 @@ const TrainerOverviewPage = () => {
                                         <i className="tabler-file-text text-2xl" />
                                     </Avatar>
                                     <Box>
-                                        <Typography variant="body2" color="text.secondary" fontWeight={500}>Pending Grading</Typography>
+                                        <Typography variant="body2" color="text.secondary" fontWeight={500}>Grading</Typography>
                                         {loading ? <Skeleton width={40} /> : <Typography variant="h5" fontWeight="700">{stats.pendingGrading}</Typography>}
                                     </Box>
                                 </Box>

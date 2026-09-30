@@ -34,6 +34,9 @@
       "@assets/*": [
         "./src/assets/*"
       ],
+      "@services/*": [
+        "./src/services/*"
+      ],
       "@components/*": [
         "./src/components/*"
       ],

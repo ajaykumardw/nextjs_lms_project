@@ -7,6 +7,7 @@ import {
 } from "@mui/material";
 
 export default function QuickActions() {
+
     return (
         <Card>
             <CardContent>

@@ -14,132 +14,142 @@ import {
     TableContainer,
     TableHead,
     TableRow,
+    TablePagination,
 } from "@mui/material";
 
-const rows = [
-    {
-        name: "Anna Radar",
-        course: "Course A",
-        session: "03/06/23 - 12:00 PM",
-        trainer: "Anna Holizzi",
-        method: "Manual",
-        status: "Present",
-    },
-    {
-        name: "Hatha Rhnan",
-        course: "Batch B",
-        session: "03/06/23 - 01:00 PM",
-        trainer: "Banna Siman",
-        method: "QR Code",
-        status: "Absent",
-    },
-    {
-        name: "Sidian Milan",
-        course: "Course C",
-        session: "03/06/23 - 12:00 PM",
-        trainer: "Banna Siman",
-        method: "QR Code",
-        status: "Late",
-    },
-    {
-        name: "Saram Aman",
-        course: "Batch D",
-        session: "03/06/23 - 12:00 PM",
-        trainer: "Sorian Dmit",
-        method: "Virtual",
-        status: "Excused",
-    },
-];
+const STATUS_COLOR = { present: "success", absent: "error", late: "warning", pending: "default" };
+const METHOD_LABEL = { manual: "Manual", qr: "QR code", biometric: "Biometric", virtual: "Virtual" };
+const COLUMNS = ["Learner", "Batch", "Session", "Trainer", "Method", "Status"];
 
-const statusColor = {
-    Present: "success",
-    Absent: "error",
-    Late: "warning",
-    Excused: "info",
+const formatSession = (s) => {
+    if (!s) return { title: "-", sub: "" };
+    const d = new Date(s.session_date);
+    
+    const date = isNaN(d)
+        ? "-"
+        : d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    
+        const time = [s.start_time, s.end_time].filter(Boolean).join(" - ");
+    
+    return { title: `Session ${s.session_number ?? "-"}`, sub: [date, time].filter(Boolean).join(" · ") };
 };
 
-export default function AttendanceTable() {
-    return (
-        <Paper sx={{ p: 3, borderRadius: 3 }}>
-            <Box
-                display="flex"
-                justifyContent="space-between"
-                mb={3}
-                alignItems="center"
-            >
+const capitalize = (v = "") => v.charAt(0).toUpperCase() + v.slice(1);
 
+export default function AttendanceTable({ logs, status, loading, onStatusChange, onPageChange, onLimitChange }) {
+
+    const { items = [], page = 1, limit = 10, total = 0 } = logs || {};
+
+    // never let MUI receive a page that is past the last one
+    const safePage = Math.min(page - 1, Math.max(0, Math.ceil(total / limit) - 1));
+
+    return (
+        <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 3 }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2} mb={2}>
                 <Typography variant="h6" fontWeight={700}>
-                    Session Attendance Log
+                    Session attendance log
                 </Typography>
 
-                <Box display="flex" gap={2}>
-
-                    <TextField
-                        select
-                        size="small"
-                        defaultValue="all"
-                        sx={{ width: 120 }}
-                    >
-                        <MenuItem value="all">Filters</MenuItem>
-                    </TextField>
-
-                    <TextField size="small" placeholder="Search..." />
-                </Box>
+                <TextField
+                    select
+                    size="small"
+                    value={status}
+                    onChange={(e) => onStatusChange(e.target.value)}
+                    sx={{ width: 160 }}
+                    slotProps={{ htmlInput: { "aria-label": "Filter by status" } }}
+                >
+                    <MenuItem value="all">All statuses</MenuItem>
+                    <MenuItem value="present">Present</MenuItem>
+                    <MenuItem value="late">Late</MenuItem>
+                    <MenuItem value="absent">Absent</MenuItem>
+                    <MenuItem value="pending">Pending</MenuItem>
+                </TextField>
             </Box>
 
-            <TableContainer>
-                <Table>
+            <TableContainer sx={{ opacity: loading ? 0.6 : 1, transition: "opacity .15s" }}>
+                <Table sx={{ minWidth: 760 }}>
                     <TableHead>
                         <TableRow>
-                            <TableCell>Learner</TableCell>
-                            <TableCell>Course</TableCell>
-                            <TableCell>Session</TableCell>
-                            <TableCell>Trainer</TableCell>
-                            <TableCell>Method</TableCell>
-                            <TableCell>Status</TableCell>
-                            <TableCell>Remarks</TableCell>
+                            {COLUMNS.map((c) => (
+                                <TableCell key={c} sx={{ whiteSpace: "nowrap" }}>
+                                    {c}
+                                </TableCell>
+                            ))}
                         </TableRow>
                     </TableHead>
 
                     <TableBody>
-                        {rows.map((row) => (
-                            <TableRow hover key={row.name}>
-                                <TableCell>
-                                    <Box display="flex" alignItems="center" gap={1}>
-                                        <Avatar>{row.name[0]}</Avatar>
-                                        {row.name}
-                                    </Box>
-                                </TableCell>
-
-                                <TableCell>{row.course}</TableCell>
-
-                                <TableCell>{row.session}</TableCell>
-
-                                <TableCell>{row.trainer}</TableCell>
-
-                                <TableCell>{row.method}</TableCell>
-
-                                <TableCell>
-                                    <Chip
-                                        label={row.status}
-                                        color={statusColor[row.status]}
-                                        size="small"
-                                    />
-                                </TableCell>
-
-                                <TableCell>
-                                    <Typography
-                                        color="primary"
-                                        sx={{ cursor: "pointer", fontWeight: 500 }}
-                                    >
-                                        View/Add
-                                    </Typography>
+                        {items.length === 0 && !loading && (
+                            <TableRow>
+                                <TableCell colSpan={COLUMNS.length} align="center" sx={{ py: 6, color: "text.secondary" }}>
+                                    No attendance records match these filters.
                                 </TableCell>
                             </TableRow>
-                        ))}
+                        )}
+
+                        {items.map((row) => {
+                            
+                            const session = formatSession(row.session);
+                            const st = row.status || "pending";
+
+                            return (
+                                <TableRow hover key={row._id}>
+                                    <TableCell>
+                                        <Box display="flex" alignItems="center" gap={1.5}>
+                                            <Avatar sx={{ width: 32, height: 32, fontSize: 14 }}>
+                                                {(row.learner?.name || "?")[0].toUpperCase()}
+                                            </Avatar>
+                                            <Box minWidth={0}>
+                                                <Typography variant="body2" fontWeight={600} noWrap>
+                                                    {row.learner?.name || "-"}
+                                                </Typography>
+                                                {row.learner?.email && (
+                                                    <Typography variant="caption" color="text.secondary" noWrap>
+                                                        {row.learner.email}
+                                                    </Typography>
+                                                )}
+                                            </Box>
+                                        </Box>
+                                    </TableCell>
+
+                                    <TableCell>{row.batch?.name || "-"}</TableCell>
+
+                                    <TableCell>
+                                        <Typography variant="body2" fontWeight={600}>
+                                            {session.title}
+                                        </Typography>
+                                        {session.sub && (
+                                            <Typography variant="caption" color="text.secondary">
+                                                {session.sub}
+                                            </Typography>
+                                        )}
+                                    </TableCell>
+
+                                    <TableCell>
+                                        {row.trainers?.length ? row.trainers.map((t) => t.name).join(", ") : "-"}
+                                    </TableCell>
+
+                                    <TableCell>{METHOD_LABEL[row.method] || "Manual"}</TableCell>
+
+                                    <TableCell>
+                                        <Chip label={capitalize(st)} color={STATUS_COLOR[st] || "default"} size="small" />
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
                     </TableBody>
                 </Table>
             </TableContainer>
+
+            <TablePagination
+                component="div"
+                count={total}
+                page={safePage}
+                rowsPerPage={limit}
+                rowsPerPageOptions={[10, 25, 50]}
+                onPageChange={(_, p) => onPageChange(p + 1)}
+                onRowsPerPageChange={(e) => onLimitChange(parseInt(e.target.value, 10))}
+            />
         </Paper>
     );
 }
